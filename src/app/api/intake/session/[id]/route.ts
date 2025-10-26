@@ -108,7 +108,7 @@ export async function PATCH(
  * Get session by ID
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

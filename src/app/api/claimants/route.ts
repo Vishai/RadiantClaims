@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create customer account automatically
-    const { user, temporaryPassword } = await createCustomerAccount({
+    const { temporaryPassword } = await createCustomerAccount({
       email: validated.email,
       name: `${validated.firstName} ${validated.lastName}`,
       claimantId: claimant.id,

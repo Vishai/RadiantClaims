@@ -67,7 +67,7 @@ function UploadContent() {
         throw new Error("Failed to get upload URL");
       }
 
-      const { putUrl, fileKey } = await uploadResponse.json();
+      const { fileKey } = await uploadResponse.json();
 
       // Step 2: Upload file to presigned URL (mock for now)
       // TODO: When R2 is configured, uncomment this to do real upload

@@ -78,7 +78,7 @@ export async function PATCH(
  * Delete an uploaded file
  */
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

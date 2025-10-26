@@ -332,13 +332,13 @@ export default function HomePage() {
             </p>
             <div className="flex gap-6 text-sm">
               <Link
-                href="/terms"
+                href={"/terms" as any}
                 className="text-sage-600 transition-colors hover:text-terracotta-600"
               >
                 Terms of Service
               </Link>
               <Link
-                href="/privacy"
+                href={"/privacy" as any}
                 className="text-sage-600 transition-colors hover:text-terracotta-600"
               >
                 Privacy Policy

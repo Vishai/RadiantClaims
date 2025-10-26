@@ -93,14 +93,14 @@ export default function CustomerPortal() {
     };
 
     const config = statusConfig[status] || statusConfig.DRAFT;
-    const Icon = config.icon;
+    const Icon = config?.icon;
 
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${config.className}`}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${config?.className || ''}`}
       >
-        <Icon className="h-3.5 w-3.5" />
-        {config.label}
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        {config?.label}
       </span>
     );
   };
@@ -237,11 +237,11 @@ export default function CustomerPortal() {
                     {/* Actions */}
                     <div className="flex flex-wrap gap-3">
                       {claim.intakeSession &&
-                        claim.intakeSession.status !== "SUBMITTED" && (
+                        claim.intakeSession?.status !== "SUBMITTED" && (
                           <Button
                             onClick={() =>
                               router.push(
-                                `/intake/step2?token=${claim.intakeSession.resumeToken}`
+                                `/intake/step2?token=${claim.intakeSession?.resumeToken || ''}`
                               )
                             }
                             className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
@@ -251,7 +251,7 @@ export default function CustomerPortal() {
                         )}
                       <Button
                         variant="outline"
-                        onClick={() => router.push(`/portal/claim/${claim.id}`)}
+                        onClick={() => router.push(`/portal/claim/${claim.id}` as any)}
                         className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                       >
                         View Details

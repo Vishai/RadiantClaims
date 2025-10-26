@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
  * GET /api/portal/claims
  * Get all claims for the logged-in customer
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 

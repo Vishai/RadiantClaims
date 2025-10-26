@@ -16,7 +16,7 @@ import { DocumentChecklistComponent } from "@/components/document-checklist";
 import { DOCUMENT_CHECKLIST, calculateProgress } from "@/lib/document-checklist";
 import {
   uploadFile,
-  deleteFile,
+  // deleteFile, // Currently unused but kept for future use
   getIntakeSession,
   createIntakeSession,
   FileCategory,
@@ -126,18 +126,19 @@ function Step2Content() {
     }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
-    if (!session) return;
+  // Function to delete a file (currently unused but kept for future use)
+  // const handleDeleteFile = async (fileId: string) => {
+  //   if (!session) return;
 
-    const success = await deleteFile(fileId);
-    if (success) {
-      // Reload session
-      const { session: updatedSession } = await getIntakeSession(
-        session.resumeToken
-      );
-      setSession(updatedSession);
-    }
-  };
+  //   const success = await deleteFile(fileId);
+  //   if (success) {
+  //     // Reload session
+  //     const { session: updatedSession } = await getIntakeSession(
+  //       session.resumeToken
+  //     );
+  //     setSession(updatedSession);
+  //   }
+  // };
 
   const handleSaveForLater = () => {
     if (!session) return;
@@ -148,8 +149,9 @@ function Step2Content() {
   };
 
   const handleContinue = () => {
-    // TODO: Navigate to next step
-    router.push(`/intake/consent?token=${session?.resumeToken}`);
+    // TODO: Navigate to next step - consent page not yet created
+    const resumeToken = session?.resumeToken || '';
+    router.push(`/intake/consent?token=${resumeToken}` as any);
   };
 
   if (loading) {

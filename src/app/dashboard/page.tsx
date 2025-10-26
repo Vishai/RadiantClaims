@@ -92,7 +92,7 @@ export default async function DashboardPage({
               action={async () => {
                 "use server";
                 const { signOut } = await import("next-auth/react");
-                await signOut({ redirect: true, redirectTo: "/login" });
+                await signOut({ callbackUrl: "/login" });
               }}
             >
               <Button variant="outline" type="submit" className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50">

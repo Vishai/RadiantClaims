@@ -95,9 +95,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-const getSessionSchema = z.object({
-  token: z.string(),
-});
+// Schema for validating query params when fetching session by token
+// Currently unused but kept for future implementation
+// const getSessionSchema = z.object({
+//   token: z.string(),
+// });
 
 /**
  * GET /api/intake/session?token=xxx
