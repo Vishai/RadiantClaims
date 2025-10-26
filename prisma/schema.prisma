@@ -41,17 +41,27 @@ model Session {
   @@index([userId])
 }
 
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   password      String?
   image         String?
+  role          UserRole   @default(CUSTOMER)
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  claimants     Claimant[] // Customer users can have multiple claims
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([email])
+  @@index([role])
 }
 
 model VerificationToken {
@@ -78,6 +88,8 @@ model Referral {
 
 model Claimant {
   id             String          @id @default(cuid())
+  userId         String?         // Link to User account (nullable for legacy)
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   firstName      String
   lastName       String
   email          String
@@ -96,6 +108,7 @@ model Claimant {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
+  @@index([userId])
   @@index([email])
   @@index([lastName])
   @@index([state])

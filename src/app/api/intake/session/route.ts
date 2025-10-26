@@ -29,6 +29,27 @@ export async function POST(req: NextRequest) {
     const { claimantId, claimType, isPremiumService } =
       createSessionSchema.parse(body);
 
+    // Check if session already exists for this claimant
+    if (claimantId) {
+      const existingSession = await db.intakeSession.findUnique({
+        where: { claimantId },
+      });
+
+      if (existingSession) {
+        // Return existing session instead of creating new one
+        return NextResponse.json({
+          session: {
+            id: existingSession.id,
+            resumeToken: existingSession.resumeToken,
+            currentStep: existingSession.currentStep,
+            status: existingSession.status,
+            expiresAt: existingSession.expiresAt,
+          },
+          resumeUrl: `${req.nextUrl.origin}/intake/step2?token=${existingSession.resumeToken}`,
+        });
+      }
+    }
+
     // Generate unique resume token (URL-safe)
     const resumeToken = randomBytes(32).toString("base64url");
 

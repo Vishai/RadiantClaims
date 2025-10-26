@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { claimantSchema } from "@/lib/validations/claimant";
+import { createCustomerAccount, sendWelcomeEmail } from "@/lib/create-customer-account";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +39,39 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(claimant, { status: 201 });
+    // Create customer account automatically
+    const { user, temporaryPassword } = await createCustomerAccount({
+      email: validated.email,
+      name: `${validated.firstName} ${validated.lastName}`,
+      claimantId: claimant.id,
+    });
+
+    // Send welcome email with credentials
+    // Only send if this is a new account (temporaryPassword is set)
+    if (temporaryPassword) {
+      await sendWelcomeEmail({
+        email: validated.email,
+        name: `${validated.firstName} ${validated.lastName}`,
+        temporaryPassword,
+        claimantId: claimant.id,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        claimant,
+        accountCreated: !!temporaryPassword,
+        // Include credentials in response for now (for testing)
+        // TODO: Remove in production - only send via email
+        ...(temporaryPassword && {
+          credentials: {
+            email: validated.email,
+            temporaryPassword,
+          },
+        }),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

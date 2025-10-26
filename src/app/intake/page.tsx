@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { useState } from "react";
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import { Heart, CheckCircle } from "lucide-react";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -74,6 +74,10 @@ export default function IntakePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountCreated, setAccountCreated] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
 
   const form = useForm<ClaimantFormData>({
     resolver: zodResolver(claimantSchema),
@@ -109,8 +113,20 @@ export default function IntakePage() {
         throw new Error(errorData.error || "Failed to submit");
       }
 
-      const claimant = await response.json();
-      router.push(`/intake/step2?claimantId=${claimant.id}`);
+      const result = await response.json();
+
+      // Store account credentials if created
+      if (result.credentials) {
+        setAccountCreated({
+          email: result.credentials.email,
+          password: result.credentials.temporaryPassword,
+        });
+      }
+
+      // Small delay to show credentials before redirect
+      setTimeout(() => {
+        router.push(`/intake/step2?claimantId=${result.claimant.id}`);
+      }, result.credentials ? 5000 : 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit");
     } finally {
@@ -256,6 +272,42 @@ export default function IntakePage() {
               {error && (
                 <div className="rounded-2xl bg-terracotta-50 p-4 text-sm text-terracotta-800 border border-terracotta-200">
                   {error}
+                </div>
+              )}
+
+              {accountCreated && (
+                <div className="rounded-2xl bg-emerald-50 p-6 border-2 border-emerald-200">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 flex-shrink-0">
+                      <CheckCircle className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-emerald-900 mb-2">
+                        Account Created Successfully!
+                      </h3>
+                      <p className="text-sm text-emerald-800 mb-3">
+                        We've created your RadiantClaims account. Save these credentials
+                        to log in and track your claim status:
+                      </p>
+                      <div className="rounded-lg bg-white p-4 border border-emerald-200 mb-3">
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="font-medium text-sage-700">Email:</span>{" "}
+                            <code className="text-sage-900">{accountCreated.email}</code>
+                          </div>
+                          <div>
+                            <span className="font-medium text-sage-700">Temporary Password:</span>{" "}
+                            <code className="text-sage-900 font-mono bg-cream-100 px-2 py-1 rounded">
+                              {accountCreated.password}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-emerald-700">
+                        Redirecting to document upload in 5 seconds...
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
