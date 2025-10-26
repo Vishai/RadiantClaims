@@ -110,7 +110,7 @@ export default function IntakePage() {
       }
 
       const claimant = await response.json();
-      router.push(`/intake/upload?claimantId=${claimant.id}`);
+      router.push(`/intake/step2?claimantId=${claimant.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit");
     } finally {

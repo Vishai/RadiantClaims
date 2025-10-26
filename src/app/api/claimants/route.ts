@@ -7,10 +7,34 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = claimantSchema.parse(body);
 
+    // Handle referral code - only set if provided and valid
+    let referralCode: string | null = null;
+    if (validated.referralCode && validated.referralCode.trim() !== "") {
+      // Verify referral code exists
+      const referralExists = await db.referral.findUnique({
+        where: { code: validated.referralCode },
+      });
+
+      if (referralExists) {
+        referralCode = validated.referralCode;
+      }
+      // If referral code provided but doesn't exist, just ignore it (don't throw error)
+    }
+
     const claimant = await db.claimant.create({
       data: {
-        ...validated,
+        firstName: validated.firstName,
+        lastName: validated.lastName,
+        email: validated.email,
+        phone: validated.phone,
         dob: new Date(validated.dob),
+        address1: validated.address1,
+        address2: validated.address2 || null,
+        city: validated.city,
+        county: validated.county,
+        state: validated.state,
+        postalCode: validated.postalCode,
+        referralCode,
       },
     });
 
