@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,72 +50,83 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
       <div className="w-full max-w-md px-6">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-primary">
-            RadiantClaims
-          </h1>
-          <p className="text-sm text-muted-foreground">Admin Portal</p>
+          <Link href="/" className="inline-flex items-center gap-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-terracotta-500">
+              <Heart className="h-6 w-6 text-white" fill="white" />
+            </div>
+            <span className="text-3xl font-bold text-sage-800">
+              RadiantClaims
+            </span>
+          </Link>
+          <p className="mt-2 text-sm text-sage-600">Admin Portal</p>
         </div>
 
-        <Card>
+        <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-lg">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-sage-900">Login</CardTitle>
+            <CardDescription className="text-sage-600">
               Enter your credentials to access the dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sage-800">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="admin@radiantclaims.dev"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sage-800">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
                   required
                 />
               </div>
 
               {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <div className="rounded-2xl bg-terracotta-50 p-3 text-sm text-terracotta-800 border border-terracotta-200">
                   {error}
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                disabled={isLoading}
+              >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
-            <div className="mt-6 border-t pt-6 text-center">
+            <div className="mt-6 border-t border-cream-200 pt-6 text-center">
               <Link
                 href="/"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="text-sm text-sage-600 transition-colors hover:text-terracotta-600"
               >
                 ← Back to Home
               </Link>
             </div>
 
-            <div className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
+            <div className="mt-6 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-4 text-sm text-sage-800">
               <p className="font-semibold">Default credentials:</p>
               <p>Email: admin@radiantclaims.dev</p>
               <p>Password: Passw0rd!</p>
-              <p className="mt-2 text-xs text-blue-700">
+              <p className="mt-2 text-xs text-sage-600">
                 Change these credentials in production
               </p>
             </div>

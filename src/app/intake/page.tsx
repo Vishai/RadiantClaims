@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { useState } from "react";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -118,18 +119,40 @@ export default function IntakePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto max-w-3xl px-6">
-        <div className="mb-8">
-          <Link href="/" className="text-sm text-primary hover:underline">
-            ← Back to Home
+    <div className="min-h-screen bg-cream-50">
+      <nav className="border-b border-cream-200 bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto flex items-center justify-between p-6">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
+              <Heart className="h-5 w-5 text-white" fill="white" />
+            </div>
+            <span className="text-2xl font-bold text-sage-800">
+              RadiantClaims
+            </span>
+          </Link>
+          <Link href="/">
+            <Button variant="outline" className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50">
+              Back to Home
+            </Button>
           </Link>
         </div>
+      </nav>
 
-        <Card>
+      <main className="container mx-auto max-w-3xl px-6 py-12">
+        <div className="mb-8 text-center">
+          <h1 className="mb-4 text-4xl font-bold text-sage-900">
+            Start Your Free Claim Packet
+          </h1>
+          <p className="text-lg text-sage-700">
+            Fill out the information below to begin. We'll guide you through every step.
+          </p>
+          <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
+        </div>
+
+        <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
           <CardHeader>
-            <CardTitle>Claimant Intake Form</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-sage-900">Claimant Information</CardTitle>
+            <CardDescription className="text-sage-600">
               Please fill out all required information to begin your claim
               process
             </CardDescription>
@@ -176,8 +199,8 @@ export default function IntakePage() {
                 required
               />
 
-              <div className="space-y-4 border-t pt-6">
-                <h3 className="text-lg font-semibold">Address Information</h3>
+              <div className="space-y-4 border-t border-cream-200 pt-6">
+                <h3 className="text-lg font-semibold text-sage-900">Address Information</h3>
 
                 <FormField
                   form={form}
@@ -218,37 +241,88 @@ export default function IntakePage() {
                 />
               </div>
 
-              <div className="border-t pt-6">
+              <div className="rounded-2xl bg-gradient-to-br from-peach-50 to-cream-100 p-6">
                 <FormField
                   form={form}
                   name="referralCode"
-                  label="Referral Code"
-                  placeholder="Enter code if you have one (optional)"
+                  label="Referral Code (Optional)"
+                  placeholder="Enter code if you have one"
                 />
+                <p className="mt-2 text-xs text-sage-600">
+                  Have a referral code? Enter it here to help us connect you with the right resources.
+                </p>
               </div>
 
               {error && (
-                <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+                <div className="rounded-2xl bg-terracotta-50 p-4 text-sm text-terracotta-800 border border-terracotta-200">
                   {error}
                 </div>
               )}
 
-              <div className="flex justify-end gap-4">
+              <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
                   variant="outline"
+                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                   onClick={() => router.push("/")}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Continue to Upload"}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-full bg-terracotta-500 px-8 hover:bg-terracotta-600"
+                >
+                  {isSubmitting ? "Submitting..." : "Continue to Upload →"}
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
-      </div>
+
+        <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
+          <p className="text-sm text-sage-700">
+            <strong>100% free for claimants.</strong> We prepare your documents at no cost to you.
+            Attorney fees are paid directly to the law firm and are capped at 2% by federal statute.
+          </p>
+        </div>
+      </main>
+
+      <footer className="mt-20 border-t border-cream-200 bg-white py-12">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-terracotta-500">
+                <Heart className="h-4 w-4 text-white" fill="white" />
+              </div>
+              <span className="font-semibold text-sage-800">RadiantClaims</span>
+            </div>
+            <p className="text-sm text-sage-600">
+              &copy; 2024 RadiantClaims. All rights reserved.
+            </p>
+            <div className="flex gap-6 text-sm">
+              <Link
+                href="/terms"
+                className="text-sage-600 transition-colors hover:text-terracotta-600"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-sage-600 transition-colors hover:text-terracotta-600"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="text-sage-600 transition-colors hover:text-terracotta-600"
+              >
+                How It Works
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
