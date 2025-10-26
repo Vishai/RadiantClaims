@@ -61,6 +61,7 @@ export async function createCustomerAccount(params: {
 
 /**
  * Send welcome email with login credentials
+ * @deprecated Use sendWelcomeEmail from @/lib/email instead
  */
 export async function sendWelcomeEmail(params: {
   email: string;
@@ -69,32 +70,37 @@ export async function sendWelcomeEmail(params: {
   claimantId: string;
   resumeToken?: string;
 }) {
-  // TODO: Implement with Resend
-  // For now, just log
-  console.log("Welcome email would be sent to:", {
-    to: params.email,
-    subject: "Welcome to RadiantClaims - Your Account is Ready",
-    body: `
-      Hi ${params.name},
+  // Import the email module
+  const { sendWelcomeEmail: sendWelcomeEmailImpl } = await import("@/lib/email");
 
-      Your RadiantClaims account has been created!
+  // Send the email using Resend
+  try {
+    await sendWelcomeEmailImpl({
+      to: params.email,
+      name: params.name,
+      email: params.email,
+      temporaryPassword: params.temporaryPassword,
+      claimantId: params.claimantId,
+      resumeToken: params.resumeToken,
+    });
 
-      Email: ${params.email}
-      Temporary Password: ${params.temporaryPassword}
+    return {
+      email: params.email,
+      temporaryPassword: params.temporaryPassword,
+    };
+  } catch (error) {
+    // Log error but don't throw - email failure shouldn't block account creation
+    console.error("Failed to send welcome email:", error);
 
-      Login at: ${process.env.NEXTAUTH_URL}/login
+    // Fallback: log credentials (for development)
+    console.log("Welcome email failed - credentials:", {
+      to: params.email,
+      temporaryPassword: params.temporaryPassword,
+    });
 
-      ${params.resumeToken ? `Resume your claim: ${process.env.NEXTAUTH_URL}/intake/step2?token=${params.resumeToken}` : ""}
-
-      Please change your password after logging in.
-
-      - The RadiantClaims Team
-    `,
-  });
-
-  // Return the credentials for now (remove in production)
-  return {
-    email: params.email,
-    temporaryPassword: params.temporaryPassword,
-  };
+    return {
+      email: params.email,
+      temporaryPassword: params.temporaryPassword,
+    };
+  }
 }

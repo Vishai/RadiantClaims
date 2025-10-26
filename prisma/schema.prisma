@@ -324,3 +324,28 @@ model PacketSubmission {
   @@index([status])
   @@index([generatedAt])
 }
+
+// Email preferences and unsubscribe tracking
+enum EmailType {
+  WELCOME
+  RESUME_LINK
+  UPLOAD_CONFIRMATION
+  PACKET_READY
+  MARKETING
+  UPDATES
+}
+
+model EmailPreference {
+  id               String      @id @default(cuid())
+  email            String
+  emailType        EmailType
+  isUnsubscribed   Boolean     @default(false)
+  unsubscribedAt   DateTime?
+  unsubscribeToken String      @unique @default(cuid())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([email, emailType])
+  @@index([email])
+  @@index([unsubscribeToken])
+}
