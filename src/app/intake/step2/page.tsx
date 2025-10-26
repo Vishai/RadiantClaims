@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, Upload, X, Save, Info } from "lucide-react";
+import { Heart, Upload, X, Save, Info, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { DocumentChecklistComponent } from "@/components/document-checklist";
 import { DOCUMENT_CHECKLIST, calculateProgress } from "@/lib/document-checklist";
@@ -38,6 +39,12 @@ interface IntakeSession {
   currentStep: string;
   status: string;
   uploadedFiles: UploadedFile[];
+  claimant?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
 }
 
 function Step2Content() {
@@ -45,6 +52,7 @@ function Step2Content() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const claimantId = searchParams.get("claimantId");
+  const { data: authSession, status: authStatus } = useSession();
 
   const [session, setSession] = useState<IntakeSession | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,26 +60,56 @@ function Step2Content() {
   const [selectedCategory, setSelectedCategory] = useState<FileCategory | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
-  // Load or create session
+  // Load or create session with authorization check
   useEffect(() => {
     const initSession = async () => {
+      // Wait for auth to load
+      if (authStatus === "loading") {
+        return;
+      }
+
+      // User must be authenticated
+      if (authStatus === "unauthenticated") {
+        router.push(`/login?callbackUrl=/intake/step2${token ? `?token=${token}` : claimantId ? `?claimantId=${claimantId}` : ""}`);
+        return;
+      }
+
       try {
         if (token) {
           // Resume existing session
           const { session: existingSession } = await getIntakeSession(token);
+
+          // AUTHORIZATION CHECK: Verify logged-in user owns this session
+          if (existingSession.claimant?.email !== authSession?.user?.email) {
+            setError("Unauthorized: You don't have permission to access this session");
+            setLoading(false);
+            return;
+          }
+
           setSession(existingSession);
         } else if (claimantId) {
           // Create new session for claimant
           const { session: newSession } = await createIntakeSession({
             claimantId,
           });
+
+          // AUTHORIZATION CHECK: Verify logged-in user owns this claimant
+          if (newSession.claimant?.email !== authSession?.user?.email) {
+            setError("Unauthorized: You don't have permission to access this claimant");
+            setLoading(false);
+            return;
+          }
+
           setSession(newSession);
           // Update URL with token
           router.replace(`/intake/step2?token=${newSession.resumeToken}`);
         } else {
-          // No token or claimantId - redirect to intake
-          router.push("/intake");
+          // No token or claimantId - redirect to portal to see their claims
+          router.push("/portal");
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load session");
@@ -81,7 +119,7 @@ function Step2Content() {
     };
 
     initSession();
-  }, [token, claimantId, router]);
+  }, [token, claimantId, router, authStatus, authSession]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,12 +178,40 @@ function Step2Content() {
   //   }
   // };
 
-  const handleSaveForLater = () => {
-    if (!session) return;
-    // TODO: Send email with resume link
-    alert(
-      `Your progress has been saved! Resume at: ${window.location.origin}/intake/step2?token=${session.resumeToken}`
-    );
+  const handleSaveForLater = async () => {
+    if (!session || !session.claimant?.email) {
+      setEmailError("Unable to send email - claimant information not found");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailError(null);
+    setEmailSent(false);
+
+    try {
+      const response = await fetch("/api/email/send-resume-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.claimant.email,
+          resumeToken: session.resumeToken,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send email");
+      }
+
+      setEmailSent(true);
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setEmailSent(false), 5000);
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Failed to send email");
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleContinue = () => {
@@ -187,10 +253,11 @@ function Step2Content() {
           <Button
             variant="outline"
             onClick={handleSaveForLater}
+            disabled={isSendingEmail}
             className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
           >
             <Save className="h-4 w-4" />
-            Save for Later
+            {isSendingEmail ? "Sending..." : "Save for Later"}
           </Button>
         </div>
       </nav>
@@ -209,6 +276,45 @@ function Step2Content() {
           </p>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
+
+        {/* Success Message */}
+        {emailSent && (
+          <div className="mb-6 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-100 p-6">
+            <div className="flex gap-4">
+              <CheckCircle2 className="mt-0.5 h-6 w-6 flex-shrink-0 text-green-700" />
+              <div>
+                <h3 className="mb-1 font-semibold text-green-900">
+                  Email sent successfully!
+                </h3>
+                <p className="text-sm text-green-800">
+                  We've sent a resume link to <strong>{session?.claimant?.email}</strong>.
+                  Check your inbox to continue your application later.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {emailError && (
+          <div className="mb-6 rounded-2xl border-2 border-red-200 bg-gradient-to-br from-red-50 to-rose-100 p-6">
+            <div className="flex gap-4">
+              <AlertCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-red-700" />
+              <div className="flex-1">
+                <h3 className="mb-1 font-semibold text-red-900">
+                  Failed to send email
+                </h3>
+                <p className="text-sm text-red-800">{emailError}</p>
+              </div>
+              <button
+                onClick={() => setEmailError(null)}
+                className="rounded-full p-1 transition-colors hover:bg-red-200"
+              >
+                <X className="h-5 w-5 text-red-500" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Overall Progress */}
         <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
@@ -350,9 +456,10 @@ function Step2Content() {
             <Button
               variant="outline"
               onClick={handleSaveForLater}
+              disabled={isSendingEmail}
               className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50 sm:flex-none"
             >
-              Save & Resume Later
+              {isSendingEmail ? "Sending..." : "Save & Resume Later"}
             </Button>
             <Button
               onClick={handleContinue}
