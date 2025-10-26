@@ -1,0 +1,80 @@
+import * as React from "react";
+import { UseFormReturn, FieldPath, FieldValues } from "react-hook-form";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface FormFieldProps<T extends FieldValues> {
+  form: UseFormReturn<T>;
+  name: FieldPath<T>;
+  label: string;
+  type?: "text" | "email" | "tel" | "date" | "password" | "select";
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  required?: boolean;
+}
+
+export function FormField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  type = "text",
+  placeholder,
+  options,
+  required = false,
+}: FormFieldProps<T>) {
+  const error = form.formState.errors[name];
+
+  if (type === "select" && options) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={name}>
+          {label} {required && <span className="text-destructive">*</span>}
+        </Label>
+        <Select
+          onValueChange={(value) => form.setValue(name, value as any)}
+          defaultValue={form.getValues(name)}
+        >
+          <SelectTrigger id={name}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {error && (
+          <p className="text-sm text-destructive">
+            {error.message as string}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+      <Input
+        id={name}
+        type={type}
+        placeholder={placeholder}
+        {...form.register(name)}
+      />
+      {error && (
+        <p className="text-sm text-destructive">{error.message as string}</p>
+      )}
+    </div>
+  );
+}
