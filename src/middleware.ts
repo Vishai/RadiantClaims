@@ -7,5 +7,6 @@ export const config = {
     "/intake/upload/:path*",
     "/intake/consent/:path*",
     "/portal/:path*",
+    "/attorney/:path*", // Protect attorney portal routes
   ],
 };

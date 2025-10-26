@@ -173,3 +173,233 @@ export async function getUserActivitySummary(userId: string, days = 30) {
     lastActivity: logs[0]?.createdAt,
   };
 }
+
+// ===== Attorney Portal Audit Functions =====
+
+/**
+ * Log document access (view/download) - Critical for compliance
+ */
+export async function logDocumentAccess(
+  userId: string,
+  documentId: string,
+  action: "DOCUMENT_VIEWED" | "DOCUMENT_DOWNLOADED",
+  ipAddress: string,
+  userAgent?: string,
+  metadata?: Record<string, any>
+) {
+  await createAuditLog({
+    userId,
+    action,
+    severity: AuditSeverity.INFO,
+    resourceType: "UploadedFile",
+    resourceId: documentId,
+    ipAddress,
+    userAgent,
+    metadata,
+  });
+}
+
+/**
+ * Log claimant access
+ */
+export async function logClaimantAccess(
+  userId: string,
+  claimantId: string,
+  action: AuditAction,
+  ipAddress: string,
+  userAgent?: string,
+  metadata?: Record<string, any>
+) {
+  await createAuditLog({
+    userId,
+    action,
+    severity: AuditSeverity.INFO,
+    resourceType: "Claimant",
+    resourceId: claimantId,
+    ipAddress,
+    userAgent,
+    metadata,
+  });
+}
+
+/**
+ * Log unauthorized access attempt - Security critical
+ */
+export async function logUnauthorizedAccess(
+  userId: string | undefined,
+  resourceType: string,
+  resourceId: string,
+  attemptedAction: string,
+  ipAddress: string,
+  userAgent?: string
+) {
+  await createAuditLog({
+    userId,
+    action: "UNAUTHORIZED_ACCESS_ATTEMPT",
+    severity: AuditSeverity.WARNING,
+    resourceType,
+    resourceId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      attemptedAction,
+    },
+    success: false,
+  });
+}
+
+/**
+ * Log review action (approve/reject/request revision)
+ */
+export async function logReviewAction(
+  userId: string,
+  claimantId: string,
+  action: "REVIEW_APPROVED" | "REVIEW_REJECTED" | "REVISION_REQUESTED",
+  targetType: string,
+  targetId: string,
+  ipAddress: string,
+  userAgent?: string,
+  notes?: string
+) {
+  await createAuditLog({
+    userId,
+    action,
+    severity: AuditSeverity.INFO,
+    resourceType: "Claimant",
+    resourceId: claimantId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      targetType,
+      targetId,
+      notes,
+    },
+  });
+}
+
+/**
+ * Log workflow status change
+ */
+export async function logWorkflowStatusChange(
+  userId: string,
+  claimantId: string,
+  oldStatus: string,
+  newStatus: string,
+  ipAddress: string,
+  userAgent?: string
+) {
+  await createAuditLog({
+    userId,
+    action: "WORKFLOW_STATUS_CHANGED",
+    severity: AuditSeverity.INFO,
+    resourceType: "ClaimantAssignment",
+    resourceId: claimantId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      oldStatus,
+      newStatus,
+    },
+  });
+}
+
+/**
+ * Log firm management actions
+ */
+export async function logFirmAction(
+  userId: string,
+  firmId: string,
+  action: "FIRM_CREATED" | "FIRM_UPDATED" | "FIRM_SUSPENDED",
+  ipAddress: string,
+  userAgent?: string,
+  metadata?: Record<string, any>
+) {
+  await createAuditLog({
+    userId,
+    action,
+    severity: action === "FIRM_SUSPENDED" ? AuditSeverity.WARNING : AuditSeverity.INFO,
+    resourceType: "LawFirm",
+    resourceId: firmId,
+    ipAddress,
+    userAgent,
+    metadata,
+  });
+}
+
+/**
+ * Log attorney management actions
+ */
+export async function logAttorneyAction(
+  userId: string,
+  targetUserId: string,
+  action: "ATTORNEY_INVITED" | "ATTORNEY_REMOVED",
+  firmId: string,
+  ipAddress: string,
+  userAgent?: string
+) {
+  await createAuditLog({
+    userId,
+    action,
+    severity: AuditSeverity.INFO,
+    resourceType: "User",
+    resourceId: targetUserId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      firmId,
+    },
+  });
+}
+
+/**
+ * Log policy acceptance
+ */
+export async function logPolicyAcceptance(
+  userId: string,
+  policyType: string,
+  policyVersion: string,
+  ipAddress: string,
+  userAgent?: string
+) {
+  await createAuditLog({
+    userId,
+    action: "POLICY_ACCEPTED",
+    severity: AuditSeverity.INFO,
+    resourceType: "PolicyAcceptance",
+    resourceId: userId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      policyType,
+      policyVersion,
+    },
+  });
+}
+
+/**
+ * Log comment creation
+ */
+export async function logCommentCreated(
+  userId: string,
+  claimantId: string,
+  commentId: string,
+  commentType: string,
+  isInternal: boolean,
+  ipAddress: string,
+  userAgent?: string
+) {
+  await createAuditLog({
+    userId,
+    action: "COMMENT_ADDED",
+    severity: AuditSeverity.INFO,
+    resourceType: "ClaimantComment",
+    resourceId: commentId,
+    ipAddress,
+    userAgent,
+    metadata: {
+      claimantId,
+      commentType,
+      isInternal,
+    },
+  });
+}

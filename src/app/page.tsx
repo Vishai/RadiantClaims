@@ -73,7 +73,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-8 text-sm text-sage-600">
+              <p className="mt-8 mb-16 text-sm text-sage-600">
                 <strong>Important:</strong> RadiantClaims provides document
                 preparation only. Legal representation is provided by our partner
                 law firm. We are not your attorney.
@@ -81,7 +81,7 @@ export default function HomePage() {
             </div>
           </div>
           {/* Decorative Wave */}
-          <div className="absolute bottom-0 left-0 right-0">
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
             <svg
               viewBox="0 0 1440 120"
               fill="none"

@@ -44,6 +44,8 @@ model Session {
 enum UserRole {
   CUSTOMER
   ADMIN
+  ATTORNEY        // Attorney user from partner firm
+  FIRM_ADMIN      // Law firm administrator
 }
 
 model User {
@@ -54,6 +56,8 @@ model User {
   password              String?
   image                 String?
   role                  UserRole          @default(CUSTOMER)
+  firmId                String?           // Link to law firm for attorneys
+  firm                  LawFirm?          @relation(fields: [firmId], references: [id], onDelete: SetNull)
   accounts              Account[]
   sessions              Session[]
   claimants             Claimant[] // Customer users can have multiple claims
@@ -65,11 +69,16 @@ model User {
   passwordResetRequired Boolean           @default(false)
   passwordResetToken    String?           @unique
   passwordResetExpires  DateTime?
+  policyAcceptances     PolicyAcceptance[]
+  comments              ClaimantComment[]
+  reviewActions         ReviewAction[]
+  notifications         Notification[]
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
   @@index([email])
   @@index([role])
+  @@index([firmId])
 }
 
 model VerificationToken {
@@ -95,26 +104,30 @@ model Referral {
 }
 
 model Claimant {
-  id             String          @id @default(cuid())
-  userId         String?         // Link to User account (nullable for legacy)
-  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName      String
-  lastName       String
-  email          String
-  phone          String
-  dob            DateTime
-  address1       String
-  address2       String?
-  city           String
-  county         String
-  state          String
-  postalCode     String
-  referralCode   String?
-  referral       Referral?       @relation(fields: [referralCode], references: [code])
-  documents      Document[]
-  intakeSession  IntakeSession?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                  String                 @id @default(cuid())
+  userId              String?                // Link to User account (nullable for legacy)
+  user                User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName           String
+  lastName            String
+  email               String
+  phone               String
+  dob                 DateTime
+  address1            String
+  address2            String?
+  city                String
+  county              String
+  state               String
+  postalCode          String
+  referralCode        String?
+  referral            Referral?              @relation(fields: [referralCode], references: [code])
+  documents           Document[]
+  intakeSession       IntakeSession?
+  firmAssignments     ClaimantAssignment[]   // Assigned law firms
+  comments            ClaimantComment[]      // Comments from attorneys/staff
+  reviewActions       ReviewAction[]         // Review history
+  notifications       Notification[]         // Related notifications
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
   @@index([userId])
   @@index([email])
@@ -247,31 +260,32 @@ enum FileCategory {
 
 // Enhanced file tracking with OCR + metadata
 model UploadedFile {
-  id               String         @id @default(cuid())
+  id               String            @id @default(cuid())
   intakeSessionId  String
-  intakeSession    IntakeSession  @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
-  fileKey          String         @unique // R2 object key
+  intakeSession    IntakeSession     @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  fileKey          String            @unique // R2 object key
   originalFilename String
-  normalizedName   String? // Auto-suggested: last_first_residence_2020.pdf
+  normalizedName   String?           // Auto-suggested: last_first_residence_2020.pdf
   mimeType         String
   sizeBytes        Int
   category         FileCategory?
-  status           FileStatus     @default(UPLOADING)
-  ocrText          String?        @db.Text // Extracted text
-  ocrConfidence    Float? // 0-1 confidence score
-  metadata         String?        @db.Text // JSON: extracted dates, names, etc.
-  thumbnailKey     String? // Preview image for PDFs/images
-  isRequired       Boolean        @default(false)
-  requiresOriginal Boolean        @default(false) // Document must be mailed as original
-  rejectionReason  String?        @db.Text
-  validatedBy      String? // Staff member who validated
+  status           FileStatus        @default(UPLOADING)
+  ocrText          String?           @db.Text // Extracted text
+  ocrConfidence    Float?            // 0-1 confidence score
+  metadata         String?           @db.Text // JSON: extracted dates, names, etc.
+  thumbnailKey     String?           // Preview image for PDFs/images
+  isRequired       Boolean           @default(false)
+  requiresOriginal Boolean           @default(false) // Document must be mailed as original
+  rejectionReason  String?           @db.Text
+  validatedBy      String?           // Staff member who validated
   validatedAt      DateTime?
-  reviewedBy       String? // Lawyer who reviewed
+  reviewedBy       String?           // Lawyer who reviewed
   reviewedAt       DateTime?
-  reviewNotes      String?        @db.Text
-  uploadedAt       DateTime       @default(now())
+  reviewNotes      String?           @db.Text
+  uploadedAt       DateTime          @default(now())
   processedAt      DateTime?
   tags             DocumentTag[]
+  comments         ClaimantComment[] // Comments related to this file
 
   @@index([intakeSessionId])
   @@index([fileKey])
@@ -424,6 +438,22 @@ enum AuditAction {
   PACKET_GENERATED
   UNAUTHORIZED_ACCESS_ATTEMPT
   PERMISSION_DENIED
+  // Attorney Portal Actions
+  FIRM_CREATED
+  FIRM_UPDATED
+  FIRM_SUSPENDED
+  ATTORNEY_INVITED
+  ATTORNEY_REMOVED
+  CLAIMANT_ASSIGNED
+  CLAIMANT_UNASSIGNED
+  POLICY_ACCEPTED
+  COMMENT_ADDED
+  COMMENT_DELETED
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  REVISION_REQUESTED
+  NOTIFICATION_SENT
+  WORKFLOW_STATUS_CHANGED
 }
 
 enum AuditSeverity {
@@ -488,4 +518,203 @@ model RememberMeToken {
   @@index([userId])
   @@index([token])
   @@index([expires])
+}
+
+// ===== Attorney Portal Models =====
+
+enum FirmStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+// Law firm multi-tenancy
+model LawFirm {
+  id                    String                 @id @default(cuid())
+  name                  String
+  slug                  String                 @unique // URL-safe identifier
+  address               String?
+  city                  String?
+  state                 String?
+  postalCode            String?
+  phone                 String?
+  email                 String?                @unique
+  status                FirmStatus             @default(ACTIVE)
+  licenseNumber         String?                // Bar association number
+  primaryContactName    String?
+  primaryContactEmail   String?
+  users                 User[]                 // Attorney users at this firm
+  claimantAssignments   ClaimantAssignment[]
+  policyAcceptances     PolicyAcceptance[]
+  serviceAgreementUrl   String?                // Signed service provider agreement
+  serviceAgreementDate  DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([email])
+}
+
+enum ClaimantWorkflowStatus {
+  INTAKE              // Claimant filling out intake
+  DOCUMENTS_PENDING   // Waiting for document uploads
+  INTERNAL_REVIEW     // Radiant Claims staff review
+  READY_FOR_ATTORNEY  // Ready for attorney review
+  ATTORNEY_REVIEWING  // Attorney actively reviewing
+  REVISION_REQUESTED  // Attorney requested changes
+  ATTORNEY_APPROVED   // Attorney approved for submission
+  PACKET_PRINTED      // Physical packet printed
+  MAILING_READY       // Ready for client to mail
+  CLIENT_MAILED       // Client confirmed mailing
+  DOJ_SUBMITTED       // Submitted to DOJ
+  DOJ_PROCESSING      // DOJ is processing
+  APPROVED            // DOJ approved
+  REJECTED            // DOJ rejected
+  WITHDRAWN           // Claim withdrawn
+}
+
+// Link claimants to law firms
+model ClaimantAssignment {
+  id            String                  @id @default(cuid())
+  claimantId    String
+  claimant      Claimant                @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  firmId        String
+  firm          LawFirm                 @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  status        ClaimantWorkflowStatus  @default(INTAKE)
+  assignedAt    DateTime                @default(now())
+  assignedBy    String?                 // Admin who made assignment
+  notes         String?                 @db.Text
+  updatedAt     DateTime                @updatedAt
+
+  @@unique([claimantId, firmId])
+  @@index([claimantId])
+  @@index([firmId])
+  @@index([status])
+}
+
+enum PolicyType {
+  CONFIDENTIALITY_DATA_ACCESS
+  SERVICE_PROVIDER_AGREEMENT
+  HIPAA_BAA
+  TERMS_OF_SERVICE
+}
+
+// Track policy acceptance by firms and users
+model PolicyAcceptance {
+  id             String     @id @default(cuid())
+  userId         String?
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firmId         String?
+  firm           LawFirm?   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  policyType     PolicyType
+  policyVersion  String     // e.g., "v1.2"
+  policyText     String     @db.Text
+  ipAddress      String
+  userAgent      String?    @db.Text
+  acceptedAt     DateTime   @default(now())
+
+  @@index([userId])
+  @@index([firmId])
+  @@index([policyType])
+}
+
+enum CommentType {
+  GENERAL
+  REVISION_REQUEST
+  APPROVAL_NOTE
+  INTERNAL_NOTE  // Only visible to Radiant staff
+}
+
+// Comment system for attorney-staff communication
+model ClaimantComment {
+  id               String       @id @default(cuid())
+  claimantId       String
+  claimant         Claimant     @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  authorId         String
+  author           User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  commentType      CommentType  @default(GENERAL)
+  content          String       @db.Text
+  relatedFileId    String?      // If commenting on specific document
+  relatedFile      UploadedFile? @relation(fields: [relatedFileId], references: [id], onDelete: SetNull)
+  isInternal       Boolean      @default(false) // Only visible to Radiant staff
+  isResolved       Boolean      @default(false)
+  resolvedAt       DateTime?
+  resolvedBy       String?
+  parentCommentId  String?      // For threading
+  parentComment    ClaimantComment? @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies          ClaimantComment[] @relation("CommentThread")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([claimantId])
+  @@index([authorId])
+  @@index([commentType])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+enum ReviewActionType {
+  APPROVED
+  REJECTED
+  REQUEST_REVISION
+  REQUEST_INFO
+  MARK_VALIDATED
+}
+
+// Track all review actions for audit trail
+model ReviewAction {
+  id           String           @id @default(cuid())
+  claimantId   String
+  claimant     Claimant         @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  reviewerId   String
+  reviewer     User             @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  actionType   ReviewActionType
+  targetType   String           // "claimant", "document", "packet"
+  targetId     String           // ID of document/packet being reviewed
+  notes        String?          @db.Text
+  metadata     String?          @db.Text // JSON: changed fields, etc.
+  createdAt    DateTime         @default(now())
+
+  @@index([claimantId])
+  @@index([reviewerId])
+  @@index([actionType])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  PACKET_READY_FOR_REVIEW
+  REVISION_REQUESTED
+  ATTORNEY_APPROVED
+  COMMENT_ADDED
+  DOCUMENT_UPLOADED
+  STATUS_CHANGED
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+// Notification system for attorneys
+model Notification {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  status          NotificationStatus @default(UNREAD)
+  title           String
+  message         String             @db.Text
+  claimantId      String?            // Related claimant
+  claimant        Claimant?          @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  actionUrl       String?            // Deep link to relevant page
+  metadata        String?            @db.Text // JSON: additional context
+  readAt          DateTime?
+  createdAt       DateTime           @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
 }
