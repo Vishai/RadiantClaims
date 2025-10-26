@@ -47,18 +47,26 @@ enum UserRole {
 }
 
 model User {
-  id            String     @id @default(cuid())
-  name          String?
-  email         String?    @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  role          UserRole   @default(CUSTOMER)
-  accounts      Account[]
-  sessions      Session[]
-  claimants     Claimant[] // Customer users can have multiple claims
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id                    String            @id @default(cuid())
+  name                  String?
+  email                 String?           @unique
+  emailVerified         DateTime?
+  password              String?
+  image                 String?
+  role                  UserRole          @default(CUSTOMER)
+  accounts              Account[]
+  sessions              Session[]
+  claimants             Claimant[] // Customer users can have multiple claims
+  auditLogs             AuditLog[]
+  mfaEnabled            Boolean           @default(false)
+  mfaConfig             MFAConfig?
+  rememberMeTokens      RememberMeToken[]
+  passwordChangedAt     DateTime?
+  passwordResetRequired Boolean           @default(false)
+  passwordResetToken    String?           @unique
+  passwordResetExpires  DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@index([email])
   @@index([role])
@@ -348,4 +356,98 @@ model EmailPreference {
   @@unique([email, emailType])
   @@index([email])
   @@index([unsubscribeToken])
+}
+
+// Security & Compliance Models (SOC 2)
+
+enum AuditAction {
+  USER_LOGIN
+  USER_LOGOUT
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  MFA_ENABLED
+  MFA_DISABLED
+  SESSION_CREATED
+  SESSION_TERMINATED
+  CLAIMANT_VIEWED
+  CLAIMANT_CREATED
+  CLAIMANT_UPDATED
+  CLAIMANT_DELETED
+  DOCUMENT_UPLOADED
+  DOCUMENT_VIEWED
+  DOCUMENT_DOWNLOADED
+  DOCUMENT_DELETED
+  INTAKE_STARTED
+  INTAKE_COMPLETED
+  PACKET_GENERATED
+  UNAUTHORIZED_ACCESS_ATTEMPT
+  PERMISSION_DENIED
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+model AuditLog {
+  id           String        @id @default(cuid())
+  userId       String?       // Null for anonymous/failed login attempts
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       AuditAction
+  severity     AuditSeverity @default(INFO)
+  resourceType String?       // e.g., "User", "Claimant", "Document"
+  resourceId   String?       // ID of affected resource
+  ipAddress    String
+  userAgent    String?       @db.Text
+  metadata     String?       @db.Text // JSON with additional context
+  success      Boolean       @default(true)
+  errorMessage String?       @db.Text
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([severity])
+  @@index([resourceType, resourceId])
+}
+
+enum MFAMethod {
+  TOTP  // Time-based One-Time Password (Google Authenticator, Authy)
+  SMS   // Future: SMS-based verification
+  EMAIL // Future: Email-based verification
+}
+
+model MFAConfig {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method      MFAMethod
+  secret      String    // Encrypted TOTP secret
+  backupCodes String[]  // Encrypted backup codes
+  isEnabled   Boolean   @default(false)
+  enabledAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model RememberMeToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique // Hashed token
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([expires])
 }
