@@ -12,9 +12,11 @@ export interface DocumentRequirement {
   minRequired: number;
   maxAllowed: number;
   isRequired: boolean;
+  requiresOriginal: boolean; // Must be mailed as certified/original
   tips: string[];
   examples: string[];
   timeframeNote?: string;
+  originalNote?: string; // Note about original document requirements
   validationRules?: {
     mustShowNameAndAddress?: boolean;
     mustBeWithinDateRange?: {
@@ -65,10 +67,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 1,
         maxAllowed: 2,
         isRequired: true,
+        requiresOriginal: true,
+        originalNote: "A certified or notarized copy will be required in your final mailing. Upload a clear photo/scan now.",
         tips: [
           "Make sure your ID is current and not expired",
           "Ensure all text is clearly readable",
           "Both front and back if applicable",
+          "You'll need to obtain a certified copy later for mailing"
         ],
         examples: [
           "Driver's License (front & back)",
@@ -92,8 +97,10 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 2,
         maxAllowed: 10,
         isRequired: true,
+        requiresOriginal: true,
         timeframeNote:
           "Documents must show residence during the qualifying period: 1951-1962",
+        originalNote: "Original historical documents will be required in your final mailing. Upload clear photos/scans now.",
         validationRules: {
           mustShowNameAndAddress: true,
           mustBeWithinDateRange: RECA_ATMOSPHERIC_PERIOD,
@@ -103,6 +110,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
           "Documents should clearly show your full name and complete address",
           "If you only have documents from slightly outside the period, upload them anyway with an explanation",
           "Earlier documents are better - closer to the 1951-1962 timeframe",
+          "Original documents will be needed for final submission",
           "We can help you obtain additional records if needed",
         ],
         examples: [
@@ -125,11 +133,14 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
+        requiresOriginal: true,
         timeframeNote: "From 1951-1962 period preferred",
+        originalNote: "Original bills preferred if available. Upload photos/scans now.",
         tips: [
           "These are particularly strong evidence if you have them",
           "Gas, electric, water, or telephone bills all qualify",
           "Even partial bills or statements help",
+          "Original documents strengthen your claim",
         ],
         examples: [
           "Electric company bills",
@@ -145,11 +156,14 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
+        requiresOriginal: true,
         timeframeNote: "For claimants who attended school during 1951-1962",
+        originalNote: "Original or certified copies required. Upload scans now.",
         tips: [
           "Report cards showing your name and school address",
           "Enrollment records or attendance certificates",
           "Graduation records or diplomas with dates",
+          "Original or certified copies needed for final mailing",
         ],
         examples: [
           "Report cards with dates",
@@ -173,10 +187,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 1,
         maxAllowed: 3,
         isRequired: true,
+        requiresOriginal: true,
+        originalNote: "Certified copies from medical facility required. Upload scans now, request certified copies later.",
         tips: [
           "Must include diagnosis date and cancer type",
           "Should be on official letterhead from the pathology lab",
           "Request from your oncologist or hospital if you don't have a copy",
+          "You'll need certified copies for final mailing",
         ],
         examples: [
           "Biopsy pathology report",
@@ -192,10 +209,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
+        requiresOriginal: true,
+        originalNote: "Certified copies required. Upload scans now.",
         tips: [
           "Include records from your oncologist, surgeon, or primary care physician",
           "Treatment summaries and progress notes are helpful",
           "Imaging reports (CT, PET, MRI) showing cancer",
+          "Certified copies needed for final submission",
         ],
         examples: [
           "Oncologist consultation notes",
@@ -211,9 +231,12 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
+        requiresOriginal: true,
+        originalNote: "Certified copies from hospital required. Upload scans now.",
         tips: [
           "Include summaries from surgery, chemotherapy admissions, etc.",
           "Should mention cancer diagnosis and treatment provided",
+          "Certified copies needed for final mailing",
         ],
         examples: [
           "Post-surgery discharge summary",
@@ -228,9 +251,11 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
+        requiresOriginal: false,
         tips: [
           "Chemotherapy records, radiation therapy logs, surgery notes",
           "Medication lists showing cancer treatments",
+          "Copies are acceptable for these records",
         ],
         examples: [
           "Chemotherapy administration records",
@@ -253,10 +278,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
+        requiresOriginal: true,
         timeframeNote: "From 1951-1962 period if available",
+        originalNote: "Original documents preferred. Upload scans now.",
         tips: [
           "Pay stubs, W-2 forms, or employment verification letters",
           "Should show employer name, address, and your employment dates",
+          "Original documents strengthen your claim",
         ],
         examples: [
           "Pay stubs from 1951-1962",
@@ -272,10 +300,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
+        requiresOriginal: true,
         timeframeNote: "From 1951-1962 period if available",
+        originalNote: "Original or certified IRS copies required. Upload scans now.",
         tips: [
           "Federal or state tax returns showing your address",
           "These are strong evidence if you have them",
+          "Can request copies from IRS if needed",
         ],
         examples: ["Federal tax returns (Form 1040)", "State tax returns"],
       },
@@ -286,11 +317,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
+        requiresOriginal: false,
         tips: [
           "Birth certificates showing birthplace in eligible area",
           "Marriage certificates with residence address",
           "Military service records showing home of record",
           "Anything else that documents your presence during 1951-1962",
+          "We'll advise if originals are needed",
         ],
         examples: [
           "Birth certificate",

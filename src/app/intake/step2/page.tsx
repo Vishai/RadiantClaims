@@ -14,6 +14,7 @@ import {
 import { Heart, Upload, X, Save, Info, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { DocumentChecklistComponent } from "@/components/document-checklist";
+import { MailInProcessBanner } from "@/components/mail-in-process-banner";
 import { DOCUMENT_CHECKLIST, calculateProgress } from "@/lib/document-checklist";
 import {
   uploadFile,
@@ -269,13 +270,17 @@ function Step2Content() {
             Step 2: Upload Your Documents
           </h1>
           <p className="text-lg text-sage-700">
-            We'll guide you through collecting the documents needed for your RECA claim.
+            Upload digital copies of your documents now. We'll validate them and guide you
+            on mailing originals later.
             <br />
             Don't worry if you don't have everything today — you can save and come back
             anytime.
           </p>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
+
+        {/* Mail-In Process Banner */}
+        <MailInProcessBanner />
 
         {/* Success Message */}
         {emailSent && (

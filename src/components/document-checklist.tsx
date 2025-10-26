@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Info, FileText } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Info, FileText, Mail } from "lucide-react";
 import { ChecklistSection, DocumentRequirement } from "@/lib/document-checklist";
 import { FileCategory } from "@/lib/intake-upload";
 
@@ -156,17 +156,31 @@ export function DocumentChecklistComponent({
                             <div className="flex-1">
                               <div className="flex items-start justify-between gap-4">
                                 <div>
-                                  <h4 className="font-semibold text-sage-900">
-                                    {req.title}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h4 className="font-semibold text-sage-900">
+                                      {req.title}
+                                    </h4>
                                     {req.isRequired && (
-                                      <span className="ml-2 text-xs font-normal text-terracotta-600">
+                                      <span className="inline-flex items-center rounded-full bg-terracotta-100 px-2 py-0.5 text-xs font-medium text-terracotta-700">
                                         Required
                                       </span>
                                     )}
-                                  </h4>
+                                    {req.requiresOriginal && (
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                        <Mail className="h-3 w-3" />
+                                        Original Required
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="mt-1 text-sm text-sage-600">
                                     {req.description}
                                   </p>
+                                  {req.originalNote && (
+                                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
+                                      <Mail className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                      <span>{req.originalNote}</span>
+                                    </div>
+                                  )}
 
                                   {/* Uploaded count */}
                                   <div className="mt-2 flex items-center gap-2 text-xs">

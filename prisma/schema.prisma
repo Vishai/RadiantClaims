@@ -224,6 +224,9 @@ enum FileStatus {
   READY
   FAILED
   REJECTED
+  VALIDATED        // Staff validated the digital copy
+  AWAITING_REVIEW  // Ready for lawyer review
+  APPROVED         // Lawyer approved for submission
 }
 
 enum FileCategory {
@@ -259,7 +262,13 @@ model UploadedFile {
   metadata         String?        @db.Text // JSON: extracted dates, names, etc.
   thumbnailKey     String? // Preview image for PDFs/images
   isRequired       Boolean        @default(false)
+  requiresOriginal Boolean        @default(false) // Document must be mailed as original
   rejectionReason  String?        @db.Text
+  validatedBy      String? // Staff member who validated
+  validatedAt      DateTime?
+  reviewedBy       String? // Lawyer who reviewed
+  reviewedAt       DateTime?
+  reviewNotes      String?        @db.Text
   uploadedAt       DateTime       @default(now())
   processedAt      DateTime?
   tags             DocumentTag[]
@@ -311,26 +320,53 @@ enum PacketStatus {
   READY
   DELIVERED
   FAILED
+  PRINTED           // Digital copies printed for review
+  READY_TO_MAIL     // Approved and ready for client to mail
+  MAILED_BY_CLIENT  // Client confirmed they mailed it
 }
 
 // Final packet assembly tracking
 model PacketSubmission {
-  id               String         @id @default(cuid())
-  intakeSessionId  String         @unique
-  intakeSession    IntakeSession  @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
-  packetFileKey    String? // R2 key for final PDF
-  status           PacketStatus   @default(GENERATING)
-  fileCount        Int            @default(0)
-  totalSizeBytes   Int            @default(0)
-  generatedAt      DateTime?
-  deliveredAt      DateTime?
-  deliveredTo      String? // Attorney email
-  errorMessage     String?        @db.Text
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                    String         @id @default(cuid())
+  intakeSessionId       String         @unique
+  intakeSession         IntakeSession  @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  packetFileKey         String? // R2 key for final PDF
+  status                PacketStatus   @default(GENERATING)
+  fileCount             Int            @default(0)
+  totalSizeBytes        Int            @default(0)
+  generatedAt           DateTime?
+  deliveredAt           DateTime?
+  deliveredTo           String? // Attorney email
+  printedAt             DateTime? // When digital copies were printed
+  printedBy             String? // Staff who printed
+  mailingInstructions   String?        @db.Text // Custom instructions for claimant
+  trackingNumber        String? // If prepaid envelope has tracking
+  prepaidEnvelopeIssued Boolean        @default(false)
+  errorMessage          String?        @db.Text
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   @@index([status])
   @@index([generatedAt])
+}
+
+// Jurisdiction-specific document requirements
+model JurisdictionRequirement {
+  id                    String   @id @default(cuid())
+  state                 String // e.g., "UT", "NV", "AZ"
+  county                String? // Optional for county-specific requirements
+  documentCategory      String // Maps to FileCategory
+  requiresOriginal      Boolean  @default(false)
+  isRequired            Boolean  @default(true)
+  specificInstructions  String?  @db.Text
+  helpfulLinks          String?  @db.Text // JSON array of {title, url}
+  exampleDocuments      String?  @db.Text // JSON array of example doc types
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([state, county, documentCategory])
+  @@index([state])
+  @@index([state, county])
 }
 
 // Email preferences and unsubscribe tracking
@@ -339,6 +375,8 @@ enum EmailType {
   RESUME_LINK
   UPLOAD_CONFIRMATION
   PACKET_READY
+  DOCUMENT_VALIDATED
+  READY_TO_MAIL
   MARKETING
   UPDATES
 }

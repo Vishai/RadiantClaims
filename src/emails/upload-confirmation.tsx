@@ -73,9 +73,27 @@ export const UploadConfirmationEmail = ({
             <Section style={successBox}>
               <Text style={successTitle}>🎉 You're Making Progress!</Text>
               <Text style={successText}>
-                Your documents are being processed and will be included in your
-                final claim packet. We'll notify you if any additional
-                information is needed.
+                Your digital copies have been received and are being validated by our
+                team. Once validated and approved by our lawyer, we'll send you clear
+                instructions on which documents need certified copies/originals for
+                final mailing to the DOJ.
+              </Text>
+            </Section>
+
+            {/* Process Reminder */}
+            <Section style={processBox}>
+              <Text style={processTitle}>📬 How This Works</Text>
+              <Text style={processText}>
+                <strong>1. Upload digital copies</strong> (You're doing this now!)
+                <br />
+                <strong>2. We validate & review</strong> to ensure everything is correct
+                <br />
+                <strong>3. You mail originals</strong> using our prepaid envelope with
+                instructions
+                <br />
+                <br />
+                This process ensures your documents are complete before you obtain
+                certified copies. It's more convenient for you!
               </Text>
             </Section>
 
@@ -259,6 +277,28 @@ const successText = {
   color: "#4a594d", // sage-600
   fontSize: "14px",
   lineHeight: "1.6",
+  margin: "0",
+};
+
+const processBox = {
+  backgroundColor: "#eff6ff", // blue-50
+  border: "2px solid #bfdbfe", // blue-200
+  borderRadius: "8px",
+  padding: "20px",
+  margin: "24px 0",
+};
+
+const processTitle = {
+  color: "#1e40af", // blue-800
+  fontSize: "16px",
+  fontWeight: "600",
+  margin: "0 0 12px",
+};
+
+const processText = {
+  color: "#1e3a8a", // blue-900
+  fontSize: "14px",
+  lineHeight: "1.8",
   margin: "0",
 };
 
