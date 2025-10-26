@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, FileText, CheckCircle, Clock, AlertCircle, Plus } from "lucide-react";
+import { Heart, FileText, CheckCircle, Clock, AlertCircle, Plus, Key } from "lucide-react";
 import Link from "next/link";
 
 interface Claimant {
@@ -131,6 +131,14 @@ export default function CustomerPortal() {
             <span className="text-sm text-sage-600">
               {session?.user?.name || session?.user?.email}
             </span>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/portal/change-password")}
+              className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+            >
+              <Key className="h-4 w-4" />
+              Change Password
+            </Button>
             <Button
               variant="outline"
               onClick={() => router.push("/api/auth/signout")}
