@@ -1,4 +1,3 @@
-// @ts-expect-error - NextAuth v4 has TypeScript module resolution issues
 import { type NextAuthOptions, getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
