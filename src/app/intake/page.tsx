@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
 import { claimantSchema, ClaimantFormData } from "@/lib/validations/claimant";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
@@ -115,18 +116,36 @@ export default function IntakePage() {
 
       const result = await response.json();
 
-      // Store account credentials if created
+      // If new account was created, auto-login the user
       if (result.credentials) {
         setAccountCreated({
           email: result.credentials.email,
           password: result.credentials.temporaryPassword,
         });
-      }
 
-      // Small delay to show credentials before redirect
-      setTimeout(() => {
+        // Auto-login with the temporary password
+        const signInResult = await signIn("credentials", {
+          email: result.credentials.email,
+          password: result.credentials.temporaryPassword,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          setError("Account created but auto-login failed. Please login manually.");
+          setTimeout(() => {
+            router.push(`/login?callbackUrl=/intake/step2?claimantId=${result.claimant.id}`);
+          }, 3000);
+          return;
+        }
+
+        // Small delay to show credentials before redirect
+        setTimeout(() => {
+          router.push(`/intake/step2?claimantId=${result.claimant.id}`);
+        }, 5000);
+      } else {
+        // Existing user - they should already be logged in or will be prompted
         router.push(`/intake/step2?claimantId=${result.claimant.id}`);
-      }, result.credentials ? 5000 : 0);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit");
     } finally {

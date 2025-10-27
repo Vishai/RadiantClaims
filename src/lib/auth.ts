@@ -30,6 +30,9 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email,
           },
+          include: {
+            firm: true, // Include firm data for attorneys
+          },
         });
 
         if (!user || !user.password) {
@@ -49,6 +52,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
+          firmId: user.firmId,
         };
       },
     }),
@@ -57,12 +62,26 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
+        token.firmId = user.firmId;
+
+        // Fetch firm slug if user has a firm
+        if (user.firmId) {
+          const firm = await db.lawFirm.findUnique({
+            where: { id: user.firmId },
+            select: { slug: true },
+          });
+          token.firmSlug = firm?.slug;
+        }
       }
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.role = token.role;
+        session.user.firmId = token.firmId;
+        session.user.firmSlug = token.firmSlug;
       }
       return session;
     },

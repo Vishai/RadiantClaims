@@ -7,10 +7,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Heart, Info } from "lucide-react";
 
 export default function EligibilityPage() {
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-cream-50">
       <nav className="border-b border-cream-200 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-6">
@@ -122,12 +129,36 @@ export default function EligibilityPage() {
                       ✓
                     </div>
                     <span className="text-sage-800">Specified counties in Arizona</span>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <button className="text-terracotta-500 hover:text-terracotta-700 hover:scale-110 transition-all duration-200 cursor-help">
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-white shadow-lg">
+                        <p className="font-semibold mb-1 text-sage-900">Arizona Counties:</p>
+                        <p className="text-sm text-sage-700">Apache, Coconino, Gila, Mohave, Navajo, and Yavapai</p>
+                        <p className="text-xs text-sage-600 mt-1 italic">Plus the part of Arizona north of the Grand Canyon</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
                       ✓
                     </div>
                     <span className="text-sage-800">Specified counties in Nevada</span>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <button className="text-terracotta-500 hover:text-terracotta-700 hover:scale-110 transition-all duration-200 cursor-help">
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm bg-white shadow-lg">
+                        <p className="font-semibold mb-1 text-sage-900">Nevada Counties:</p>
+                        <p className="text-sm text-sage-700">Eureka, Lander, Lincoln, Nye, and White Pine</p>
+                        <p className="text-xs text-sage-600 mt-1 italic">Plus Clark County (partial): townships 13-16, ranges 63-71</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
 
@@ -255,9 +286,9 @@ export default function EligibilityPage() {
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-sage-700">
-                  If your loved one passed away from a covered cancer, eligible
-                  survivors can file and receive the compensation. This
-                  includes:
+                  If your loved one was diagnosed with a covered cancer and has
+                  since passed away, eligible survivors can file and receive the
+                  compensation. This includes:
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="flex items-center gap-3">
@@ -289,6 +320,19 @@ export default function EligibilityPage() {
                       ✓
                     </div>
                     <span className="text-sage-800">Grandparents</span>
+                  </div>
+                </div>
+                <div className="mt-6 rounded-lg bg-sage-50 p-4 border border-sage-200">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-sage-700">
+                      <p className="font-semibold mb-2">Important for Children Filing Claims:</p>
+                      <ul className="space-y-1 ml-4 list-disc">
+                        <li>All siblings must be disclosed and documented</li>
+                        <li>If a sibling has passed away, their death certificate must be included</li>
+                        <li>The $100,000 award is shared equally among all eligible children</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-sage-600">
@@ -413,5 +457,6 @@ export default function EligibilityPage() {
         </div>
       </footer>
     </div>
+    </TooltipProvider>
   );
 }

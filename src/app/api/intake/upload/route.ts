@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getPresignedPutUrl, generateFileKey } from "@/lib/r2";
 import { db } from "@/lib/db";
 import { z } from "zod";
@@ -29,22 +31,43 @@ const uploadRequestSchema = z.object({
  * POST /api/intake/upload
  * Step 1: Request a presigned upload URL for a file
  * Returns a presigned PUT URL and creates an UploadedFile record in UPLOADING status
+ * REQUIRES AUTHENTICATION - User must own the session
  */
 export async function POST(req: NextRequest) {
   try {
+    // AUTHENTICATION CHECK
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.email) {
+      return NextResponse.json(
+        { error: "Unauthorized - Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { intakeSessionId, fileName, contentType, sizeBytes, category } =
       uploadRequestSchema.parse(body);
 
-    // Verify intake session exists
+    // Verify intake session exists and user owns it
     const session = await db.intakeSession.findUnique({
       where: { id: intakeSessionId },
+      include: {
+        claimant: true,
+      },
     });
 
     if (!session) {
       return NextResponse.json(
         { error: "Intake session not found" },
         { status: 404 }
+      );
+    }
+
+    // AUTHORIZATION CHECK: User must own this session
+    if (session.claimant?.email !== authSession.user.email) {
+      return NextResponse.json(
+        { error: "Forbidden - You don't have permission to upload to this session" },
+        { status: 403 }
       );
     }
 

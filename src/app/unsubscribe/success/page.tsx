@@ -2,10 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 
-export const dynamic = "force-dynamic";
-
-export default function UnsubscribeSuccessPage() {
+function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
 
@@ -88,5 +87,17 @@ export default function UnsubscribeSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function UnsubscribeSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-sage-600">Loading...</div>
+      </div>
+    }>
+      <UnsubscribeContent />
+    </Suspense>
   );
 }
