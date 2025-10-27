@@ -30,7 +30,11 @@ export async function GET(_req: NextRequest) {
       where: { userId: user.id },
       include: {
         intakeSession: {
-          include: {
+          select: {
+            id: true,
+            resumeToken: true,
+            currentStep: true,
+            status: true,
             uploadedFiles: {
               where: { status: "READY" },
               select: {
@@ -42,6 +46,10 @@ export async function GET(_req: NextRequest) {
               },
             },
             packetSubmission: true,
+            // RECA workflow fields
+            recaWorkflowStage: true,
+            recaWorkflowSection: true,
+            recaCompletionPercent: true,
           },
         },
         referral: true,

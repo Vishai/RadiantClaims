@@ -406,7 +406,7 @@ export default function EligibilityPage() {
               Start your free claim packet today. We'll guide you through every
               step.
             </p>
-            <Link href="/intake">
+            <Link href="/intake?claimType=DOWNWINDER">
               <Button
                 size="lg"
                 className="rounded-full bg-white px-8 py-6 text-lg font-semibold text-terracotta-600 hover:bg-cream-50"
