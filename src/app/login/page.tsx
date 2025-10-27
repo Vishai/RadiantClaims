@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,39 @@ import { Heart } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const getRoleBasedRedirect = async () => {
+    // Check for callback URL first
+    const callbackUrl = searchParams.get("callbackUrl");
+    if (callbackUrl) {
+      return callbackUrl;
+    }
+
+    // Fetch session to get user role
+    const response = await fetch("/api/auth/session");
+    const session = await response.json();
+
+    if (!session?.user?.role) {
+      return "/portal"; // Default to customer portal
+    }
+
+    // Role-based routing
+    switch (session.user.role) {
+      case "ADMIN":
+        return "/dashboard";
+      case "ATTORNEY":
+      case "FIRM_ADMIN":
+        return "/attorney/dashboard";
+      case "CUSTOMER":
+      default:
+        return "/portal";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +69,9 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      // Get role-based redirect URL
+      const redirectUrl = await getRoleBasedRedirect();
+      router.push(redirectUrl);
       router.refresh();
     } catch {
       setError("An error occurred. Please try again.");
@@ -61,14 +92,14 @@ export default function LoginPage() {
               RadiantClaims
             </span>
           </Link>
-          <p className="mt-2 text-sm text-sage-600">Admin Portal</p>
+          <p className="mt-2 text-sm text-sage-600">Welcome back</p>
         </div>
 
         <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-lg">
           <CardHeader>
-            <CardTitle className="text-sage-900">Login</CardTitle>
+            <CardTitle className="text-sage-900">Sign In</CardTitle>
             <CardDescription className="text-sage-600">
-              Enter your credentials to access the dashboard
+              Enter your email and password to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -78,7 +109,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@radiantclaims.dev"
+                  placeholder="your.email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
@@ -120,15 +151,6 @@ export default function LoginPage() {
               >
                 ← Back to Home
               </Link>
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-4 text-sm text-sage-800">
-              <p className="font-semibold">Default credentials:</p>
-              <p>Email: admin@radiantclaims.dev</p>
-              <p>Password: Passw0rd!</p>
-              <p className="mt-2 text-xs text-sage-600">
-                Change these credentials in production
-              </p>
             </div>
           </CardContent>
         </Card>
