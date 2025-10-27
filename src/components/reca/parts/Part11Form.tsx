@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
-import { FileText, Info, AlertCircle, Upload, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Info, AlertCircle, Upload, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 
 // Validation schema
 const part11Schema = z.object({
@@ -63,6 +64,10 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
   const resepAssistance = form.watch("resepAssistance");
   const formErrors = form.formState.errors;
 
+  // Collapsible sections state
+  const [isDocTypesExpanded, setIsDocTypesExpanded] = useState(true);
+  const [isDiseaseSpecificExpanded, setIsDiseaseSpecificExpanded] = useState(false);
+
   // Auto-submit when form data changes (with validation)
   useEffect(() => {
     const subscription = form.watch(() => {
@@ -92,36 +97,62 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
           <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
             <div className="flex gap-3">
               <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-blue-900 mb-2">
                   Acceptable Medical Documentation
                 </p>
-                <p className="text-sm text-blue-800 mb-3">
+                <p className="text-sm text-blue-800">
                   You must submit medical records that clearly show a diagnosis of one or more
-                  compensable diseases. The following types of documentation are accepted:
+                  compensable diseases. Review the accepted document types below.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Document Types Checklist */}
+          {/* Document Types Checklist - Collapsible */}
           <div className="space-y-3">
-            {[
-              "Pathology report of tissue biopsy or surgical resection",
-              "Operative report",
-              "Hospital discharge summary report",
-              "Physician summary report",
-              "Death certificate (dated and signed by physician)",
-              "Autopsy report",
-            ].map((docType, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 rounded-md border border-sage-200 p-3 bg-white"
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold text-sage-900">
+                Accepted Document Types
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDocTypesExpanded(!isDocTypesExpanded)}
+                className="gap-2"
               >
-                <CheckCircle2 className="h-5 w-5 text-terracotta-500 flex-shrink-0" />
-                <span className="text-sm text-sage-700">{docType}</span>
+                {isDocTypesExpanded ? (
+                  <>
+                    Hide <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Show <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {isDocTypesExpanded && (
+              <div className="space-y-3">
+                {[
+                  "Pathology report of tissue biopsy or surgical resection",
+                  "Operative report",
+                  "Hospital discharge summary report",
+                  "Physician summary report",
+                  "Death certificate (dated and signed by physician)",
+                  "Autopsy report",
+                ].map((docType, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 rounded-md border border-sage-200 p-3 bg-white"
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-terracotta-500 flex-shrink-0" />
+                    <span className="text-sm text-sage-700">{docType}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
           {/* Required: Medical Records Submitted Checkbox */}
@@ -202,12 +233,12 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
                   htmlFor="cancerRegistryAuthorization"
                   className="text-sm font-semibold leading-none cursor-pointer uppercase"
                 >
-                  I want the RECA Program to contact a state cancer registry
+                  I authorize the Department of Justice to contact a state cancer registry on my behalf
                 </label>
                 <p className="text-xs text-sage-600 mt-2">
                   If you check this box, you must also complete the "Authorization to Release
-                  Medical Information" form. The RECA Program will attempt to obtain your medical
-                  records directly from the state cancer registry.
+                  Medical Information" form. The DOJ's RECA program will attempt to obtain your medical
+                  records directly from the state cancer registry. <span className="font-medium text-sage-700">RadiantClaims is not involved in this process</span> — this authorization is between you and the government.
                 </p>
               </div>
             </div>
@@ -222,7 +253,8 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
                     </p>
                     <p className="text-sm text-amber-800">
                       You will need to complete the "Authorization to Release Medical and Other
-                      Information from a State Cancer Registry" form in a later step.
+                      Information from a State Cancer Registry" form in a later step. This form authorizes the
+                      <strong> Department of Justice</strong> (not RadiantClaims) to request your records from the registry on your behalf.
                     </p>
                   </div>
                 </div>
@@ -292,10 +324,68 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
             </div>
           </div>
 
+          {/* Disease-Specific Documentation - Collapsible */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold text-sage-900">
+                Disease-Specific Documentation Requirements
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDiseaseSpecificExpanded(!isDiseaseSpecificExpanded)}
+                className="gap-2"
+              >
+                {isDiseaseSpecificExpanded ? (
+                  <>
+                    Hide <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Show <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {isDiseaseSpecificExpanded && (
+              <div className="rounded-lg bg-terracotta-50 border border-terracotta-200 p-4">
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-terracotta-800 mb-3">
+                      Different diseases may require specific types of medical documentation. Examples:
+                    </p>
+                    <ul className="text-sm text-terracotta-800 space-y-2 list-disc list-inside ml-2">
+                      <li>
+                        <strong>Leukemia:</strong> Bone marrow biopsy/aspirate report, peripheral white
+                        blood cell differential count report
+                      </li>
+                      <li>
+                        <strong>Multiple Myeloma:</strong> Pathology report of tissue biopsy, serum
+                        electrophoresis report, X-ray report
+                      </li>
+                      <li>
+                        <strong>Solid Tumors:</strong> Pathology report of tissue biopsy or surgical
+                        resection showing primary cancer diagnosis
+                      </li>
+                    </ul>
+                    <p className="text-sm text-terracotta-800 mt-3">
+                      <strong>Note:</strong> Detailed requirements for each of the 19 compensable
+                      diseases are provided in the Medical Records Attachment (pages 18-24) of the
+                      official RECA form. Please review these requirements to ensure you submit the
+                      correct documentation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Document Upload Placeholder */}
           <div className="space-y-4 pt-4 border-t">
             <Label className="text-base font-semibold text-sage-900">
-              Document Upload
+              Upload Medical Records
             </Label>
 
             <div className="rounded-lg border-2 border-dashed border-sage-300 p-8 text-center">
@@ -307,44 +397,6 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
                 You will be able to upload your medical records and supporting documentation in a
                 future step. For now, please ensure you have gathered the necessary medical
                 documentation listed above.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Medical Records Guidance by Disease */}
-      <Card className="border-terracotta-200 bg-terracotta-50">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <FileText className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-terracotta-900 mb-2">
-                Disease-Specific Documentation
-              </p>
-              <p className="text-sm text-terracotta-800 mb-3">
-                Different diseases may require specific types of medical documentation. For
-                example:
-              </p>
-              <ul className="text-sm text-terracotta-800 space-y-2 list-disc list-inside">
-                <li>
-                  <strong>Leukemia:</strong> Bone marrow biopsy/aspirate report, peripheral white
-                  blood cell differential count report
-                </li>
-                <li>
-                  <strong>Multiple Myeloma:</strong> Pathology report of tissue biopsy, serum
-                  electrophoresis report, X-ray report
-                </li>
-                <li>
-                  <strong>Solid Tumors:</strong> Pathology report of tissue biopsy or surgical
-                  resection showing primary cancer diagnosis
-                </li>
-              </ul>
-              <p className="text-sm text-terracotta-800 mt-3">
-                <strong>Note:</strong> Detailed requirements for each of the 19 compensable
-                diseases are provided in the Medical Records Attachment (pages 18-24) of the
-                official RECA form. Please review these requirements to ensure you submit the
-                correct documentation.
               </p>
             </div>
           </div>

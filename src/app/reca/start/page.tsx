@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +16,6 @@ import { Heart, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 export default function RECAStartPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,16 +27,38 @@ export default function RECAStartPage() {
   }, [searchParams]);
 
   const handleStart = async () => {
-    if (!sessionId) {
-      // Need to create or find an intake session first
-      router.push("/intake?nextStep=reca");
-      return;
-    }
-
     setIsLoading(true);
 
-    // Navigate to first section
-    router.push(`/reca/form/${sessionId}?section=part_1`);
+    try {
+      if (!sessionId) {
+        // Create a new RECA workflow session
+        const response = await fetch("/api/reca/workflow/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            claimType: "DOWNWINDER",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create session");
+        }
+
+        const data = await response.json();
+        const newSessionId = data.sessionId;
+
+        // Navigate to first section with new session
+        router.push(`/reca/form/${newSessionId}?section=part_1`);
+      } else {
+        // Navigate to first section with existing session
+        router.push(`/reca/form/${sessionId}?section=part_1`);
+      }
+    } catch (error) {
+      console.error("Error starting RECA claim:", error);
+      alert("Failed to start claim. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

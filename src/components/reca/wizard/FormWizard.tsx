@@ -99,7 +99,17 @@ export function FormWizard({
   };
 
   const handleNext = async () => {
-    // Save before navigating
+    // Trigger form submission/validation if available
+    if ((window as any).__currentFormSubmit) {
+      const isValid = await (window as any).__currentFormSubmit();
+      if (!isValid) {
+        return; // Don't navigate if form is invalid
+      }
+      // Small delay to allow state to propagate from form submission
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Save before navigating (though form should have already saved)
     await handleAutoSave();
 
     if (onNext) {
@@ -107,6 +117,54 @@ export function FormWizard({
     } else {
       // Default navigation logic
       const relationship = workflowState.formData.part_3?.relationship;
+
+      // For early sections (before Part 3), use simple sequential navigation
+      if (currentSection === "part_1") {
+        // If filing for self, skip Part 2 and go straight to Part 3
+        const filingForSelf = workflowState.formData.part_1?.filingForSelf;
+        if (filingForSelf === true) {
+          router.push(`/reca/form/${sessionId}?section=part_3`);
+        } else {
+          router.push(`/reca/form/${sessionId}?section=part_2`);
+        }
+        return;
+      }
+
+      if (currentSection === "part_2") {
+        router.push(`/reca/form/${sessionId}?section=part_3`);
+        return;
+      }
+
+      if (currentSection === "part_3") {
+        // After Part 3, navigate to appropriate relationship-specific section
+        // Note: Form data was saved by form submission, but state may not be updated yet
+        // Check both the current state and if filing for self (which auto-selects Self)
+        const updatedRelationship = workflowState.formData.part_3?.relationship;
+        const filingForSelf = workflowState.formData.part_1?.filingForSelf;
+
+        // If filing for self, we know relationship is "Self" even if not yet in state
+        const effectiveRelationship = filingForSelf === true ? "Self" : updatedRelationship;
+
+        if (!effectiveRelationship) {
+          alert("Please select your relationship to the person who became ill");
+          return;
+        }
+
+        // Navigate to relationship-specific section
+        if (effectiveRelationship === "Self") {
+          router.push(`/reca/form/${sessionId}?section=part_4`);
+        } else if (effectiveRelationship === "Spouse") {
+          router.push(`/reca/form/${sessionId}?section=part_5`);
+        } else if (effectiveRelationship === "Child") {
+          router.push(`/reca/form/${sessionId}?section=part_6`);
+        } else {
+          // Parent, Grandchild, Grandparent
+          router.push(`/reca/form/${sessionId}?section=part_7`);
+        }
+        return;
+      }
+
+      // After Part 3, relationship is required for other sections
       if (!relationship) {
         alert("Please complete the relationship section first");
         return;
@@ -141,6 +199,29 @@ export function FormWizard({
       onPrevious();
     } else {
       // Default navigation logic
+
+      // Handle early sections (before Part 3)
+      if (currentSection === "part_1") {
+        router.push(`/reca/start?sessionId=${sessionId}`);
+        return;
+      }
+
+      if (currentSection === "part_2") {
+        router.push(`/reca/form/${sessionId}?section=part_1`);
+        return;
+      }
+
+      if (currentSection === "part_3") {
+        // If filing for self, skip back to Part 1 (Part 2 was skipped)
+        const filingForSelf = workflowState.formData.part_1?.filingForSelf;
+        if (filingForSelf === true) {
+          router.push(`/reca/form/${sessionId}?section=part_1`);
+        } else {
+          router.push(`/reca/form/${sessionId}?section=part_2`);
+        }
+        return;
+      }
+
       const relationship = workflowState.formData.part_3?.relationship;
       if (!relationship) {
         router.push(`/reca/start?sessionId=${sessionId}`);

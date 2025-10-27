@@ -52,6 +52,9 @@ export type RelationshipType =
 // ============================================================================
 
 export interface Part1FilerInfo {
+  // Filing status - helps determine workflow
+  filingForSelf?: boolean; // true = I am the person who became ill, false = filing for someone else
+
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -194,8 +197,35 @@ export interface Part8Exposure {
 // Part 9: Proof of Presence
 // ============================================================================
 
+export type ProofOfPresenceDocumentType =
+  // Residential Documents (contemporaneous written residential)
+  | "TAX_RECORDS"
+  | "PROPERTY_RECORDS"
+  | "SCHOOL_ENROLLMENT"
+  | "UTILITY_BILLS"
+  | "MORTGAGE_STATEMENTS"
+  | "RENTAL_AGREEMENTS"
+  // Supplemental Official Documents (employer or government-issued)
+  | "EMPLOYMENT_RECORDS"
+  | "CENSUS_RECORDS"
+  | "GOVERNMENT_CORRESPONDENCE"
+  | "GOVERNMENT_ID"
+  | "VOTING_RECORDS"
+  | "MILITARY_RECORDS"
+  // Additional Supporting
+  | "CHURCH_RECORDS"
+  | "BIRTH_MARRIAGE_RECORDS"
+  | "OTHER";
+
 export interface Part9ProofOfPresence {
-  ldsChurchAssistance?: boolean;
+  uploadedDocuments?: Array<{
+    id: string;
+    fileName: string;
+    fileKey: string;
+    documentType: ProofOfPresenceDocumentType;
+    uploadedAt: string;
+    fileSize: number;
+  }>;
 }
 
 // ============================================================================

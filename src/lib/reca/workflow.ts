@@ -69,7 +69,10 @@ export function shouldSkipSection(
 ): boolean {
   switch (section) {
     case "part_2":
-      return formData.part_3?.relationship === "Self";
+      // Skip Part 2 if user selected "filing for myself" in Part 1
+      // OR if they selected "Self" relationship in Part 3
+      return formData.part_1?.filingForSelf === true ||
+             formData.part_3?.relationship === "Self";
 
     case "part_4":
       return formData.part_3?.relationship !== "Self";

@@ -20,7 +20,12 @@ export const env = createEnv({
       // Since NextAuth.js automatically uses the VERCEL_URL if present.
       (str) => process.env.VERCEL_URL ?? str,
       // VERCEL_URL doesn't include `https` so it cant be validated as a URL
-      process.env.VERCEL ? z.string() : z.string().url()
+      // In development, NextAuth auto-detects the URL, so make it optional
+      process.env.VERCEL
+        ? z.string()
+        : process.env.NODE_ENV === "production"
+        ? z.string().url()
+        : z.string().url().optional()
     ),
     // R2 / S3 compatible storage
     R2_ACCESS_KEY_ID: z.string().optional(),

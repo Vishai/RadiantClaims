@@ -13,6 +13,19 @@ export default function Part4Form({ onSubmit }: Part4FormProps) {
   useEffect(() => {
     onSubmit({});
   }, [onSubmit]);
+
+  // Expose form submission to FormWizard (always valid for Part 4)
+  useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      await onSubmit({});
+      return true; // Always valid
+    };
+
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [onSubmit]);
+
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">

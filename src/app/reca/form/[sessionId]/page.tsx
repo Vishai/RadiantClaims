@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { FormWizard } from "@/components/reca/wizard/FormWizard";
 import { Part1Form } from "@/components/reca/parts/Part1Form";
 import { Part2Form } from "@/components/reca/parts/Part2Form";
@@ -48,7 +47,6 @@ interface PageProps {
 export default function RECAFormPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
   const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(
     null
   );
@@ -59,15 +57,20 @@ export default function RECAFormPage({ params }: PageProps) {
     (searchParams.get("section") as RECAWorkflowSection) || "part_1";
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=/reca/form/${params.sessionId}`);
-      return;
-    }
+    // Load workflow state regardless of auth status (RECA forms are public)
+    loadWorkflowState();
+  }, [params.sessionId]);
 
-    if (status === "authenticated") {
-      loadWorkflowState();
+  // Redirect Part 2 if filing for self
+  useEffect(() => {
+    if (workflowState && currentSection === "part_2") {
+      const filingForSelf = workflowState.formData.part_1?.filingForSelf;
+      if (filingForSelf === true) {
+        // Skip Part 2 - redirect to Part 3
+        router.replace(`/reca/form/${params.sessionId}?section=part_3`);
+      }
     }
-  }, [status, params.sessionId]);
+  }, [workflowState, currentSection, params.sessionId, router]);
 
   const loadWorkflowState = async () => {
     try {
@@ -151,6 +154,21 @@ export default function RECAFormPage({ params }: PageProps) {
         );
 
       case "part_2":
+        // Show message if this section should be skipped
+        if (workflowState.formData.part_1?.filingForSelf === true) {
+          return (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <div className="text-center max-w-md">
+                <p className="text-lg font-semibold text-sage-900 mb-2">
+                  Redirecting...
+                </p>
+                <p className="text-sage-600">
+                  Since you're filing for yourself, we're skipping this section.
+                </p>
+              </div>
+            </div>
+          );
+        }
         return (
           <Part2Form
             initialData={workflowState.formData.part_2}
@@ -163,6 +181,7 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part3Form
             initialData={workflowState.formData.part_3}
             onSubmit={handleSaveSection}
+            filingForSelf={workflowState.formData.part_1?.filingForSelf}
           />
         );
 
@@ -211,6 +230,7 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part9Form
             initialData={workflowState.formData.part_9}
             onSubmit={handleSaveSection}
+            sessionId={params.sessionId}
           />
         );
 
@@ -285,7 +305,7 @@ export default function RECAFormPage({ params }: PageProps) {
     }
   };
 
-  if (status === "loading" || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50">
         <div className="text-center">

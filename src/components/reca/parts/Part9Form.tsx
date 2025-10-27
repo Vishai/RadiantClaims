@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,12 +13,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, Info, CheckCircle2, Upload } from "lucide-react";
+import { FileText, Info, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DocumentUpload, UploadedDocument } from "../DocumentUpload";
 
 // Validation schema
 const part9Schema = z.object({
-  ldsChurchAssistance: z.boolean().optional(),
+  // Document uploads are tracked separately
 });
 
 type Part9FormData = z.infer<typeof part9Schema>;
@@ -26,26 +27,113 @@ type Part9FormData = z.infer<typeof part9Schema>;
 interface Part9FormProps {
   initialData?: Partial<Part9ProofOfPresence>;
   onSubmit: (data: Part9ProofOfPresence) => void;
+  sessionId: string;
 }
 
-export default function Part9Form({ initialData, onSubmit }: Part9FormProps) {
+export default function Part9Form({ initialData, onSubmit, sessionId }: Part9FormProps) {
   const form = useForm<Part9FormData>({
     resolver: zodResolver(part9Schema),
-    defaultValues: {
-      ldsChurchAssistance: initialData?.ldsChurchAssistance || false,
-    },
+    defaultValues: {},
   });
 
-  // Auto-submit when form data changes
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>(
+    initialData?.uploadedDocuments?.map((doc) => ({
+      ...doc,
+      uploadedAt: new Date(doc.uploadedAt),
+      status: "success" as const,
+    })) || []
+  );
+
+  const [isAcceptableDocsExpanded, setIsAcceptableDocsExpanded] = useState(true);
+
+  // Helper function to get document type label
+  const getDocumentTypeLabel = (docType: string): string => {
+    const docTypeMap: Record<string, string> = {
+      TAX_RECORDS: "Tax Records",
+      PROPERTY_RECORDS: "Property Records",
+      SCHOOL_ENROLLMENT: "School Enrollment Records",
+      UTILITY_BILLS: "Utility Bills",
+      MORTGAGE_STATEMENTS: "Mortgage Statements",
+      RENTAL_AGREEMENTS: "Rental/Lease Agreements",
+      EMPLOYMENT_RECORDS: "Employment Records",
+      CENSUS_RECORDS: "Census Records",
+      GOVERNMENT_CORRESPONDENCE: "Government Correspondence",
+      GOVERNMENT_ID: "Government-Issued ID/Documents",
+      VOTING_RECORDS: "Voting Records",
+      MILITARY_RECORDS: "Military Records",
+      CHURCH_RECORDS: "Church/Religious Records",
+      BIRTH_MARRIAGE_RECORDS: "Birth/Marriage Records",
+      OTHER: "Other Contemporary Documents",
+    };
+    return docTypeMap[docType] || docType;
+  };
+
+  // Auto-submit when data changes
   useEffect(() => {
+    const handleSubmit = async (data: Part9FormData) => {
+      const submissionData: Part9ProofOfPresence = {
+        ...data,
+        uploadedDocuments: uploadedDocuments.filter(doc => doc.status === "success").map((doc) => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileKey: doc.fileKey,
+          documentType: doc.documentType,
+          uploadedAt: doc.uploadedAt.toISOString(),
+          fileSize: doc.fileSize,
+        })),
+      };
+      await onSubmit(submissionData);
+    };
+
     const subscription = form.watch(() => {
       const values = form.getValues();
-      onSubmit(values as Part9ProofOfPresence);
+      handleSubmit(values);
     });
     return () => subscription.unsubscribe();
-  }, [form, onSubmit]);
+  }, [form, onSubmit, uploadedDocuments]);
 
-  const ldsChurchAssistance = form.watch("ldsChurchAssistance");
+  // Also submit when documents change
+  useEffect(() => {
+    const values = form.getValues();
+    const submissionData: Part9ProofOfPresence = {
+      ...values,
+      uploadedDocuments: uploadedDocuments.filter(doc => doc.status === "success").map((doc) => ({
+        id: doc.id,
+        fileName: doc.fileName,
+        fileKey: doc.fileKey,
+        documentType: doc.documentType,
+        uploadedAt: doc.uploadedAt.toISOString(),
+        fileSize: doc.fileSize,
+      })),
+    };
+    onSubmit(submissionData);
+  }, [uploadedDocuments, form, onSubmit]);
+
+  // Expose form submission to FormWizard
+  React.useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      const values = form.getValues();
+      const submissionData: Part9ProofOfPresence = {
+        ...values,
+        uploadedDocuments: uploadedDocuments.filter(doc => doc.status === "success").map((doc) => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileKey: doc.fileKey,
+          documentType: doc.documentType,
+          uploadedAt: doc.uploadedAt.toISOString(),
+          fileSize: doc.fileSize,
+        })),
+      };
+      await onSubmit(submissionData);
+      return true; // Always valid
+    };
+
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form, onSubmit, uploadedDocuments]);
+
+  const successfulUploads = uploadedDocuments.filter((doc) => doc.status === "success").length;
 
   return (
     <div className="space-y-6">
@@ -56,187 +144,308 @@ export default function Part9Form({ initialData, onSubmit }: Part9FormProps) {
             Part 9: Proof of Presence in an Affected Area
           </CardTitle>
           <CardDescription>
-            Documentation methods to establish physical presence in affected areas
+            Upload documents that establish physical presence in affected areas during eligible time periods
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Acceptable Documents Info */}
+          {/* RECA Requirements */}
           <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
             <div className="flex gap-3">
               <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-blue-900 mb-2">
-                  Acceptable Documentation Types
+                  RECA Requirements for Proof of Presence
                 </p>
                 <p className="text-sm text-blue-800 mb-3">
-                  Documents must show the name of the person who became ill (or an immediate family
-                  member in the same household), residence or employment in an affected area, and
-                  a specific date.
+                  You must submit <strong>at least TWO types of documents</strong> to prove physical presence in an affected area for at least two years after January 1, 1949:
+                </p>
+                <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside ml-2">
+                  <li>
+                    <strong>One contemporaneous written residential document</strong> created during the time you were present (such as tax records, school enrollment, or property documents)
+                  </li>
+                  <li>
+                    <strong>At least one additional employer-issued or government-issued document</strong> that verifies physical presence in the affected area
+                  </li>
+                </ol>
+                <p className="text-sm text-blue-800 mt-3">
+                  <strong>Important:</strong> Each document must show the name of the person who became ill (or an immediate family member in the same household), the affected area location, and a specific date during the eligible exposure period.
+                </p>
+                <p className="text-sm text-blue-700 mt-2 font-medium">
+                  Note: Affidavits or abstracts alone are not sufficient unless attached to supporting records. Document certification is recommended.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Document Types Checklist */}
+          {/* Acceptable Document Types Reference - Collapsible */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold text-sage-900">
-              Types of Documents You Can Submit
-            </Label>
-
-            <div className="grid gap-3">
-              {[
-                { icon: CheckCircle2, label: "Tax Records" },
-                { icon: CheckCircle2, label: "School Records" },
-                { icon: CheckCircle2, label: "Employment Records" },
-                { icon: CheckCircle2, label: "Birth and Marriage Records" },
-                { icon: CheckCircle2, label: "Personal Letters or Envelopes (with postmark)" },
-                { icon: CheckCircle2, label: "Church/Religious Records" },
-                { icon: CheckCircle2, label: "Voting Records" },
-                { icon: CheckCircle2, label: "Personal Diaries" },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 rounded-md border border-sage-200 p-3 bg-white"
-                >
-                  <item.icon className="h-5 w-5 text-terracotta-500 flex-shrink-0" />
-                  <span className="text-sm text-sage-700">{item.label}</span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold text-sage-900">
+                Acceptable Document Types
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAcceptableDocsExpanded(!isAcceptableDocsExpanded)}
+                className="gap-2"
+              >
+                {isAcceptableDocsExpanded ? (
+                  <>
+                    Hide <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Show <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </div>
-          </div>
 
-          {/* Certification Requirements */}
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-            <div className="flex gap-3">
-              <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-900 mb-2">
-                  Certification Requirements
-                </p>
-                <div className="text-sm text-amber-800 space-y-2">
-                  <p>
-                    <strong>Electronic Filing:</strong> Photocopies are acceptable
-                  </p>
-                  <p>
-                    <strong>Mail Filing:</strong> Documents must be certified or original
-                  </p>
-                  <p className="mt-3 font-medium">Certification Methods:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>
-                      Certified photocopies stamped with institutional seal (raised, colored, or
-                      signed)
-                    </li>
-                    <li>
-                      Cover letter on letterhead from record source stating "true and accurate copy"
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
+            {isAcceptableDocsExpanded && (
+              <div className="space-y-4">
 
-          {/* LDS Church Assistance Checkbox */}
-          <div className="space-y-4 pt-4 border-t">
-            <Label className="text-base font-semibold text-sage-900">
-              Church of Jesus Christ of Latter-day Saints Records
-            </Label>
-
-            <div className="flex items-start gap-3 rounded-md border border-sage-200 p-4 bg-white">
-              <Checkbox
-                id="ldsChurchAssistance"
-                checked={ldsChurchAssistance}
-                onCheckedChange={(checked) =>
-                  form.setValue("ldsChurchAssistance", checked as boolean)
-                }
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <label
-                  htmlFor="ldsChurchAssistance"
-                  className="text-sm font-medium leading-none cursor-pointer"
-                >
-                  I have contacted the Church of Jesus Christ of Latter-day Saints and requested
-                  information regarding my claim
-                </label>
-                <div className="mt-3 text-sm text-sage-600 space-y-2">
-                  <p className="font-medium">Contact Information:</p>
-                  <p>
-                    <strong>Phone:</strong> (801) 240-3500
-                  </p>
-                  <p>
-                    <strong>Address:</strong>
-                    <br />
-                    Member and Statistical Records Division
-                    <br />
-                    17th Floor, 50 East North Temple Street
-                    <br />
-                    Salt Lake City, UT 84150
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Document Upload Placeholder */}
-          <div className="space-y-4 pt-4 border-t">
-            <Label className="text-base font-semibold text-sage-900">
-              Document Upload
-            </Label>
-
-            <div className="rounded-lg border-2 border-dashed border-sage-300 p-8 text-center">
-              <Upload className="h-12 w-12 text-sage-400 mx-auto mb-4" />
-              <p className="text-sage-700 font-medium mb-2">
-                Document Upload Coming Soon
-              </p>
-              <p className="text-sm text-sage-600 max-w-md mx-auto">
-                You will be able to upload your proof of presence documents in a future step.
-                For now, please ensure you have gathered the necessary documentation listed above.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Required Documents Reminder */}
-      <Card className="border-terracotta-200 bg-terracotta-50">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <FileText className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
+            {/* Residential Documents */}
             <div>
-              <p className="font-semibold text-terracotta-900 mb-2">
-                What to Prepare
+              <p className="text-sm font-semibold text-blue-900 mb-2">
+                Residential Documents (Need: 1)
               </p>
-              <p className="text-sm text-terracotta-800 mb-3">
-                Gather documents that prove physical presence in the affected areas during the
-                time periods you specified in Part 8. Each document should clearly show:
-              </p>
-              <ul className="text-sm text-terracotta-800 space-y-1 list-disc list-inside">
-                <li>
-                  The name of the person who became ill (or immediate family member living in the
-                  same household)
-                </li>
-                <li>The affected area location (city, town, county, state)</li>
-                <li>A specific date or date range within the eligible exposure periods</li>
-              </ul>
-              <p className="text-sm text-terracotta-800 mt-3">
-                <strong>Tip:</strong> Submit multiple types of documents to strengthen your claim.
-                The more documentation you provide, the easier it will be to establish presence.
-              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  "Tax Records (property tax rolls, returns)",
+                  "Property Records (deed, mortgage, lease)",
+                  "School Enrollment Records",
+                  "Utility Bills (contemporaneous)",
+                  "Mortgage/Rental Agreements",
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 rounded-md border border-blue-200 p-2 bg-blue-50 text-sm"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <span className="text-blue-900">{item}</span>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Official/Government Documents */}
+            <div>
+              <p className="text-sm font-semibold text-terracotta-900 mb-2">
+                Official/Government Documents (Need: 1+)
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  "Employment Records (employer-issued)",
+                  "Census Records",
+                  "Government Correspondence",
+                  "Government-Issued ID/Documents",
+                  "Voting Records",
+                  "Military Records",
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 rounded-md border border-terracotta-200 p-2 bg-terracotta-50 text-sm"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-terracotta-600 flex-shrink-0" />
+                    <span className="text-terracotta-900">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Additional Supporting */}
+            <div>
+              <p className="text-sm font-semibold text-sage-700 mb-2">
+                Additional Supporting Documents (Optional)
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  "Church/Religious Records",
+                  "Birth/Marriage Records",
+                  "Other Contemporary Documents",
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 rounded-md border border-sage-200 p-2 bg-white text-sm"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-sage-600 flex-shrink-0" />
+                    <span className="text-sage-700">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Certification Requirements */}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="flex gap-3">
+                <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-900 mb-2">
+                    Certification Requirements
+                  </p>
+                  <div className="text-sm text-amber-800 space-y-2">
+                    <p>
+                      <strong>Digital Upload (This Form):</strong> Photocopies and scans are acceptable
+                    </p>
+                    <p>
+                      <strong>Mail Filing:</strong> Documents must be certified or original
+                    </p>
+                    <p className="mt-3 font-medium">Certification Methods for Mail:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>
+                        Certified photocopies with institutional seal (raised, colored, or signed)
+                      </li>
+                      <li>
+                        Cover letter on letterhead stating documents are "true and accurate copies"
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+              </div>
+            )}
+          </div>
+
+          {/* Document Upload */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold text-sage-900">
+                Upload Proof of Presence Documents
+              </Label>
+              {successfulUploads > 0 && (
+                <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {successfulUploads} document{successfulUploads !== 1 ? "s" : ""} uploaded
+                </span>
+              )}
+            </div>
+
+            <DocumentUpload
+              sessionId={sessionId}
+              onDocumentsChange={setUploadedDocuments}
+              initialDocuments={uploadedDocuments}
+            />
+          </div>
+
+        </CardContent>
+      </Card>
+
+      {/* Progress Summary */}
+      <Card className="border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-cream-50">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-terracotta-200">
+              <FileText className="h-6 w-6 text-terracotta-600" />
+              <div className="flex-1">
+                <h3 className="font-bold text-terracotta-900 text-lg">Your Document Progress</h3>
+                <p className="text-sm text-terracotta-700">
+                  {successfulUploads} document{successfulUploads !== 1 ? "s" : ""} uploaded
+                </p>
+              </div>
+            </div>
+
+            {/* Document List */}
+            {successfulUploads > 0 ? (
+              <div className="space-y-3">
+                {uploadedDocuments
+                  .filter((doc) => doc.status === "success")
+                  .map((doc, idx) => {
+                    const docTypeLabel = getDocumentTypeLabel(doc.documentType);
+
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-terracotta-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div className="flex-1">
+                                <p className="font-semibold text-sage-900 truncate">
+                                  {doc.fileName}
+                                </p>
+                                <p className="text-sm text-sage-600 mt-0.5">
+                                  Classified as: <span className="font-medium text-blue-700">{docTypeLabel}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Validation Status Badge */}
+                            <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                              <p className="text-xs text-amber-800">
+                                <span className="font-semibold">Pending RadiantClaims validation</span>
+                                <span className="block mt-0.5 text-amber-700">
+                                  Our team will review this document to verify it meets RECA requirements
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
+                  <FileText className="h-8 w-8 text-amber-600" />
+                </div>
+                <p className="text-amber-800 font-medium mb-1">No documents uploaded yet</p>
+                <p className="text-sm text-amber-700">
+                  Upload at least one proof of presence document to get started
+                </p>
+              </div>
+            )}
+
+            {/* Summary Message */}
+            {successfulUploads >= 2 && (
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4 mt-4">
+                <div className="flex gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-green-900 mb-1">Excellent Progress!</p>
+                    <p className="text-sm text-green-800">
+                      You've uploaded multiple documents. This will strengthen your claim when our team validates them.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {successfulUploads === 1 && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 mt-4">
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900 mb-1">Good Start!</p>
+                    <p className="text-sm text-blue-800">
+                      Consider uploading at least one more document from a different category to meet RECA's minimum requirements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Navigation Helper */}
+      {/* Next Steps */}
       <Card className="border-sage-200">
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-sage-700">
-                After completing this section, you will move on to Part 10 where you will select
-                the compensable disease(s) that the claimant developed. This form auto-saves your
-                progress, so you can safely navigate away and return later.
+                <strong>Next Section:</strong> After completing this section, you will move on to Part 10
+                where you will select the compensable disease(s) that developed. This form automatically
+                saves your progress, so you can safely navigate away and return later.
               </p>
             </div>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,6 +30,7 @@ type Part3FormData = z.infer<typeof part3Schema>;
 interface Part3FormProps {
   initialData?: Partial<Part3Relationship>;
   onSubmit: (data: Part3Relationship) => void;
+  filingForSelf?: boolean; // From Part 1
 }
 
 const relationshipOptions: Array<{
@@ -112,22 +114,62 @@ const relationshipOptions: Array<{
   },
 ];
 
-export function Part3Form({ initialData, onSubmit }: Part3FormProps) {
+export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormProps) {
   const form = useForm<Part3FormData>({
     resolver: zodResolver(part3Schema),
     defaultValues: {
-      relationship: initialData?.relationship,
+      relationship: initialData?.relationship || (filingForSelf === true ? "Self" : undefined),
     },
   });
 
   const selectedRelationship = form.watch("relationship");
 
-  const handleSubmit = (data: Part3FormData) => {
-    onSubmit(data as Part3Relationship);
+  const handleSubmit = async (data: Part3FormData) => {
+    await onSubmit(data as Part3Relationship);
+    return true;
   };
+
+  // Expose form submission to FormWizard
+  React.useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      return new Promise((resolve) => {
+        form.handleSubmit(
+          async (data) => {
+            await handleSubmit(data);
+            resolve(true);
+          },
+          () => {
+            resolve(false); // Validation failed
+          }
+        )();
+      });
+    };
+
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      {/* Filing For Self Confirmation */}
+      {filingForSelf === true && (
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-700">
+                <p className="font-semibold mb-1">Confirm: Filing for Yourself</p>
+                <p>
+                  Based on your selection in Part 1, we've automatically selected "Self" below.
+                  This means you are the person who became ill from radiation exposure.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Info Card */}
       <Card className="border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white">
         <CardContent className="pt-6">
