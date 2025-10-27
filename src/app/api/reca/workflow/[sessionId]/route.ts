@@ -1,12 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
 import {
   RECAWorkflowState,
   SaveWorkflowRequest,
   SaveWorkflowResponse,
 } from "@/lib/reca/types";
+
+/**
+ * Pre-populate Part 1 (Filer Information) from Claimant intake data
+ * This ensures users don't have to re-enter information they already provided during intake
+ */
+function preFillPart1FromClaimant(formData: any, claimant: any) {
+  if (!formData.part_1 && claimant) {
+    formData.part_1 = {
+      firstName: claimant.firstName,
+      middleName: claimant.middleName || "",
+      lastName: claimant.lastName,
+      formerNames: "",
+      ssn: claimant.ssn || "",
+      dob: claimant.dateOfBirth || "",
+      mailingAddress: claimant.mailingAddress || "",
+      city: claimant.city || "",
+      state: claimant.state || "",
+      zipCode: claimant.zipCode || "",
+      phoneDay: claimant.phoneNumber || "",
+      phoneEvening: "",
+      email: claimant.email || "",
+      residenceAddress: "",
+      tribalAffiliation: "",
+      tribalCensusNumber: "",
+    };
+  }
+  return formData;
+}
+
+/**
+ * Auto-populate Part 2 (Claimant Information) from Part 1 for Self-filers
+ * When a user selects "Self" as the relationship, Part 2 should mirror Part 1
+ * This maintains data consistency and prevents duplicate data entry
+ */
+function autoPopulatePart2ForSelfFiler(formData: any) {
+  if (formData.part_1 && !formData.part_2 && formData.part_3?.relationship === "Self") {
+    formData.part_2 = {
+      firstName: formData.part_1.firstName,
+      middleName: formData.part_1.middleName,
+      lastName: formData.part_1.lastName,
+      formerNames: formData.part_1.formerNames,
+      ssn: formData.part_1.ssn,
+      dob: formData.part_1.dob,
+      // dod is not applicable for self-filers (they are still alive)
+    };
+  }
+  return formData;
+}
 
 /**
  * GET /api/reca/workflow/[sessionId]
@@ -21,7 +69,7 @@ export async function GET(
     const { sessionId } = params;
 
     // Find the intake session
-    const intakeSession = await prisma.intakeSession.findUnique({
+    const intakeSession = await db.intakeSession.findUnique({
       where: { id: sessionId },
       include: {
         claimant: true,
@@ -59,14 +107,18 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    // Get form data and pre-populate from Claimant if empty
+    let formData = (intakeSession.recaFormData as any) || {};
+    formData = preFillPart1FromClaimant(formData, intakeSession.claimant);
+
     // Construct workflow state response
     const workflowState: RECAWorkflowState = {
       sessionId: intakeSession.id,
       currentStage: intakeSession.recaWorkflowStage || 1,
       currentSection:
-        (intakeSession.recaWorkflowSection as any) || "eligibility",
+        (intakeSession.recaWorkflowSection as any) || "part_1",
       completionPercentage: intakeSession.recaCompletionPercent || 0,
-      formData: (intakeSession.recaFormData as any) || {},
+      formData,
       supportingForms: (intakeSession.recaSupportingForms as any) || {},
       eligibilityData: intakeSession.recaEligibilityData as any,
       validationErrors: intakeSession.recaValidationErrors as any,
@@ -104,7 +156,7 @@ export async function POST(
     const body: SaveWorkflowRequest = await req.json();
 
     // Find the intake session
-    const intakeSession = await prisma.intakeSession.findUnique({
+    const intakeSession = await db.intakeSession.findUnique({
       where: { id: sessionId },
       include: { claimant: true },
     });
@@ -127,9 +179,12 @@ export async function POST(
 
     // Merge form data (deep merge for partial updates)
     const currentFormData = (intakeSession.recaFormData as any) || {};
-    const updatedFormData = body.formData
+    let updatedFormData = body.formData
       ? { ...currentFormData, ...body.formData }
       : currentFormData;
+
+    // Auto-populate Part 2 from Part 1 if user is Self-filer
+    updatedFormData = autoPopulatePart2ForSelfFiler(updatedFormData);
 
     // Merge supporting forms
     const currentSupportingForms =
@@ -146,7 +201,7 @@ export async function POST(
     );
 
     // Update the session
-    const updated = await prisma.intakeSession.update({
+    const updated = await db.intakeSession.update({
       where: { id: sessionId },
       data: {
         recaWorkflowStage: body.currentStage || intakeSession.recaWorkflowStage,

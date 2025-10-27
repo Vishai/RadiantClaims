@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
 import {
   ValidateSectionRequest,
   ValidateSectionResponse,
@@ -23,7 +23,7 @@ export async function POST(
     const body: ValidateSectionRequest = await req.json();
 
     // Find the intake session
-    const intakeSession = await prisma.intakeSession.findUnique({
+    const intakeSession = await db.intakeSession.findUnique({
       where: { id: sessionId },
       include: { claimant: true },
     });
@@ -54,7 +54,7 @@ export async function POST(
 
     // Update validation errors in database
     const currentErrors = (intakeSession.recaValidationErrors as any) || {};
-    await prisma.intakeSession.update({
+    await db.intakeSession.update({
       where: { id: sessionId },
       data: {
         recaValidationErrors: {

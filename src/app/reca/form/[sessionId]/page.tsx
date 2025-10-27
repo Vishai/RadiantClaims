@@ -7,12 +7,38 @@ import { FormWizard } from "@/components/reca/wizard/FormWizard";
 import { Part1Form } from "@/components/reca/parts/Part1Form";
 import { Part2Form } from "@/components/reca/parts/Part2Form";
 import { Part3Form } from "@/components/reca/parts/Part3Form";
+import Part4Form from "@/components/reca/parts/Part4Form";
+import Part5Form from "@/components/reca/parts/Part5Form";
+import Part6Form from "@/components/reca/parts/Part6Form";
+import Part7Form from "@/components/reca/parts/Part7Form";
+import Part8Form from "@/components/reca/parts/Part8Form";
+import Part9Form from "@/components/reca/parts/Part9Form";
+import Part10Form from "@/components/reca/parts/Part10Form";
+import Part11Form from "@/components/reca/parts/Part11Form";
+import Part12Form from "@/components/reca/parts/Part12Form";
+import Part13Form from "@/components/reca/parts/Part13Form";
+import Part14Form from "@/components/reca/parts/Part14Form";
+import Part15Form from "@/components/reca/parts/Part15Form";
+import Part16Form from "@/components/reca/parts/Part16Form";
 import {
   RECAWorkflowState,
   RECAWorkflowSection,
   Part1FilerInfo,
   Part2ClaimantInfo,
   Part3Relationship,
+  Part4SelfFiler,
+  Part5SurvivingSpouse,
+  Part6SurvivingChild,
+  Part7OtherRelatives,
+  Part8Exposure,
+  Part9ProofOfPresence,
+  Part10Diseases,
+  Part11ProofOfDisease,
+  Part12PreviousPayments,
+  Part13Attorney,
+  Part14AttorneyAcknowledgment,
+  Part15LegalGuardian,
+  Part16Signature,
 } from "@/lib/reca/types";
 
 interface PageProps {
@@ -136,6 +162,110 @@ export default function RECAFormPage({ params }: PageProps) {
         return (
           <Part3Form
             initialData={workflowState.formData.part_3}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_4":
+        return (
+          <Part4Form
+            initialData={workflowState.formData.part_4}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_5":
+        return (
+          <Part5Form
+            initialData={workflowState.formData.part_5}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_6":
+        return (
+          <Part6Form
+            initialData={workflowState.formData.part_6}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_7":
+        return (
+          <Part7Form
+            initialData={workflowState.formData.part_7}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_8":
+        return (
+          <Part8Form
+            initialData={workflowState.formData.part_8}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_9":
+        return (
+          <Part9Form
+            initialData={workflowState.formData.part_9}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_10":
+        return (
+          <Part10Form
+            initialData={workflowState.formData.part_10}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_11":
+        return (
+          <Part11Form
+            initialData={workflowState.formData.part_11}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_12":
+        return (
+          <Part12Form
+            initialData={workflowState.formData.part_12}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_13":
+        return (
+          <Part13Form
+            initialData={workflowState.formData.part_13}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_14":
+        return (
+          <Part14Form
+            initialData={workflowState.formData.part_14}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_15":
+        return (
+          <Part15Form
+            initialData={workflowState.formData.part_15}
+            onSubmit={handleSaveSection}
+          />
+        );
+
+      case "part_16":
+        return (
+          <Part16Form
+            initialData={workflowState.formData.part_16}
             onSubmit={handleSaveSection}
           />
         );
