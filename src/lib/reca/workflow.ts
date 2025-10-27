@@ -105,6 +105,21 @@ export function getNextSection(
   relationship: RelationshipType,
   formData: any
 ): RECAWorkflowSection | null {
+  // Special case: After Part 16, navigate to supporting forms
+  if (currentSection === "part_16") {
+    return "supporting_forms";
+  }
+
+  // Special case: After supporting forms, navigate to document checklist
+  if (currentSection === "supporting_forms") {
+    return "document_checklist";
+  }
+
+  // Special case: After document checklist, navigate to final review
+  if (currentSection === "document_checklist") {
+    return "final_review";
+  }
+
   const sequence = getSectionSequence(relationship);
   const currentIndex = sequence.indexOf(currentSection);
 

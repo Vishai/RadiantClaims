@@ -1,0 +1,363 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { FormWizard } from "@/components/reca/wizard/FormWizard";
+import MedicalInformationReleaseForm from "@/components/reca/supporting/MedicalInformationReleaseForm";
+import CertificationOfIdentityForm from "@/components/reca/supporting/CertificationOfIdentityForm";
+import TribalRecordsReleaseForm from "@/components/reca/supporting/TribalRecordsReleaseForm";
+import SurvivingBeneficiariesForm from "@/components/reca/supporting/SurvivingBeneficiariesForm";
+import {
+  RECAWorkflowState,
+  MedicalInformationRelease,
+  CertificationOfIdentity,
+  TribalRecordsRelease,
+  SurvivingBeneficiariesSignatures,
+} from "@/lib/reca/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2, FileText } from "lucide-react";
+
+interface PageProps {
+  params: { sessionId: string };
+}
+
+type SupportingFormType =
+  | "medical_info_release"
+  | "certification_of_identity"
+  | "tribal_records_release"
+  | "surviving_beneficiaries";
+
+export default function RECASupportingFormsPage({ params }: PageProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+  const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const currentForm =
+    (searchParams.get("form") as SupportingFormType) || "certification_of_identity";
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push(`/login?callbackUrl=/reca/supporting/${params.sessionId}`);
+      return;
+    }
+
+    if (status === "authenticated") {
+      loadWorkflowState();
+    }
+  }, [status, params.sessionId]);
+
+  const loadWorkflowState = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/reca/workflow/${params.sessionId}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("Workflow session not found");
+        }
+        throw new Error("Failed to load workflow state");
+      }
+
+      const data: RECAWorkflowState = await response.json();
+      setWorkflowState(data);
+    } catch (err) {
+      console.error("Error loading workflow:", err);
+      setError(err instanceof Error ? err.message : "Failed to load workflow");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveSupportingForm = async (formType: SupportingFormType, formData: any) => {
+    if (!workflowState) return;
+
+    try {
+      const response = await fetch(`/api/reca/workflow/${params.sessionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentSection: "supporting_forms",
+          supportingForms: {
+            ...workflowState.supportingForms,
+            [formType === "medical_info_release"
+              ? "medicalInformationRelease"
+              : formType === "certification_of_identity"
+              ? "certificationOfIdentity"
+              : formType === "tribal_records_release"
+              ? "tribalRecordsRelease"
+              : "survivingBeneficiariesSignatures"]: formData,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save supporting form");
+      }
+
+      const result = await response.json();
+
+      // Update local state
+      setWorkflowState((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          supportingForms: {
+            ...prev.supportingForms,
+            [formType === "medical_info_release"
+              ? "medicalInformationRelease"
+              : formType === "certification_of_identity"
+              ? "certificationOfIdentity"
+              : formType === "tribal_records_release"
+              ? "tribalRecordsRelease"
+              : "survivingBeneficiariesSignatures"]: formData,
+          },
+          completionPercentage: result.completionPercentage,
+          lastSaved: result.lastSaved,
+        };
+      });
+
+      return true;
+    } catch (err) {
+      console.error("Error saving supporting form:", err);
+      return false;
+    }
+  };
+
+  // Determine which forms are required based on main form data
+  const getRequiredForms = (): SupportingFormType[] => {
+    if (!workflowState) return ["certification_of_identity"];
+
+    const required: SupportingFormType[] = ["certification_of_identity"]; // Always required
+
+    // Medical Info Release - required if cancer registry authorization in Part 11
+    if (workflowState.formData.part_11?.cancerRegistryAuthorization) {
+      required.push("medical_info_release");
+    }
+
+    // Tribal Records Release - required if tribal affiliation in Part 1
+    if (workflowState.formData.part_1?.tribalAffiliation) {
+      required.push("tribal_records_release");
+    }
+
+    // Surviving Beneficiaries - optional for Part 6 (Child relationship)
+    if (workflowState.formData.part_3?.relationship === "Child") {
+      required.push("surviving_beneficiaries");
+    }
+
+    return required;
+  };
+
+  const handleNavigateToReview = () => {
+    router.push(`/reca/review/${params.sessionId}`);
+  };
+
+  const handleNavigateBack = () => {
+    // Navigate back to Part 16 (the last part of the main form)
+    router.push(`/reca/form/${params.sessionId}?section=part_16`);
+  };
+
+  const areAllRequiredFormsComplete = (): boolean => {
+    if (!workflowState) return false;
+
+    const required = getRequiredForms();
+    return required.every((form) => {
+      const formKey =
+        form === "medical_info_release" ? "medicalInformationRelease" :
+        form === "certification_of_identity" ? "certificationOfIdentity" :
+        form === "tribal_records_release" ? "tribalRecordsRelease" :
+        "survivingBeneficiariesSignatures";
+
+      // Surviving beneficiaries is optional
+      if (form === "surviving_beneficiaries") return true;
+
+      return !!workflowState.supportingForms[formKey];
+    });
+  };
+
+  const renderCurrentForm = () => {
+    if (!workflowState) return null;
+
+    const requiredForms = getRequiredForms();
+
+    // Show message if form is not required for this claim
+    if (!requiredForms.includes(currentForm)) {
+      return (
+        <Card className="border-sage-200">
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <FileText className="h-16 w-16 text-sage-400 mx-auto mb-4" />
+              <p className="text-lg font-semibold text-sage-900 mb-2">
+                This Form is Not Required for Your Claim
+              </p>
+              <p className="text-sm text-sage-600 mb-6">
+                Based on your previous responses, this supporting form is not needed. Please
+                navigate to the required forms using the navigation menu.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    switch (currentForm) {
+      case "medical_info_release":
+        return (
+          <MedicalInformationReleaseForm
+            initialData={workflowState.supportingForms.medicalInformationRelease}
+            onSubmit={(data) => handleSaveSupportingForm("medical_info_release", data)}
+          />
+        );
+
+      case "certification_of_identity":
+        return (
+          <CertificationOfIdentityForm
+            initialData={workflowState.supportingForms.certificationOfIdentity}
+            onSubmit={(data) => handleSaveSupportingForm("certification_of_identity", data)}
+          />
+        );
+
+      case "tribal_records_release":
+        return (
+          <TribalRecordsReleaseForm
+            initialData={workflowState.supportingForms.tribalRecordsRelease}
+            onSubmit={(data) => handleSaveSupportingForm("tribal_records_release", data)}
+          />
+        );
+
+      case "surviving_beneficiaries":
+        return (
+          <SurvivingBeneficiariesForm
+            initialData={workflowState.supportingForms.survivingBeneficiariesSignatures}
+            onSubmit={(data) => handleSaveSupportingForm("surviving_beneficiaries", data)}
+          />
+        );
+
+      default:
+        return (
+          <div className="text-center py-12">
+            <p className="text-sage-700 mb-4">Unknown form "{currentForm}"</p>
+          </div>
+        );
+    }
+  };
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-terracotta-500 border-t-transparent"></div>
+          <p className="text-sage-700">Loading supporting forms...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !workflowState) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="max-w-md text-center">
+          <h2 className="text-2xl font-bold text-sage-900 mb-4">Error Loading Forms</h2>
+          <p className="text-sage-700 mb-6">{error || "Unknown error"}</p>
+          <button
+            onClick={() => router.push("/portal")}
+            className="rounded-full bg-terracotta-500 px-6 py-3 text-white hover:bg-terracotta-600"
+          >
+            Return to Portal
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <FormWizard
+      sessionId={params.sessionId}
+      initialState={workflowState}
+      currentSection="supporting_forms"
+      onNext={handleNavigateToReview}
+      onPrevious={handleNavigateBack}
+    >
+      <div className="space-y-6">
+        {/* Supporting Forms Overview */}
+        <Card className="border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-white">
+          <CardContent className="pt-6">
+            <div className="flex gap-4">
+              <CheckCircle2 className="h-8 w-8 text-terracotta-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-terracotta-900 mb-2">
+                  Supporting Forms Required for Your Claim
+                </h2>
+                <p className="text-sm text-terracotta-800 mb-3">
+                  Based on your responses in the main RECA form, you need to complete the following
+                  supporting forms. These forms are necessary to process your claim.
+                </p>
+                <div className="space-y-2 mb-4">
+                  {getRequiredForms().map((form) => {
+                    const formKey =
+                      form === "medical_info_release" ? "medicalInformationRelease" :
+                      form === "certification_of_identity" ? "certificationOfIdentity" :
+                      form === "tribal_records_release" ? "tribalRecordsRelease" :
+                      "survivingBeneficiariesSignatures";
+
+                    const isComplete = !!workflowState.supportingForms[formKey];
+                    const isOptional = form === "surviving_beneficiaries";
+
+                    return (
+                      <div key={form} className="flex items-center gap-2 text-sm">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            isComplete ? "bg-green-500" : isOptional ? "bg-blue-400" : "bg-amber-500"
+                          }`}
+                        />
+                        <button
+                          onClick={() => router.push(`/reca/supporting/${params.sessionId}?form=${form}`)}
+                          className={`text-left hover:underline ${
+                            currentForm === form ? "font-semibold text-terracotta-900" : "text-sage-900"
+                          }`}
+                        >
+                          {form === "medical_info_release"
+                            ? "Medical Information Release"
+                            : form === "certification_of_identity"
+                            ? "Certification of Identity (Required)"
+                            : form === "tribal_records_release"
+                            ? "Tribal Records Release"
+                            : "Surviving Beneficiaries Signatures (Optional)"}
+                        </button>
+                        {isComplete && (
+                          <CheckCircle2 className="h-4 w-4 text-green-600 ml-1" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {areAllRequiredFormsComplete() && (
+                  <div className="rounded-lg bg-green-50 border border-green-200 p-3 mt-3">
+                    <div className="flex gap-2 items-start">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-900">All Required Forms Complete!</p>
+                        <p className="text-sm text-green-800">
+                          Click "Continue" below to proceed to the Review & Download page.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Current Form */}
+        {renderCurrentForm()}
+      </div>
+    </FormWizard>
+  );
+}

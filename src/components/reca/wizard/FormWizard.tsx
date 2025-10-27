@@ -119,7 +119,16 @@ export function FormWizard({
       );
 
       if (nextSection) {
-        router.push(`/reca/form/${sessionId}?section=${nextSection}`);
+        // Route to supporting forms if that's the next section
+        if (nextSection === "supporting_forms") {
+          router.push(`/reca/supporting/${sessionId}?form=certification_of_identity`);
+        } else if (nextSection === "document_checklist") {
+          router.push(`/reca/documents/${sessionId}`);
+        } else if (nextSection === "final_review") {
+          router.push(`/reca/review/${sessionId}`);
+        } else {
+          router.push(`/reca/form/${sessionId}?section=${nextSection}`);
+        }
       } else {
         // No more sections - go to review
         router.push(`/reca/review/${sessionId}`);
