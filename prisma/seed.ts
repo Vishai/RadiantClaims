@@ -16,6 +16,7 @@ async function main() {
       email: "admin@radiantclaims.dev",
       name: "Admin User",
       password: hashedPassword,
+      role: "ADMIN",
     },
   });
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/portal/claims
@@ -9,7 +10,7 @@ import { db } from "@/lib/db";
  */
 export async function GET(_req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerAuthSession();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
