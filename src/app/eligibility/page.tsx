@@ -129,15 +129,16 @@ export default function EligibilityPage() {
                       ✓
                     </div>
                     <span className="text-sage-800">Specified counties in Arizona</span>
-                    <Tooltip>
+                    <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <button className="text-sage-500 hover:text-sage-700">
+                        <button className="text-terracotta-500 hover:text-terracotta-700 hover:scale-110 transition-all duration-200 cursor-help">
                           <Info className="h-4 w-4" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold mb-1">Arizona Counties:</p>
-                        <p className="text-sm">Apache, Coconino, Gila, Navajo, and Yavapai</p>
+                      <TooltipContent className="max-w-xs bg-white shadow-lg">
+                        <p className="font-semibold mb-1 text-sage-900">Arizona Counties:</p>
+                        <p className="text-sm text-sage-700">Apache, Coconino, Gila, Mohave, Navajo, and Yavapai</p>
+                        <p className="text-xs text-sage-600 mt-1 italic">Plus the part of Arizona north of the Grand Canyon</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -146,15 +147,16 @@ export default function EligibilityPage() {
                       ✓
                     </div>
                     <span className="text-sage-800">Specified counties in Nevada</span>
-                    <Tooltip>
+                    <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <button className="text-sage-500 hover:text-sage-700">
+                        <button className="text-terracotta-500 hover:text-terracotta-700 hover:scale-110 transition-all duration-200 cursor-help">
                           <Info className="h-4 w-4" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold mb-1">Nevada Counties:</p>
-                        <p className="text-sm">Esmeralda, Lander, Lincoln, Mineral, Nye, White Pine, and Eureka</p>
+                      <TooltipContent className="max-w-sm bg-white shadow-lg">
+                        <p className="font-semibold mb-1 text-sage-900">Nevada Counties:</p>
+                        <p className="text-sm text-sage-700">Eureka, Lander, Lincoln, Nye, and White Pine</p>
+                        <p className="text-xs text-sage-600 mt-1 italic">Plus Clark County (partial): townships 13-16, ranges 63-71</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
