@@ -60,7 +60,8 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
     pdf.fontSize(11);
 
     if (doc.category === "IDENTITY") {
-      pdf.text("DRIVER'S LICENSE", { bold: true });
+      pdf.font("Helvetica-Bold").text("DRIVER'S LICENSE");
+      pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("Name: " + doc.claimantName);
       pdf.text("License #: DL-" + Math.random().toString(36).substring(2, 11).toUpperCase());
@@ -69,7 +70,8 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.text("Issued: 01/01/2020");
       pdf.text("Expires: 01/01/2030");
     } else if (doc.category === "PROOF_OF_RESIDENCE") {
-      pdf.text("UTILITY BILL", { bold: true });
+      pdf.font("Helvetica-Bold").text("UTILITY BILL");
+      pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("Account Holder: " + doc.claimantName);
       pdf.text("Service Address: 123 Main St, Salt Lake City, UT 84101");
@@ -79,7 +81,8 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.text("This utility bill confirms residence at the above address during");
       pdf.text("the period of atmospheric nuclear testing.");
     } else if (doc.category === "PATHOLOGY_REPORT") {
-      pdf.text("PATHOLOGY REPORT", { bold: true });
+      pdf.font("Helvetica-Bold").text("PATHOLOGY REPORT");
+      pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("Patient: " + doc.claimantName);
       pdf.text("Report Date: " + new Date().toLocaleDateString());
@@ -92,7 +95,8 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.text("This confirms the diagnosis of thyroid cancer, a condition");
       pdf.text("potentially linked to radiation exposure from nuclear testing.");
     } else if (doc.category === "MEDICAL_RECORDS") {
-      pdf.text("MEDICAL RECORDS SUMMARY", { bold: true });
+      pdf.font("Helvetica-Bold").text("MEDICAL RECORDS SUMMARY");
+      pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("Patient: " + doc.claimantName);
       pdf.text("Date Range: 1950 - Present");
@@ -105,7 +109,8 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.moveDown();
       pdf.text("These records document the medical history relevant to the RECA claim.");
     } else {
-      pdf.text("SUPPORTING DOCUMENT", { bold: true });
+      pdf.font("Helvetica-Bold").text("SUPPORTING DOCUMENT");
+      pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("This document provides supporting evidence for the RECA claim");
       pdf.text("submitted by " + doc.claimantName + ".");
@@ -116,9 +121,9 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
 
     // Add footer
     pdf.moveDown(3);
-    pdf.fontSize(9).text(
+    pdf.fillColor("gray").fontSize(9).text(
       "This is a test document generated for attorney portal demonstration.",
-      { align: "center", color: "gray" }
+      { align: "center" }
     );
 
     pdf.end();

@@ -48,8 +48,8 @@ function generateFakeDocuments(): FakeDocument[] {
       documents.push({
         intakeSessionId: sessionId,
         fileKey: `fake-documents/${sessionId}/doc-${docCounter}.pdf`,
-        originalFilename: `${category.toLowerCase().replace(/_/g, "-")}-${docCounter}.pdf`,
-        category,
+        originalFilename: `${category?.toLowerCase().replace(/_/g, "-") || 'document'}-${docCounter}.pdf`,
+        category: category || "IDENTITY",
         status,
         sizeBytes: Math.floor(Math.random() * 5000000) + 100000, // 100KB - 5MB
         mimeType: "application/pdf",

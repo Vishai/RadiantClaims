@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
-import { ClaimantCard } from "@/components/attorney/claimant-card";
+import { ClaimantDetailModal } from "@/components/attorney/claimant-detail-modal";
+import { WorkflowStatusBadge } from "@/components/attorney/workflow-status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Search,
   Filter,
   Users,
@@ -22,7 +31,10 @@ import {
   CheckCircle,
   Clock,
   FileText,
+  MapPin,
+  DollarSign,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface Claimant {
   id: string;
@@ -57,6 +69,16 @@ interface ApiResponse {
   };
 }
 
+const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
+  PANCREATIC_CANCER: "Pancreatic Cancer",
+  THYROID_CANCER: "Thyroid Cancer",
+  KIDNEY_CANCER: "Kidney Cancer",
+  LUNG_CANCER: "Lung Cancer",
+  BRAIN_CANCER: "Brain Cancer",
+  OTHER_CANCER: "Other Cancer",
+  NON_CANCER: "Non-Cancer",
+};
+
 export default function AttorneyDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -64,6 +86,7 @@ export default function AttorneyDashboardPage() {
   const [claimants, setClaimants] = useState<Claimant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedClaimant, setSelectedClaimant] = useState<Claimant | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,7 +128,7 @@ export default function AttorneyDashboardPage() {
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: "20",
+        limit: "50", // Show more in table view
       });
 
       if (searchQuery) {
@@ -280,7 +303,7 @@ export default function AttorneyDashboardPage() {
           </div>
         </div>
 
-        {/* Claimants Grid */}
+        {/* Data Table */}
         {error && (
           <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4">
             <p className="text-red-700">{error}</p>
@@ -304,13 +327,106 @@ export default function AttorneyDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {claimants.map((claimant) => (
-              <ClaimantCard key={claimant.id} claimant={claimant} />
-            ))}
+          <div className="rounded-lg border border-cream-200 bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Claim Type</TableHead>
+                  <TableHead>Documents</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {claimants.map((claimant) => {
+                  const needsAttention =
+                    claimant.workflowStatus === "READY_FOR_ATTORNEY" ||
+                    claimant.workflowStatus === "REVISION_REQUESTED";
+
+                  return (
+                    <TableRow
+                      key={claimant.id}
+                      className={`cursor-pointer hover:bg-sage-50 ${
+                        needsAttention ? "bg-purple-50/50" : ""
+                      }`}
+                      onClick={() => setSelectedClaimant(claimant)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <div className="font-semibold text-sage-900">
+                              {claimant.firstName} {claimant.lastName}
+                            </div>
+                            <div className="text-sm text-sage-600">
+                              {claimant.email}
+                            </div>
+                          </div>
+                          {claimant.isPremiumService && (
+                            <span title="Premium Service">
+                              <DollarSign className="h-4 w-4 text-amber-600" />
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sage-700">
+                          <MapPin className="h-4 w-4 text-sage-500" />
+                          {claimant.county}, {claimant.state}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {claimant.claimType ? (
+                          <span className="text-sage-700">
+                            {CLAIM_TYPE_LABELS[claimant.claimType]}
+                          </span>
+                        ) : (
+                          <span className="text-sage-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sage-700">
+                          <FileText className="h-4 w-4 text-sage-500" />
+                          {claimant.documentCount}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <WorkflowStatusBadge
+                          status={claimant.workflowStatus}
+                          size="sm"
+                          showIcon={false}
+                        />
+                      </TableCell>
+                      <TableCell className="text-sage-600">
+                        {formatDistanceToNow(new Date(claimant.updatedAt), {
+                          addSuffix: true,
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Show result count */}
+        {!loading && claimants.length > 0 && (
+          <div className="mt-4 text-center text-sm text-sage-600">
+            Showing {claimants.length} of {stats.total} claimants
           </div>
         )}
       </main>
+
+      {/* Detail Modal */}
+      {selectedClaimant && (
+        <ClaimantDetailModal
+          open={!!selectedClaimant}
+          onOpenChange={(open) => !open && setSelectedClaimant(null)}
+          claimant={selectedClaimant}
+        />
+      )}
     </div>
   );
 }
