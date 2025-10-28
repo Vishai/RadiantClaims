@@ -11,15 +11,15 @@ import { db } from "@/lib/db";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { claimType } = body;
+    const { claimType, isGuest = false } = body;
 
     // Check if user is authenticated (optional - allows anonymous workflow)
     const session = await getServerSession(authOptions);
 
     let claimantId: string | null = null;
 
-    // If authenticated, try to associate with existing claimant
-    if (session?.user?.email) {
+    // If authenticated and not explicitly requesting guest mode, try to associate with existing claimant
+    if (session?.user?.email && !isGuest) {
       let claimant = await db.claimant.findUnique({
         where: { email: session.user.email },
       });

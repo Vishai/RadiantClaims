@@ -59,7 +59,7 @@ export default function HomePage() {
                     Check Eligibility
                   </Button>
                 </Link>
-                <Link href="/intake">
+                <Link href="/reca/start">
                   <Button
                     size="lg"
                     variant="outline"

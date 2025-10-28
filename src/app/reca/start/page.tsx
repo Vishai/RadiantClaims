@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import { Heart, ArrowRight, CheckCircle, AlertCircle, Lock, UserPlus, Mail } from "lucide-react";
 
 export default function RECAStartPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAuthOptions, setShowAuthOptions] = useState(false);
 
   useEffect(() => {
     const id = searchParams.get("sessionId");
@@ -26,7 +29,14 @@ export default function RECAStartPage() {
     }
   }, [searchParams]);
 
-  const handleStart = async () => {
+  // Auto-show auth options if not logged in
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      setShowAuthOptions(true);
+    }
+  }, [status]);
+
+  const handleStart = async (asGuest: boolean = false) => {
     setIsLoading(true);
 
     try {
@@ -37,6 +47,7 @@ export default function RECAStartPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             claimType: "DOWNWINDER",
+            isGuest: asGuest,
           }),
         });
 
@@ -59,6 +70,10 @@ export default function RECAStartPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleContinueAsGuest = () => {
+    handleStart(true);
   };
 
   return (
@@ -154,22 +169,116 @@ export default function RECAStartPage() {
           </CardContent>
         </Card>
 
-        {/* Auto-Save Feature */}
-        <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-sage-700">
-                <p className="font-semibold mb-1">Your Progress is Saved</p>
-                <p>
-                  Don't worry about completing everything in one sitting. Your
-                  progress is automatically saved every 2 minutes. You can return
-                  anytime to continue where you left off.
+        {/* Authentication Gate */}
+        {showAuthOptions && status === "unauthenticated" ? (
+          <Card className="mb-8 rounded-3xl border-2 border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-peach-50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sage-900">Choose How to Continue</CardTitle>
+              <CardDescription className="text-sage-700">
+                To save your progress and track your claim, please create an account or sign in
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Link href="/reca/signup" className="block">
+                  <div className="h-full rounded-2xl border-2 border-terracotta-300 bg-white p-6 transition-all hover:border-terracotta-500 hover:shadow-md cursor-pointer">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-terracotta-100">
+                      <UserPlus className="h-6 w-6 text-terracotta-600" />
+                    </div>
+                    <h3 className="mb-2 font-semibold text-sage-900">Create Account</h3>
+                    <p className="text-sm text-sage-700 mb-3">
+                      Unlock powerful tracking tools and save your progress
+                    </p>
+                    <div className="space-y-1.5 text-xs text-sage-600">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-600" />
+                        <span className="font-medium text-emerald-900">Payout Pulse</span>
+                        <span className="text-sage-600">- Track payout timeline</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-600" />
+                        <span>Real-time DOJ milestone updates</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-600" />
+                        <span>Queue position & cohort stats</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-600" />
+                        <span>Auto-save across all devices</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/login?callbackUrl=/reca/start" className="block">
+                  <div className="h-full rounded-2xl border-2 border-sage-300 bg-white p-6 transition-all hover:border-sage-500 hover:shadow-md cursor-pointer">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-sage-100">
+                      <Lock className="h-6 w-6 text-sage-600" />
+                    </div>
+                    <h3 className="mb-2 font-semibold text-sage-900">Sign In</h3>
+                    <p className="text-sm text-sage-700">
+                      Already have an account? Log in to continue your existing claim
+                    </p>
+                  </div>
+                </Link>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-cream-300"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-gradient-to-br from-terracotta-50 to-peach-50 px-2 text-sage-600">
+                    Or
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border-2 border-cream-300 bg-white p-6">
+                <div className="mb-4 flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="mb-1 font-semibold text-sage-900">Continue as Guest</h3>
+                    <p className="text-sm text-sage-700">
+                      Start without an account. You'll receive a magic link via email to resume later.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleContinueAsGuest}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="w-full rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                >
+                  {isLoading ? "Loading..." : "Continue as Guest"}
+                </Button>
+                <p className="mt-3 text-xs text-sage-600">
+                  Note: Guest sessions expire after 7 days. We recommend creating an account for the best experience.
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Auto-Save Feature */}
+            <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-sage-700">
+                    <p className="font-semibold mb-1">Your Progress is Saved</p>
+                    <p>
+                      Don't worry about completing everything in one sitting. Your
+                      progress is automatically saved every 2 minutes. You can return
+                      anytime to continue where you left off.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         {/* Time Estimate */}
         <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
@@ -193,21 +302,23 @@ export default function RECAStartPage() {
           </CardContent>
         </Card>
 
-        {/* Start Button */}
-        <div className="text-center">
-          <Button
-            size="lg"
-            onClick={handleStart}
-            disabled={isLoading}
-            className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
-          >
-            {isLoading ? "Loading..." : "Start RECA Form"}
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-          <p className="mt-4 text-sm text-sage-600">
-            Estimated time: 45-60 minutes • Auto-saves your progress
-          </p>
-        </div>
+        {/* Start Button - Only show for authenticated users */}
+        {status === "authenticated" && (
+          <div className="text-center">
+            <Button
+              size="lg"
+              onClick={() => handleStart(false)}
+              disabled={isLoading}
+              className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
+            >
+              {isLoading ? "Loading..." : "Start RECA Form"}
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <p className="mt-4 text-sm text-sage-600">
+              Estimated time: 45-60 minutes • Auto-saves your progress
+            </p>
+          </div>
+        )}
 
         {/* Help Section */}
         <Card className="mt-12 rounded-3xl border-2 border-cream-200 bg-gradient-to-br from-cream-50 to-white shadow-sm">

@@ -29,7 +29,7 @@ export default function EligibilityPage() {
               RadiantClaims
             </span>
           </Link>
-          <Link href="/intake">
+          <Link href="/reca/start">
             <Button className="rounded-full bg-terracotta-500 px-8 py-6 hover:bg-terracotta-600">
               Start Claim Packet
             </Button>
@@ -406,7 +406,7 @@ export default function EligibilityPage() {
               Start your free claim packet today. We'll guide you through every
               step.
             </p>
-            <Link href="/intake?claimType=DOWNWINDER">
+            <Link href="/reca/start">
               <Button
                 size="lg"
                 className="rounded-full bg-white px-8 py-6 text-lg font-semibold text-terracotta-600 hover:bg-cream-50"

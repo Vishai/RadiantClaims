@@ -131,6 +131,10 @@ model Claimant {
   relationshipToClaimant RelationshipType?
   cancerType             String?              // Reference to specific cancer
   documentStatuses       ClaimantDocumentStatus[]
+  // CLAIM LIFECYCLE TRACKING
+  lifecycle              ClaimLifecycle?
+  queuePosition          ClaimQueuePosition?
+  notificationPreferences LifecycleNotificationPreference?
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
 
@@ -925,4 +929,213 @@ enum DocumentStatusType {
   RECEIVED       // Received but not uploaded
   UPLOADED       // Uploaded to our system
   VERIFIED       // Staff verified the document
+}
+
+// ============================================================================
+// CLAIM LIFECYCLE TRACKING & PAYOUT PULSE
+// ============================================================================
+
+// DOJ Processing Milestones - Official DOJ workflow stages
+enum DOJMilestone {
+  // Pre-Submission
+  NOT_SUBMITTED              // Claim not yet submitted to DOJ
+
+  // DOJ Receipt & Initial Review (Week 1-2)
+  RECEIVED_BY_DOJ            // DOJ received the claim packet
+  INITIAL_REVIEW             // DOJ performing initial completeness review
+  INCOMPLETE_RETURNED        // DOJ returned claim as incomplete
+
+  // Document Verification (Week 2-8)
+  DOCUMENT_VERIFICATION      // DOJ verifying submitted documents
+  REQUESTING_ADDITIONAL_DOCS // DOJ requested additional documentation
+  CANCER_REGISTRY_LOOKUP     // DOJ checking state cancer registries
+  MEDICAL_RECORDS_REQUEST    // DOJ requested medical records from providers
+
+  // Eligibility Assessment (Week 8-16)
+  ELIGIBILITY_REVIEW         // DOJ assessing eligibility criteria
+  EXPOSURE_VERIFICATION      // Verifying exposure location and dates
+  DISEASE_VERIFICATION       // Verifying compensable disease
+  RELATIONSHIP_VERIFICATION  // Verifying relationship (for survivors)
+
+  // Final Review & Decision (Week 16-24)
+  FINAL_REVIEW               // Final review by DOJ adjudicator
+  APPROVED_PENDING_PAYMENT   // Approved, awaiting payment processing
+  PAYMENT_PROCESSING         // Payment being processed by Treasury
+  PAYMENT_ISSUED             // Payment check/wire issued
+
+  // Terminal States
+  CLAIM_APPROVED             // Claim fully approved and paid
+  CLAIM_DENIED               // Claim denied
+  CLAIM_WITHDRAWN            // Claim withdrawn by claimant
+  APPEAL_IN_PROGRESS         // Appeal filed and in progress
+  APPEAL_APPROVED            // Appeal approved
+  APPEAL_DENIED              // Appeal denied
+}
+
+// Track claim lifecycle from submission to payout
+model ClaimLifecycle {
+  id                      String        @id @default(cuid())
+  claimantId              String        @unique
+  claimant                Claimant      @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Current Status
+  currentMilestone        DOJMilestone  @default(NOT_SUBMITTED)
+  currentMilestoneDate    DateTime      @default(now())
+
+  // Key Dates
+  submittedToRadiantAt    DateTime?     // When submitted to RadiantClaims
+  submittedToDOJAt        DateTime?     // When mailed to DOJ
+  receivedByDOJAt         DateTime?     // When DOJ logged receipt
+  completenessReviewAt    DateTime?     // When DOJ completed initial review
+  eligibilityReviewAt     DateTime?     // When DOJ started eligibility review
+  approvedAt              DateTime?     // When DOJ approved claim
+  deniedAt                DateTime?     // When DOJ denied claim
+  paymentIssuedAt         DateTime?     // When Treasury issued payment
+  paymentReceivedAt       DateTime?     // When claimant received payment
+
+  // Processing Details
+  dojClaimNumber          String?       // Official DOJ claim number
+  expectedCompletionDate  DateTime?     // Estimated completion based on analytics
+  estimatedPayoutDate     DateTime?     // Estimated payout date
+  daysInCurrentMilestone  Int           @default(0)
+  totalProcessingDays     Int           @default(0)
+
+  // Medical Records Tracking
+  cancerRegistryChecked   Boolean       @default(false)
+  cancerRegistryFoundAt   DateTime?
+  medicalRecordsRequested Boolean       @default(false)
+  medicalRecordsReceivedByDOJ Boolean   @default(false)
+
+  // Communication
+  lastDOJContactDate      DateTime?
+  lastDOJContactMethod    String?       // "phone", "email", "letter"
+  lastDOJContactNotes     String?       @db.Text
+
+  // Timeline Events
+  milestones              ClaimMilestoneEvent[]
+
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  @@index([currentMilestone])
+  @@index([submittedToDOJAt])
+  @@index([dojClaimNumber])
+}
+
+// Individual milestone events for timeline visualization
+model ClaimMilestoneEvent {
+  id                String          @id @default(cuid())
+  lifecycleId       String
+  lifecycle         ClaimLifecycle  @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
+  milestone         DOJMilestone
+  achievedAt        DateTime        @default(now())
+  daysToAchieve     Int?            // Days from previous milestone
+  notes             String?         @db.Text
+  isEstimated       Boolean         @default(false) // True for projected future milestones
+  notifiedClaimant  Boolean         @default(false) // Whether we notified customer
+
+  @@index([lifecycleId])
+  @@index([milestone])
+  @@index([achievedAt])
+}
+
+// Aggregate statistics for "Payout Pulse" - Historical claim data
+model ClaimStatistics {
+  id                        String   @id @default(cuid())
+
+  // Time Period
+  periodStart               DateTime
+  periodEnd                 DateTime
+
+  // Volume Metrics
+  totalClaimsSubmitted      Int      @default(0)
+  totalClaimsApproved       Int      @default(0)
+  totalClaimsDenied         Int      @default(0)
+  totalClaimsInProgress     Int      @default(0)
+
+  // Timing Metrics (in days)
+  avgTimeToReceipt          Float?   // DOJ receipt after mailing
+  avgTimeToInitialReview    Float?   // Completeness review
+  avgTimeToCancerRegistry   Float?   // Cancer registry lookup
+  avgTimeToEligibility      Float?   // Eligibility determination
+  avgTimeToApproval         Float?   // Total time to approval
+  avgTimeToPayment          Float?   // Approval to payment received
+
+  // Success Rates
+  approvalRate              Float?   // % approved
+  completenessRate          Float?   // % complete on first submission
+
+  // By Claim Type
+  downwinderApprovals       Int      @default(0)
+  downwinderDenials         Int      @default(0)
+  downwinderAvgDays         Float?
+
+  // By State
+  utahClaimsApproved        Int      @default(0)
+  idahoClaimsApproved       Int      @default(0)
+  newMexicoClaimsApproved   Int      @default(0)
+  arizonaClaimsApproved     Int      @default(0)
+  nevadaClaimsApproved      Int      @default(0)
+
+  // Cancer Type Success Rates
+  leukemiaApprovalRate      Float?
+  thyroidApprovalRate       Float?
+  breastApprovalRate        Float?
+  lungApprovalRate          Float?
+
+  // Updated Tracking
+  lastUpdated               DateTime @default(now())
+  dataSource                String?  // "DOJ_PUBLIC_DATA", "PARTNER_FIRMS", "MANUAL_ENTRY"
+
+  @@index([periodStart, periodEnd])
+  @@index([lastUpdated])
+}
+
+// Queue position tracking - "Where am I in line?"
+model ClaimQueuePosition {
+  id                  String    @id @default(cuid())
+  claimantId          String    @unique
+  claimant            Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Position Metrics
+  estimatedPosition   Int?      // Estimated position in DOJ queue
+  totalInQueue        Int?      // Total claims ahead in queue
+
+  // Cohort Tracking - Claims submitted in same time period
+  cohortId            String?   // Year-Month cohort (e.g., "2024-10")
+  cohortSize          Int?      // Total claims in cohort
+  cohortApproved      Int?      // How many in cohort have been approved
+  cohortDenied        Int?      // How many in cohort have been denied
+
+  // Peer Comparison
+  percentFasterThan   Float?    // "Your claim is moving faster than X% of similar claims"
+
+  updatedAt           DateTime  @updatedAt
+
+  @@index([cohortId])
+}
+
+// Customer notification preferences for lifecycle updates
+model LifecycleNotificationPreference {
+  id                          String   @id @default(cuid())
+  claimantId                  String   @unique
+  claimant                    Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Notification Channels
+  emailNotifications          Boolean  @default(true)
+  smsNotifications            Boolean  @default(false)
+  phoneNumber                 String?
+
+  // Notification Types
+  notifyOnMilestone           Boolean  @default(true)
+  notifyOnDocumentRequest     Boolean  @default(true)
+  notifyOnApproval            Boolean  @default(true)
+  notifyOnPayment             Boolean  @default(true)
+  weeklyProgressUpdate        Boolean  @default(true)
+
+  // Frequency
+  maxNotificationsPerWeek     Int      @default(3)
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 }

@@ -2,9 +2,11 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Save, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./ProgressBar";
+import { AccountCreationModal } from "./AccountCreationModal";
 import {
   RECAWorkflowSection,
   RECAWorkflowState,
@@ -38,11 +40,14 @@ export function FormWizard({
   hideNavigation = false,
 }: FormWizardProps) {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [workflowState, setWorkflowState] =
     useState<RECAWorkflowState>(initialState);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [hasPromptedAccount, setHasPromptedAccount] = useState(false);
 
   // Auto-save every 2 minutes
   useEffect(() => {
@@ -86,6 +91,12 @@ export function FormWizard({
         completionPercentage: result.completionPercentage,
         lastSaved: result.lastSaved,
       }));
+
+      // Prompt guest users to create account on first successful save
+      if (status === "unauthenticated" && !hasPromptedAccount && !lastSaved) {
+        setShowAccountModal(true);
+        setHasPromptedAccount(true);
+      }
     } catch (error) {
       console.error("Auto-save error:", error);
       setSaveError("Failed to auto-save. Your progress may not be saved.");
@@ -328,6 +339,14 @@ export function FormWizard({
           </div>
         )}
       </div>
+
+      {/* Account Creation Modal for Guest Users */}
+      <AccountCreationModal
+        open={showAccountModal}
+        onClose={() => setShowAccountModal(false)}
+        onSkip={() => setShowAccountModal(false)}
+        sessionId={sessionId}
+      />
     </div>
   );
 }
