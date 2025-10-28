@@ -29,8 +29,8 @@ async function addFineGridToPDF() {
     // Embed font
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    // Add grid to first 3 pages only (for performance)
-    const pagesToCalibrate = Math.min(3, pdfDoc.getPageCount());
+    // Add grid to pages 0-16 (pages 1-17, including additional form pages)
+    const pagesToCalibrate = Math.min(17, pdfDoc.getPageCount());
 
     for (let pageIndex = 0; pageIndex < pagesToCalibrate; pageIndex++) {
       const page = pdfDoc.getPages()[pageIndex];

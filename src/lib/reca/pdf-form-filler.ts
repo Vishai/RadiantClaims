@@ -347,270 +347,1310 @@ const FIELD_COORDINATES: Record<string, FieldCoordinate> = {
 
   // PART 3: RELATIONSHIP (Page 3)
   // Applied same offset: +28 X, -150 Y from original
-  "part3.self": { page: 2, x: 70, y: 530, type: "checkbox" },
-  "part3.spouse": { page: 2, x: 70, y: 500, type: "checkbox" },
-  "part3.child": { page: 2, x: 70, y: 470, type: "checkbox" },
-  "part3.parent": { page: 2, x: 338, y: 530, type: "checkbox" },
-  "part3.grandchild": { page: 2, x: 338, y: 500, type: "checkbox" },
-  "part3.grandparent": { page: 2, x: 338, y: 470, type: "checkbox" },
+  "part3.self": { page: 2, x: 74, y: 661, type: "checkbox" },
+  "part3.spouse": { page: 2, x: 74, y: 628, type: "checkbox" },
+  "part3.child": { page: 2, x: 74, y: 594, type: "checkbox" },
+  "part3.parent": { page: 2, x: 309, y: 661, type: "checkbox" },
+  "part3.grandchild": { page: 2, x: 309, y: 628, type: "checkbox" },
+  "part3.grandparent": { page: 2, x: 309, y: 594, type: "checkbox" },
+
+  // PART 4: SELF-FILERS (Page 3, 0-indexed: page 2)
+  // Document requirement checkboxes
+  "part4.birthCertificate": { page: 2, x: 74, y: 487, type: "checkbox" },
+  "part4.marriageCertificates": { page: 2, x: 74, y: 465, type: "checkbox" },
+
+  // PART 5: SURVIVING SPOUSE (Page 3-4, 0-indexed: pages 2-3)
+  // Question checkboxes (Page 3)
+  "part5.claimantDeceased.yes": { page: 2, x: 293, y: 320, type: "checkbox" },
+  "part5.claimantDeceased.no": { page: 2, x: 340, y: 320, type: "checkbox" },
+  "part5.marriedOneYear.yes": { page: 2, x: 293, y: 263, type: "checkbox" },
+  "part5.marriedOneYear.no": { page: 2, x: 340, y: 263, type: "checkbox" },
+  "part5.claimantPreviousMarriages.yes": {
+    page: 2,
+    x: 293,
+    y: 220,
+    type: "checkbox",
+  },
+  "part5.claimantPreviousMarriages.no": {
+    page: 2,
+    x: 338,
+    y: 220,
+    type: "checkbox",
+  },
+  // Text lines for claimant's previous marriages (if YES above)
+  "part5.claimantPreviousSpouse1": {
+    page: 2,
+    x: 72,
+    y: 162,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+  "part5.claimantPreviousSpouse2": {
+    page: 2,
+    x: 72,
+    y: 149,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+
+  "part5.filerOtherMarriages.yes": {
+    page: 2,
+    x: 293,
+    y: 107,
+    type: "checkbox",
+  },
+  "part5.filerOtherMarriages.no": { page: 2, x: 338, y: 107, type: "checkbox" },
+
+  // Text lines for filer's other marriages (if YES above)
+  "part5.filerOtherSpouse1": {
+    page: 3,
+    x: 76,
+    y: 693,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+  "part5.filerOtherSpouse2": {
+    page: 3,
+    x: 76,
+    y: 680,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+  "part5.filerOtherSpouse3": {
+    page: 3,
+    x: 76,
+    y: 664,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+  "part5.filerOtherSpouse4": {
+    page: 3,
+    x: 76,
+    y: 650,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+
+  // Document requirement checkboxes (Page 4, 0-indexed: page 3)
+  "part5.birthCertificateClaimant": {
+    page: 3,
+    x: 74,
+    y: 553,
+    type: "checkbox",
+  },
+  "part5.deathCertificate": { page: 3, x: 74, y: 533, type: "checkbox" },
+  "part5.marriageCertificate": { page: 3, x: 74, y: 514, type: "checkbox" },
+  "part5.marriageCertificatesPrevious": {
+    page: 3,
+    x: 74,
+    y: 493,
+    type: "checkbox",
+  },
+  "part5.divorceDecreesPrevious": { page: 3, x: 74, y: 461, type: "checkbox" },
+  "part5.birthCertificateFiler": { page: 3, x: 74, y: 429, type: "checkbox" },
+  "part5.marriageCertificatesFiler": {
+    page: 3,
+    x: 74,
+    y: 409,
+    type: "checkbox",
+  },
+  "part5.divorceDecreesFiler": { page: 3, x: 74, y: 389, type: "checkbox" },
+
+  // PART 6: SURVIVING CHILD (Pages 4-6, 0-indexed: pages 3-5)
+  // Question checkboxes (Page 4)
+  "part6.claimantDeceased.yes": { page: 3, x: 290, y: 199, type: "checkbox" },
+  "part6.claimantDeceased.no": { page: 3, x: 340, y: 199, type: "checkbox" },
+  "part6.claimantEverMarried.yes": {
+    page: 3,
+    x: 290,
+    y: 154,
+    type: "checkbox",
+  },
+  "part6.claimantEverMarried.no": { page: 3, x: 337, y: 154, type: "checkbox" },
+
+  // Spouse list write-in fields at top of Page 4 (for surviving child section)
+  "part6.spouseInfo1": { page: 3, x: 76, y: 120, fontSize: 10, maxWidth: 530 },
+  "part6.spouseInfo2": { page: 3, x: 76, y: 107, fontSize: 10, maxWidth: 530 },
+  "part6.spouseInfo3": { page: 3, x: 76, y: 94, fontSize: 10, maxWidth: 530 },
+
+  // Child type checkboxes (Page 5, 0-indexed: page 4)
+  "part6.childType.natural": { page: 4, x: 215, y: 640, type: "checkbox" },
+  "part6.childType.adopted": { page: 4, x: 348, y: 640, type: "checkbox" },
+  "part6.childType.stepChild": { page: 4, x: 450, y: 640, type: "checkbox" },
+  "part6.otherChildren.yes": { page: 4, x: 430, y: 610, type: "checkbox" },
+  "part6.otherChildren.no": { page: 4, x: 480, y: 610, type: "checkbox" },
+  "part6.additionalChildrenAttached": {
+    page: 4,
+    x: 362,
+    y: 355,
+    type: "checkbox",
+  },
+
+  // Children information write-in fields (Page 5, 0-indexed: page 4)
+  // Name, date/place of birth, phone, address OR date/place of death
+  "part6.child1.name": { page: 4, x: 120, y: 553, fontSize: 12, maxWidth: 200 },
+  "part6.child1.birthDate": {
+    page: 4,
+    x: 420,
+    y: 553,
+    fontSize: 8,
+    maxWidth: 80,
+  },
+  "part6.child1.birthPlace": {
+    page: 4,
+    x: 475,
+    y: 553,
+    fontSize: 8,
+    maxWidth: 210,
+  },
+  "part6.child1.phone": {
+    page: 4,
+    x: 213,
+    y: 511,
+    fontSize: 10,
+    maxWidth: 120,
+  },
+  "part6.child1.address": {
+    page: 4,
+    x: 220,
+    y: 525,
+    fontSize: 10,
+    maxWidth: 375,
+  },
+  "part6.child1.deathDate": {
+    page: 4,
+    x: 263,
+    y: 540,
+    fontSize: 10,
+    maxWidth: 80,
+  },
+  "part6.child1.deathPlace": {
+    page: 4,
+    x: 320,
+    y: 543,
+    fontSize: 10,
+    maxWidth: 415,
+  },
+
+  "part6.child2.name": { page: 4, x: 120, y: 497, fontSize: 12, maxWidth: 200 },
+  "part6.child2.birthDate": {
+    page: 4,
+    x: 422,
+    y: 497,
+    fontSize: 8,
+    maxWidth: 80,
+  },
+  "part6.child2.birthPlace": {
+    page: 4,
+    x: 475,
+    y: 497,
+    fontSize: 8,
+    maxWidth: 210,
+  },
+  "part6.child2.phone": {
+    page: 4,
+    x: 218,
+    y: 453,
+    fontSize: 10,
+    maxWidth: 120,
+  },
+  "part6.child2.address": {
+    page: 4,
+    x: 220,
+    y: 469,
+    fontSize: 10,
+    maxWidth: 375,
+  },
+  "part6.child2.deathDate": {
+    page: 4,
+    x: 255,
+    y: 482,
+    fontSize: 8,
+    maxWidth: 80,
+  },
+  "part6.child2.deathPlace": {
+    page: 4,
+    x: 310,
+    y: 482,
+    fontSize: 8,
+    maxWidth: 415,
+  },
+
+  "part6.child3.name": { page: 4, x: 120, y: 442, fontSize: 12, maxWidth: 200 },
+  "part6.child3.birthDate": {
+    page: 4,
+    x: 420,
+    y: 442,
+    fontSize: 8,
+    maxWidth: 80,
+  },
+  "part6.child3.birthPlace": {
+    page: 4,
+    x: 470,
+    y: 442,
+    fontSize: 8,
+    maxWidth: 210,
+  },
+  "part6.child3.phone": {
+    page: 4,
+    x: 218,
+    y: 396,
+    fontSize: 10,
+    maxWidth: 120,
+  },
+  "part6.child3.address": {
+    page: 4,
+    x: 220,
+    y: 410,
+    fontSize: 10,
+    maxWidth: 375,
+  },
+  "part6.child3.deathDate": {
+    page: 4,
+    x: 258,
+    y: 425,
+    fontSize: 8,
+    maxWidth: 80,
+  },
+  "part6.child3.deathPlace": {
+    page: 4,
+    x: 315,
+    y: 425,
+    fontSize: 8,
+    maxWidth: 415,
+  },
+
+  // We need another checkbox field here as a check for more children, if there are more children we will have to add a supplemental attachment with that information ( this is for later when we are attaching the pdf to the form we are filling out through /reca/start form stuff)
+
+  // Document requirement checkboxes (Page 5)
+  "part6.birthCertificateClaimant": {
+    page: 4,
+    x: 73,
+    y: 256,
+    type: "checkbox",
+  },
+  "part6.deathCertificate": { page: 4, x: 73, y: 239, type: "checkbox" },
+  "part6.marriageCertificates": { page: 4, x: 73, y: 219, type: "checkbox" },
+  "part6.divorceDecrees": { page: 4, x: 73, y: 199, type: "checkbox" },
+  "part6.birthCertificateFiler": { page: 4, x: 73, y: 170, type: "checkbox" },
+  "part6.marriageCertificatesFiler": {
+    page: 4,
+    x: 73,
+    y: 151,
+    type: "checkbox",
+  },
+  "part6.stepChildProof": { page: 4, x: 73, y: 131, type: "checkbox" },
+  "part6.siblingDeathCertificates": {
+    page: 4,
+    x: 73,
+    y: 86,
+    type: "checkbox",
+  },
+
+  // Additional document checkboxes (Page 6, 0-indexed: page 5)
+  "part6.birthCertificatesSiblings": {
+    page: 5,
+    x: 72,
+    y: 681,
+    type: "checkbox",
+  },
+  "part6.marriageCertificatesSiblings": {
+    page: 5,
+    x: 72,
+    y: 662,
+    type: "checkbox",
+  },
+  "part6.expeditedSignatures": { page: 5, x: 72, y: 615, type: "checkbox" },
+
+  // PART 7: OTHER RELATIVES (Page 6, 0-indexed: page 5)
+  // Relationship type checkboxes
+  "part7.parent": { page: 5, x: 211, y: 438, type: "checkbox" },
+  "part7.grandchild": { page: 5, x: 323, y: 438, type: "checkbox" },
+  "part7.grandparent": { page: 5, x: 448, y: 438, type: "checkbox" },
+
+  // Document requirement checkboxes
+  "part7.birthCertificateClaimant": {
+    page: 5,
+    x: 73,
+    y: 399,
+    type: "checkbox",
+  },
+  "part7.deathCertificate": { page: 5, x: 73, y: 377, type: "checkbox" },
+  "part7.marriageCertificates": { page: 5, x: 73, y: 355, type: "checkbox" },
+  "part7.divorceDecrees": { page: 5, x: 73, y: 333, type: "checkbox" },
+  "part7.siblingDeathCertificates": {
+    page: 5,
+    x: 73,
+    y: 299,
+    type: "checkbox",
+  },
+  "part7.birthCertificateFiler": { page: 5, x: 73, y: 276, type: "checkbox" },
+  "part7.marriageCertificatesFiler": {
+    page: 5,
+    x: 73,
+    y: 254,
+    type: "checkbox",
+  },
 
   // PART 8: EXPOSURE (Pages 6-7, 0-indexed: pages 5-6)
   // Exposure period options (Page 6)
-  "part8.option1a": { page: 5, x: 42, y: 450, type: "checkbox" }, // designated area 1+ year, Jan 21 1951 - Nov 6 1962
-  "part8.option1b": { page: 5, x: 42, y: 425, type: "checkbox" }, // designated area entire period, June 30 - July 31 1962
-  "part8.option2": { page: 5, x: 42, y: 370, type: "checkbox" }, // New Mexico 1+ year, Sept 24 1944 - Nov 6 1962
+  "part8.option1a": { page: 5, x: 105, y: 171, type: "checkbox" }, // designated area 1+ year, Jan 21 1951 - Nov 6 1962
+  "part8.option1b": { page: 5, x: 105, y: 136, type: "checkbox" }, // designated area entire period, June 30 - July 31 1962
+  "part8.option2": { page: 5, x: 105, y: 96, type: "checkbox" }, // New Mexico 1+ year, Sept 24 1944 - Nov 6 1962
 
   // Location fields (Page 7, 0-indexed: page 6)
   // Simple states (no county)
   "part8.idaho.townCity": {
     page: 6,
-    x: 120,
-    y: 680,
-    fontSize: 10,
+    x: 150,
+    y: 542,
+    fontSize: 12,
     maxWidth: 200,
   },
   "part8.idaho.timePeriod": {
     page: 6,
-    x: 450,
-    y: 680,
-    fontSize: 10,
+    x: 430,
+    y: 542,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.newMexico.townCity": {
     page: 6,
-    x: 120,
-    y: 652,
-    fontSize: 10,
+    x: 150,
+    y: 512,
+    fontSize: 12,
     maxWidth: 200,
   },
   "part8.newMexico.timePeriod": {
     page: 6,
-    x: 450,
-    y: 652,
-    fontSize: 10,
+    x: 430,
+    y: 512,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.utah.townCity": {
     page: 6,
-    x: 120,
-    y: 624,
-    fontSize: 10,
+    x: 150,
+    y: 482,
+    fontSize: 12,
     maxWidth: 200,
   },
   "part8.utah.timePeriod": {
     page: 6,
-    x: 450,
-    y: 624,
-    fontSize: 10,
+    x: 430,
+    y: 482,
+    fontSize: 12,
     maxWidth: 120,
   },
 
   // Arizona counties (6 rows)
   "part8.arizona.coconino.townCity": {
     page: 6,
-    x: 270,
-    y: 560,
-    fontSize: 10,
+    x: 220,
+    y: 417,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.coconino.timePeriod": {
     page: 6,
-    x: 450,
-    y: 560,
-    fontSize: 10,
+    x: 430,
+    y: 417,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.arizona.yavapai.townCity": {
     page: 6,
-    x: 270,
-    y: 532,
-    fontSize: 10,
+    x: 220,
+    y: 392,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.yavapai.timePeriod": {
     page: 6,
-    x: 450,
-    y: 532,
-    fontSize: 10,
+    x: 430,
+    y: 392,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.arizona.navajo.townCity": {
     page: 6,
-    x: 270,
-    y: 504,
-    fontSize: 10,
+    x: 220,
+    y: 370,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.navajo.timePeriod": {
     page: 6,
-    x: 450,
-    y: 504,
-    fontSize: 10,
+    x: 430,
+    y: 370,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.arizona.apache.townCity": {
     page: 6,
-    x: 270,
-    y: 476,
-    fontSize: 10,
+    x: 220,
+    y: 345,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.apache.timePeriod": {
     page: 6,
-    x: 450,
-    y: 476,
-    fontSize: 10,
+    x: 430,
+    y: 345,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.arizona.gila.townCity": {
     page: 6,
-    x: 270,
-    y: 448,
-    fontSize: 10,
+    x: 220,
+    y: 323,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.gila.timePeriod": {
     page: 6,
-    x: 450,
-    y: 448,
-    fontSize: 10,
+    x: 430,
+    y: 323,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.arizona.mohave.townCity": {
     page: 6,
-    x: 270,
-    y: 420,
-    fontSize: 10,
+    x: 220,
+    y: 299,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.arizona.mohave.timePeriod": {
     page: 6,
-    x: 450,
-    y: 420,
-    fontSize: 10,
+    x: 430,
+    y: 299,
+    fontSize: 12,
     maxWidth: 120,
   },
 
   // Nevada counties (6 rows)
   "part8.nevada.whitePine.townCity": {
     page: 6,
-    x: 270,
-    y: 380,
-    fontSize: 10,
+    x: 220,
+    y: 274,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.whitePine.timePeriod": {
     page: 6,
-    x: 450,
-    y: 380,
-    fontSize: 10,
+    x: 430,
+    y: 274,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.nevada.nye.townCity": {
     page: 6,
-    x: 270,
-    y: 352,
-    fontSize: 10,
+    x: 220,
+    y: 250,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.nye.timePeriod": {
     page: 6,
-    x: 450,
-    y: 352,
-    fontSize: 10,
+    x: 430,
+    y: 250,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.nevada.lander.townCity": {
     page: 6,
-    x: 270,
-    y: 324,
-    fontSize: 10,
+    x: 220,
+    y: 225,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.lander.timePeriod": {
     page: 6,
-    x: 450,
-    y: 324,
-    fontSize: 10,
+    x: 430,
+    y: 225,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.nevada.lincoln.townCity": {
     page: 6,
-    x: 270,
-    y: 296,
-    fontSize: 10,
+    x: 220,
+    y: 204,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.lincoln.timePeriod": {
     page: 6,
-    x: 450,
-    y: 296,
-    fontSize: 10,
+    x: 430,
+    y: 204,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.nevada.eureka.townCity": {
     page: 6,
-    x: 270,
-    y: 268,
-    fontSize: 10,
+    x: 220,
+    y: 179,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.eureka.timePeriod": {
     page: 6,
-    x: 450,
-    y: 268,
-    fontSize: 10,
+    x: 430,
+    y: 179,
+    fontSize: 12,
     maxWidth: 120,
   },
   "part8.nevada.clark.townCity": {
     page: 6,
-    x: 270,
-    y: 228,
-    fontSize: 10,
+    x: 220,
+    y: 122,
+    fontSize: 12,
     maxWidth: 160,
   },
   "part8.nevada.clark.timePeriod": {
     page: 6,
-    x: 450,
-    y: 228,
-    fontSize: 10,
+    x: 430,
+    y: 122,
+    fontSize: 12,
     maxWidth: 120,
   },
 
   // PART 10: COMPENSABLE DISEASES (Page 9, 0-indexed: page 8)
   // Left column diseases
-  "part10.leukemia": { page: 8, x: 42, y: 655, type: "checkbox" },
-  "part10.multipleMyeloma": { page: 8, x: 42, y: 625, type: "checkbox" },
-  "part10.lymphomas": { page: 8, x: 42, y: 595, type: "checkbox" },
-  "part10.thyroid": { page: 8, x: 42, y: 565, type: "checkbox" },
-  "part10.breast": { page: 8, x: 42, y: 535, type: "checkbox" },
-  "part10.esophagus": { page: 8, x: 42, y: 505, type: "checkbox" },
-  "part10.stomach": { page: 8, x: 42, y: 475, type: "checkbox" },
-  "part10.pharynx": { page: 8, x: 42, y: 445, type: "checkbox" },
-  "part10.smallIntestine": { page: 8, x: 42, y: 415, type: "checkbox" },
+  "part10.leukemia": { page: 8, x: 74, y: 620, type: "checkbox" },
+  "part10.multipleMyeloma": { page: 8, x: 74, y: 583, type: "checkbox" },
+  "part10.lymphomas": { page: 8, x: 74, y: 560, type: "checkbox" },
+  "part10.thyroid": { page: 8, x: 74, y: 523, type: "checkbox" },
+  "part10.breast": { page: 8, x: 74, y: 500, type: "checkbox" },
+  "part10.esophagus": { page: 8, x: 74, y: 463, type: "checkbox" },
+  "part10.stomach": { page: 8, x: 74, y: 442, type: "checkbox" },
+  "part10.pharynx": { page: 8, x: 74, y: 418, type: "checkbox" },
+  "part10.smallIntestine": { page: 8, x: 74, y: 395, type: "checkbox" },
 
   // Right column diseases
-  "part10.pancreas": { page: 8, x: 310, y: 655, type: "checkbox" },
-  "part10.bileDucts": { page: 8, x: 310, y: 625, type: "checkbox" },
-  "part10.gallBladder": { page: 8, x: 310, y: 595, type: "checkbox" },
-  "part10.salivaryGland": { page: 8, x: 310, y: 565, type: "checkbox" },
-  "part10.urinaryBladder": { page: 8, x: 310, y: 535, type: "checkbox" },
-  "part10.brain": { page: 8, x: 310, y: 505, type: "checkbox" },
-  "part10.colon": { page: 8, x: 310, y: 475, type: "checkbox" },
-  "part10.ovary": { page: 8, x: 310, y: 445, type: "checkbox" },
-  "part10.liver": { page: 8, x: 310, y: 415, type: "checkbox" },
-  "part10.lung": { page: 8, x: 310, y: 385, type: "checkbox" },
+  "part10.pancreas": { page: 8, x: 325, y: 613, type: "checkbox" },
+  "part10.bileDucts": { page: 8, x: 325, y: 590, type: "checkbox" },
+  "part10.gallBladder": { page: 8, x: 325, y: 566, type: "checkbox" },
+  "part10.salivaryGland": { page: 8, x: 325, y: 544, type: "checkbox" },
+  "part10.urinaryBladder": { page: 8, x: 325, y: 521, type: "checkbox" },
+  "part10.brain": { page: 8, x: 325, y: 499, type: "checkbox" },
+  "part10.colon": { page: 8, x: 325, y: 475, type: "checkbox" },
+  "part10.ovary": { page: 8, x: 325, y: 453, type: "checkbox" },
+  "part10.liver": { page: 8, x: 325, y: 431, type: "checkbox" },
+  "part10.lung": { page: 8, x: 325, y: 393, type: "checkbox" },
 
-  // PART 16: SIGNATURE (Page 13, 0-indexed: page 12)
-  "part16.signatureDate": {
-    page: 12,
-    x: 500,
-    y: 545,
+  // PART 9: PROOF OF PRESENCE (Page 8, 0-indexed: page 7)
+  "part9.contactedChurchLDS": { page: 7, x: 73, y: 161, type: "checkbox" },
+
+  // PART 11: PROOF OF DISEASE (Pages 9-10, 0-indexed: pages 8-9)
+  "part11.submittedMedicalRecords": {
+    page: 8,
+    x: 73,
+    y: 111,
+    type: "checkbox",
+  },
+  "part11.cancerRegistryAuthorization": {
+    page: 9,
+    x: 73,
+    y: 659,
+    type: "checkbox",
+  },
+  "part11.resepAssistance.yes": { page: 9, x: 281, y: 573, type: "checkbox" },
+  "part11.resepAssistance.no": { page: 9, x: 329, y: 573, type: "checkbox" },
+  "part11.resepClinicName": {
+    page: 9,
+    x: 208,
+    y: 530,
+    fontSize: 10,
+    maxWidth: 530,
+  },
+
+  // PART 12: PREVIOUS PAYMENTS (Page 10, 0-indexed: page 9)
+  "part12.receivedPayment.yes": { page: 9, x: 286, y: 373, type: "checkbox" },
+  "part12.receivedPayment.no": { page: 9, x: 343, y: 373, type: "checkbox" },
+  "part12.eeoicpaClaim.yes": { page: 9, x: 283, y: 245, type: "checkbox" },
+  "part12.eeoicpaClaim.no": { page: 9, x: 345, y: 245, type: "checkbox" },
+
+  // PART 13: ATTORNEY REPRESENTATION (Page 11, 0-indexed: page 10)
+  "part13.hasAttorney.yes": { page: 10, x: 290, y: 679, type: "checkbox" },
+  "part13.hasAttorney.no": { page: 10, x: 360, y: 679, type: "checkbox" },
+  "part13.attorneyFirstName": {
+    page: 10,
+    x: 75,
+    y: 378,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyLastName": {
+    page: 10,
+    x: 322,
+    y: 378,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyFirm": {
+    page: 10,
+    x: 75,
+    y: 335,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 445, // Max to x: 520
+  },
+  "part13.attorneyFirm2": {
+    page: 10,
+    x: 75,
+    y: 300, // Second line below first
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 445, // Max to x: 520
+  },
+  "part13.attorneyAddress": {
+    page: 10,
+    x: 75,
+    y: 248,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 530,
+  },
+  "part13.attorneyCity": {
+    page: 10,
+    x: 75,
+    y: 172,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 308,
+  },
+  "part13.attorneyState": {
+    page: 10,
+    x: 382,
+    y: 172,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 28,
+  },
+  "part13.attorneyZip": {
+    page: 10,
+    x: 442,
+    y: 172,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 140,
+  },
+  // Attorney phone split into 3 segments (XXX - XXX - XXXX)
+  "part13.attorneyPhone.part1": {
+    page: 10,
+    x: 75,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyPhone.part2": {
+    page: 10,
+    x: 150,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyPhone.part3": {
+    page: 10,
+    x: 220,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  // Attorney fax split into 3 segments
+  "part13.attorneyFax.part1": {
+    page: 10,
+    x: 330,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyFax.part2": {
+    page: 10,
+    x: 400,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyFax.part3": {
+    page: 10,
+    x: 470,
+    y: 120,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part13.attorneyEmail": {
+    page: 10,
+    x: 75,
+    y: 80,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 530,
+  },
+
+  // PART 14: ATTORNEY ACKNOWLEDGMENT (Page 12, 0-indexed: page 11)
+  "part14.feeType.initial2Percent": {
+    page: 11,
+    x: 110,
+    y: 610,
+    type: "checkbox",
+  },
+  "part14.feeType.resubmission10Percent": {
+    page: 11,
+    x: 110,
+    y: 572,
+    type: "checkbox",
+  },
+  "part14.signatureDate": {
+    page: 11,
+    x: 420,
+    y: 535,
     fontSize: 10,
     maxWidth: 80,
   },
 
-  // We'll add more coordinates as we map each section
+  // PART 15: LEGAL GUARDIAN (Page 12, 0-indexed: page 11)
+  "part15.guardianFirstName": {
+    page: 11,
+    x: 75,
+    y: 364,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianMiddleName": {
+    page: 11,
+    x: 322,
+    y: 364,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianLastName": {
+    page: 11,
+    x: 75,
+    y: 322,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianAddress": {
+    page: 11,
+    x: 75,
+    y: 274,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 445, // Max to x: 520
+  },
+  "part15.guardianAddress2": {
+    page: 11,
+    x: 75,
+    y: 240, // Second line below first
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 445, // Max to x: 520
+  },
+  "part15.guardianCity": {
+    page: 11,
+    x: 75,
+    y: 200,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 308,
+  },
+  "part15.guardianState": {
+    page: 11,
+    x: 382,
+    y: 200,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 28,
+  },
+  "part15.guardianZip": {
+    page: 11,
+    x: 442,
+    y: 200,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 140,
+  },
+  // Guardian phone day split into 3 segments
+  "part15.guardianPhoneDay.part1": {
+    page: 11,
+    x: 75,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianPhoneDay.part2": {
+    page: 11,
+    x: 150,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianPhoneDay.part3": {
+    page: 11,
+    x: 220,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  // Guardian phone evening split into 3 segments
+  "part15.guardianPhoneEvening.part1": {
+    page: 11,
+    x: 330,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianPhoneEvening.part2": {
+    page: 11,
+    x: 400,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianPhoneEvening.part3": {
+    page: 11,
+    x: 470,
+    y: 145,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
+  "part15.guardianEmail": {
+    page: 11,
+    x: 75,
+    y: 107,
+    fontSize: 12,
+    characterSpacing: 18,
+    maxWidth: 530,
+  },
+
+  // PART 16: SIGNATURE (Page 13, 0-indexed: page 12)
+  "part16.signatureDate": {
+    page: 12,
+    x: 380,
+    y: 468,
+    fontSize: 10,
+    maxWidth: 80,
+  },
+
+  // SUPPLEMENTAL PAGES (Pages 14-18, 0-indexed: pages 13-17)
+  // These pages are typically for additional information that doesn't fit in the main form
+  // Common uses: Additional children, additional marriages, additional locations, etc.
+
+  // PAGE 14 (0-indexed: page 13) - AUTHORIZATION TO RELEASE MEDICAL RECORDS
+  // State Cancer Registry Authorization Form
+  "medicalRelease.stateOfResidence": {
+    page: 13,
+    x: 340,
+    y: 650,
+    fontSize: 12,
+    maxWidth: 250,
+  },
+
+  // 1. Name of individual whose records are to be released
+  "medicalRelease.patientName": {
+    page: 13,
+    x: 75,
+    y: 493,
+    fontSize: 12,
+    maxWidth: 680,
+  },
+
+  // 2. Social Security number of the individual
+  "medicalRelease.patientSSN": {
+    page: 13,
+    x: 75,
+    y: 423,
+    fontSize: 12,
+    maxWidth: 320,
+  },
+
+  // 3. Birth date of the individual
+  "medicalRelease.patientDOB": {
+    page: 13,
+    x: 335,
+    y: 423,
+    fontSize: 12,
+    maxWidth: 310,
+  },
+
+  // 4. Date of death (if applicable)
+  "medicalRelease.patientDOD": {
+    page: 13,
+    x: 75,
+    y: 368,
+    fontSize: 12,
+    maxWidth: 240,
+  },
+
+  // 5. Name of individual requesting release (if different)
+  "medicalRelease.requesterName": {
+    page: 13,
+    x: 75,
+    y: 287,
+    fontSize: 12,
+    maxWidth: 660,
+  },
+
+  // 5. Relationship to individual
+  "medicalRelease.requesterRelationship": {
+    page: 13,
+    x: 320,
+    y: 287,
+    fontSize: 12,
+    maxWidth: 680,
+  },
+
+  // Signature date
+  "medicalRelease.signatureDate": {
+    page: 13,
+    x: 425,
+    y: 240,
+    fontSize: 12,
+    maxWidth: 150,
+  },
+
+  // PAGE 15 (0-indexed: page 14) - CERTIFICATION OF IDENTITY AND PRIVACY ACT RELEASE
+  // Claim number (top of page)
+  "privacyRelease.claimNumber": {
+    page: 14,
+    x: 280,
+    y: 638,
+    fontSize: 12,
+    maxWidth: 200,
+  },
+
+  // Section 1: Certification of Identity
+  "privacyRelease.fullName": {
+    page: 14,
+    x: 140,
+    y: 510,
+    fontSize: 12,
+    maxWidth: 620,
+  },
+
+  "privacyRelease.citizenshipStatus": {
+    page: 14,
+    x: 165,
+    y: 485,
+    fontSize: 12,
+    maxWidth: 190,
+  },
+
+  "privacyRelease.ssn": {
+    page: 14,
+    x: 405,
+    y: 485,
+    fontSize: 12,
+    maxWidth: 200,
+  },
+
+  "privacyRelease.currentAddress": {
+    page: 14,
+    x: 155,
+    y: 460,
+    fontSize: 12,
+    maxWidth: 580,
+  },
+
+  "privacyRelease.dob": {
+    page: 14,
+    x: 140,
+    y: 435,
+    fontSize: 12,
+    maxWidth: 210,
+  },
+
+  "privacyRelease.placeOfBirth": {
+    page: 14,
+    x: 355,
+    y: 435,
+    fontSize: 12,
+    maxWidth: 280,
+  },
+
+  "privacyRelease.section1SignatureDate": {
+    page: 14,
+    x: 450,
+    y: 343,
+    fontSize: 12,
+    maxWidth: 130,
+  },
+
+  // Section 2: Authorization to Release Information (OPTIONAL)
+  "privacyRelease.authorizeName": {
+    page: 14,
+    x: 165,
+    y: 215,
+    fontSize: 12,
+    maxWidth: 175,
+  },
+
+  "privacyRelease.authorizeRelationship": {
+    page: 14,
+    x: 415,
+    y: 215,
+    fontSize: 12,
+    maxWidth: 195,
+  },
+
+  "privacyRelease.authorizePhone": {
+    page: 14,
+    x: 150,
+    y: 190,
+    fontSize: 12,
+    maxWidth: 220,
+  },
+
+  "privacyRelease.authorizeAddress": {
+    page: 14,
+    x: 370,
+    y: 190,
+    fontSize: 7,
+    maxWidth: 260,
+  },
+
+  "privacyRelease.section2SignatureDate": {
+    page: 14,
+    x: 450,
+    y: 167,
+    fontSize: 12,
+    maxWidth: 130,
+  },
+
+  // PAGE 16 (0-indexed: page 15) - RELEASE OF TRIBAL VITAL RECORDS
+  // Checkboxes for tribal enrollment offices
+  "tribalRelease.navajo": {
+    page: 15,
+    x: 433,
+    y: 645,
+    type: "checkbox",
+  },
+
+  "tribalRelease.hopi": {
+    page: 15,
+    x: 433,
+    y: 624,
+    type: "checkbox",
+  },
+
+  "tribalRelease.sanCarlosApache": {
+    page: 15,
+    x: 433,
+    y: 581,
+    type: "checkbox",
+  },
+
+  "tribalRelease.otherTribe": {
+    page: 15,
+    x: 433,
+    y: 581,
+    type: "checkbox",
+  },
+
+  // Other Tribal Records Office (write-in line)
+  "tribalRelease.otherTribeName": {
+    page: 15,
+    x: 112,
+    y: 581,
+    fontSize: 12,
+    maxWidth: 370,
+  },
+
+  // Claimant Name
+  "tribalRelease.claimantName": {
+    page: 15,
+    x: 235,
+    y: 455,
+    fontSize: 12,
+    maxWidth: 310,
+  },
+
+  // Name of tribal organization (in authorization paragraph)
+  "tribalRelease.tribalOrganizationName": {
+    page: 15,
+    x: 80,
+    y: 385,
+    fontSize: 12,
+    maxWidth: 270,
+  },
+
+  // Date
+  "tribalRelease.signatureDate": {
+    page: 15,
+    x: 115,
+    y: 208,
+    fontSize: 12,
+    maxWidth: 280,
+  },
+
+  // PAGE 17 (0-indexed: page 16) - ATTACHED SIGNATURES OF ELIGIBLE SURVIVING BENEFICIARIES
+  // Beneficiary 1
+  "beneficiarySignatures.beneficiary1.name": {
+    page: 16,
+    x: 350,
+    y: 562,
+    fontSize: 12,
+    maxWidth: 260,
+  },
+  "beneficiarySignatures.beneficiary1.ssn": {
+    page: 16,
+    x: 193,
+    y: 550,
+    fontSize: 12,
+    maxWidth: 270,
+  },
+  "beneficiarySignatures.beneficiary1.date": {
+    page: 16,
+    x: 408,
+    y: 550,
+    fontSize: 12,
+    maxWidth: 180,
+  },
+  "beneficiarySignatures.beneficiary1.attorneyName": {
+    page: 16,
+    x: 385,
+    y: 520,
+    fontSize: 12,
+    maxWidth: 190,
+  },
+  "beneficiarySignatures.beneficiary1.phoneNumber": {
+    page: 16,
+    x: 150,
+    y: 508,
+    fontSize: 12,
+    maxWidth: 155,
+  },
+
+  // Beneficiary 2
+  "beneficiarySignatures.beneficiary2.name": {
+    page: 16,
+    x: 350,
+    y: 480,
+    fontSize: 12,
+    maxWidth: 260,
+  },
+  "beneficiarySignatures.beneficiary2.ssn": {
+    page: 16,
+    x: 190,
+    y: 468,
+    fontSize: 12,
+    maxWidth: 270,
+  },
+  "beneficiarySignatures.beneficiary2.date": {
+    page: 16,
+    x: 408,
+    y: 468,
+    fontSize: 12,
+    maxWidth: 180,
+  },
+  "beneficiarySignatures.beneficiary2.attorneyName": {
+    page: 16,
+    x: 385,
+    y: 440,
+    fontSize: 12,
+    maxWidth: 190,
+  },
+  "beneficiarySignatures.beneficiary2.phoneNumber": {
+    page: 16,
+    x: 150,
+    y: 425,
+    fontSize: 12,
+    maxWidth: 155,
+  },
+
+  // Beneficiary 3
+  "beneficiarySignatures.beneficiary3.name": {
+    page: 16,
+    x: 350,
+    y: 397,
+    fontSize: 12,
+    maxWidth: 260,
+  },
+  "beneficiarySignatures.beneficiary3.ssn": {
+    page: 16,
+    x: 190,
+    y: 382,
+    fontSize: 12,
+    maxWidth: 270,
+  },
+  "beneficiarySignatures.beneficiary3.date": {
+    page: 16,
+    x: 408,
+    y: 382,
+    fontSize: 12,
+    maxWidth: 180,
+  },
+  "beneficiarySignatures.beneficiary3.attorneyName": {
+    page: 16,
+    x: 385,
+    y: 353,
+    fontSize: 12,
+    maxWidth: 190,
+  },
+  "beneficiarySignatures.beneficiary3.phoneNumber": {
+    page: 16,
+    x: 150,
+    y: 340,
+    fontSize: 12,
+    maxWidth: 155,
+  },
+
+  // Beneficiary 4
+  "beneficiarySignatures.beneficiary4.name": {
+    page: 16,
+    x: 350,
+    y: 314,
+    fontSize: 12,
+    maxWidth: 260,
+  },
+  "beneficiarySignatures.beneficiary4.ssn": {
+    page: 16,
+    x: 190,
+    y: 300,
+    fontSize: 12,
+    maxWidth: 270,
+  },
+  "beneficiarySignatures.beneficiary4.date": {
+    page: 16,
+    x: 408,
+    y: 300,
+    fontSize: 12,
+    maxWidth: 180,
+  },
+  "beneficiarySignatures.beneficiary4.attorneyName": {
+    page: 16,
+    x: 385,
+    y: 272,
+    fontSize: 12,
+    maxWidth: 190,
+  },
+  "beneficiarySignatures.beneficiary4.phoneNumber": {
+    page: 16,
+    x: 150,
+    y: 260,
+    fontSize: 12,
+    maxWidth: 155,
+  },
+
+  // Checkbox for additional children
+  "beneficiarySignatures.additionalChildrenAttached": {
+    page: 16,
+    x: 74,
+    y: 231,
+    type: "checkbox",
+  },
+
+  // PAGE 18 (0-indexed: page 17) - Supplemental Attachment Page 5
+  // TODO: Map fields based on what this page contains
+  "supplement5.placeholder": {
+    page: 17,
+    x: 75,
+    y: 700,
+    fontSize: 12,
+    characterSpacing: 18,
+  },
 };
 
 interface PDFFormFillerOptions {
@@ -651,6 +1691,7 @@ export class RECAPDFFormFiller {
     await this.fillPart1();
     await this.fillPart2();
     await this.fillPart3();
+    await this.fillPart4();
     await this.fillPart5();
     await this.fillPart6();
     await this.fillPart7();
@@ -663,6 +1704,12 @@ export class RECAPDFFormFiller {
     await this.fillPart14();
     await this.fillPart15();
     await this.fillPart16();
+
+    // Fill supplemental forms
+    await this.fillMedicalReleaseForm();
+    await this.fillPrivacyReleaseForm();
+    await this.fillTribalReleaseForm();
+    await this.fillBeneficiarySignaturesForm();
 
     return await this.pdfDoc.save();
   }
@@ -686,6 +1733,7 @@ export class RECAPDFFormFiller {
 
     // Fill address fields
     this.drawText("part1.mailingAddress", part1.mailingAddress);
+    this.drawText("part1.mailingAddress2", part1.mailingAddress2);
     this.drawText("part1.city", part1.city);
     this.drawText("part1.state", part1.state);
     this.drawText("part1.zipCode", part1.zipCode);
@@ -699,6 +1747,7 @@ export class RECAPDFFormFiller {
 
     // Fill residence address if different
     this.drawText("part1.residenceAddress", part1.residenceAddress);
+    this.drawText("part1.residenceAddress2", part1.residenceAddress2);
 
     // Fill tribal information
     this.drawText("part1.tribe", part1.tribalAffiliation);
@@ -743,7 +1792,8 @@ export class RECAPDFFormFiller {
   private async fillPart3() {
     if (!this.formData.part_3) return;
 
-    const relationship = this.formData.part_3.relationship;
+    const part3 = this.formData.part_3 as any;
+    const relationship = part3.relationship;
 
     const checkboxMap: Record<string, string> = {
       self: "part3.self",
@@ -754,27 +1804,236 @@ export class RECAPDFFormFiller {
       grandparent: "part3.grandparent",
     };
 
+    // Test mode: mark all checkboxes for calibration
+    if (part3.testAllCheckboxes) {
+      Object.values(checkboxMap).forEach((checkboxKey) => {
+        this.drawCheckbox(checkboxKey);
+      });
+      return;
+    }
+
+    // Normal mode: mark only the selected relationship
     if (relationship && checkboxMap[relationship]) {
       this.drawCheckbox(checkboxMap[relationship]);
     }
   }
 
+  private async fillPart4() {
+    if (!this.formData.part_4) return;
+
+    const part4 = this.formData.part_4 as any;
+
+    // Self-filer document checkboxes
+    if (part4.birthCertificate) {
+      this.drawCheckbox("part4.birthCertificate");
+    }
+    if (part4.marriageCertificates) {
+      this.drawCheckbox("part4.marriageCertificates");
+    }
+  }
+
   private async fillPart5() {
-    // TODO: Implement Part 5 - Surviving Spouse
     if (!this.formData.part_5) return;
-    // Add coordinate mappings and implement
+
+    const part5 = this.formData.part_5;
+
+    // Question checkboxes
+    if (part5.claimantDeceased === "YES") {
+      this.drawCheckbox("part5.claimantDeceased.yes");
+    } else if (part5.claimantDeceased === "NO") {
+      this.drawCheckbox("part5.claimantDeceased.no");
+    }
+
+    if (part5.marriedOneYear === "YES") {
+      this.drawCheckbox("part5.marriedOneYear.yes");
+    } else if (part5.marriedOneYear === "NO") {
+      this.drawCheckbox("part5.marriedOneYear.no");
+    }
+
+    if (part5.claimantPreviousMarriages === "YES") {
+      this.drawCheckbox("part5.claimantPreviousMarriages.yes");
+
+      // Fill in claimant's previous spouses
+      if (
+        part5.claimantPreviousSpouses &&
+        Array.isArray(part5.claimantPreviousSpouses)
+      ) {
+        part5.claimantPreviousSpouses.forEach((spouse, index) => {
+          if (index < 2) {
+            // We have 2 lines for previous spouses
+            const lineNum = index + 1;
+            const text = `${spouse.spouseName} - ${spouse.marriageStart} to ${spouse.marriageEnd}`;
+            this.drawText(`part5.claimantPreviousSpouse${lineNum}`, text);
+          }
+        });
+      }
+    } else if (part5.claimantPreviousMarriages === "NO") {
+      this.drawCheckbox("part5.claimantPreviousMarriages.no");
+    }
+
+    if (part5.filerOtherMarriages === "YES") {
+      this.drawCheckbox("part5.filerOtherMarriages.yes");
+
+      // Fill in filer's other spouses
+      if (part5.filerOtherSpouses && Array.isArray(part5.filerOtherSpouses)) {
+        part5.filerOtherSpouses.forEach((spouse, index) => {
+          if (index < 4) {
+            // We have 4 lines for filer's other spouses
+            const lineNum = index + 1;
+            const text = `${spouse.spouseName} - ${spouse.marriageStart} to ${spouse.marriageEnd}`;
+            this.drawText(`part5.filerOtherSpouse${lineNum}`, text);
+          }
+        });
+      }
+    } else if (part5.filerOtherMarriages === "NO") {
+      this.drawCheckbox("part5.filerOtherMarriages.no");
+    }
+
+    // Document requirement checkboxes (Page 4)
+    const part5Any = part5 as any;
+    if (part5Any.birthCertificateClaimant) {
+      this.drawCheckbox("part5.birthCertificateClaimant");
+    }
+    if (part5Any.deathCertificate) {
+      this.drawCheckbox("part5.deathCertificate");
+    }
+    if (part5Any.marriageCertificate) {
+      this.drawCheckbox("part5.marriageCertificate");
+    }
+    if (part5Any.marriageCertificatesPrevious) {
+      this.drawCheckbox("part5.marriageCertificatesPrevious");
+    }
+    if (part5Any.divorceDecreesPrevious) {
+      this.drawCheckbox("part5.divorceDecreesPrevious");
+    }
+    if (part5Any.birthCertificateFiler) {
+      this.drawCheckbox("part5.birthCertificateFiler");
+    }
+    if (part5Any.marriageCertificatesFiler) {
+      this.drawCheckbox("part5.marriageCertificatesFiler");
+    }
+    if (part5Any.divorceDecreesFiler) {
+      this.drawCheckbox("part5.divorceDecreesFiler");
+    }
   }
 
   private async fillPart6() {
-    // TODO: Implement Part 6 - Surviving Child
     if (!this.formData.part_6) return;
-    // Add coordinate mappings and implement
+
+    const part6 = this.formData.part_6;
+
+    // Question checkboxes
+    if (part6.claimantDeceased === "YES") {
+      this.drawCheckbox("part6.claimantDeceased.yes");
+    } else if (part6.claimantDeceased === "NO") {
+      this.drawCheckbox("part6.claimantDeceased.no");
+    }
+
+    if (part6.claimantEverMarried === "YES") {
+      this.drawCheckbox("part6.claimantEverMarried.yes");
+    } else if (part6.claimantEverMarried === "NO") {
+      this.drawCheckbox("part6.claimantEverMarried.no");
+    }
+
+    // Child type checkboxes
+    if (part6.childType === "NATURAL") {
+      this.drawCheckbox("part6.childType.natural");
+    } else if (part6.childType === "ADOPTED CHILD") {
+      this.drawCheckbox("part6.childType.adopted");
+    } else if (part6.childType === "STEP-CHILD") {
+      this.drawCheckbox("part6.childType.stepChild");
+    }
+
+    // Other children checkbox
+    if (part6.otherChildrenExist === "YES") {
+      this.drawCheckbox("part6.otherChildren.yes");
+    } else if (part6.otherChildrenExist === "NO") {
+      this.drawCheckbox("part6.otherChildren.no");
+    }
+
+    // Spouse information (Page 4, top section for surviving child)
+    const part6Any = part6 as any;
+    if (part6Any.spouseInfo && Array.isArray(part6Any.spouseInfo)) {
+      part6Any.spouseInfo.forEach((spouse: any, index: number) => {
+        if (index < 3) {
+          const lineNum = index + 1;
+          const text = `${spouse.name} - Married: ${spouse.marriageDate} to ${spouse.endDate || "present"}`;
+          this.drawText(`part6.spouseInfo${lineNum}`, text);
+        }
+      });
+    }
+
+    // Children information (Page 5, detailed fields)
+    if (part6Any.children && Array.isArray(part6Any.children)) {
+      part6Any.children.forEach((child: any, index: number) => {
+        if (index < 3) {
+          const childNum = index + 1;
+          // Child name and birth info
+          this.drawText(`part6.child${childNum}.name`, child.name);
+          this.drawText(`part6.child${childNum}.birthDate`, child.birthDate);
+          this.drawText(`part6.child${childNum}.birthPlace`, child.birthPlace);
+
+          // Living child: phone and address
+          if (child.isLiving) {
+            this.drawText(`part6.child${childNum}.phone`, child.phone);
+            this.drawText(`part6.child${childNum}.address`, child.address);
+          } else {
+            // Deceased child: death date and place
+            this.drawText(`part6.child${childNum}.deathDate`, child.deathDate);
+            this.drawText(
+              `part6.child${childNum}.deathPlace`,
+              child.deathPlace
+            );
+          }
+        }
+      });
+    }
+
+    // Additional children checkbox (if more than 3 children, supplemental attachment required)
+    if (part6Any.additionalChildrenAttached) {
+      this.drawCheckbox("part6.additionalChildrenAttached");
+    }
+
+    // Document requirement checkboxes (Page 5)
+    if (part6Any.birthCertificateClaimant) {
+      this.drawCheckbox("part6.birthCertificateClaimant");
+    }
+    if (part6Any.deathCertificate) {
+      this.drawCheckbox("part6.deathCertificate");
+    }
+    if (part6Any.marriageCertificates) {
+      this.drawCheckbox("part6.marriageCertificates");
+    }
+    if (part6Any.divorceDecrees) {
+      this.drawCheckbox("part6.divorceDecrees");
+    }
+    if (part6Any.birthCertificateFiler) {
+      this.drawCheckbox("part6.birthCertificateFiler");
+    }
+    if (part6Any.marriageCertificatesFiler) {
+      this.drawCheckbox("part6.marriageCertificatesFiler");
+    }
+    if (part6Any.stepChildProof) {
+      this.drawCheckbox("part6.stepChildProof");
+    }
+    if (part6Any.siblingDeathCertificates) {
+      this.drawCheckbox("part6.siblingDeathCertificates");
+    }
   }
 
   private async fillPart7() {
-    // TODO: Implement Part 7 - Other Relatives
     if (!this.formData.part_7) return;
-    // Add coordinate mappings and implement
+
+    const part7 = this.formData.part_7;
+
+    // Relationship type checkboxes
+    if (part7.relationshipType === "PARENT") {
+      this.drawCheckbox("part7.parent");
+    } else if (part7.relationshipType === "GRANDCHILD") {
+      this.drawCheckbox("part7.grandchild");
+    } else if (part7.relationshipType === "GRANDPARENT") {
+      this.drawCheckbox("part7.grandparent");
+    }
   }
 
   private async fillPart8() {
@@ -833,9 +2092,16 @@ export class RECAPDFFormFiller {
       // Nevada counties
       if (part8.locations.nevada && Array.isArray(part8.locations.nevada)) {
         part8.locations.nevada.forEach((location) => {
-          const county = location.county.toLowerCase().replace(" ", "");
-          // Convert "White Pine" -> "whitePine"
-          const countyKey = county.charAt(0).toLowerCase() + county.slice(1);
+          // Convert "White Pine" -> "whitePine", "Nye" -> "nye", etc.
+          const countyKey = location.county
+            .split(" ")
+            .map((word, index) => {
+              if (index === 0) {
+                return word.toLowerCase();
+              }
+              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            })
+            .join("");
           this.drawText(
             `part8.nevada.${countyKey}.townCity`,
             location.townCity
@@ -850,9 +2116,14 @@ export class RECAPDFFormFiller {
   }
 
   private async fillPart9() {
-    // TODO: Implement Part 9 - Proof of Presence
     if (!this.formData.part_9) return;
-    // Add coordinate mappings and implement
+
+    const part9 = this.formData.part_9 as any;
+
+    // Checkbox for Church of LDS contact
+    if (part9.contactedChurchLDS) {
+      this.drawCheckbox("part9.contactedChurchLDS");
+    }
   }
 
   private async fillPart10() {
@@ -895,33 +2166,159 @@ export class RECAPDFFormFiller {
   }
 
   private async fillPart11() {
-    // TODO: Implement Part 11 - Proof of Disease
     if (!this.formData.part_11) return;
-    // Add coordinate mappings and implement
+
+    const part11 = this.formData.part_11;
+
+    // Checkboxes
+    if (part11.medicalRecordsSubmitted) {
+      this.drawCheckbox("part11.submittedMedicalRecords");
+    }
+
+    if (part11.cancerRegistryAuthorization) {
+      this.drawCheckbox("part11.cancerRegistryAuthorization");
+    }
+
+    if (part11.resepAssistance === "YES") {
+      this.drawCheckbox("part11.resepAssistance.yes");
+      this.drawText("part11.resepClinicName", part11.resepClinicName);
+    } else if (part11.resepAssistance === "NO") {
+      this.drawCheckbox("part11.resepAssistance.no");
+    }
   }
 
   private async fillPart12() {
-    // TODO: Implement Part 12 - Previous Payments
     if (!this.formData.part_12) return;
-    // Add coordinate mappings and implement
+
+    const part12 = this.formData.part_12;
+
+    if (part12.receivedPayment === "YES") {
+      this.drawCheckbox("part12.receivedPayment.yes");
+    } else if (part12.receivedPayment === "NO") {
+      this.drawCheckbox("part12.receivedPayment.no");
+    }
+
+    if (part12.eeoicpaClaim === "YES") {
+      this.drawCheckbox("part12.eeoicpaClaim.yes");
+    } else if (part12.eeoicpaClaim === "NO") {
+      this.drawCheckbox("part12.eeoicpaClaim.no");
+    }
   }
 
   private async fillPart13() {
-    // TODO: Implement Part 13 - Attorney Representation
     if (!this.formData.part_13) return;
-    // Add coordinate mappings and implement
+
+    const part13 = this.formData.part_13;
+
+    if (part13.hasAttorney === "YES") {
+      this.drawCheckbox("part13.hasAttorney.yes");
+
+      // Fill attorney information
+      this.drawText("part13.attorneyFirstName", part13.attorneyFirstName);
+      this.drawText("part13.attorneyLastName", part13.attorneyLastName);
+
+      // Handle attorney firm name with automatic line breaking at x: 520
+      if (part13.attorneyFirm) {
+        const firmCoords = FIELD_COORDINATES["part13.attorneyFirm"];
+        const charSpacing = firmCoords.characterSpacing || 0;
+        const maxWidth = firmCoords.maxWidth || 445;
+
+        // Calculate characters that fit: maxWidth / characterSpacing
+        // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
+        const charsPerLine = Math.floor(maxWidth / charSpacing);
+
+        if (part13.attorneyFirm.length <= charsPerLine) {
+          // Fits on one line
+          this.drawText("part13.attorneyFirm", part13.attorneyFirm);
+        } else {
+          // Need to split across two lines
+          // Find the last space before the character limit
+          let splitIndex = part13.attorneyFirm.lastIndexOf(" ", charsPerLine);
+          if (splitIndex === -1) {
+            // No space found, force break at character limit
+            splitIndex = charsPerLine;
+          }
+
+          const line1 = part13.attorneyFirm.substring(0, splitIndex).trim();
+          const line2 = part13.attorneyFirm.substring(splitIndex).trim();
+
+          this.drawText("part13.attorneyFirm", line1);
+          this.drawText("part13.attorneyFirm2", line2);
+        }
+      }
+
+      this.drawText("part13.attorneyAddress", part13.attorneyAddress);
+      this.drawText("part13.attorneyCity", part13.attorneyCity);
+      this.drawText("part13.attorneyState", part13.attorneyState);
+      this.drawText("part13.attorneyZip", part13.attorneyZip);
+      this.drawPhone("part13.attorneyPhone", part13.attorneyPhone);
+      this.drawPhone("part13.attorneyFax", part13.attorneyFax);
+      this.drawText("part13.attorneyEmail", part13.attorneyEmail);
+    } else if (part13.hasAttorney === "NO") {
+      this.drawCheckbox("part13.hasAttorney.no");
+    }
   }
 
   private async fillPart14() {
-    // TODO: Implement Part 14 - Attorney Acknowledgment
     if (!this.formData.part_14) return;
-    // Add coordinate mappings and implement
+
+    const part14 = this.formData.part_14;
+
+    if (part14.feeType === "initial_2_percent") {
+      this.drawCheckbox("part14.feeType.initial2Percent");
+    } else if (part14.feeType === "resubmission_10_percent") {
+      this.drawCheckbox("part14.feeType.resubmission10Percent");
+    }
+
+    this.drawText("part14.signatureDate", part14.attorneySignatureDate);
   }
 
   private async fillPart15() {
-    // TODO: Implement Part 15 - Legal Guardian
     if (!this.formData.part_15) return;
-    // Add coordinate mappings and implement
+
+    const part15 = this.formData.part_15;
+
+    // Fill guardian information
+    this.drawText("part15.guardianFirstName", part15.guardianFirstName);
+    this.drawText("part15.guardianMiddleName", part15.guardianMiddleName);
+    this.drawText("part15.guardianLastName", part15.guardianLastName);
+
+    // Handle guardian address with automatic line breaking at x: 520
+    if (part15.guardianAddress) {
+      const addressCoords = FIELD_COORDINATES["part15.guardianAddress"];
+      const charSpacing = addressCoords.characterSpacing || 0;
+      const maxWidth = addressCoords.maxWidth || 445;
+
+      // Calculate characters that fit: maxWidth / characterSpacing
+      // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
+      const charsPerLine = Math.floor(maxWidth / charSpacing);
+
+      if (part15.guardianAddress.length <= charsPerLine) {
+        // Fits on one line
+        this.drawText("part15.guardianAddress", part15.guardianAddress);
+      } else {
+        // Need to split across two lines
+        // Find the last space before the character limit
+        let splitIndex = part15.guardianAddress.lastIndexOf(" ", charsPerLine);
+        if (splitIndex === -1) {
+          // No space found, force break at character limit
+          splitIndex = charsPerLine;
+        }
+
+        const line1 = part15.guardianAddress.substring(0, splitIndex).trim();
+        const line2 = part15.guardianAddress.substring(splitIndex).trim();
+
+        this.drawText("part15.guardianAddress", line1);
+        this.drawText("part15.guardianAddress2", line2);
+      }
+    }
+
+    this.drawText("part15.guardianCity", part15.guardianCity);
+    this.drawText("part15.guardianState", part15.guardianState);
+    this.drawText("part15.guardianZip", part15.guardianZip);
+    this.drawPhone("part15.guardianPhoneDay", part15.guardianPhoneDay);
+    this.drawPhone("part15.guardianPhoneEvening", part15.guardianPhoneEvening);
+    this.drawText("part15.guardianEmail", part15.guardianEmail);
   }
 
   private async fillPart16() {
@@ -932,6 +2329,252 @@ export class RECAPDFFormFiller {
     // Fill signature date (signature itself is manual)
     if (part16.signatureDate) {
       this.drawText("part16.signatureDate", part16.signatureDate);
+    }
+  }
+
+  private async fillMedicalReleaseForm() {
+    if (!this.formData.medical_release) return;
+
+    const medicalRelease = this.formData.medical_release;
+
+    // State of residence at time of diagnosis
+    this.drawText(
+      "medicalRelease.stateOfResidence",
+      medicalRelease.stateOfResidence
+    );
+
+    // 1. Name of individual whose records are to be released
+    this.drawText("medicalRelease.patientName", medicalRelease.patientName);
+
+    // 2. Social Security number
+    this.drawText("medicalRelease.patientSSN", medicalRelease.patientSSN);
+
+    // 3. Birth date
+    this.drawText("medicalRelease.patientDOB", medicalRelease.patientDOB);
+
+    // 4. Date of death (if applicable)
+    if (medicalRelease.patientDOD) {
+      this.drawText("medicalRelease.patientDOD", medicalRelease.patientDOD);
+    }
+
+    // 5. Name of individual requesting release (if different)
+    if (medicalRelease.requesterName) {
+      this.drawText(
+        "medicalRelease.requesterName",
+        medicalRelease.requesterName
+      );
+    }
+
+    // 5. Relationship to individual
+    if (medicalRelease.requesterRelationship) {
+      this.drawText(
+        "medicalRelease.requesterRelationship",
+        medicalRelease.requesterRelationship
+      );
+    }
+
+    // Signature date
+    this.drawText("medicalRelease.signatureDate", medicalRelease.signatureDate);
+  }
+
+  private async fillPrivacyReleaseForm() {
+    if (!this.formData.privacy_release) return;
+
+    const privacyRelease = this.formData.privacy_release;
+
+    // Claim number
+    if (privacyRelease.claimNumber) {
+      this.drawText("privacyRelease.claimNumber", privacyRelease.claimNumber);
+    }
+
+    // Section 1: Certification of Identity
+    this.drawText("privacyRelease.fullName", privacyRelease.fullName);
+    this.drawText(
+      "privacyRelease.citizenshipStatus",
+      privacyRelease.citizenshipStatus
+    );
+    this.drawText("privacyRelease.ssn", privacyRelease.ssn);
+    this.drawText(
+      "privacyRelease.currentAddress",
+      privacyRelease.currentAddress
+    );
+    this.drawText("privacyRelease.dob", privacyRelease.dob);
+    this.drawText("privacyRelease.placeOfBirth", privacyRelease.placeOfBirth);
+    this.drawText(
+      "privacyRelease.section1SignatureDate",
+      privacyRelease.section1SignatureDate
+    );
+
+    // Section 2: Authorization to Release Information (OPTIONAL)
+    if (privacyRelease.authorizeName) {
+      this.drawText(
+        "privacyRelease.authorizeName",
+        privacyRelease.authorizeName
+      );
+    }
+    if (privacyRelease.authorizeRelationship) {
+      this.drawText(
+        "privacyRelease.authorizeRelationship",
+        privacyRelease.authorizeRelationship
+      );
+    }
+    if (privacyRelease.authorizePhone) {
+      this.drawText(
+        "privacyRelease.authorizePhone",
+        privacyRelease.authorizePhone
+      );
+    }
+    if (privacyRelease.authorizeAddress) {
+      this.drawText(
+        "privacyRelease.authorizeAddress",
+        privacyRelease.authorizeAddress
+      );
+    }
+    if (privacyRelease.section2SignatureDate) {
+      this.drawText(
+        "privacyRelease.section2SignatureDate",
+        privacyRelease.section2SignatureDate
+      );
+    }
+  }
+
+  private async fillTribalReleaseForm() {
+    if (!this.formData.tribal_release) return;
+
+    const tribalRelease = this.formData.tribal_release;
+
+    // Tribal office checkboxes
+    if (tribalRelease.tribe === "navajo") {
+      this.drawCheckbox("tribalRelease.navajo");
+    } else if (tribalRelease.tribe === "hopi") {
+      this.drawCheckbox("tribalRelease.hopi");
+    } else if (tribalRelease.tribe === "sanCarlosApache") {
+      this.drawCheckbox("tribalRelease.sanCarlosApache");
+    } else if (tribalRelease.tribe === "other") {
+      this.drawCheckbox("tribalRelease.otherTribe");
+      if (tribalRelease.otherTribeName) {
+        this.drawText(
+          "tribalRelease.otherTribeName",
+          tribalRelease.otherTribeName
+        );
+      }
+    }
+
+    // Claimant name
+    this.drawText("tribalRelease.claimantName", tribalRelease.claimantName);
+
+    // Tribal organization name (in authorization text)
+    if (tribalRelease.tribalOrganizationName) {
+      this.drawText(
+        "tribalRelease.tribalOrganizationName",
+        tribalRelease.tribalOrganizationName
+      );
+    }
+
+    // Signature date
+    this.drawText("tribalRelease.signatureDate", tribalRelease.signatureDate);
+  }
+
+  private async fillBeneficiarySignaturesForm() {
+    if (!this.formData.beneficiary_signatures) return;
+
+    const beneficiarySignatures = this.formData.beneficiary_signatures;
+
+    // Fill beneficiary 1
+    if (
+      beneficiarySignatures.beneficiaries &&
+      beneficiarySignatures.beneficiaries.length > 0
+    ) {
+      const ben1 = beneficiarySignatures.beneficiaries[0];
+      this.drawText("beneficiarySignatures.beneficiary1.name", ben1.name);
+      this.drawText("beneficiarySignatures.beneficiary1.ssn", ben1.ssn);
+      this.drawText("beneficiarySignatures.beneficiary1.date", ben1.date);
+      if (ben1.attorneyName) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary1.attorneyName",
+          ben1.attorneyName
+        );
+      }
+      if (ben1.phoneNumber) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary1.phoneNumber",
+          ben1.phoneNumber
+        );
+      }
+    }
+
+    // Fill beneficiary 2
+    if (
+      beneficiarySignatures.beneficiaries &&
+      beneficiarySignatures.beneficiaries.length > 1
+    ) {
+      const ben2 = beneficiarySignatures.beneficiaries[1];
+      this.drawText("beneficiarySignatures.beneficiary2.name", ben2.name);
+      this.drawText("beneficiarySignatures.beneficiary2.ssn", ben2.ssn);
+      this.drawText("beneficiarySignatures.beneficiary2.date", ben2.date);
+      if (ben2.attorneyName) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary2.attorneyName",
+          ben2.attorneyName
+        );
+      }
+      if (ben2.phoneNumber) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary2.phoneNumber",
+          ben2.phoneNumber
+        );
+      }
+    }
+
+    // Fill beneficiary 3
+    if (
+      beneficiarySignatures.beneficiaries &&
+      beneficiarySignatures.beneficiaries.length > 2
+    ) {
+      const ben3 = beneficiarySignatures.beneficiaries[2];
+      this.drawText("beneficiarySignatures.beneficiary3.name", ben3.name);
+      this.drawText("beneficiarySignatures.beneficiary3.ssn", ben3.ssn);
+      this.drawText("beneficiarySignatures.beneficiary3.date", ben3.date);
+      if (ben3.attorneyName) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary3.attorneyName",
+          ben3.attorneyName
+        );
+      }
+      if (ben3.phoneNumber) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary3.phoneNumber",
+          ben3.phoneNumber
+        );
+      }
+    }
+
+    // Fill beneficiary 4
+    if (
+      beneficiarySignatures.beneficiaries &&
+      beneficiarySignatures.beneficiaries.length > 3
+    ) {
+      const ben4 = beneficiarySignatures.beneficiaries[3];
+      this.drawText("beneficiarySignatures.beneficiary4.name", ben4.name);
+      this.drawText("beneficiarySignatures.beneficiary4.ssn", ben4.ssn);
+      this.drawText("beneficiarySignatures.beneficiary4.date", ben4.date);
+      if (ben4.attorneyName) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary4.attorneyName",
+          ben4.attorneyName
+        );
+      }
+      if (ben4.phoneNumber) {
+        this.drawText(
+          "beneficiarySignatures.beneficiary4.phoneNumber",
+          ben4.phoneNumber
+        );
+      }
+    }
+
+    // Additional children checkbox
+    if (beneficiarySignatures.additionalChildrenAttached) {
+      this.drawCheckbox("beneficiarySignatures.additionalChildrenAttached");
     }
   }
 
