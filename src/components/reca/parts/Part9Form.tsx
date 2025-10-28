@@ -337,11 +337,13 @@ export default function Part9Form({ initialData, onSubmit, sessionId }: Part9For
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center gap-3 pb-3 border-b border-terracotta-200">
-              <FileText className="h-6 w-6 text-terracotta-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
               <div className="flex-1">
-                <h3 className="font-bold text-terracotta-900 text-lg">Your Document Progress</h3>
-                <p className="text-sm text-terracotta-700">
-                  {successfulUploads} document{successfulUploads !== 1 ? "s" : ""} uploaded
+                <h3 className="font-bold text-terracotta-900 text-lg">Your Uploaded Documents</h3>
+                <p className="text-sm text-green-700 font-medium">
+                  {successfulUploads} document{successfulUploads !== 1 ? "s" : ""} saved to your claim
                 </p>
               </div>
             </div>
@@ -374,16 +376,25 @@ export default function Part9Form({ initialData, onSubmit, sessionId }: Part9For
                                 <p className="text-sm text-sage-600 mt-0.5">
                                   Classified as: <span className="font-medium text-blue-700">{docTypeLabel}</span>
                                 </p>
+                                <p className="text-xs text-sage-500 mt-1">
+                                  Uploaded: {new Date(doc.uploadedAt).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
                               </div>
                             </div>
 
-                            {/* Validation Status Badge */}
-                            <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-amber-50 border border-amber-200">
-                              <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                              <p className="text-xs text-amber-800">
-                                <span className="font-semibold">Pending RadiantClaims validation</span>
-                                <span className="block mt-0.5 text-amber-700">
-                                  Our team will review this document to verify it meets RECA requirements
+                            {/* Saved Status Badge */}
+                            <div className="flex items-center gap-2 mt-2 p-2 rounded-md bg-green-50 border border-green-200">
+                              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                              <p className="text-xs text-green-800">
+                                <span className="font-semibold">✓ Saved to your claim</span>
+                                <span className="block mt-0.5 text-green-700">
+                                  This document has been securely uploaded and linked to your claim. Our team will review it to verify it meets RECA requirements.
                                 </span>
                               </p>
                             </div>
@@ -395,12 +406,12 @@ export default function Part9Form({ initialData, onSubmit, sessionId }: Part9For
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
-                  <FileText className="h-8 w-8 text-amber-600" />
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                  <FileText className="h-8 w-8 text-blue-600" />
                 </div>
-                <p className="text-amber-800 font-medium mb-1">No documents uploaded yet</p>
-                <p className="text-sm text-amber-700">
-                  Upload at least one proof of presence document to get started
+                <p className="text-sage-800 font-medium mb-1">Ready to upload documents</p>
+                <p className="text-sm text-sage-600">
+                  Use the upload section above to add proof of presence documents. They will be automatically saved to your claim.
                 </p>
               </div>
             )}
@@ -411,9 +422,9 @@ export default function Part9Form({ initialData, onSubmit, sessionId }: Part9For
                 <div className="flex gap-3">
                   <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-green-900 mb-1">Excellent Progress!</p>
+                    <p className="font-semibold text-green-900 mb-1">✓ Documents Saved Successfully!</p>
                     <p className="text-sm text-green-800">
-                      You've uploaded multiple documents. This will strengthen your claim when our team validates them.
+                      You've uploaded and saved {successfulUploads} documents to your claim. These are securely stored and linked to your RECA application. Our team will review them to verify they meet requirements.
                     </p>
                   </div>
                 </div>
@@ -424,9 +435,9 @@ export default function Part9Form({ initialData, onSubmit, sessionId }: Part9For
                 <div className="flex gap-3">
                   <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-blue-900 mb-1">Good Start!</p>
+                    <p className="font-semibold text-blue-900 mb-1">✓ First Document Saved!</p>
                     <p className="text-sm text-blue-800">
-                      Consider uploading at least one more document from a different category to meet RECA's minimum requirements.
+                      Your document has been securely saved to your claim. Consider uploading at least one more document from a different category to meet RECA's minimum requirements.
                     </p>
                   </div>
                 </div>

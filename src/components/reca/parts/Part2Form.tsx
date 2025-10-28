@@ -23,7 +23,7 @@ const part2Schema = z.object({
     .string()
     .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
   dob: z.string().min(1, "Date of birth is required"),
-  dod: z.string().optional(),
+  dod: z.string().min(1, "Date of death is required - only survivors can file on behalf of deceased individuals"),
 });
 
 type Part2FormData = z.infer<typeof part2Schema>;
@@ -59,12 +59,12 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-terracotta-900">
-              <p className="font-semibold mb-1">About Part 2</p>
+              <p className="font-semibold mb-1">About Part 2: Deceased Individual's Information</p>
               <p>
                 This section collects information about{" "}
-                <strong>THE PERSON WHO BECAME ILL</strong> with a compensable
-                disease. This is the individual who was exposed to radiation
-                and developed cancer.
+                <strong>THE DECEASED PERSON WHO BECAME ILL</strong> with a compensable
+                disease. As a survivor, you are filing on behalf of a family member who
+                was exposed to radiation, developed cancer, and has since passed away.
               </p>
             </div>
           </div>
@@ -75,10 +75,10 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
       <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-sage-900">
-            Claimant Information
+            Deceased Individual's Information
           </CardTitle>
           <CardDescription className="text-sage-600">
-            Information about the person who became ill
+            Information about the deceased person who became ill from radiation exposure
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -137,7 +137,8 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
             name="dod"
             label="Date of Death"
             type="date"
-            helperText="Leave blank if person is still living"
+            required
+            helperText="Required - Only survivors of deceased individuals can file claims on their behalf"
           />
         </CardContent>
       </Card>

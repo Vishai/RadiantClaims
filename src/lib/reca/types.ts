@@ -294,6 +294,14 @@ export interface Part11ProofOfDisease {
   cancerRegistryAuthorization?: boolean;
   resepAssistance?: "YES" | "NO";
   resepClinicName?: string;
+  uploadedDocuments?: Array<{
+    id: string;
+    fileName: string;
+    fileKey: string;
+    documentType: string; // MedicalDocumentType
+    uploadedAt: string;
+    fileSize: number;
+  }>;
 }
 
 // ============================================================================

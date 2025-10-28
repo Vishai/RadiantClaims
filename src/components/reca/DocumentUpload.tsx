@@ -152,10 +152,29 @@ export function DocumentUpload({
           throw new Error("Failed to upload file");
         }
 
-        // Step 3: Update document with success status
+        // Step 3: Save file record to database
+        const saveFileResponse = await fetch(`/api/reca/workflow/${sessionId}/upload-file`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileKey: fileKey,
+            fileName: file.name,
+            mimeType: file.type,
+            fileSize: file.size,
+            documentType: selectedType,
+          }),
+        });
+
+        if (!saveFileResponse.ok) {
+          throw new Error("Failed to save file record to database");
+        }
+
+        const { id: dbId } = await saveFileResponse.json();
+
+        // Step 4: Update document with success status
         const successDoc: UploadedDocument = {
           ...tempDoc,
-          id: fileKey,
+          id: dbId, // Use database ID instead of fileKey
           fileKey: fileKey,
           status: "success",
         };

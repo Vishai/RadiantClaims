@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FileText, Info, AlertCircle, Upload, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { MedicalDocumentUpload, UploadedMedicalDocument } from "../MedicalDocumentUpload";
 
 // Validation schema
 const part11Schema = z.object({
@@ -46,9 +47,10 @@ type Part11FormData = z.infer<typeof part11Schema>;
 interface Part11FormProps {
   initialData?: Partial<Part11ProofOfDisease>;
   onSubmit: (data: Part11ProofOfDisease) => void;
+  sessionId: string;
 }
 
-export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
+export default function Part11Form({ initialData, onSubmit, sessionId }: Part11FormProps) {
   const form = useForm<Part11FormData>({
     resolver: zodResolver(part11Schema),
     defaultValues: {
@@ -58,6 +60,14 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
       resepClinicName: initialData?.resepClinicName || "",
     },
   });
+
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedMedicalDocument[]>(
+    initialData?.uploadedDocuments?.map((doc) => ({
+      ...doc,
+      uploadedAt: new Date(doc.uploadedAt),
+      status: "success" as const,
+    })) || []
+  );
 
   const medicalRecordsSubmitted = form.watch("medicalRecordsSubmitted");
   const cancerRegistryAuthorization = form.watch("cancerRegistryAuthorization");
@@ -74,11 +84,41 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
       const values = form.getValues();
       // Only submit if medical records checkbox is checked
       if (values.medicalRecordsSubmitted) {
-        onSubmit(values as Part11ProofOfDisease);
+        const submissionData: Part11ProofOfDisease = {
+          ...values,
+          uploadedDocuments: uploadedDocuments.filter(doc => doc.status === "success").map((doc) => ({
+            id: doc.id,
+            fileName: doc.fileName,
+            fileKey: doc.fileKey,
+            documentType: doc.documentType,
+            uploadedAt: doc.uploadedAt.toISOString(),
+            fileSize: doc.fileSize,
+          })),
+        };
+        onSubmit(submissionData);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, onSubmit]);
+  }, [form, onSubmit, uploadedDocuments]);
+
+  // Also submit when documents change
+  useEffect(() => {
+    const values = form.getValues();
+    if (values.medicalRecordsSubmitted) {
+      const submissionData: Part11ProofOfDisease = {
+        ...values,
+        uploadedDocuments: uploadedDocuments.filter(doc => doc.status === "success").map((doc) => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileKey: doc.fileKey,
+          documentType: doc.documentType,
+          uploadedAt: doc.uploadedAt.toISOString(),
+          fileSize: doc.fileSize,
+        })),
+      };
+      onSubmit(submissionData);
+    }
+  }, [uploadedDocuments, form, onSubmit]);
 
   return (
     <div className="space-y-6">
@@ -382,23 +422,21 @@ export default function Part11Form({ initialData, onSubmit }: Part11FormProps) {
             )}
           </div>
 
-          {/* Document Upload Placeholder */}
+          {/* Medical Document Upload */}
           <div className="space-y-4 pt-4 border-t">
             <Label className="text-base font-semibold text-sage-900">
               Upload Medical Records
             </Label>
+            <p className="text-sm text-sage-600">
+              Upload your medical documentation showing diagnosis of a compensable disease.
+              Files are automatically saved to your claim.
+            </p>
 
-            <div className="rounded-lg border-2 border-dashed border-sage-300 p-8 text-center">
-              <Upload className="h-12 w-12 text-sage-400 mx-auto mb-4" />
-              <p className="text-sage-700 font-medium mb-2">
-                Document Upload Coming Soon
-              </p>
-              <p className="text-sm text-sage-600 max-w-md mx-auto">
-                You will be able to upload your medical records and supporting documentation in a
-                future step. For now, please ensure you have gathered the necessary medical
-                documentation listed above.
-              </p>
-            </div>
+            <MedicalDocumentUpload
+              sessionId={sessionId}
+              onDocumentsChange={setUploadedDocuments}
+              initialDocuments={uploadedDocuments}
+            />
           </div>
         </CardContent>
       </Card>

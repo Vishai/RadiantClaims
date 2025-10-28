@@ -117,9 +117,9 @@ export default function RECAReviewPage({ params }: PageProps) {
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-sage-900 mb-2">Review & Download</h1>
+          <h1 className="text-4xl font-bold text-sage-900 mb-2">Claim Submitted</h1>
           <p className="text-sage-600">
-            Your RECA Downwinder Claim form is complete and ready for submission
+            Your RECA Downwinder Claim form is complete and now under review by RadiantClaims
           </p>
         </div>
 
@@ -130,14 +130,16 @@ export default function RECAReviewPage({ params }: PageProps) {
               <CheckCircle2 className="h-12 w-12 text-terracotta-600 flex-shrink-0" />
               <div>
                 <h2 className="text-2xl font-bold text-terracotta-900 mb-2">
-                  🎉 Form Complete!
+                  Form Complete!
                 </h2>
                 <p className="text-terracotta-800 mb-2">
                   Congratulations! You've successfully completed all required sections of the RECA
-                  Downwinder Claim Form. Your information has been saved and is ready for review.
+                  Downwinder Claim Form. Your information has been saved and will now be reviewed
+                  by RadiantClaims and our law firm partners. We'll compile your authenticated claim
+                  packet and notify you when it's ready.
                 </p>
                 <p className="text-sm text-terracotta-700">
-                  Completion: {workflowState.completionPercentage}%
+                  Completion: {workflowState.completionPercentage}% • Expected review time: 3-5 business days
                 </p>
               </div>
             </div>
@@ -200,14 +202,14 @@ export default function RECAReviewPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        {/* Next Steps */}
+        {/* What Happens Next */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sage-900">
               <Printer className="h-5 w-5 text-terracotta-500" />
-              Next Steps
+              What Happens Next
             </CardTitle>
-            <CardDescription>After downloading your documents</CardDescription>
+            <CardDescription>RadiantClaims will handle your claim preparation</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -216,9 +218,12 @@ export default function RECAReviewPage({ params }: PageProps) {
                   1
                 </div>
                 <div>
-                  <p className="font-medium text-sage-900">Review Your Data Summary</p>
+                  <p className="font-medium text-sage-900">Document Review & Validation</p>
                   <p className="text-sm text-sage-700">
-                    Carefully review all information in the PDF for accuracy and completeness
+                    RadiantClaims and our law firm partners will carefully review all uploaded documents and information to ensure accuracy, completeness, and validity of your claim.
+                  </p>
+                  <p className="text-sm text-sage-600 mt-1 italic">
+                    Timeline: 3-5 business days
                   </p>
                 </div>
               </div>
@@ -228,18 +233,21 @@ export default function RECAReviewPage({ params }: PageProps) {
                   2
                 </div>
                 <div>
-                  <p className="font-medium text-sage-900">Print the Official Form</p>
-                  <p className="text-sm text-sage-700">
-                    Download and print the official RECA Downwinder Claim Form from the DOJ website
+                  <p className="font-medium text-sage-900">Claim Packet Compilation</p>
+                  <p className="text-sm text-sage-700 mb-2">
+                    RadiantClaims will compile an authenticated packet that includes:
                   </p>
-                  <a
-                    href="https://www.justice.gov/civil/reca"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-terracotta-600 hover:text-terracotta-700 underline"
-                  >
-                    Visit www.justice.gov/civil/reca
-                  </a>
+                  <ul className="text-sm text-sage-700 space-y-1 list-disc list-inside ml-2">
+                    <li>Your completed and authenticated claim form</li>
+                    <li>Step-by-step instruction set for final submission</li>
+                    <li>Pre-paid envelope pre-addressed to the Department of Justice</li>
+                    <li>Instructions for replacing copies with original/certified documents</li>
+                    <li>Selected uploaded documents ready for printing</li>
+                    <li>Signature guidance and instructions</li>
+                  </ul>
+                  <p className="text-sm text-sage-600 mt-1 italic">
+                    Timeline: 2-3 business days after validation
+                  </p>
                 </div>
               </div>
 
@@ -248,45 +256,24 @@ export default function RECAReviewPage({ params }: PageProps) {
                   3
                 </div>
                 <div>
-                  <p className="font-medium text-sage-900">Fill Out the Official Form</p>
+                  <p className="font-medium text-sage-900">You'll Receive Your Packet</p>
                   <p className="text-sm text-sage-700">
-                    Use your data summary to carefully transfer information to the official form
+                    We'll notify you when your packet is ready. You'll receive detailed instructions on how to finalize any required original documents and signatures.
                   </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-white font-semibold">
-                  4
-                </div>
-                <div>
-                  <p className="font-medium text-sage-900">Sign with Wet Signature</p>
-                  <p className="text-sm text-sage-700">
-                    Sign the official form by hand - electronic signatures are not accepted
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-white font-semibold">
-                  5
-                </div>
-                <div>
-                  <p className="font-medium text-sage-900">Gather Required Documents</p>
-                  <p className="text-sm text-sage-700">
-                    Collect birth certificates, medical records, and proof of presence documents
+                  <p className="text-sm text-sage-600 mt-1 italic">
+                    Notification via email and portal
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-terracotta-600 text-white font-semibold">
-                  6
+                  4
                 </div>
                 <div>
-                  <p className="font-medium text-terracotta-900">Mail to DOJ</p>
+                  <p className="font-medium text-terracotta-900">Final Mailing</p>
                   <p className="text-sm text-terracotta-700 mb-2">
-                    Send your completed form and supporting documents to:
+                    Once you've completed the simple final steps (adding original documents and signatures), you'll mail the packet using the pre-paid envelope to:
                   </p>
                   <div className="text-sm text-sage-900 bg-sage-50 p-3 rounded border border-sage-200">
                     <p>Radiation Exposure Compensation Program</p>
@@ -295,6 +282,22 @@ export default function RECAReviewPage({ params }: PageProps) {
                     <p>Ben Franklin Station</p>
                     <p>Washington, DC 20044-0146</p>
                   </div>
+                  <p className="text-sm text-terracotta-700 mt-2">
+                    We recommend using certified mail for tracking purposes.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Notice */}
+            <div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">Important</p>
+                  <p className="text-sm text-blue-800">
+                    You do NOT need to download, print, or fill out the official form yourself. RadiantClaims handles all the technical preparation work. You'll only need to complete simple final steps when you receive your packet.
+                  </p>
                 </div>
               </div>
             </div>

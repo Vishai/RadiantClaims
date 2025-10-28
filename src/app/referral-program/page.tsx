@@ -12,7 +12,7 @@ import { DollarSign, Users, FileCheck, Gift, Heart } from "lucide-react";
 export default function ReferralProgramPage() {
   return (
     <div className="min-h-screen bg-cream-50">
-      <nav className="border-b border-cream-200 bg-white/80 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-cream-200 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
