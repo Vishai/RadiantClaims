@@ -98,12 +98,12 @@ export async function GET(
       );
     }
 
-    // Check authorization - must be the owner or an admin/attorney
-    if (
-      session?.user?.id !== intakeSession.claimant?.userId &&
-      session?.user?.role !== "ADMIN" &&
-      session?.user?.role !== "ATTORNEY"
-    ) {
+    // Check authorization - must be the owner, guest with valid session, or an admin/attorney
+    const isOwner = session?.user?.id && session.user.id === intakeSession.claimant?.userId;
+    const isAdminOrAttorney = session?.user?.role === "ADMIN" || session?.user?.role === "ATTORNEY";
+    const isGuestSession = !intakeSession.claimant?.userId; // Guest sessions have no linked user
+
+    if (!isOwner && !isAdminOrAttorney && !isGuestSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -168,12 +168,12 @@ export async function POST(
       );
     }
 
-    // Check authorization
-    if (
-      session?.user?.id !== intakeSession.claimant?.userId &&
-      session?.user?.role !== "ADMIN" &&
-      session?.user?.role !== "ATTORNEY"
-    ) {
+    // Check authorization - must be the owner, guest with valid session, or an admin/attorney
+    const isOwner = session?.user?.id && session.user.id === intakeSession.claimant?.userId;
+    const isAdminOrAttorney = session?.user?.role === "ADMIN" || session?.user?.role === "ATTORNEY";
+    const isGuestSession = !intakeSession.claimant?.userId; // Guest sessions have no linked user
+
+    if (!isOwner && !isAdminOrAttorney && !isGuestSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

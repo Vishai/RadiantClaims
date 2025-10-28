@@ -19,15 +19,21 @@ export async function POST(request: NextRequest) {
     let claimantId: string | null = null;
 
     // If authenticated and not explicitly requesting guest mode, try to associate with existing claimant
-    if (session?.user?.email && !isGuest) {
-      let claimant = await db.claimant.findUnique({
-        where: { email: session.user.email },
+    if (session?.user?.email && session?.user?.id && !isGuest) {
+      let claimant = await db.claimant.findFirst({
+        where: {
+          OR: [
+            { email: session.user.email },
+            { userId: session.user.id }
+          ]
+        },
       });
 
       if (!claimant) {
         // Create a new claimant record for authenticated user
         claimant = await db.claimant.create({
           data: {
+            userId: session.user.id, // Link to user account
             email: session.user.email,
             firstName: session.user.name?.split(" ")[0] || "",
             lastName: session.user.name?.split(" ").slice(1).join(" ") || "",
@@ -40,6 +46,12 @@ export async function POST(request: NextRequest) {
             postalCode: "",
             claimType: claimType || "DOWNWINDER",
           },
+        });
+      } else if (!claimant.userId) {
+        // If claimant exists but not linked to user, link it now
+        claimant = await db.claimant.update({
+          where: { id: claimant.id },
+          data: { userId: session.user.id },
         });
       }
       claimantId = claimant.id;
