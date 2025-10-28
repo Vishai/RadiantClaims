@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Users, Info, AlertCircle, Plus, Trash2, Clock } from "lucide-react";
+import { formatSSN } from "@/lib/utils";
 
 // Validation schema for a single beneficiary
 const beneficiarySchema = z.object({
@@ -98,13 +99,7 @@ export default function SurvivingBeneficiariesForm({
 
   // Auto-format SSN
   const handleSsnChange = (index: number, value: string) => {
-    let formatted = value.replace(/\D/g, "");
-    if (formatted.length > 9) formatted = formatted.slice(0, 9);
-    if (formatted.length > 5) {
-      formatted = `${formatted.slice(0, 3)}-${formatted.slice(3, 5)}-${formatted.slice(5)}`;
-    } else if (formatted.length > 3) {
-      formatted = `${formatted.slice(0, 3)}-${formatted.slice(3)}`;
-    }
+    const formatted = formatSSN(value);
     form.setValue(`beneficiaries.${index}.beneficiarySsn`, formatted);
   };
 

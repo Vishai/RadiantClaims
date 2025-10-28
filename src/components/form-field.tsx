@@ -9,15 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatSSN } from "@/lib/utils";
 
 interface FormFieldProps<T extends FieldValues> {
   form: UseFormReturn<T>;
   name: FieldPath<T>;
   label: string;
-  type?: "text" | "email" | "tel" | "date" | "password" | "select";
+  type?: "text" | "email" | "tel" | "date" | "password" | "select" | "ssn";
   placeholder?: string;
   options?: { value: string; label: string }[];
   required?: boolean;
+  maxLength?: number;
+  helperText?: string;
 }
 
 export function FormField<T extends FieldValues>({
@@ -28,6 +31,8 @@ export function FormField<T extends FieldValues>({
   placeholder,
   options,
   required = false,
+  maxLength,
+  helperText,
 }: FormFieldProps<T>) {
   const error = form.formState.errors[name];
 
@@ -52,10 +57,42 @@ export function FormField<T extends FieldValues>({
             ))}
           </SelectContent>
         </Select>
+        {helperText && !error && (
+          <p className="text-xs text-sage-600">{helperText}</p>
+        )}
         {error && (
           <p className="text-sm text-destructive">
             {error.message as string}
           </p>
+        )}
+      </div>
+    );
+  }
+
+  // SSN input with auto-formatting
+  if (type === "ssn") {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={name}>
+          {label} {required && <span className="text-destructive">*</span>}
+        </Label>
+        <Input
+          id={name}
+          type="text"
+          placeholder={placeholder || "XXX-XX-XXXX"}
+          maxLength={11}
+          {...form.register(name, {
+            onChange: (e) => {
+              const formatted = formatSSN(e.target.value);
+              form.setValue(name, formatted as any);
+            },
+          })}
+        />
+        {helperText && !error && (
+          <p className="text-xs text-sage-600">{helperText}</p>
+        )}
+        {error && (
+          <p className="text-sm text-destructive">{error.message as string}</p>
         )}
       </div>
     );
@@ -70,8 +107,12 @@ export function FormField<T extends FieldValues>({
         id={name}
         type={type}
         placeholder={placeholder}
+        maxLength={maxLength}
         {...form.register(name)}
       />
+      {helperText && !error && (
+        <p className="text-xs text-sage-600">{helperText}</p>
+      )}
       {error && (
         <p className="text-sm text-destructive">{error.message as string}</p>
       )}

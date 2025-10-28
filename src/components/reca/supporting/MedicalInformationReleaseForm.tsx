@@ -15,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { FileText, Info, AlertCircle, Shield } from "lucide-react";
+import { formatSSN } from "@/lib/utils";
 
 // Validation schema
 const medicalInfoReleaseSchema = z.object({
@@ -86,14 +87,8 @@ export default function MedicalInformationReleaseForm({
 
   // Auto-format SSN
   const handleSsnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 9) value = value.slice(0, 9);
-    if (value.length > 5) {
-      value = `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
-    } else if (value.length > 3) {
-      value = `${value.slice(0, 3)}-${value.slice(3)}`;
-    }
-    form.setValue("patientSsn", value);
+    const formatted = formatSSN(e.target.value);
+    form.setValue("patientSsn", formatted);
   };
 
   return (

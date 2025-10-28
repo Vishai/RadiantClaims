@@ -118,6 +118,7 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
               form={form}
               name="ssn"
               label="Social Security Number"
+              type="ssn"
               required
               placeholder="XXX-XX-XXXX"
               helperText="Format: XXX-XX-XXXX"

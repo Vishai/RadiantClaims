@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ShieldCheck, Info, AlertCircle, UserPlus } from "lucide-react";
+import { FormField } from "@/components/form-field";
 
 // Validation schema
 const certificationSchema = z.object({
@@ -117,17 +118,6 @@ export default function CertificationOfIdentityForm({
     return () => subscription.unsubscribe();
   }, [form, onSubmit]);
 
-  // Auto-format SSN
-  const handleSsnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 9) value = value.slice(0, 9);
-    if (value.length > 5) {
-      value = `${value.slice(0, 3)}-${value.slice(3, 5)}-${value.slice(5)}`;
-    } else if (value.length > 3) {
-      value = `${value.slice(0, 3)}-${value.slice(3)}`;
-    }
-    form.setValue("ssn", value);
-  };
 
   // Auto-format phone number
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,20 +219,14 @@ export default function CertificationOfIdentityForm({
             </div>
 
             {/* SSN (Optional but Recommended) */}
-            <div className="space-y-2">
-              <Label htmlFor="ssn">Social Security Number</Label>
-              <Input
-                id="ssn"
-                value={form.watch("ssn")}
-                onChange={handleSsnChange}
-                placeholder="XXX-XX-XXXX (optional)"
-                className={formErrors.ssn ? "border-red-300" : ""}
-              />
-              {formErrors.ssn && <p className="text-sm text-red-600">{formErrors.ssn.message}</p>}
-              <p className="text-xs text-sage-600">
-                Voluntary but highly recommended - helps locate records more quickly
-              </p>
-            </div>
+            <FormField
+              form={form}
+              name="ssn"
+              label="Social Security Number"
+              type="ssn"
+              placeholder="XXX-XX-XXXX (optional)"
+              helperText="Voluntary but highly recommended - helps locate records more quickly"
+            />
 
             {/* Current Address */}
             <div className="space-y-2">

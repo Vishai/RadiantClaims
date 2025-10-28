@@ -116,92 +116,104 @@ export function FormWizard({
       if (!isValid) {
         return; // Don't navigate if form is invalid
       }
-      // Small delay to allow state to propagate from form submission
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Delay to allow state to propagate from form submission
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     // Save before navigating (though form should have already saved)
     await handleAutoSave();
 
+    // Reload the latest state from the server to ensure we have the most up-to-date data
+    let latestState = workflowState;
+    try {
+      const latestStateResponse = await fetch(`/api/reca/workflow/${sessionId}`);
+      if (latestStateResponse.ok) {
+        latestState = await latestStateResponse.json();
+        setWorkflowState(latestState);
+      }
+    } catch (error) {
+      console.error("Failed to reload workflow state:", error);
+      // Continue with existing state
+    }
+
     if (onNext) {
       onNext();
-    } else {
-      // Default navigation logic
-      const relationship = workflowState.formData.part_3?.relationship;
+      return;
+    }
 
-      // For early sections (before Part 3), use simple sequential navigation
-      if (currentSection === "part_1") {
-        // If filing for self, skip Part 2 and go straight to Part 3
-        const filingForSelf = workflowState.formData.part_1?.filingForSelf;
-        if (filingForSelf === true) {
-          router.push(`/reca/form/${sessionId}?section=part_3`);
-        } else {
-          router.push(`/reca/form/${sessionId}?section=part_2`);
-        }
-        return;
-      }
+    // Use the latest state for navigation logic
+    const relationship = latestState.formData.part_3?.relationship;
 
-      if (currentSection === "part_2") {
+    // For early sections (before Part 3), use simple sequential navigation
+    if (currentSection === "part_1") {
+      // If filing for self, skip Part 2 and go straight to Part 3
+      const filingForSelf = latestState.formData.part_1?.filingForSelf;
+      if (filingForSelf === true) {
         router.push(`/reca/form/${sessionId}?section=part_3`);
-        return;
-      }
-
-      if (currentSection === "part_3") {
-        // After Part 3, navigate to appropriate relationship-specific section
-        // Note: Form data was saved by form submission, but state may not be updated yet
-        // Check both the current state and if filing for self (which auto-selects Self)
-        const updatedRelationship = workflowState.formData.part_3?.relationship;
-        const filingForSelf = workflowState.formData.part_1?.filingForSelf;
-
-        // If filing for self, we know relationship is "Self" even if not yet in state
-        const effectiveRelationship = filingForSelf === true ? "Self" : updatedRelationship;
-
-        if (!effectiveRelationship) {
-          alert("Please select your relationship to the person who became ill");
-          return;
-        }
-
-        // Navigate to relationship-specific section
-        if (effectiveRelationship === "Self") {
-          router.push(`/reca/form/${sessionId}?section=part_4`);
-        } else if (effectiveRelationship === "Spouse") {
-          router.push(`/reca/form/${sessionId}?section=part_5`);
-        } else if (effectiveRelationship === "Child") {
-          router.push(`/reca/form/${sessionId}?section=part_6`);
-        } else {
-          // Parent, Grandchild, Grandparent
-          router.push(`/reca/form/${sessionId}?section=part_7`);
-        }
-        return;
-      }
-
-      // After Part 3, relationship is required for other sections
-      if (!relationship) {
-        alert("Please complete the relationship section first");
-        return;
-      }
-
-      const nextSection = getNextSection(
-        currentSection,
-        relationship,
-        workflowState.formData
-      );
-
-      if (nextSection) {
-        // Route to supporting forms if that's the next section
-        if (nextSection === "supporting_forms") {
-          router.push(`/reca/supporting/${sessionId}?form=certification_of_identity`);
-        } else if (nextSection === "document_checklist") {
-          router.push(`/reca/documents/${sessionId}`);
-        } else if (nextSection === "final_review") {
-          router.push(`/reca/review/${sessionId}`);
-        } else {
-          router.push(`/reca/form/${sessionId}?section=${nextSection}`);
-        }
       } else {
-        // No more sections - go to review
-        router.push(`/reca/review/${sessionId}`);
+        router.push(`/reca/form/${sessionId}?section=part_2`);
       }
+      return;
+    }
+
+    if (currentSection === "part_2") {
+      router.push(`/reca/form/${sessionId}?section=part_3`);
+      return;
+    }
+
+    if (currentSection === "part_3") {
+      // After Part 3, navigate to appropriate relationship-specific section
+      const updatedRelationship = latestState.formData.part_3?.relationship;
+      const filingForSelf = latestState.formData.part_1?.filingForSelf;
+
+      // If filing for self, we know relationship is "Self" even if not yet in state
+      const effectiveRelationship = filingForSelf === true ? "Self" : updatedRelationship;
+
+      if (!effectiveRelationship) {
+        alert("Please select your relationship to the person who became ill");
+        return;
+      }
+
+      // Navigate to relationship-specific section
+      if (effectiveRelationship === "Self") {
+        router.push(`/reca/form/${sessionId}?section=part_4`);
+      } else if (effectiveRelationship === "Spouse") {
+        router.push(`/reca/form/${sessionId}?section=part_5`);
+      } else if (effectiveRelationship === "Child") {
+        router.push(`/reca/form/${sessionId}?section=part_6`);
+      } else {
+        // Parent, Grandchild, Grandparent
+        router.push(`/reca/form/${sessionId}?section=part_7`);
+      }
+      return;
+    }
+
+    // After Part 3, relationship is required for other sections
+    if (!relationship) {
+      alert("Please complete the relationship section first");
+      return;
+    }
+
+    const nextSection = getNextSection(
+      currentSection,
+      relationship,
+      latestState.formData
+    );
+
+    if (nextSection) {
+      // Route to supporting forms if that's the next section
+      if (nextSection === "supporting_forms") {
+        router.push(`/reca/supporting/${sessionId}?form=certification_of_identity`);
+      } else if (nextSection === "document_checklist") {
+        router.push(`/reca/documents/${sessionId}`);
+      } else if (nextSection === "final_review") {
+        router.push(`/reca/review/${sessionId}`);
+      } else {
+        router.push(`/reca/form/${sessionId}?section=${nextSection}`);
+      }
+    } else {
+      // No more sections - go to review
+      router.push(`/reca/review/${sessionId}`);
     }
   };
 
