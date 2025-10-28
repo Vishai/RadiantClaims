@@ -36,10 +36,13 @@ async function regenerateTestPDF() {
       phoneDay: '602-555-1234',
       phoneEvening: '602-555-5678',
       email: 'john.smith@example.com',
-      residenceAddress: '',
-      tribalAffiliation: '',
-      tribalCensusNumber: '',
-      tribalAssistance: 'no',
+      // Page 2 fields
+      residenceAddress: '456 Oak Avenue',
+      residenceAddress2: 'Apartment 3B',
+      tribalAffiliation: 'NAVAJO NATION',
+      tribalCensusNumber: 'NC-123456',
+      tribalAssistance: 'navajo',
+      tribalAssistanceOther: '',
     },
     part_2: {
       firstName: 'JANE',
@@ -114,7 +117,8 @@ async function regenerateTestPDF() {
     console.log(`📁 Saved to: ${outputPath}\n`);
 
     console.log('📋 Test data includes:');
-    console.log('  • Part 1: JOHN MICHAEL SMITH');
+    console.log('  • Part 1 (Page 1): JOHN MICHAEL SMITH');
+    console.log('  • Part 1 (Page 2): Residence & Tribal info');
     console.log('  • Part 2: JANE MARIE SMITH (deceased)');
     console.log('  • Part 3: Spouse relationship');
     console.log('  • Part 8: Idaho, Arizona (2 counties), Nevada');
