@@ -129,23 +129,51 @@ export interface Part5SurvivingSpouse {
 // Part 6: Surviving Child
 // ============================================================================
 
+export interface NameChangeRecord {
+  previousName: string;
+  dateOfChange: string; // MM/DD/YYYY
+  reasonForChange: "MARRIAGE" | "DIVORCE" | "LEGAL_NAME_CHANGE" | "OTHER";
+  otherReason?: string; // If reasonForChange = OTHER
+}
+
+export interface SiblingInformation {
+  name: string;
+  dateOfBirth: string; // MM/DD/YYYY
+  cityOfBirth: string;
+  stateOfBirth: string;
+  isDeceased: "YES" | "NO";
+  dateOfDeath?: string; // Required if isDeceased = YES (MM/DD/YYYY)
+  cityOfDeath?: string; // Required if isDeceased = YES
+  stateOfDeath?: string; // Required if isDeceased = YES
+  hasDeathCertificate?: "YES" | "NO" | "WILL_OBTAIN"; // Required if isDeceased = YES
+  deathCertificateFileKey?: string; // Upload key if certificate uploaded
+  currentAddress?: string; // Required if isDeceased = NO (full address)
+  phoneNumber?: string; // Required if isDeceased = NO
+
+  // Name change tracking (for anyone who has changed their name)
+  hadNameChange?: "YES" | "NO";
+  nameChangeHistory?: NameChangeRecord[];
+  originalLastName?: string; // Original last name at birth
+}
+
 export interface Part6SurvivingChild {
+  // Verification questions
   claimantDeceased: "YES" | "NO";
   claimantEverMarried: "YES" | "NO";
+
+  // Claimant's marriage history (if applicable)
   claimantSpouses?: Array<{
     spouseName: string;
     marriageStart: string;
     marriageEnd: string;
   }>;
+
+  // Type of child relationship
   childType: "NATURAL" | "ADOPTED CHILD" | "STEP-CHILD";
+
+  // Sibling information (includes name change history within each sibling)
   otherChildrenExist: "YES" | "NO";
-  otherChildren?: Array<{
-    name: string;
-    datePlaceBirth: string;
-    datePlaceDeath?: string;
-    currentAddress?: string;
-    phoneNumber?: string;
-  }>;
+  siblings?: SiblingInformation[]; // All siblings including self
 }
 
 // ============================================================================

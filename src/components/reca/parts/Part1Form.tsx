@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Info } from "lucide-react";
+import SurvivorHierarchyTable from "@/components/reca/SurvivorHierarchyTable";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -245,6 +246,13 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
           </div>
         </CardContent>
       </Card>
+
+      {/* Survivor Hierarchy Information - Show when filing on behalf */}
+      {filingForSelf === false && (
+        <div className="mt-6">
+          <SurvivorHierarchyTable />
+        </div>
+      )}
 
       {/* Info Card */}
       <Card className="border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white">

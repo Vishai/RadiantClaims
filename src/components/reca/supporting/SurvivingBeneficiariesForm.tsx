@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { SurvivingBeneficiariesSignatures, SurvivingBeneficiary } from "@/lib/reca/types";
+import { SurvivingBeneficiariesSignatures } from "@/lib/reca/types";
 import {
   Card,
   CardContent,
@@ -35,8 +35,8 @@ const beneficiarySchema = z.object({
 const survivingBeneficiariesSchema = z.object({
   beneficiaries: z
     .array(beneficiarySchema)
-    .min(1, "At least one beneficiary is required")
-    .max(4, "Maximum of 4 beneficiaries allowed"),
+    .min(0, "This form is optional")
+    .max(4, "Maximum of 4 beneficiaries allowed per page"),
 });
 
 type SurvivingBeneficiariesFormData = z.infer<typeof survivingBeneficiariesSchema>;
@@ -157,12 +157,12 @@ export default function SurvivingBeneficiariesForm({
                 <p className="font-semibold text-blue-900 mb-2">Purpose of This Form</p>
                 <p className="text-sm text-blue-800 mb-2">
                   Complete this form ONLY if you are filing as a surviving child (Part 6). This
-                  form is optional but can significantly expedite the processing of your claim.
+                  form is <strong>optional</strong> but can significantly expedite the processing of your claim.
                 </p>
                 <p className="text-sm text-blue-800">
                   By having all eligible surviving beneficiaries sign this form, you help the
                   Department of Justice verify that all beneficiaries agree to the claim, which can
-                  reduce processing time.
+                  reduce processing time by several weeks or months.
                 </p>
               </div>
             </div>
@@ -174,10 +174,25 @@ export default function SurvivingBeneficiariesForm({
               <Clock className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-terracotta-900 mb-2">Expedite Your Claim</p>
+                <p className="text-sm text-terracotta-800 mb-2">
+                  <strong>With signatures:</strong> Including signatures from all eligible surviving beneficiaries can reduce claim
+                  processing time by several weeks or months.
+                </p>
                 <p className="text-sm text-terracotta-800">
-                  Including signatures from all eligible surviving beneficiaries can reduce claim
-                  processing time by several weeks or months. While not mandatory, it is highly
-                  recommended if possible.
+                  <strong>Without signatures:</strong> If siblings don't sign, the Department of Justice will independently contact each unsigned sibling for individual confirmation before processing your claim. This is required and will delay approval.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* One Claim Notice */}
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-900 mb-2">One Claim for All Surviving Children</p>
+                <p className="text-sm text-amber-800">
+                  Only one RECA claim should be submitted on behalf of all surviving children. Every eligible sibling must be listed as a beneficiary in Part 6, and this form helps confirm that all beneficiaries are aware and in agreement.
                 </p>
               </div>
             </div>

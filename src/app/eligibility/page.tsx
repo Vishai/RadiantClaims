@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Heart, Info } from "lucide-react";
+import SurvivorHierarchyTable from "@/components/reca/SurvivorHierarchyTable";
 
 export default function EligibilityPage() {
   return (
@@ -395,6 +396,21 @@ export default function EligibilityPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Survivor Hierarchy Section */}
+          <div className="mt-12">
+            <div className="mb-8 text-center">
+              <h2 className="mb-4 text-3xl font-bold text-sage-900">
+                Filing on Behalf of a Deceased Individual?
+              </h2>
+              <p className="text-lg text-sage-700">
+                Understand the survivor payment hierarchy and eligibility requirements
+              </p>
+              <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
+            </div>
+
+            <SurvivorHierarchyTable />
           </div>
 
           {/* CTA Section */}
