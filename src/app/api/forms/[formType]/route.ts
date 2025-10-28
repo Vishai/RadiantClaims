@@ -8,7 +8,7 @@ import { RECAFormType } from "@prisma/client";
  * Example: GET /api/forms/downwinder
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { formType: string } }
 ) {
   try {

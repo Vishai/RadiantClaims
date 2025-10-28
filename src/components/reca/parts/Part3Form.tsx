@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -124,10 +124,10 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
 
   const selectedRelationship = form.watch("relationship");
 
-  const handleSubmit = async (data: Part3FormData) => {
+  const handleSubmit = useCallback(async (data: Part3FormData) => {
     await onSubmit(data as Part3Relationship);
     return true;
-  };
+  }, [onSubmit]);
 
   // Expose form submission to FormWizard
   React.useEffect(() => {
@@ -148,7 +148,7 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [form]);
+  }, [form, handleSubmit]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">

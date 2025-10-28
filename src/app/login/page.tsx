@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useState, Suspense } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -71,7 +71,7 @@ export default function LoginPage() {
 
       // Get role-based redirect URL
       const redirectUrl = await getRoleBasedRedirect();
-      router.push(redirectUrl);
+      router.push(redirectUrl as any);
       router.refresh();
     } catch {
       setError("An error occurred. Please try again.");
@@ -156,5 +156,20 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+          <p className="mt-4 text-sage-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

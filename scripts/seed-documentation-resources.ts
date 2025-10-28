@@ -9,7 +9,7 @@ async function seedDocumentResources() {
   // UTAH STATE-LEVEL RESOURCES
   // ============================================================================
 
-  const utahVitalRecords = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "utah-vital-records",
     },
@@ -33,7 +33,7 @@ async function seedDocumentResources() {
     },
   });
 
-  const utahArchives = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "utah-state-archives",
     },
@@ -57,7 +57,7 @@ async function seedDocumentResources() {
     },
   });
 
-  const utahTaxCommission = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "utah-tax-commission",
     },
@@ -82,7 +82,7 @@ async function seedDocumentResources() {
   });
 
   // LDS CHURCH - CRITICAL RESOURCE (Fastest for Utah residents)
-  const ldsChurch = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "lds-church-records",
     },
@@ -112,7 +112,7 @@ async function seedDocumentResources() {
   // SALT LAKE COUNTY RESOURCES
   // ============================================================================
 
-  const saltLakeClerk = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "salt-lake-county-clerk",
     },
@@ -136,7 +136,7 @@ async function seedDocumentResources() {
     },
   });
 
-  const saltLakeRecorder = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "salt-lake-county-recorder",
     },
@@ -160,7 +160,7 @@ async function seedDocumentResources() {
     },
   });
 
-  const saltLakeAssessor = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "salt-lake-county-assessor",
     },
@@ -190,7 +190,7 @@ async function seedDocumentResources() {
   // MEDICAL FACILITIES (Example: University of Utah Hospital)
   // ============================================================================
 
-  const uofuHospital = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "university-utah-hospital",
     },
@@ -215,7 +215,7 @@ async function seedDocumentResources() {
     },
   });
 
-  const utahCancerRegistry = await db.documentResource.upsert({
+  await db.documentResource.upsert({
     where: {
       id: "utah-cancer-registry",
     },

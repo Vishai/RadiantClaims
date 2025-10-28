@@ -49,55 +49,55 @@ async function inspectPDFFields() {
       // Try to get additional info based on type
       try {
         if (type === 'PDFTextField') {
-          fieldsByType.text.push({
+          fieldsByType.text?.push({
             ...fieldInfo,
             maxLength: (field as any).getMaxLength?.() || 'unlimited',
           });
         } else if (type === 'PDFCheckBox') {
-          fieldsByType.checkbox.push(fieldInfo);
+          fieldsByType.checkbox?.push(fieldInfo);
         } else if (type === 'PDFRadioGroup') {
-          fieldsByType.radio.push({
+          fieldsByType.radio?.push({
             ...fieldInfo,
             options: (field as any).getOptions?.() || [],
           });
         } else if (type === 'PDFDropdown') {
-          fieldsByType.dropdown.push({
+          fieldsByType.dropdown?.push({
             ...fieldInfo,
             options: (field as any).getOptions?.() || [],
           });
         } else {
-          fieldsByType.other.push(fieldInfo);
+          fieldsByType.other?.push(fieldInfo);
         }
       } catch (err) {
-        fieldsByType.other.push(fieldInfo);
+        fieldsByType.other?.push(fieldInfo);
       }
     });
 
     // Print summary
     console.log('📊 Field Type Summary:');
-    console.log(`  - Text fields: ${fieldsByType.text.length}`);
-    console.log(`  - Checkboxes: ${fieldsByType.checkbox.length}`);
-    console.log(`  - Radio groups: ${fieldsByType.radio.length}`);
-    console.log(`  - Dropdowns: ${fieldsByType.dropdown.length}`);
-    console.log(`  - Other: ${fieldsByType.other.length}\n`);
+    console.log(`  - Text fields: ${fieldsByType.text?.length || 0}`);
+    console.log(`  - Checkboxes: ${fieldsByType.checkbox?.length || 0}`);
+    console.log(`  - Radio groups: ${fieldsByType.radio?.length || 0}`);
+    console.log(`  - Dropdowns: ${fieldsByType.dropdown?.length || 0}`);
+    console.log(`  - Other: ${fieldsByType.other?.length || 0}\n`);
 
     // Print detailed field information
     console.log('📝 Text Fields:');
     console.log('─'.repeat(80));
-    fieldsByType.text.forEach((field) => {
+    fieldsByType.text?.forEach((field) => {
       console.log(`[${field.index}] ${field.name}`);
       console.log(`    Max Length: ${field.maxLength}`);
     });
 
     console.log('\n☑️  Checkboxes:');
     console.log('─'.repeat(80));
-    fieldsByType.checkbox.forEach((field) => {
+    fieldsByType.checkbox?.forEach((field) => {
       console.log(`[${field.index}] ${field.name}`);
     });
 
     console.log('\n🔘 Radio Groups:');
     console.log('─'.repeat(80));
-    fieldsByType.radio.forEach((field) => {
+    fieldsByType.radio?.forEach((field) => {
       console.log(`[${field.index}] ${field.name}`);
       if (field.options.length > 0) {
         console.log(`    Options: ${field.options.join(', ')}`);
@@ -106,17 +106,17 @@ async function inspectPDFFields() {
 
     console.log('\n📋 Dropdowns:');
     console.log('─'.repeat(80));
-    fieldsByType.dropdown.forEach((field) => {
+    fieldsByType.dropdown?.forEach((field) => {
       console.log(`[${field.index}] ${field.name}`);
       if (field.options.length > 0) {
         console.log(`    Options: ${field.options.join(', ')}`);
       }
     });
 
-    if (fieldsByType.other.length > 0) {
+    if (fieldsByType.other && fieldsByType.other.length > 0) {
       console.log('\n❓ Other Fields:');
       console.log('─'.repeat(80));
-      fieldsByType.other.forEach((field) => {
+      fieldsByType.other?.forEach((field) => {
         console.log(`[${field.index}] ${field.name} (${field.type})`);
       });
     }

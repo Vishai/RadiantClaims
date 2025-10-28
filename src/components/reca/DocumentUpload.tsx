@@ -232,8 +232,6 @@ export function DocumentUpload({
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
-  const successfulUploads = documents.filter((doc) => doc.status === "success").length;
-
   // Track RECA requirements
   const hasResidentialDoc = documents.some(
     (doc) => doc.status === "success" && RESIDENTIAL_DOCUMENTS.includes(doc.documentType)

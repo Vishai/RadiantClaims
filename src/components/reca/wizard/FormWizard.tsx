@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ interface FormWizardProps {
   initialState: RECAWorkflowState;
   currentSection: RECAWorkflowSection;
   children: ReactNode;
-  onSave?: (data: any) => Promise<void>;
   onNext?: () => void;
   onPrevious?: () => void;
   hideNavigation?: boolean;
@@ -34,13 +33,12 @@ export function FormWizard({
   initialState,
   currentSection,
   children,
-  onSave,
   onNext,
   onPrevious,
   hideNavigation = false,
 }: FormWizardProps) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [workflowState, setWorkflowState] =
     useState<RECAWorkflowState>(initialState);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,16 +47,7 @@ export function FormWizard({
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [hasPromptedAccount, setHasPromptedAccount] = useState(false);
 
-  // Auto-save every 2 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleAutoSave();
-    }, 120000); // 2 minutes
-
-    return () => clearInterval(interval);
-  }, [workflowState]);
-
-  const handleAutoSave = async () => {
+  const handleAutoSave = useCallback(async () => {
     if (isSaving) return;
 
     try {
@@ -103,7 +92,16 @@ export function FormWizard({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [sessionId, workflowState, status, hasPromptedAccount, lastSaved, isSaving]);
+
+  // Auto-save every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      handleAutoSave();
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, [handleAutoSave]);
 
   const handleManualSave = async () => {
     await handleAutoSave();
@@ -203,9 +201,9 @@ export function FormWizard({
     if (nextSection) {
       // Route to supporting forms if that's the next section
       if (nextSection === "supporting_forms") {
-        router.push(`/reca/supporting/${sessionId}?form=certification_of_identity`);
+        router.push(`/reca/supporting/${sessionId}?form=certification_of_identity` as any);
       } else if (nextSection === "document_checklist") {
-        router.push(`/reca/documents/${sessionId}`);
+        router.push(`/reca/documents/${sessionId}` as any);
       } else if (nextSection === "final_review") {
         router.push(`/reca/review/${sessionId}`);
       } else {
@@ -265,22 +263,11 @@ export function FormWizard({
     }
   };
 
-  const getCompletedSections = (): RECAWorkflowSection[] => {
-    const completed: RECAWorkflowSection[] = [];
-    Object.keys(workflowState.formData).forEach((key) => {
-      if (workflowState.formData[key as keyof typeof workflowState.formData]) {
-        completed.push(key as RECAWorkflowSection);
-      }
-    });
-    return completed;
-  };
-
   return (
     <div className="min-h-screen bg-cream-50 flex flex-col">
       {/* Progress Bar */}
       <ProgressBar
         currentSection={currentSection}
-        completedSections={getCompletedSections()}
         completionPercentage={workflowState.completionPercentage}
       />
 

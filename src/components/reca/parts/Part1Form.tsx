@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -102,7 +102,7 @@ interface Part1FormProps {
   onContinue?: () => void;
 }
 
-export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps) {
+export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
   const [hasTribalAffiliation, setHasTribalAffiliation] = useState(
     !!(initialData?.tribalAffiliation || initialData?.tribalCensusNumber)
   );
@@ -132,7 +132,7 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
 
   const filingForSelf = form.watch("filingForSelf");
 
-  const handleSubmit = async (data: Part1FormData) => {
+  const handleSubmit = useCallback(async (data: Part1FormData) => {
     // Clear tribal fields if checkbox is not checked
     if (!hasTribalAffiliation) {
       data.tribalAffiliation = "";
@@ -140,7 +140,7 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
     }
     await onSubmit(data as Part1FilerInfo);
     return true; // Validation passed
-  };
+  }, [hasTribalAffiliation, onSubmit]);
 
   // Expose form submission to FormWizard
   React.useEffect(() => {
@@ -161,7 +161,7 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [form, hasTribalAffiliation]);
+  }, [form, hasTribalAffiliation, handleSubmit]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -186,7 +186,7 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
                   id="filingForSelf-yes"
                   checked={filingForSelf === true}
                   onCheckedChange={(checked) => {
-                    form.setValue("filingForSelf", checked ? true : undefined);
+                    form.setValue("filingForSelf", !!checked);
                   }}
                   className="mt-1"
                 />
@@ -209,7 +209,7 @@ export function Part1Form({ initialData, onSubmit, onContinue }: Part1FormProps)
                   id="filingForSelf-no"
                   checked={filingForSelf === false}
                   onCheckedChange={(checked) => {
-                    form.setValue("filingForSelf", checked ? false : undefined);
+                    form.setValue("filingForSelf", !checked);
                   }}
                   className="mt-1"
                 />

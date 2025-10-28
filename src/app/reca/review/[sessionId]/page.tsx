@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { RECAWorkflowState } from "@/lib/reca/types";
@@ -14,24 +14,13 @@ interface PageProps {
 
 export default function RECAReviewPage({ params }: PageProps) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=/reca/review/${params.sessionId}`);
-      return;
-    }
-
-    if (status === "authenticated") {
-      loadWorkflowState();
-    }
-  }, [status, params.sessionId]);
-
-  const loadWorkflowState = async () => {
+  const loadWorkflowState = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -53,7 +42,18 @@ export default function RECAReviewPage({ params }: PageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.sessionId]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push(`/login?callbackUrl=/reca/review/${params.sessionId}`);
+      return;
+    }
+
+    if (status === "authenticated") {
+      loadWorkflowState();
+    }
+  }, [status, params.sessionId, router, loadWorkflowState]);
 
   const handleDownloadPDF = async () => {
     try {

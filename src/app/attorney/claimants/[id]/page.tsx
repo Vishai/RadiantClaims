@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { ClaimantWorkflowStatus, ClaimType, FileCategory, FileStatus } from "@prisma/client";
@@ -65,6 +65,10 @@ const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
   BRAIN_CANCER: "Brain Cancer",
   OTHER_CANCER: "Other Cancer",
   NON_CANCER: "Non-Cancer",
+  DOWNWINDER: "Downwinder",
+  URANIUM_WORKER: "Uranium Worker",
+  MANHATTAN_PROJECT_WASTE: "Manhattan Project Waste",
+  ONSITE_PARTICIPANT: "Onsite Participant",
 };
 
 const CATEGORY_LABELS: Record<FileCategory, string> = {
@@ -121,13 +125,7 @@ export default function ClaimantDocumentsPage() {
     }
   }, [session, status, router]);
 
-  // Fetch claimant and documents
-  useEffect(() => {
-    if (status === "loading" || !session) return;
-    fetchDocuments();
-  }, [claimantId, session, status]);
-
-  async function fetchDocuments() {
+  const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -147,7 +145,13 @@ export default function ClaimantDocumentsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [claimantId]);
+
+  // Fetch claimant and documents
+  useEffect(() => {
+    if (status === "loading" || !session) return;
+    fetchDocuments();
+  }, [claimantId, session, status, fetchDocuments]);
 
   async function handleDownload(documentId: string) {
     try {

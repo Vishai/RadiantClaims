@@ -17,8 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FileText, Info, AlertCircle, Upload, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
-import { MedicalDocumentUpload, UploadedMedicalDocument } from "../MedicalDocumentUpload";
+import { FileText, Info, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { MedicalDocumentUpload, UploadedMedicalDocument, MedicalDocumentType } from "../MedicalDocumentUpload";
 
 // Validation schema
 const part11Schema = z.object({
@@ -64,6 +64,7 @@ export default function Part11Form({ initialData, onSubmit, sessionId }: Part11F
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedMedicalDocument[]>(
     initialData?.uploadedDocuments?.map((doc) => ({
       ...doc,
+      documentType: doc.documentType as MedicalDocumentType,
       uploadedAt: new Date(doc.uploadedAt),
       status: "success" as const,
     })) || []

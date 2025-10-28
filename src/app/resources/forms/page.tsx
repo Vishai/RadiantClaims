@@ -253,21 +253,20 @@ export default function FormsLibraryPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <Link
-                  href="/resources/documents"
-                  className="flex items-start gap-3 rounded-lg border border-sage-200 p-4 transition-colors hover:bg-sage-50"
+                <div
+                  className="flex items-start gap-3 rounded-lg border border-sage-200 p-4 opacity-60"
                 >
                   <FileText className="mt-1 h-5 w-5 text-sage-600" />
                   <div>
                     <h3 className="font-semibold text-sage-900">
-                      Document Resource Directory
+                      Document Resource Directory (Coming Soon)
                     </h3>
                     <p className="text-sm text-sage-600">
                       Find where to get birth certificates, medical records, and
                       more
                     </p>
                   </div>
-                </Link>
+                </div>
 
                 <Link
                   href="/intake"

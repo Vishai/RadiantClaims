@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   RECAWorkflowState,
+  RECAWorkflowStage,
   SaveWorkflowRequest,
   SaveWorkflowResponse,
 } from "@/lib/reca/types";
@@ -61,7 +62,7 @@ function autoPopulatePart2ForSelfFiler(formData: any) {
  * Load workflow state for a RECA form session
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
@@ -114,7 +115,7 @@ export async function GET(
     // Construct workflow state response
     const workflowState: RECAWorkflowState = {
       sessionId: intakeSession.id,
-      currentStage: intakeSession.recaWorkflowStage || 1,
+      currentStage: (intakeSession.recaWorkflowStage || 1) as RECAWorkflowStage,
       currentSection:
         (intakeSession.recaWorkflowSection as any) || "part_1",
       completionPercentage: intakeSession.recaCompletionPercent || 0,
@@ -209,7 +210,7 @@ export async function POST(
           body.currentSection || intakeSession.recaWorkflowSection,
         recaFormData: updatedFormData,
         recaSupportingForms: updatedSupportingForms,
-        recaEligibilityData: body.eligibilityData || intakeSession.recaEligibilityData,
+        recaEligibilityData: (body.eligibilityData as any) || intakeSession.recaEligibilityData,
         recaCompletionPercent: completionPercentage,
         lastActivityAt: new Date(),
         updatedAt: new Date(),

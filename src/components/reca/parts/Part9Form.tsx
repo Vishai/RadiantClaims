@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { FileText, Info, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { FileText, Info, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentUpload, UploadedDocument } from "../DocumentUpload";
 

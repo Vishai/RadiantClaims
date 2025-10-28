@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Briefcase, Info, AlertCircle, Lock } from "lucide-react";
 
@@ -91,7 +90,7 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
     },
   });
 
-  const hasAttorney = form.watch("hasAttorney");
+  // const hasAttorney = form.watch("hasAttorney");
   const formErrors = form.formState.errors;
 
   // Auto-submit when form data changes (with validation)

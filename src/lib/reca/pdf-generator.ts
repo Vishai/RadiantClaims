@@ -5,9 +5,9 @@
  */
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import * as fs from 'fs';
-import * as path from 'path';
-import { RECAFormData, RECASupportingForms, RelationshipType } from './types';
+// import * as fs from 'fs';
+// import * as path from 'path';
+import { RECAFormData, RECASupportingForms } from './types';
 
 // Color scheme matching our UI
 const COLORS = {
@@ -32,7 +32,7 @@ export class RECAPDFGenerator {
   private pageWidth: number = 612; // US Letter width in points
   private pageHeight: number = 792; // US Letter height in points
   private margin: number = 50;
-  private lineHeight: number = 15;
+  // private lineHeight: number = 15;
   private font: any;
   private boldFont: any;
   private formData: Partial<RECAFormData>;
@@ -270,7 +270,7 @@ export class RECAPDFGenerator {
       this.addField('Child Type', this.formData.part_6.childType);
       this.addField('Other Children Exist', this.formData.part_6.otherChildrenExist);
 
-      if (this.formData.part_6.otherChildren) {
+      if (this.formData.part_6.siblings) {
         this.currentY -= 10;
         this.drawText('Other Eligible Children:', {
           x: this.margin + 10,
@@ -280,7 +280,7 @@ export class RECAPDFGenerator {
         });
         this.currentY -= 15;
 
-        this.formData.part_6.otherChildren.forEach((child, index) => {
+        this.formData.part_6.siblings.forEach((child: any, index: number) => {
           this.drawText(`${index + 1}. ${child.name}`, {
             x: this.margin + 20,
             y: this.currentY,
@@ -428,7 +428,7 @@ export class RECAPDFGenerator {
     // Part 9: Proof of Presence
     if (this.formData.part_9) {
       this.addSectionHeader('Part 9: Proof of Presence');
-      this.addField('LDS Church Assistance Requested', this.formData.part_9.ldsChurchAssistance ? 'Yes' : 'No');
+      // Documents are handled separately via uploads
     }
 
     // Part 10: Compensable Diseases

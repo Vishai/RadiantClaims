@@ -6,7 +6,7 @@ import { validatePassword } from "@/lib/auth/password-policy";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, claimType } = body;
+    const { email, password } = body;
 
     // Validate input
     if (!email || !password) {

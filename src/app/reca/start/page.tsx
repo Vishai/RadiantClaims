@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/card";
 import { Heart, ArrowRight, CheckCircle, AlertCircle, Lock, UserPlus, Mail } from "lucide-react";
 
-export default function RECAStartPage() {
+function RECAStartContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthOptions, setShowAuthOptions] = useState(false);
@@ -345,5 +345,20 @@ export default function RECAStartPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+export default function RECAStartPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+          <p className="mt-4 text-sage-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <RECAStartContent />
+    </Suspense>
   );
 }

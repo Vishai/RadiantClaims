@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { Heart, CheckCircle } from "lucide-react";
 
@@ -71,7 +71,7 @@ const US_STATES = [
   { value: "WY", label: "Wyoming" },
 ];
 
-export default function IntakePage() {
+function IntakeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,11 +152,11 @@ export default function IntakePage() {
 
         // Small delay to show credentials before redirect
         setTimeout(() => {
-          router.push(nextRoute);
+          router.push(nextRoute as any);
         }, 5000);
       } else {
         // Existing user - they should already be logged in or will be prompted
-        router.push(nextRoute);
+        router.push(nextRoute as any);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit");
@@ -407,5 +407,20 @@ export default function IntakePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function IntakePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+          <p className="mt-4 text-sage-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <IntakeForm />
+    </Suspense>
   );
 }

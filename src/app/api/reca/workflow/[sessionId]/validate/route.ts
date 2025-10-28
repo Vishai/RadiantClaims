@@ -81,7 +81,7 @@ function validateSection(
   section: RECAWorkflowSection,
   data: any
 ): FieldError[] {
-  const errors: FieldError[] = [];
+  // const errors: FieldError[] = [];
 
   switch (section) {
     case "part_1":

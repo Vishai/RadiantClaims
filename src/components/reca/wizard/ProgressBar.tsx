@@ -6,13 +6,11 @@ import { getSectionDisplayName, getSectionStage } from "@/lib/reca/workflow";
 
 interface ProgressBarProps {
   currentSection: RECAWorkflowSection;
-  completedSections: RECAWorkflowSection[];
   completionPercentage: number;
 }
 
 export function ProgressBar({
   currentSection,
-  completedSections,
   completionPercentage,
 }: ProgressBarProps) {
   const stages = [

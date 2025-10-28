@@ -10,7 +10,7 @@ import { db } from '@/lib/db';
 import { generateRECAPDF } from '@/lib/reca/pdf-generator';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
@@ -37,7 +37,7 @@ export async function GET(
     }
 
     // Verify ownership
-    if (intakeSession.claimant.email !== session.user.email) {
+    if (intakeSession.claimant?.email !== session.user.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -122,7 +122,7 @@ export async function POST(
     }
 
     // Verify ownership
-    if (intakeSession.claimant.email !== session.user.email) {
+    if (intakeSession.claimant?.email !== session.user.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         currentStep: "SCREENING", // IntakeStep enum
         recaFormData: {},
         recaSupportingForms: {},
-        recaEligibilityData: null,
+        recaEligibilityData: undefined,
         recaWorkflowSection: "part_1",  // Fixed field name
         recaWorkflowStage: 1,           // Fixed field name
         recaCompletionPercent: 0,       // Fixed field name

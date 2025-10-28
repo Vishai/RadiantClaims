@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FormWizard } from "@/components/reca/wizard/FormWizard";
@@ -10,10 +10,10 @@ import TribalRecordsReleaseForm from "@/components/reca/supporting/TribalRecords
 import SurvivingBeneficiariesForm from "@/components/reca/supporting/SurvivingBeneficiariesForm";
 import {
   RECAWorkflowState,
-  MedicalInformationRelease,
-  CertificationOfIdentity,
-  TribalRecordsRelease,
-  SurvivingBeneficiariesSignatures,
+  // MedicalInformationRelease,
+  // CertificationOfIdentity,
+  // TribalRecordsRelease,
+  // SurvivingBeneficiariesSignatures,
 } from "@/lib/reca/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, FileText } from "lucide-react";
@@ -31,7 +31,7 @@ type SupportingFormType =
 export default function RECASupportingFormsPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,18 +39,7 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
   const currentForm =
     (searchParams.get("form") as SupportingFormType) || "certification_of_identity";
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=/reca/supporting/${params.sessionId}`);
-      return;
-    }
-
-    if (status === "authenticated") {
-      loadWorkflowState();
-    }
-  }, [status, params.sessionId]);
-
-  const loadWorkflowState = async () => {
+  const loadWorkflowState = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -72,7 +61,18 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.sessionId]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push(`/login?callbackUrl=/reca/supporting/${params.sessionId}`);
+      return;
+    }
+
+    if (status === "authenticated") {
+      loadWorkflowState();
+    }
+  }, [status, params.sessionId, router, loadWorkflowState]);
 
   const handleSaveSupportingForm = async (formType: SupportingFormType, formData: any) => {
     if (!workflowState) return;

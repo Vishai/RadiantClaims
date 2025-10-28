@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
@@ -77,6 +77,10 @@ const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
   BRAIN_CANCER: "Brain Cancer",
   OTHER_CANCER: "Other Cancer",
   NON_CANCER: "Non-Cancer",
+  DOWNWINDER: "Downwinder",
+  URANIUM_WORKER: "Uranium Worker",
+  MANHATTAN_PROJECT_WASTE: "Manhattan Project Waste",
+  ONSITE_PARTICIPANT: "Onsite Participant",
 };
 
 export default function AttorneyDashboardPage() {
@@ -116,12 +120,7 @@ export default function AttorneyDashboardPage() {
     }
   }, [session, status, router]);
 
-  // Fetch claimants
-  useEffect(() => {
-    fetchClaimants();
-  }, [searchQuery, statusFilter, page]);
-
-  async function fetchClaimants() {
+  const fetchClaimants = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -170,7 +169,12 @@ export default function AttorneyDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [searchQuery, statusFilter, page]);
+
+  // Fetch claimants
+  useEffect(() => {
+    fetchClaimants();
+  }, [fetchClaimants]);
 
   // Show loading state during authentication check
   if (status === "loading" || !session) {

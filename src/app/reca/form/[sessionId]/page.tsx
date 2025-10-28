@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormWizard } from "@/components/reca/wizard/FormWizard";
 import { Part1Form } from "@/components/reca/parts/Part1Form";
@@ -22,22 +22,6 @@ import Part16Form from "@/components/reca/parts/Part16Form";
 import {
   RECAWorkflowState,
   RECAWorkflowSection,
-  Part1FilerInfo,
-  Part2ClaimantInfo,
-  Part3Relationship,
-  Part4SelfFiler,
-  Part5SurvivingSpouse,
-  Part6SurvivingChild,
-  Part7OtherRelatives,
-  Part8Exposure,
-  Part9ProofOfPresence,
-  Part10Diseases,
-  Part11ProofOfDisease,
-  Part12PreviousPayments,
-  Part13Attorney,
-  Part14AttorneyAcknowledgment,
-  Part15LegalGuardian,
-  Part16Signature,
 } from "@/lib/reca/types";
 
 interface PageProps {
@@ -56,23 +40,7 @@ export default function RECAFormPage({ params }: PageProps) {
   const currentSection =
     (searchParams.get("section") as RECAWorkflowSection) || "part_1";
 
-  useEffect(() => {
-    // Load workflow state regardless of auth status (RECA forms are public)
-    loadWorkflowState();
-  }, [params.sessionId]);
-
-  // Redirect Part 2 if filing for self
-  useEffect(() => {
-    if (workflowState && currentSection === "part_2") {
-      const filingForSelf = workflowState.formData.part_1?.filingForSelf;
-      if (filingForSelf === true) {
-        // Skip Part 2 - redirect to Part 3
-        router.replace(`/reca/form/${params.sessionId}?section=part_3`);
-      }
-    }
-  }, [workflowState, currentSection, params.sessionId, router]);
-
-  const loadWorkflowState = async () => {
+  const loadWorkflowState = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -96,7 +64,23 @@ export default function RECAFormPage({ params }: PageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.sessionId]);
+
+  useEffect(() => {
+    // Load workflow state regardless of auth status (RECA forms are public)
+    loadWorkflowState();
+  }, [loadWorkflowState]);
+
+  // Redirect Part 2 if filing for self
+  useEffect(() => {
+    if (workflowState && currentSection === "part_2") {
+      const filingForSelf = workflowState.formData.part_1?.filingForSelf;
+      if (filingForSelf === true) {
+        // Skip Part 2 - redirect to Part 3
+        router.replace(`/reca/form/${params.sessionId}?section=part_3`);
+      }
+    }
+  }, [workflowState, currentSection, params.sessionId, router]);
 
   const handleSaveSection = async (sectionData: any) => {
     if (!workflowState) return;
@@ -247,6 +231,7 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part11Form
             initialData={workflowState.formData.part_11}
             onSubmit={handleSaveSection}
+            sessionId={params.sessionId}
           />
         );
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ import { Heart, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function RECASignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -86,7 +86,7 @@ export default function RECASignupPage() {
         throw new Error(errorData.error || "Failed to create account");
       }
 
-      const result = await response.json();
+      // const result = await response.json();
 
       // Auto-login
       const signInResult = await signIn("credentials", {

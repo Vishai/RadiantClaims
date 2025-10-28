@@ -11,7 +11,7 @@ import {
   Calendar,
   Zap,
 } from "lucide-react";
-import { format, formatDistanceToNow, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 
 interface PayoutPulseProps {
   data: PayoutPulseData;
