@@ -30,54 +30,60 @@ async function testPDFFormFilling() {
       residenceAddress: '123 Main Street, Phoenix, AZ 85001',
       tribalAffiliation: 'Navajo Nation',
       tribalCensusNumber: 'N123456',
-      tribalAssistance: 'navajo',
-      tribalAssistanceOther: null,
+      tribalAssistance: ['navajo'],
     },
     part_2: {
       firstName: 'JANE',
       middleName: 'MARIE',
       lastName: 'SMITH',
-      formerNames: null,
       ssn: '987-65-4321',
       dob: '1963-07-22',
       dod: '2020-12-31',
     },
     part_3: {
-      relationship: 'spouse',
+      relationship: 'Spouse',
     },
     part_8: {
-      exposureOption: 'designated_1year',
-      locations: {
-        idaho: {
+      exposureOptions: ['option_1a'],
+      affectedAreas: [
+        {
+          state: 'Idaho',
           townCity: 'Boise',
           timePeriod: '1955-1960',
         },
-        arizona: [
-          {
-            county: 'Coconino',
-            townCity: 'Flagstaff',
-            timePeriod: '1956-1958',
-          },
-          {
-            county: 'Navajo',
-            townCity: 'Holbrook',
-            timePeriod: '1958-1960',
-          },
-        ],
-        nevada: [
-          {
-            county: 'Nye',
-            townCity: 'Tonopah',
-            timePeriod: '1955-1962',
-          },
-        ],
-      },
+        {
+          state: 'Utah',
+          townCity: 'St. George',
+          timePeriod: '1958-1961',
+        },
+      ],
+      arizonaCounties: [
+        {
+          county: 'Coconino',
+          townCity: 'Flagstaff',
+          timePeriod: '1956-1958',
+        },
+        {
+          county: 'Navajo',
+          townCity: 'Holbrook',
+          timePeriod: '1958-1960',
+        },
+      ],
+      nevadaCounties: [
+        {
+          county: 'Nye',
+          townCity: 'Tonopah',
+          timePeriod: '1955-1962',
+        },
+      ],
     },
     part_10: {
       diseases: ['lung', 'thyroid', 'leukemia'],
     },
     part_16: {
+      signature: 'JOHN SMITH',
       signatureDate: '10/27/2025',
+      authorizationAcknowledgment: true,
     },
   };
 

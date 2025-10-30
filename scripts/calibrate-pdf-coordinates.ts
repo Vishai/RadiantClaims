@@ -24,11 +24,17 @@ async function addGridToPDF() {
     // Embed font
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+    const pages = pdfDoc.getPages();
+
     // Add grid to first 3 pages only (for performance)
-    const pagesToCalibrate = Math.min(3, pdfDoc.getPageCount());
+    const pagesToCalibrate = Math.min(3, pages.length);
 
     for (let pageIndex = 0; pageIndex < pagesToCalibrate; pageIndex++) {
-      const page = pdfDoc.getPages()[pageIndex];
+      const page = pages[pageIndex];
+      if (!page) {
+        console.warn(`Skipping page ${pageIndex + 1}: missing in source PDF`);
+        continue;
+      }
 
       // Draw vertical lines every 50 points with labels
       for (let x = 0; x <= PAGE_WIDTH; x += 50) {

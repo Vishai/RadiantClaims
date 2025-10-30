@@ -2237,30 +2237,34 @@ export class RECAPDFFormFiller {
       // Handle attorney firm name with automatic line breaking at x: 520
       if (part13.attorneyFirm) {
         const firmCoords = FIELD_COORDINATES["part13.attorneyFirm"];
-        const charSpacing = firmCoords.characterSpacing || 0;
-        const maxWidth = firmCoords.maxWidth || 445;
+        const charSpacing = firmCoords?.characterSpacing;
+        const maxWidth = firmCoords?.maxWidth ?? 445;
 
-        // Calculate characters that fit: maxWidth / characterSpacing
-        // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
-        const charsPerLine = Math.floor(maxWidth / charSpacing);
+        if (charSpacing && charSpacing > 0) {
+          // Calculate characters that fit: maxWidth / characterSpacing
+          // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
+          const charsPerLine = Math.floor(maxWidth / charSpacing);
 
-        if (part13.attorneyFirm.length <= charsPerLine) {
-          // Fits on one line
-          this.drawText("part13.attorneyFirm", part13.attorneyFirm);
-        } else {
-          // Need to split across two lines
-          // Find the last space before the character limit
-          let splitIndex = part13.attorneyFirm.lastIndexOf(" ", charsPerLine);
-          if (splitIndex === -1) {
-            // No space found, force break at character limit
-            splitIndex = charsPerLine;
+          if (part13.attorneyFirm.length <= charsPerLine) {
+            // Fits on one line
+            this.drawText("part13.attorneyFirm", part13.attorneyFirm);
+          } else {
+            // Need to split across two lines
+            // Find the last space before the character limit
+            let splitIndex = part13.attorneyFirm.lastIndexOf(" ", charsPerLine);
+            if (splitIndex === -1) {
+              // No space found, force break at character limit
+              splitIndex = charsPerLine;
+            }
+
+            const line1 = part13.attorneyFirm.substring(0, splitIndex).trim();
+            const line2 = part13.attorneyFirm.substring(splitIndex).trim();
+
+            this.drawText("part13.attorneyFirm", line1);
+            this.drawText("part13.attorneyFirm2", line2);
           }
-
-          const line1 = part13.attorneyFirm.substring(0, splitIndex).trim();
-          const line2 = part13.attorneyFirm.substring(splitIndex).trim();
-
-          this.drawText("part13.attorneyFirm", line1);
-          this.drawText("part13.attorneyFirm2", line2);
+        } else {
+          this.drawText("part13.attorneyFirm", part13.attorneyFirm);
         }
       }
 
@@ -2303,30 +2307,34 @@ export class RECAPDFFormFiller {
     // Handle guardian address with automatic line breaking at x: 520
     if (part15.guardianAddress) {
       const addressCoords = FIELD_COORDINATES["part15.guardianAddress"];
-      const charSpacing = addressCoords.characterSpacing || 0;
-      const maxWidth = addressCoords.maxWidth || 445;
+      const charSpacing = addressCoords?.characterSpacing;
+      const maxWidth = addressCoords?.maxWidth ?? 445;
 
-      // Calculate characters that fit: maxWidth / characterSpacing
-      // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
-      const charsPerLine = Math.floor(maxWidth / charSpacing);
+      if (charSpacing && charSpacing > 0) {
+        // Calculate characters that fit: maxWidth / characterSpacing
+        // With characterSpacing of 18 and maxWidth 445: 445/18 = ~24 characters
+        const charsPerLine = Math.floor(maxWidth / charSpacing);
 
-      if (part15.guardianAddress.length <= charsPerLine) {
-        // Fits on one line
-        this.drawText("part15.guardianAddress", part15.guardianAddress);
-      } else {
-        // Need to split across two lines
-        // Find the last space before the character limit
-        let splitIndex = part15.guardianAddress.lastIndexOf(" ", charsPerLine);
-        if (splitIndex === -1) {
-          // No space found, force break at character limit
-          splitIndex = charsPerLine;
+        if (part15.guardianAddress.length <= charsPerLine) {
+          // Fits on one line
+          this.drawText("part15.guardianAddress", part15.guardianAddress);
+        } else {
+          // Need to split across two lines
+          // Find the last space before the character limit
+          let splitIndex = part15.guardianAddress.lastIndexOf(" ", charsPerLine);
+          if (splitIndex === -1) {
+            // No space found, force break at character limit
+            splitIndex = charsPerLine;
+          }
+
+          const line1 = part15.guardianAddress.substring(0, splitIndex).trim();
+          const line2 = part15.guardianAddress.substring(splitIndex).trim();
+
+          this.drawText("part15.guardianAddress", line1);
+          this.drawText("part15.guardianAddress2", line2);
         }
-
-        const line1 = part15.guardianAddress.substring(0, splitIndex).trim();
-        const line2 = part15.guardianAddress.substring(splitIndex).trim();
-
-        this.drawText("part15.guardianAddress", line1);
-        this.drawText("part15.guardianAddress2", line2);
+      } else {
+        this.drawText("part15.guardianAddress", part15.guardianAddress);
       }
     }
 
@@ -2350,9 +2358,8 @@ export class RECAPDFFormFiller {
   }
 
   private async fillMedicalReleaseForm() {
-    if (!this.formData.medical_release) return;
-
-    const medicalRelease = this.formData.medical_release;
+    const medicalRelease = this.supportingForms.medicalInformationRelease;
+    if (!medicalRelease) return;
 
     // State of residence at time of diagnosis
     this.drawText(
@@ -2364,29 +2371,29 @@ export class RECAPDFFormFiller {
     this.drawText("medicalRelease.patientName", medicalRelease.patientName);
 
     // 2. Social Security number
-    this.drawText("medicalRelease.patientSSN", medicalRelease.patientSSN);
+    this.drawText("medicalRelease.patientSSN", medicalRelease.patientSsn);
 
     // 3. Birth date
-    this.drawText("medicalRelease.patientDOB", medicalRelease.patientDOB);
+    this.drawText("medicalRelease.patientDOB", medicalRelease.patientDob);
 
     // 4. Date of death (if applicable)
-    if (medicalRelease.patientDOD) {
-      this.drawText("medicalRelease.patientDOD", medicalRelease.patientDOD);
+    if (medicalRelease.patientDod) {
+      this.drawText("medicalRelease.patientDOD", medicalRelease.patientDod);
     }
 
     // 5. Name of individual requesting release (if different)
-    if (medicalRelease.requesterName) {
+    if (medicalRelease.requestorName) {
       this.drawText(
         "medicalRelease.requesterName",
-        medicalRelease.requesterName
+        medicalRelease.requestorName
       );
     }
 
     // 5. Relationship to individual
-    if (medicalRelease.requesterRelationship) {
+    if (medicalRelease.requestorRelationship) {
       this.drawText(
         "medicalRelease.requesterRelationship",
-        medicalRelease.requesterRelationship
+        medicalRelease.requestorRelationship
       );
     }
 
@@ -2395,9 +2402,8 @@ export class RECAPDFFormFiller {
   }
 
   private async fillPrivacyReleaseForm() {
-    if (!this.formData.privacy_release) return;
-
-    const privacyRelease = this.formData.privacy_release;
+    const privacyRelease = this.supportingForms.certificationOfIdentity;
+    if (!privacyRelease) return;
 
     // Claim number
     if (privacyRelease.claimNumber) {
@@ -2419,60 +2425,62 @@ export class RECAPDFFormFiller {
     this.drawText("privacyRelease.placeOfBirth", privacyRelease.placeOfBirth);
     this.drawText(
       "privacyRelease.section1SignatureDate",
-      privacyRelease.section1SignatureDate
+      privacyRelease.signatureDate
     );
 
     // Section 2: Authorization to Release Information (OPTIONAL)
-    if (privacyRelease.authorizeName) {
+    if (privacyRelease.authorizedPersonName) {
       this.drawText(
         "privacyRelease.authorizeName",
-        privacyRelease.authorizeName
+        privacyRelease.authorizedPersonName
       );
     }
-    if (privacyRelease.authorizeRelationship) {
+    if (privacyRelease.relationshipToRequester) {
       this.drawText(
         "privacyRelease.authorizeRelationship",
-        privacyRelease.authorizeRelationship
+        privacyRelease.relationshipToRequester
       );
     }
-    if (privacyRelease.authorizePhone) {
+    if (privacyRelease.authorizedPhoneNumber) {
       this.drawText(
         "privacyRelease.authorizePhone",
-        privacyRelease.authorizePhone
+        privacyRelease.authorizedPhoneNumber
       );
     }
-    if (privacyRelease.authorizeAddress) {
+    if (privacyRelease.authorizedCurrentAddress) {
       this.drawText(
         "privacyRelease.authorizeAddress",
-        privacyRelease.authorizeAddress
+        privacyRelease.authorizedCurrentAddress
       );
     }
-    if (privacyRelease.section2SignatureDate) {
+    if (privacyRelease.authorizedSignatureDate) {
       this.drawText(
         "privacyRelease.section2SignatureDate",
-        privacyRelease.section2SignatureDate
+        privacyRelease.authorizedSignatureDate
       );
     }
   }
 
   private async fillTribalReleaseForm() {
-    if (!this.formData.tribal_release) return;
-
-    const tribalRelease = this.formData.tribal_release;
+    const tribalRelease = this.supportingForms.tribalRecordsRelease;
+    if (!tribalRelease) return;
 
     // Tribal office checkboxes
-    if (tribalRelease.tribe === "navajo") {
+    if (tribalRelease.tribalOffice === "Navajo Nation Office of Vital Records") {
       this.drawCheckbox("tribalRelease.navajo");
-    } else if (tribalRelease.tribe === "hopi") {
+    } else if (tribalRelease.tribalOffice === "Hopi Tribe Enrollment Department") {
       this.drawCheckbox("tribalRelease.hopi");
-    } else if (tribalRelease.tribe === "sanCarlosApache") {
+    } else if (
+      tribalRelease.tribalOffice ===
+      "San Carlos Apache Tribal Enrollment Office"
+    ) {
       this.drawCheckbox("tribalRelease.sanCarlosApache");
-    } else if (tribalRelease.tribe === "other") {
+    } else if (tribalRelease.tribalOffice === "Other") {
       this.drawCheckbox("tribalRelease.otherTribe");
-      if (tribalRelease.otherTribeName) {
+      if (tribalRelease.otherTribalOffice) {
         this.drawText(
           "tribalRelease.otherTribeName",
-          tribalRelease.otherTribeName
+          tribalRelease.otherTribalOffice
         );
       }
     }
@@ -2493,98 +2501,122 @@ export class RECAPDFFormFiller {
   }
 
   private async fillBeneficiarySignaturesForm() {
-    if (!this.formData.beneficiary_signatures) return;
-
-    const beneficiarySignatures = this.formData.beneficiary_signatures;
+    const beneficiarySignatures =
+      this.supportingForms.survivingBeneficiariesSignatures;
+    if (!beneficiarySignatures) return;
 
     // Fill beneficiary 1
-    if (
-      beneficiarySignatures.beneficiaries &&
-      beneficiarySignatures.beneficiaries.length > 0
-    ) {
-      const ben1 = beneficiarySignatures.beneficiaries[0];
-      this.drawText("beneficiarySignatures.beneficiary1.name", ben1.name);
-      this.drawText("beneficiarySignatures.beneficiary1.ssn", ben1.ssn);
-      this.drawText("beneficiarySignatures.beneficiary1.date", ben1.date);
+    const ben1 = beneficiarySignatures.beneficiaries?.[0];
+    if (ben1) {
+      this.drawText(
+        "beneficiarySignatures.beneficiary1.name",
+        ben1.beneficiaryName
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary1.ssn",
+        ben1.beneficiarySsn
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary1.date",
+        ben1.signatureDate
+      );
       if (ben1.attorneyName) {
         this.drawText(
           "beneficiarySignatures.beneficiary1.attorneyName",
           ben1.attorneyName
         );
       }
-      if (ben1.phoneNumber) {
+      if (ben1.attorneyPhone) {
         this.drawText(
           "beneficiarySignatures.beneficiary1.phoneNumber",
-          ben1.phoneNumber
+          ben1.attorneyPhone
         );
       }
     }
 
     // Fill beneficiary 2
-    if (
-      beneficiarySignatures.beneficiaries &&
-      beneficiarySignatures.beneficiaries.length > 1
-    ) {
-      const ben2 = beneficiarySignatures.beneficiaries[1];
-      this.drawText("beneficiarySignatures.beneficiary2.name", ben2.name);
-      this.drawText("beneficiarySignatures.beneficiary2.ssn", ben2.ssn);
-      this.drawText("beneficiarySignatures.beneficiary2.date", ben2.date);
+    const ben2 = beneficiarySignatures.beneficiaries?.[1];
+    if (ben2) {
+      this.drawText(
+        "beneficiarySignatures.beneficiary2.name",
+        ben2.beneficiaryName
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary2.ssn",
+        ben2.beneficiarySsn
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary2.date",
+        ben2.signatureDate
+      );
       if (ben2.attorneyName) {
         this.drawText(
           "beneficiarySignatures.beneficiary2.attorneyName",
           ben2.attorneyName
         );
       }
-      if (ben2.phoneNumber) {
+      if (ben2.attorneyPhone) {
         this.drawText(
           "beneficiarySignatures.beneficiary2.phoneNumber",
-          ben2.phoneNumber
+          ben2.attorneyPhone
         );
       }
     }
 
     // Fill beneficiary 3
-    if (
-      beneficiarySignatures.beneficiaries &&
-      beneficiarySignatures.beneficiaries.length > 2
-    ) {
-      const ben3 = beneficiarySignatures.beneficiaries[2];
-      this.drawText("beneficiarySignatures.beneficiary3.name", ben3.name);
-      this.drawText("beneficiarySignatures.beneficiary3.ssn", ben3.ssn);
-      this.drawText("beneficiarySignatures.beneficiary3.date", ben3.date);
+    const ben3 = beneficiarySignatures.beneficiaries?.[2];
+    if (ben3) {
+      this.drawText(
+        "beneficiarySignatures.beneficiary3.name",
+        ben3.beneficiaryName
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary3.ssn",
+        ben3.beneficiarySsn
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary3.date",
+        ben3.signatureDate
+      );
       if (ben3.attorneyName) {
         this.drawText(
           "beneficiarySignatures.beneficiary3.attorneyName",
           ben3.attorneyName
         );
       }
-      if (ben3.phoneNumber) {
+      if (ben3.attorneyPhone) {
         this.drawText(
           "beneficiarySignatures.beneficiary3.phoneNumber",
-          ben3.phoneNumber
+          ben3.attorneyPhone
         );
       }
     }
 
     // Fill beneficiary 4
-    if (
-      beneficiarySignatures.beneficiaries &&
-      beneficiarySignatures.beneficiaries.length > 3
-    ) {
-      const ben4 = beneficiarySignatures.beneficiaries[3];
-      this.drawText("beneficiarySignatures.beneficiary4.name", ben4.name);
-      this.drawText("beneficiarySignatures.beneficiary4.ssn", ben4.ssn);
-      this.drawText("beneficiarySignatures.beneficiary4.date", ben4.date);
+    const ben4 = beneficiarySignatures.beneficiaries?.[3];
+    if (ben4) {
+      this.drawText(
+        "beneficiarySignatures.beneficiary4.name",
+        ben4.beneficiaryName
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary4.ssn",
+        ben4.beneficiarySsn
+      );
+      this.drawText(
+        "beneficiarySignatures.beneficiary4.date",
+        ben4.signatureDate
+      );
       if (ben4.attorneyName) {
         this.drawText(
           "beneficiarySignatures.beneficiary4.attorneyName",
           ben4.attorneyName
         );
       }
-      if (ben4.phoneNumber) {
+      if (ben4.attorneyPhone) {
         this.drawText(
           "beneficiarySignatures.beneficiary4.phoneNumber",
-          ben4.phoneNumber
+          ben4.attorneyPhone
         );
       }
     }
@@ -2781,19 +2813,6 @@ export class RECAPDFFormFiller {
     });
   }
 
-  /**
-   * Format phone number
-   */
-  private formatPhone(phone?: string | null): string {
-    if (!phone) return "";
-    // Remove non-digits
-    const digits = phone.replace(/\D/g, "");
-    // Format as XXX-XXX-XXXX
-    if (digits.length === 10) {
-      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-    }
-    return phone;
-  }
 }
 
 /**

@@ -149,9 +149,8 @@ export async function POST(
       officialPdfPath,
     });
 
-    // Also generate data summary for future use
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const dataSummaryBytes = await generateRECAPDF({
+    // Also generate data summary for future use (persist once we have storage wired up)
+    await generateRECAPDF({
       formData,
       supportingForms: supportingForms || {},
       sessionId: params.sessionId,

@@ -409,6 +409,7 @@ export interface MedicalInformationRelease {
 }
 
 export interface CertificationOfIdentity {
+  claimNumber?: string;
   fullName: string;
   citizenshipStatus: "US Citizen" | "Lawful Permanent Resident";
   ssn?: string;
@@ -450,6 +451,7 @@ export interface SurvivingBeneficiary {
 
 export interface SurvivingBeneficiariesSignatures {
   beneficiaries: SurvivingBeneficiary[];
+  additionalChildrenAttached?: boolean;
 }
 
 export interface RECASupportingForms {

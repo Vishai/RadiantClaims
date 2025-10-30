@@ -29,11 +29,17 @@ async function addFineGridToPDF() {
     // Embed font
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+    const pages = pdfDoc.getPages();
+
     // Add grid to pages 0-16 (pages 1-17, including additional form pages)
-    const pagesToCalibrate = Math.min(17, pdfDoc.getPageCount());
+    const pagesToCalibrate = Math.min(17, pages.length);
 
     for (let pageIndex = 0; pageIndex < pagesToCalibrate; pageIndex++) {
-      const page = pdfDoc.getPages()[pageIndex];
+      const page = pages[pageIndex];
+      if (!page) {
+        console.warn(`Skipping page ${pageIndex + 1}: missing in source PDF`);
+        continue;
+      }
 
       console.log(`  Adding fine grid to page ${pageIndex + 1}...`);
 
