@@ -6,12 +6,10 @@
 
 import { PDFDocument, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import * as fs from "fs";
-import * as path from "path";
 import { RECAFormData, RECASupportingForms } from "./types";
 
 // PDF dimensions (US Letter: 8.5" x 11" at 72 DPI)
 const PAGE_WIDTH = 612;
-const PAGE_HEIGHT = 792;
 
 // Font sizes
 const FONT_SIZES = {
@@ -1731,9 +1729,12 @@ export class RECAPDFFormFiller {
     // Fill DOB in segments (MM/DD/YYYY)
     this.drawDate("part1.dob", part1.dob);
 
+    // Cast to any for optional properties not in types
+    const part1Any = part1 as any;
+
     // Fill address fields
     this.drawText("part1.mailingAddress", part1.mailingAddress);
-    this.drawText("part1.mailingAddress2", part1.mailingAddress2);
+    this.drawText("part1.mailingAddress2", part1Any.mailingAddress2);
     this.drawText("part1.city", part1.city);
     this.drawText("part1.state", part1.state);
     this.drawText("part1.zipCode", part1.zipCode);
@@ -1747,24 +1748,47 @@ export class RECAPDFFormFiller {
 
     // Fill residence address if different
     this.drawText("part1.residenceAddress", part1.residenceAddress);
-    this.drawText("part1.residenceAddress2", part1.residenceAddress2);
+    this.drawText("part1.residenceAddress2", part1Any.residenceAddress2);
 
     // Fill tribal information
     this.drawText("part1.tribe", part1.tribalAffiliation);
     this.drawText("part1.censusNumber", part1.tribalCensusNumber);
 
     // Check tribal assistance checkboxes
-    if (part1.tribalAssistance) {
-      if (part1.tribalAssistance === "navajo") {
-        this.drawCheckbox("part1.tribalAssistance.navajo");
-      } else if (part1.tribalAssistance === "other") {
-        this.drawCheckbox("part1.tribalAssistance.other");
-        this.drawText(
-          "part1.tribalAssistance.otherName",
-          part1.tribalAssistanceOther
-        );
-      } else if (part1.tribalAssistance === "no") {
-        this.drawCheckbox("part1.tribalAssistance.no");
+    // tribalAssistance is stored as an array of strings in the types
+    if (part1Any.tribalAssistance) {
+      if (Array.isArray(part1Any.tribalAssistance)) {
+        // Handle array format
+        if (part1Any.tribalAssistance.includes("navajo")) {
+          this.drawCheckbox("part1.tribalAssistance.navajo");
+        }
+        if (part1Any.tribalAssistance.includes("other")) {
+          this.drawCheckbox("part1.tribalAssistance.other");
+          if (part1Any.tribalAssistanceOther) {
+            this.drawText(
+              "part1.tribalAssistance.otherName",
+              part1Any.tribalAssistanceOther
+            );
+          }
+        }
+        if (part1Any.tribalAssistance.includes("no")) {
+          this.drawCheckbox("part1.tribalAssistance.no");
+        }
+      } else {
+        // Handle string format
+        if (part1Any.tribalAssistance === "navajo") {
+          this.drawCheckbox("part1.tribalAssistance.navajo");
+        } else if (part1Any.tribalAssistance === "other") {
+          this.drawCheckbox("part1.tribalAssistance.other");
+          if (part1Any.tribalAssistanceOther) {
+            this.drawText(
+              "part1.tribalAssistance.otherName",
+              part1Any.tribalAssistanceOther
+            );
+          }
+        } else if (part1Any.tribalAssistance === "no") {
+          this.drawCheckbox("part1.tribalAssistance.no");
+        }
       }
     }
   }
@@ -1796,6 +1820,13 @@ export class RECAPDFFormFiller {
     const relationship = part3.relationship;
 
     const checkboxMap: Record<string, string> = {
+      Self: "part3.self",
+      Spouse: "part3.spouse",
+      Child: "part3.child",
+      Parent: "part3.parent",
+      Grandchild: "part3.grandchild",
+      Grandparent: "part3.grandparent",
+      // Also support lowercase for backwards compatibility
       self: "part3.self",
       spouse: "part3.spouse",
       child: "part3.child",
@@ -2041,77 +2072,63 @@ export class RECAPDFFormFiller {
 
     const part8 = this.formData.part_8;
 
-    // Check exposure period option
-    if (part8.exposureOption) {
-      if (part8.exposureOption === "designated_1year") {
+    // Check exposure options (user can select multiple)
+    if (part8.exposureOptions && Array.isArray(part8.exposureOptions)) {
+      if (part8.exposureOptions.includes("option_1a")) {
         this.drawCheckbox("part8.option1a");
-      } else if (part8.exposureOption === "designated_june_july_1962") {
+      }
+      if (part8.exposureOptions.includes("option_1b")) {
         this.drawCheckbox("part8.option1b");
-      } else if (part8.exposureOption === "new_mexico_1year") {
+      }
+      if (part8.exposureOptions.includes("option_2")) {
         this.drawCheckbox("part8.option2");
       }
     }
 
-    // Fill location data
-    if (part8.locations) {
-      // Simple states (no county)
-      if (part8.locations.idaho) {
-        this.drawText("part8.idaho.townCity", part8.locations.idaho.townCity);
-        this.drawText(
-          "part8.idaho.timePeriod",
-          part8.locations.idaho.timePeriod
-        );
-      }
-      if (part8.locations.newMexico) {
-        this.drawText(
-          "part8.newMexico.townCity",
-          part8.locations.newMexico.townCity
-        );
-        this.drawText(
-          "part8.newMexico.timePeriod",
-          part8.locations.newMexico.timePeriod
-        );
-      }
-      if (part8.locations.utah) {
-        this.drawText("part8.utah.townCity", part8.locations.utah.townCity);
-        this.drawText("part8.utah.timePeriod", part8.locations.utah.timePeriod);
-      }
+    // Fill affected areas (Idaho, New Mexico, Utah)
+    if (part8.affectedAreas && Array.isArray(part8.affectedAreas)) {
+      part8.affectedAreas.forEach((area, index) => {
+        const stateKey = area.state.toLowerCase().replace(/\s+/g, "");
+        if (index === 0) {
+          // First entry for each state
+          this.drawText(`part8.${stateKey}.townCity`, area.townCity);
+          this.drawText(`part8.${stateKey}.timePeriod`, area.timePeriod);
+        }
+      });
+    }
 
-      // Arizona counties
-      if (part8.locations.arizona && Array.isArray(part8.locations.arizona)) {
-        part8.locations.arizona.forEach((location) => {
-          const county = location.county.toLowerCase();
-          this.drawText(`part8.arizona.${county}.townCity`, location.townCity);
-          this.drawText(
-            `part8.arizona.${county}.timePeriod`,
-            location.timePeriod
-          );
-        });
-      }
+    // Fill Arizona counties
+    if (part8.arizonaCounties && Array.isArray(part8.arizonaCounties)) {
+      part8.arizonaCounties.forEach((county, index) => {
+        const countyKey = county.county.toLowerCase().replace(/\s+/g, "");
+        if (index === 0) {
+          // First entry for each county
+          this.drawText(`part8.arizona.${countyKey}.townCity`, county.townCity);
+          this.drawText(`part8.arizona.${countyKey}.timePeriod`, county.timePeriod);
+        }
+      });
+    }
 
-      // Nevada counties
-      if (part8.locations.nevada && Array.isArray(part8.locations.nevada)) {
-        part8.locations.nevada.forEach((location) => {
-          // Convert "White Pine" -> "whitePine", "Nye" -> "nye", etc.
-          const countyKey = location.county
-            .split(" ")
-            .map((word, index) => {
-              if (index === 0) {
-                return word.toLowerCase();
-              }
-              return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-            })
-            .join("");
-          this.drawText(
-            `part8.nevada.${countyKey}.townCity`,
-            location.townCity
-          );
-          this.drawText(
-            `part8.nevada.${countyKey}.timePeriod`,
-            location.timePeriod
-          );
-        });
-      }
+    // Fill Nevada counties
+    if (part8.nevadaCounties && Array.isArray(part8.nevadaCounties)) {
+      part8.nevadaCounties.forEach((county, index) => {
+        // Convert "White Pine" -> "whitePine", "Nye" -> "nye", etc.
+        const countyKey = county.county
+          .split(" ")
+          .map((word, i) => {
+            if (i === 0) {
+              return word.toLowerCase();
+            }
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          })
+          .join("");
+
+        if (index === 0) {
+          // First entry for each county
+          this.drawText(`part8.nevada.${countyKey}.townCity`, county.townCity);
+          this.drawText(`part8.nevada.${countyKey}.timePeriod`, county.timePeriod);
+        }
+      });
     }
   }
 

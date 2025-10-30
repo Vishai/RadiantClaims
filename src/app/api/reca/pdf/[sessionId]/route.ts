@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { generateRECAPDF } from '@/lib/reca/pdf-generator';
+import { fillOfficialRECAPDF } from '@/lib/reca/pdf-form-filler';
+import * as path from 'path';
 
 export async function GET(
   _request: NextRequest,
@@ -55,18 +57,22 @@ export async function GET(
       );
     }
 
-    // Generate the data summary PDF
-    const pdfBytes = await generateRECAPDF({
+    // Path to the official RECA PDF template
+    const officialPdfPath = path.join(process.cwd(), 'public', 'forms', 'reca-downwinder-claim-form.pdf');
+
+    // Generate the filled official RECA PDF
+    const pdfBytes = await fillOfficialRECAPDF({
       formData,
       supportingForms: supportingForms || {},
       sessionId: params.sessionId,
+      officialPdfPath,
     });
 
     // Return PDF with appropriate headers
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="RECA-Data-Summary-${params.sessionId}.pdf"`,
+        'Content-Disposition': `attachment; filename="RECA-Downwinder-Form-${params.sessionId}.pdf"`,
         'Cache-Control': 'no-cache',
       },
     });
@@ -129,23 +135,31 @@ export async function POST(
       );
     }
 
-    // For now, just return the data summary PDF
-    // In the future, this can be expanded to create a ZIP package with:
-    // - Data summary PDF
-    // - Official blank form PDF
-    // - Instructions PDF
-    // - Document checklist
-
     const formData = intakeSession.recaFormData as any;
     const supportingForms = intakeSession.recaSupportingForms as any;
 
-    const pdfBytes = await generateRECAPDF({
+    // Path to the official RECA PDF template
+    const officialPdfPath = path.join(process.cwd(), 'public', 'forms', 'reca-downwinder-claim-form.pdf');
+
+    // Generate both PDFs
+    const filledFormBytes = await fillOfficialRECAPDF({
+      formData,
+      supportingForms: supportingForms || {},
+      sessionId: params.sessionId,
+      officialPdfPath,
+    });
+
+    // Also generate data summary for future use
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const dataSummaryBytes = await generateRECAPDF({
       formData,
       supportingForms: supportingForms || {},
       sessionId: params.sessionId,
     });
 
-    return new NextResponse(Buffer.from(pdfBytes), {
+    // For now, return the filled official form
+    // TODO: In the future, create a ZIP package with both PDFs
+    return new NextResponse(Buffer.from(filledFormBytes), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="RECA-Complete-Package-${params.sessionId}.pdf"`,
