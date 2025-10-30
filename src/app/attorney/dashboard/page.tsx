@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
@@ -90,7 +90,9 @@ export default function AttorneyDashboardPage() {
   const [claimants, setClaimants] = useState<Claimant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClaimant, setSelectedClaimant] = useState<Claimant | null>(null);
+  const [selectedClaimant, setSelectedClaimant] = useState<Claimant | null>(
+    null
+  );
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,67 +116,87 @@ export default function AttorneyDashboardPage() {
       return;
     }
 
-    if (session.user.role !== "ATTORNEY" && session.user.role !== "FIRM_ADMIN") {
+    if (
+      session.user.role !== "ATTORNEY" &&
+      session.user.role !== "FIRM_ADMIN"
+    ) {
       router.push("/dashboard");
       return;
     }
   }, [session, status, router]);
 
-  const fetchClaimants = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Fetch claimants
+  useEffect(() => {
+    if (status === "loading" || !session) return;
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "50", // Show more in table view
-      });
+    let isActive = true;
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
+    const loadClaimants = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (statusFilter && statusFilter !== "all") {
-        params.append("status", statusFilter);
-      }
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: "50", // Show more in table view
+        });
 
-      const response = await fetch(`/api/attorney/claimants?${params}`);
+        if (searchQuery) {
+          params.append("search", searchQuery);
+        }
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch claimants");
-      }
+        if (statusFilter && statusFilter !== "all") {
+          params.append("status", statusFilter);
+        }
 
-      const data: ApiResponse = await response.json();
+        const response = await fetch(`/api/attorney/claimants?${params}`);
 
-      setClaimants(data.claimants);
+        if (!response.ok) {
+          throw new Error("Failed to fetch claimants");
+        }
 
-      // Calculate stats
-      setStats({
-        total: data.pagination.total,
-        needsReview: data.claimants.filter(
+        const data: ApiResponse = await response.json();
+
+        if (!isActive) return;
+
+        setClaimants(data.claimants);
+
+        const needsReview = data.claimants.filter(
           (c) =>
             c.workflowStatus === "READY_FOR_ATTORNEY" ||
             c.workflowStatus === "ATTORNEY_REVIEWING"
-        ).length,
-        approved: data.claimants.filter(
+        ).length;
+        const approved = data.claimants.filter(
           (c) => c.workflowStatus === "ATTORNEY_APPROVED"
-        ).length,
-        revisionRequested: data.claimants.filter(
+        ).length;
+        const revisionRequested = data.claimants.filter(
           (c) => c.workflowStatus === "REVISION_REQUESTED"
-        ).length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch claimants:", err);
-      setError("Failed to load claimants. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, statusFilter, page]);
+        ).length;
 
-  // Fetch claimants
-  useEffect(() => {
-    fetchClaimants();
-  }, [fetchClaimants]);
+        setStats({
+          total: data.pagination.total,
+          needsReview,
+          approved,
+          revisionRequested,
+        });
+      } catch (err) {
+        if (!isActive) return;
+
+        console.error("Failed to fetch claimants:", err);
+        setError("Failed to load claimants. Please try again.");
+      } finally {
+        if (!isActive) return;
+
+        setLoading(false);
+      }
+    };
+
+    loadClaimants();
+
+    return () => {
+      isActive = false;
+    };
+  }, [page, searchQuery, statusFilter, session, status]);
 
   // Show loading state during authentication check
   if (status === "loading" || !session) {
@@ -231,7 +253,9 @@ export default function AttorneyDashboardPage() {
                 <Users className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-sage-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-sage-900">
+                  {stats.total}
+                </p>
                 <p className="text-sm text-sage-600">Total Claimants</p>
               </div>
             </div>
@@ -280,7 +304,7 @@ export default function AttorneyDashboardPage() {
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-1 items-center gap-3">
-            <div className="relative flex-1 max-w-md">
+            <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-500" />
               <Input
                 type="text"
@@ -297,9 +321,13 @@ export default function AttorneyDashboardPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="READY_FOR_ATTORNEY">Ready for Review</SelectItem>
+                <SelectItem value="READY_FOR_ATTORNEY">
+                  Ready for Review
+                </SelectItem>
                 <SelectItem value="ATTORNEY_REVIEWING">Under Review</SelectItem>
-                <SelectItem value="REVISION_REQUESTED">Revision Requested</SelectItem>
+                <SelectItem value="REVISION_REQUESTED">
+                  Revision Requested
+                </SelectItem>
                 <SelectItem value="ATTORNEY_APPROVED">Approved</SelectItem>
                 <SelectItem value="PACKET_PRINTED">Packet Printed</SelectItem>
               </SelectContent>

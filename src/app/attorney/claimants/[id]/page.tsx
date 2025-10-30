@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { ClaimantWorkflowStatus, ClaimType, FileCategory, FileStatus } from "@prisma/client";
+import {
+  ClaimantWorkflowStatus,
+  ClaimType,
+  FileCategory,
+  FileStatus,
+} from "@prisma/client";
 import { WorkflowStatusBadge } from "@/components/attorney/workflow-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,14 +92,21 @@ const CATEGORY_LABELS: Record<FileCategory, string> = {
   OTHER: "Other",
 };
 
-const STATUS_CONFIG: Record<FileStatus, { label: string; icon: typeof CheckCircle; color: string }> = {
+const STATUS_CONFIG: Record<
+  FileStatus,
+  { label: string; icon: typeof CheckCircle; color: string }
+> = {
   UPLOADING: { label: "Uploading", icon: Clock, color: "text-gray-600" },
   PROCESSING: { label: "Processing", icon: Clock, color: "text-gray-600" },
   READY: { label: "Ready", icon: CheckCircle, color: "text-blue-600" },
   FAILED: { label: "Failed", icon: AlertCircle, color: "text-red-600" },
   REJECTED: { label: "Rejected", icon: AlertCircle, color: "text-red-600" },
   VALIDATED: { label: "Validated", icon: CheckCircle, color: "text-green-600" },
-  AWAITING_REVIEW: { label: "Awaiting Review", icon: Clock, color: "text-yellow-600" },
+  AWAITING_REVIEW: {
+    label: "Awaiting Review",
+    icon: Clock,
+    color: "text-yellow-600",
+  },
   APPROVED: { label: "Approved", icon: CheckCircle, color: "text-emerald-600" },
 };
 
@@ -119,45 +131,66 @@ export default function ClaimantDocumentsPage() {
       return;
     }
 
-    if (session.user.role !== "ATTORNEY" && session.user.role !== "FIRM_ADMIN") {
+    if (
+      session.user.role !== "ATTORNEY" &&
+      session.user.role !== "FIRM_ADMIN"
+    ) {
       router.push("/dashboard");
       return;
     }
   }, [session, status, router]);
 
-  const fetchDocuments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`/api/attorney/claimants/${claimantId}/documents`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch documents");
-      }
-
-      const data: ApiResponse = await response.json();
-      setClaimant(data.claimant);
-      setDocuments(data.documents);
-    } catch (err) {
-      console.error("Failed to fetch documents:", err);
-      setError("Failed to load documents. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [claimantId]);
-
   // Fetch claimant and documents
   useEffect(() => {
     if (status === "loading" || !session) return;
-    fetchDocuments();
-  }, [claimantId, session, status, fetchDocuments]);
+
+    let isActive = true;
+
+    const loadDocuments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(
+          `/api/attorney/claimants/${claimantId}/documents`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch documents");
+        }
+
+        const data: ApiResponse = await response.json();
+
+        if (!isActive) return;
+
+        setClaimant(data.claimant);
+        setDocuments(data.documents);
+      } catch (err) {
+        if (!isActive) return;
+
+        console.error("Failed to fetch documents:", err);
+        setError("Failed to load documents. Please try again.");
+      } finally {
+        if (!isActive) return;
+
+        setLoading(false);
+      }
+    };
+
+    loadDocuments();
+
+    return () => {
+      isActive = false;
+    };
+  }, [claimantId, session, status]);
 
   async function handleDownload(documentId: string) {
     try {
       setDownloadingId(documentId);
 
-      const response = await fetch(`/api/attorney/documents/${documentId}/download`);
+      const response = await fetch(
+        `/api/attorney/documents/${documentId}/download`
+      );
 
       if (!response.ok) {
         throw new Error("Failed to generate download URL");
@@ -257,7 +290,8 @@ export default function ClaimantDocumentsPage() {
               Document Packet
             </h2>
             <p className="mt-1 text-sm text-sage-600">
-              {documents.length} {documents.length === 1 ? "document" : "documents"} uploaded
+              {documents.length}{" "}
+              {documents.length === 1 ? "document" : "documents"} uploaded
             </p>
           </div>
           <Button
@@ -337,8 +371,12 @@ export default function ClaimantDocumentsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <StatusIcon className={`h-4 w-4 ${statusConfig.color}`} />
-                          <span className={`text-sm font-medium ${statusConfig.color}`}>
+                          <StatusIcon
+                            className={`h-4 w-4 ${statusConfig.color}`}
+                          />
+                          <span
+                            className={`text-sm font-medium ${statusConfig.color}`}
+                          >
                             {statusConfig.label}
                           </span>
                         </div>
