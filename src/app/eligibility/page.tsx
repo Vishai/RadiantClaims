@@ -13,13 +13,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Heart, Info } from "lucide-react";
+import { Heart, Info, X } from "lucide-react";
+import SurvivorHierarchyTable from "@/components/reca/SurvivorHierarchyTable";
 
 export default function EligibilityPage() {
   return (
     <TooltipProvider>
     <div className="min-h-screen bg-cream-50">
-      <nav className="border-b border-cream-200 bg-white/80 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-cream-200 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
@@ -29,7 +30,7 @@ export default function EligibilityPage() {
               RadiantClaims
             </span>
           </Link>
-          <Link href="/intake">
+          <Link href="/reca/start">
             <Button className="rounded-full bg-terracotta-500 px-8 py-6 hover:bg-terracotta-600">
               Start Claim Packet
             </Button>
@@ -288,53 +289,101 @@ export default function EligibilityPage() {
                 <p className="mb-4 text-sage-700">
                   If your loved one was diagnosed with a covered cancer and has
                   since passed away, eligible survivors can file and receive the
-                  compensation. This includes:
+                  compensation.
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
-                      ✓
+
+                {/* Eligible Survivors */}
+                <div className="mb-6">
+                  <p className="font-semibold text-sage-900 mb-3">✓ Eligible to File:</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                        ✓
+                      </div>
+                      <span className="text-sage-800">Surviving spouse</span>
                     </div>
-                    <span className="text-sage-800">Surviving spouse</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
-                      ✓
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                        ✓
+                      </div>
+                      <span className="text-sage-800">Children (biological or legally adopted)</span>
                     </div>
-                    <span className="text-sage-800">Children</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
-                      ✓
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                        ✓
+                      </div>
+                      <span className="text-sage-800">Parents</span>
                     </div>
-                    <span className="text-sage-800">Parents</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
-                      ✓
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                        ✓
+                      </div>
+                      <span className="text-sage-800">Grandchildren</span>
                     </div>
-                    <span className="text-sage-800">Grandchildren</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-600 text-xs text-white">
-                      ✓
-                    </div>
-                    <span className="text-sage-800">Grandparents</span>
-                  </div>
-                </div>
-                <div className="mt-6 rounded-lg bg-sage-50 p-4 border border-sage-200">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-sage-700">
-                      <p className="font-semibold mb-2">Important for Children Filing Claims:</p>
-                      <ul className="space-y-1 ml-4 list-disc">
-                        <li>All siblings must be disclosed and documented</li>
-                        <li>If a sibling has passed away, their death certificate must be included</li>
-                        <li>The $100,000 award is shared equally among all eligible children</li>
-                      </ul>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs text-white">
+                        ✓
+                      </div>
+                      <span className="text-sage-800">Grandparents</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Ineligible Survivors */}
+                <div className="mb-6">
+                  <p className="font-semibold text-sage-900 mb-3">✗ NOT Eligible to File:</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                        <X className="h-4 w-4" />
+                      </div>
+                      <span className="text-sage-800">Siblings (brothers/sisters)</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                        <X className="h-4 w-4" />
+                      </div>
+                      <span className="text-sage-800">Step-children (without legal adoption)</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                        <X className="h-4 w-4" />
+                      </div>
+                      <span className="text-sage-800">Former spouses (ex-spouses)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Important Notes */}
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-sage-50 p-4 border border-sage-200">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-sage-700">
+                        <p className="font-semibold mb-2">Important for Children Filing Claims:</p>
+                        <ul className="space-y-1 ml-4 list-disc">
+                          <li>All siblings must be disclosed and documented</li>
+                          <li>If a sibling has passed away, their death certificate must be included</li>
+                          <li>The $100,000 award is shared equally among all eligible children</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-700">
+                        <p className="font-semibold mb-2">About Adopted Children:</p>
+                        <p>
+                          Legally adopted children <strong>can file</strong> if they have valid adoption paperwork.
+                          Step-children without legal adoption papers are <strong>not eligible</strong>.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <p className="mt-4 text-sm text-sage-600">
                   You'll need death certificates and proof of your relationship
                   to the deceased claimant.
@@ -397,6 +446,21 @@ export default function EligibilityPage() {
             </Card>
           </div>
 
+          {/* Survivor Hierarchy Section */}
+          <div className="mt-12">
+            <div className="mb-8 text-center">
+              <h2 className="mb-4 text-3xl font-bold text-sage-900">
+                Filing on Behalf of a Deceased Individual?
+              </h2>
+              <p className="text-lg text-sage-700">
+                Understand the survivor payment hierarchy and eligibility requirements
+              </p>
+              <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
+            </div>
+
+            <SurvivorHierarchyTable />
+          </div>
+
           {/* CTA Section */}
           <div className="mt-12 rounded-3xl bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-8 text-center text-white shadow-lg">
             <h2 className="mb-4 text-3xl font-bold">
@@ -406,7 +470,7 @@ export default function EligibilityPage() {
               Start your free claim packet today. We'll guide you through every
               step.
             </p>
-            <Link href="/intake">
+            <Link href="/reca/start">
               <Button
                 size="lg"
                 className="rounded-full bg-white px-8 py-6 text-lg font-semibold text-terracotta-600 hover:bg-cream-50"

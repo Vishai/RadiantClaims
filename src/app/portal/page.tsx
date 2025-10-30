@@ -22,6 +22,7 @@ interface Claimant {
   lastName: string;
   email: string;
   createdAt: string;
+  claimType?: string;
   intakeSession: {
     id: string;
     resumeToken: string;
@@ -29,6 +30,9 @@ interface Claimant {
     status: string;
     uploadedFiles: any[];
     packetSubmission: any | null;
+    recaWorkflowStage?: number | null;
+    recaWorkflowSection?: string | null;
+    recaCompletionPercent?: number | null;
   } | null;
 }
 
@@ -240,16 +244,39 @@ export default function CustomerPortal() {
                     <div className="flex flex-wrap gap-3">
                       {claim.intakeSession &&
                         claim.intakeSession?.status !== "SUBMITTED" && (
-                          <Button
-                            onClick={() =>
-                              router.push(
-                                `/intake/step2?token=${claim.intakeSession?.resumeToken || ''}`
-                              )
-                            }
-                            className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                          >
-                            Continue Claim
-                          </Button>
+                          <>
+                            {/* RECA Form Button - Show if DOWNWINDER claim type */}
+                            {claim.claimType === "DOWNWINDER" && (
+                              <Button
+                                onClick={() =>
+                                  router.push(
+                                    claim.intakeSession?.recaWorkflowStage
+                                      ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || 'part_1'}`
+                                      : `/reca/start?sessionId=${claim.intakeSession?.id}`
+                                  )
+                                }
+                                className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                              >
+                                <FileText className="h-4 w-4" />
+                                {claim.intakeSession?.recaWorkflowStage
+                                  ? "Continue RECA Form"
+                                  : "Fill RECA Form"}
+                              </Button>
+                            )}
+                            {/* Regular Continue Button - Show for non-DOWNWINDER or as secondary */}
+                            {claim.claimType !== "DOWNWINDER" && (
+                              <Button
+                                onClick={() =>
+                                  router.push(
+                                    `/intake/step2?token=${claim.intakeSession?.resumeToken || ''}`
+                                  )
+                                }
+                                className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                              >
+                                Continue Claim
+                              </Button>
+                            )}
+                          </>
                         )}
                       <Button
                         variant="outline"

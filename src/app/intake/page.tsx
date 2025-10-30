@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { Heart, CheckCircle } from "lucide-react";
 
@@ -71,14 +71,18 @@ const US_STATES = [
   { value: "WY", label: "Wyoming" },
 ];
 
-export default function IntakePage() {
+function IntakeForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountCreated, setAccountCreated] = useState<{
     email: string;
     password: string;
   } | null>(null);
+
+  // Check if this is for a RECA claim
+  const isRECAClaim = searchParams.get("claimType") === "DOWNWINDER";
 
   const form = useForm<ClaimantFormData>({
     resolver: zodResolver(claimantSchema),
@@ -106,7 +110,10 @@ export default function IntakePage() {
       const response = await fetch("/api/claimants", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          claimType: isRECAClaim ? "DOWNWINDER" : null,
+        }),
       });
 
       if (!response.ok) {
@@ -115,6 +122,11 @@ export default function IntakePage() {
       }
 
       const result = await response.json();
+
+      // Determine next route based on claim type
+      const nextRoute = isRECAClaim
+        ? `/reca/start?sessionId=${result.intakeSession?.id || result.claimant.id}`
+        : `/intake/step2?claimantId=${result.claimant.id}`;
 
       // If new account was created, auto-login the user
       if (result.credentials) {
@@ -133,18 +145,18 @@ export default function IntakePage() {
         if (signInResult?.error) {
           setError("Account created but auto-login failed. Please login manually.");
           setTimeout(() => {
-            router.push(`/login?callbackUrl=/intake/step2?claimantId=${result.claimant.id}`);
+            router.push(`/login?callbackUrl=${nextRoute}`);
           }, 3000);
           return;
         }
 
         // Small delay to show credentials before redirect
         setTimeout(() => {
-          router.push(`/intake/step2?claimantId=${result.claimant.id}`);
+          router.push(nextRoute as any);
         }, 5000);
       } else {
         // Existing user - they should already be logged in or will be prompted
-        router.push(`/intake/step2?claimantId=${result.claimant.id}`);
+        router.push(nextRoute as any);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit");
@@ -395,5 +407,20 @@ export default function IntakePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function IntakePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+          <p className="mt-4 text-sage-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <IntakeForm />
+    </Suspense>
   );
 }

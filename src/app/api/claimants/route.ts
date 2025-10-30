@@ -22,6 +22,9 @@ export async function POST(req: NextRequest) {
       // If referral code provided but doesn't exist, just ignore it (don't throw error)
     }
 
+    // Detect claim type from query params or body
+    const claimType = body.claimType || null;
+
     const claimant = await db.claimant.create({
       data: {
         firstName: validated.firstName,
@@ -36,6 +39,20 @@ export async function POST(req: NextRequest) {
         state: validated.state,
         postalCode: validated.postalCode,
         referralCode,
+        claimType: claimType,
+        // Create intake session automatically
+        intakeSession: {
+          create: {
+            resumeToken: crypto.randomUUID(),
+            claimType: claimType,
+            currentStep: "SCREENING",
+            status: "DRAFT",
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          },
+        },
+      },
+      include: {
+        intakeSession: true,
       },
     });
 
@@ -60,6 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         claimant,
+        intakeSession: claimant.intakeSession,
         accountCreated: !!temporaryPassword,
         // Include credentials in response for now (for testing)
         // TODO: Remove in production - only send via email

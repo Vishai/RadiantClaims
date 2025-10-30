@@ -13,7 +13,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-cream-50">
       {/* Nav */}
-      <nav className="border-b border-cream-200 bg-white/80 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-cream-200 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-6">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
@@ -59,7 +59,7 @@ export default function HomePage() {
                     Check Eligibility
                   </Button>
                 </Link>
-                <Link href="/intake">
+                <Link href="/reca/start">
                   <Button
                     size="lg"
                     variant="outline"

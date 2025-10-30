@@ -126,6 +126,15 @@ model Claimant {
   comments            ClaimantComment[]      // Comments from attorneys/staff
   reviewActions       ReviewAction[]         // Review history
   notifications       Notification[]         // Related notifications
+  // NEW FIELDS FOR RECA DOCUMENTATION
+  claimType              ClaimType?
+  relationshipToClaimant RelationshipType?
+  cancerType             String?              // Reference to specific cancer
+  documentStatuses       ClaimantDocumentStatus[]
+  // CLAIM LIFECYCLE TRACKING
+  lifecycle              ClaimLifecycle?
+  queuePosition          ClaimQueuePosition?
+  notificationPreferences LifecycleNotificationPreference?
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
 
@@ -188,6 +197,11 @@ enum ClaimType {
   BRAIN_CANCER
   OTHER_CANCER
   NON_CANCER
+  // RECA-specific claim types
+  DOWNWINDER
+  URANIUM_WORKER
+  MANHATTAN_PROJECT_WASTE
+  ONSITE_PARTICIPANT
 }
 
 // Main intake session - allows save/resume without account
@@ -209,11 +223,20 @@ model IntakeSession {
   uploadedFiles    UploadedFile[]
   consentRecords   ConsentRecord[]
   packetSubmission PacketSubmission?
+  // RECA Workflow Fields
+  recaWorkflowStage     Int?              // 1-5 for workflow stages (1=eligibility, 2=form, 3=supporting, 4=docs, 5=review)
+  recaWorkflowSection   String?           // Current section (e.g., "part_1", "part_8", "supporting_forms")
+  recaFormData          Json?             // All form field values from parts 1-16
+  recaEligibilityData   Json?             // Eligibility assessment results (relationship, exposure, disease)
+  recaCompletionPercent Int?              @default(0) // 0-100 progress tracking
+  recaSupportingForms   Json?             // Supporting forms data (medical release, identity cert, tribal, beneficiaries)
+  recaValidationErrors  Json?             // Current validation errors by section
 
   @@index([resumeToken])
   @@index([claimantId])
   @@index([status])
   @@index([expiresAt])
+  @@index([recaWorkflowStage])
 }
 
 // Screening questions and answers for conditional logic
@@ -717,4 +740,402 @@ model Notification {
   @@index([status])
   @@index([type])
   @@index([createdAt])
+}
+
+// ============================================================================
+// RECA FORMS MANAGEMENT
+// ============================================================================
+
+model RECAForm {
+  id              String       @id @default(cuid())
+  formType        RECAFormType @unique
+  fileName        String       // "RECA Downwinder Claim Form.pdf"
+  fileKey         String       // Path or S3/R2 key
+  version         String       // "Revised July 2025"
+  pageCount       Int
+  description     String       @db.Text
+  instructions    String       @db.Text
+  oMBApprovalNo   String?      // "1105-0052"
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([formType])
+}
+
+enum RECAFormType {
+  DOWNWINDER
+  URANIUM_WORKER
+  MANHATTAN_PROJECT_WASTE
+  GENERAL_RECA
+}
+
+// ============================================================================
+// DOCUMENTATION RESOURCES (WHERE TO GET DOCUMENTS)
+// ============================================================================
+
+model DocumentResource {
+  id                     String       @id @default(cuid())
+  state                  String       // "UT", "ID", "NM", "AZ", "NV"
+  county                 String?      // null = state-level resource
+  resourceType           ResourceType
+  name                   String
+  department             String?      // "Member and Statistical Records Division"
+  address                String?
+  address2               String?
+  city                   String?
+  stateCode              String?
+  zipCode                String?
+  phone                  String?
+  phoneTollFree          String?
+  fax                    String?
+  website                String?
+  email                  String?
+  notes                  String?      @db.Text
+  documentTypesProvided  String[]     // ["BIRTH_CERTIFICATE", "DEATH_CERTIFICATE"]
+  certificationAvailable Boolean      @default(true)
+  processingTimeDays     Int?         // Estimated turnaround time
+  specialInstructions    String?      @db.Text
+  isTribal               Boolean      @default(false)
+  tribalAffiliation      String?      // "Navajo Nation", "Hopi Tribe", etc.
+  claimantDocumentStatuses ClaimantDocumentStatus[]
+
+  @@index([state, county])
+  @@index([resourceType])
+  @@index([state, resourceType])
+}
+
+enum ResourceType {
+  // Government
+  VITAL_RECORDS
+  COUNTY_CLERK
+  COUNTY_RECORDER
+  COUNTY_ASSESSOR
+  COUNTY_TREASURER
+  DISTRICT_COURT
+  STATE_ARCHIVES
+  TAX_COMMISSION
+  DMV
+
+  // Medical
+  HOSPITAL
+  CANCER_REGISTRY
+  RADIATION_CONTROL
+
+  // Education
+  SCHOOL_DISTRICT
+  UNIVERSITY
+
+  // Religious
+  CHURCH
+
+  // Tribal
+  TRIBAL_OFFICE
+  TRIBAL_VITAL_RECORDS
+
+  // Other
+  FEDERAL_ARCHIVES
+  IRS
+  SOCIAL_SECURITY
+  MINING_ADMINISTRATION
+}
+
+// ============================================================================
+// DOCUMENT REQUIREMENTS (WHAT DOCS ARE NEEDED)
+// ============================================================================
+
+model DocumentRequirement {
+  id                     String           @id @default(cuid())
+  claimType              ClaimType?       // null = applies to all claim types
+  relationshipToClaimant RelationshipType
+  documentType           String           // "BIRTH_CERTIFICATE", "PATHOLOGY_REPORT"
+  displayName            String           // "Birth Certificate"
+  description            String           @db.Text
+  requiresCertification  Boolean          // Must be certified/original for mail
+  acceptsDigital         Boolean          // Can submit digitally
+  isRequired             Boolean
+  priority               RequirementPriority
+  resourceTypes          ResourceType[]   // Where to get this document
+  notes                  String?          @db.Text
+  formSection            String?          // "Part 4", "Part 9", etc.
+  multipleRequired       Boolean          @default(false) // e.g., need 2+ proof of residence
+  quantityRequired       Int?             // How many needed
+  exampleDocuments       String[]         // Specific examples
+
+  @@unique([claimType, relationshipToClaimant, documentType])
+  @@index([claimType])
+  @@index([relationshipToClaimant])
+}
+
+enum RelationshipType {
+  SELF
+  SPOUSE
+  CHILD
+  PARENT
+  GRANDCHILD
+  GRANDPARENT
+}
+
+enum RequirementPriority {
+  HIGH      // Required - claim cannot proceed without this
+  MEDIUM    // Strongly recommended - helps establish claim
+  OPTIONAL  // Helpful but not required
+}
+
+// ============================================================================
+// MEDICAL RECORD REQUIREMENTS (CANCER-SPECIFIC)
+// ============================================================================
+
+model MedicalRecordRequirement {
+  id                 String   @id @default(cuid())
+  cancerType         String   // "LEUKEMIA", "THYROID_CANCER", etc.
+  recordType         String   // "PATHOLOGY_REPORT", "AUTOPSY_REPORT"
+  displayName        String   // "Pathology report of tissue biopsy"
+  description        String   @db.Text
+  priority           Int      // 1 = most preferred, higher = alternatives
+  formSection        String?  // Reference to form (e.g., "Part 11")
+
+  @@unique([cancerType, recordType])
+  @@index([cancerType])
+}
+
+// ============================================================================
+// USER DOCUMENT TRACKING (FOR CUSTOMER PORTAL)
+// ============================================================================
+
+model ClaimantDocumentStatus {
+  id                   String               @id @default(cuid())
+  claimantId           String
+  claimant             Claimant             @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  documentType         String               // Maps to DocumentRequirement.documentType
+  status               DocumentStatusType
+  requestedDate        DateTime?
+  receivedDate         DateTime?
+  uploadedDate         DateTime?
+  notes                String?              @db.Text
+  resourceContactedId  String?              // Which resource they contacted
+  resourceContacted    DocumentResource?    @relation(fields: [resourceContactedId], references: [id])
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@unique([claimantId, documentType])
+  @@index([claimantId])
+  @@index([status])
+}
+
+enum DocumentStatusType {
+  NOT_STARTED    // Haven't begun obtaining this document
+  REQUESTED      // Contacted the resource to request it
+  AWAITING       // Waiting to receive from resource
+  RECEIVED       // Received but not uploaded
+  UPLOADED       // Uploaded to our system
+  VERIFIED       // Staff verified the document
+}
+
+// ============================================================================
+// CLAIM LIFECYCLE TRACKING & PAYOUT PULSE
+// ============================================================================
+
+// DOJ Processing Milestones - Official DOJ workflow stages
+enum DOJMilestone {
+  // Pre-Submission
+  NOT_SUBMITTED              // Claim not yet submitted to DOJ
+
+  // DOJ Receipt & Initial Review (Week 1-2)
+  RECEIVED_BY_DOJ            // DOJ received the claim packet
+  INITIAL_REVIEW             // DOJ performing initial completeness review
+  INCOMPLETE_RETURNED        // DOJ returned claim as incomplete
+
+  // Document Verification (Week 2-8)
+  DOCUMENT_VERIFICATION      // DOJ verifying submitted documents
+  REQUESTING_ADDITIONAL_DOCS // DOJ requested additional documentation
+  CANCER_REGISTRY_LOOKUP     // DOJ checking state cancer registries
+  MEDICAL_RECORDS_REQUEST    // DOJ requested medical records from providers
+
+  // Eligibility Assessment (Week 8-16)
+  ELIGIBILITY_REVIEW         // DOJ assessing eligibility criteria
+  EXPOSURE_VERIFICATION      // Verifying exposure location and dates
+  DISEASE_VERIFICATION       // Verifying compensable disease
+  RELATIONSHIP_VERIFICATION  // Verifying relationship (for survivors)
+
+  // Final Review & Decision (Week 16-24)
+  FINAL_REVIEW               // Final review by DOJ adjudicator
+  APPROVED_PENDING_PAYMENT   // Approved, awaiting payment processing
+  PAYMENT_PROCESSING         // Payment being processed by Treasury
+  PAYMENT_ISSUED             // Payment check/wire issued
+
+  // Terminal States
+  CLAIM_APPROVED             // Claim fully approved and paid
+  CLAIM_DENIED               // Claim denied
+  CLAIM_WITHDRAWN            // Claim withdrawn by claimant
+  APPEAL_IN_PROGRESS         // Appeal filed and in progress
+  APPEAL_APPROVED            // Appeal approved
+  APPEAL_DENIED              // Appeal denied
+}
+
+// Track claim lifecycle from submission to payout
+model ClaimLifecycle {
+  id                      String        @id @default(cuid())
+  claimantId              String        @unique
+  claimant                Claimant      @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Current Status
+  currentMilestone        DOJMilestone  @default(NOT_SUBMITTED)
+  currentMilestoneDate    DateTime      @default(now())
+
+  // Key Dates
+  submittedToRadiantAt    DateTime?     // When submitted to RadiantClaims
+  submittedToDOJAt        DateTime?     // When mailed to DOJ
+  receivedByDOJAt         DateTime?     // When DOJ logged receipt
+  completenessReviewAt    DateTime?     // When DOJ completed initial review
+  eligibilityReviewAt     DateTime?     // When DOJ started eligibility review
+  approvedAt              DateTime?     // When DOJ approved claim
+  deniedAt                DateTime?     // When DOJ denied claim
+  paymentIssuedAt         DateTime?     // When Treasury issued payment
+  paymentReceivedAt       DateTime?     // When claimant received payment
+
+  // Processing Details
+  dojClaimNumber          String?       // Official DOJ claim number
+  expectedCompletionDate  DateTime?     // Estimated completion based on analytics
+  estimatedPayoutDate     DateTime?     // Estimated payout date
+  daysInCurrentMilestone  Int           @default(0)
+  totalProcessingDays     Int           @default(0)
+
+  // Medical Records Tracking
+  cancerRegistryChecked   Boolean       @default(false)
+  cancerRegistryFoundAt   DateTime?
+  medicalRecordsRequested Boolean       @default(false)
+  medicalRecordsReceivedByDOJ Boolean   @default(false)
+
+  // Communication
+  lastDOJContactDate      DateTime?
+  lastDOJContactMethod    String?       // "phone", "email", "letter"
+  lastDOJContactNotes     String?       @db.Text
+
+  // Timeline Events
+  milestones              ClaimMilestoneEvent[]
+
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  @@index([currentMilestone])
+  @@index([submittedToDOJAt])
+  @@index([dojClaimNumber])
+}
+
+// Individual milestone events for timeline visualization
+model ClaimMilestoneEvent {
+  id                String          @id @default(cuid())
+  lifecycleId       String
+  lifecycle         ClaimLifecycle  @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
+  milestone         DOJMilestone
+  achievedAt        DateTime        @default(now())
+  daysToAchieve     Int?            // Days from previous milestone
+  notes             String?         @db.Text
+  isEstimated       Boolean         @default(false) // True for projected future milestones
+  notifiedClaimant  Boolean         @default(false) // Whether we notified customer
+
+  @@index([lifecycleId])
+  @@index([milestone])
+  @@index([achievedAt])
+}
+
+// Aggregate statistics for "Payout Pulse" - Historical claim data
+model ClaimStatistics {
+  id                        String   @id @default(cuid())
+
+  // Time Period
+  periodStart               DateTime
+  periodEnd                 DateTime
+
+  // Volume Metrics
+  totalClaimsSubmitted      Int      @default(0)
+  totalClaimsApproved       Int      @default(0)
+  totalClaimsDenied         Int      @default(0)
+  totalClaimsInProgress     Int      @default(0)
+
+  // Timing Metrics (in days)
+  avgTimeToReceipt          Float?   // DOJ receipt after mailing
+  avgTimeToInitialReview    Float?   // Completeness review
+  avgTimeToCancerRegistry   Float?   // Cancer registry lookup
+  avgTimeToEligibility      Float?   // Eligibility determination
+  avgTimeToApproval         Float?   // Total time to approval
+  avgTimeToPayment          Float?   // Approval to payment received
+
+  // Success Rates
+  approvalRate              Float?   // % approved
+  completenessRate          Float?   // % complete on first submission
+
+  // By Claim Type
+  downwinderApprovals       Int      @default(0)
+  downwinderDenials         Int      @default(0)
+  downwinderAvgDays         Float?
+
+  // By State
+  utahClaimsApproved        Int      @default(0)
+  idahoClaimsApproved       Int      @default(0)
+  newMexicoClaimsApproved   Int      @default(0)
+  arizonaClaimsApproved     Int      @default(0)
+  nevadaClaimsApproved      Int      @default(0)
+
+  // Cancer Type Success Rates
+  leukemiaApprovalRate      Float?
+  thyroidApprovalRate       Float?
+  breastApprovalRate        Float?
+  lungApprovalRate          Float?
+
+  // Updated Tracking
+  lastUpdated               DateTime @default(now())
+  dataSource                String?  // "DOJ_PUBLIC_DATA", "PARTNER_FIRMS", "MANUAL_ENTRY"
+
+  @@index([periodStart, periodEnd])
+  @@index([lastUpdated])
+}
+
+// Queue position tracking - "Where am I in line?"
+model ClaimQueuePosition {
+  id                  String    @id @default(cuid())
+  claimantId          String    @unique
+  claimant            Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Position Metrics
+  estimatedPosition   Int?      // Estimated position in DOJ queue
+  totalInQueue        Int?      // Total claims ahead in queue
+
+  // Cohort Tracking - Claims submitted in same time period
+  cohortId            String?   // Year-Month cohort (e.g., "2024-10")
+  cohortSize          Int?      // Total claims in cohort
+  cohortApproved      Int?      // How many in cohort have been approved
+  cohortDenied        Int?      // How many in cohort have been denied
+
+  // Peer Comparison
+  percentFasterThan   Float?    // "Your claim is moving faster than X% of similar claims"
+
+  updatedAt           DateTime  @updatedAt
+
+  @@index([cohortId])
+}
+
+// Customer notification preferences for lifecycle updates
+model LifecycleNotificationPreference {
+  id                          String   @id @default(cuid())
+  claimantId                  String   @unique
+  claimant                    Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Notification Channels
+  emailNotifications          Boolean  @default(true)
+  smsNotifications            Boolean  @default(false)
+  phoneNumber                 String?
+
+  // Notification Types
+  notifyOnMilestone           Boolean  @default(true)
+  notifyOnDocumentRequest     Boolean  @default(true)
+  notifyOnApproval            Boolean  @default(true)
+  notifyOnPayment             Boolean  @default(true)
+  weeklyProgressUpdate        Boolean  @default(true)
+
+  // Frequency
+  maxNotificationsPerWeek     Int      @default(3)
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
 }

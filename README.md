@@ -295,12 +295,28 @@ export default function MyPage() {
 }
 ```
 
+## Documentation
+
+### 📚 Complete Documentation Hub
+**[docs/INDEX.md](./docs/INDEX.md)** - Central documentation index with quick links
+
+### Key Documentation Files
+- **[Operations Guide](./docs/OPERATIONS_GUIDE.md)** ⭐ - Configuration updates, maintenance, deployment procedures
+- **[RECA Implementation Status](./docs/RECA_IMPLEMENTATION_STATUS.md)** - Development progress tracker
+- **[Attorney Info Configuration](./src/lib/reca/ATTORNEY_INFO_README.md)** - How to update partner attorney information
+- **[API Specifications](./docs/parsed_form_data/API_SPECIFICATIONS.md)** - RECA workflow API documentation
+
+### Quick Links by Role
+- **Developers**: Start with this README, then check [RECA Implementation Status](./docs/RECA_IMPLEMENTATION_STATUS.md)
+- **Operations**: See [Operations Guide](./docs/OPERATIONS_GUIDE.md) for all maintenance tasks
+- **Legal/Compliance**: Review [Attorney Configuration](./src/lib/reca/ATTORNEY_INFO_README.md)
+
 ## Support
 
 For issues or questions:
-- Check the [Next.js documentation](https://nextjs.org/docs)
-- Review [Prisma documentation](https://www.prisma.io/docs)
-- Consult [shadcn/ui documentation](https://ui.shadcn.com)
+- Check the [Documentation Index](./docs/INDEX.md) for comprehensive guides
+- Review the [Operations Guide](./docs/OPERATIONS_GUIDE.md) for common tasks and troubleshooting
+- Consult external docs: [Next.js](https://nextjs.org/docs), [Prisma](https://www.prisma.io/docs), [shadcn/ui](https://ui.shadcn.com)
 
 ## License
 

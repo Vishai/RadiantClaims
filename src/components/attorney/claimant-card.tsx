@@ -44,6 +44,10 @@ const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
   BRAIN_CANCER: "Brain Cancer",
   OTHER_CANCER: "Other Cancer",
   NON_CANCER: "Non-Cancer",
+  DOWNWINDER: "Downwinder",
+  URANIUM_WORKER: "Uranium Worker",
+  MANHATTAN_PROJECT_WASTE: "Manhattan Project Waste",
+  ONSITE_PARTICIPANT: "Onsite Participant",
 };
 
 export function ClaimantCard({ claimant }: ClaimantCardProps) {
