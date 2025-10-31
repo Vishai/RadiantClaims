@@ -18,7 +18,6 @@ import {
   Users,
   Building,
   Phone,
-  AlertCircle,
   ArrowRight,
 } from "lucide-react";
 import { SERVICE_TIERS } from "@/lib/constants/service-tiers";

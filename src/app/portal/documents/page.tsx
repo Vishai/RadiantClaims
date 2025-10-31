@@ -29,6 +29,7 @@ interface RequiredDocument {
   description: string;
   uploaded: boolean;
   required: boolean;
+  helpText?: string;
 }
 
 export default function DocumentsPortal() {
@@ -92,37 +93,30 @@ export default function DocumentsPortal() {
         requirements.push(
           {
             category: "IDENTITY",
-            label: "Birth Certificate or Death Certificate",
+            label: "Birth Certificate",
             description:
-              "Official birth certificate (for living claimant) or death certificate (for deceased)",
+              "Your birth certificate (or death certificate if filing for deceased person)",
             uploaded: uploadedFiles.some((f: any) => f.category === "IDENTITY"),
             required: true,
+            helpText: "Required to establish identity and eligibility",
           },
           {
-            category: "PATHOLOGY_REPORT",
-            label: "Pathology Report",
+            category: "IDENTITY",
+            label: "Marriage/Name Change Certificates",
             description:
-              "Lab results or pathology report confirming cancer diagnosis",
-            uploaded: uploadedFiles.some(
-              (f: any) => f.category === "PATHOLOGY_REPORT"
-            ),
-            required: true,
-          },
-          {
-            category: "MEDICAL_RECORDS",
-            label: "Medical Records",
-            description:
-              "Hospital records, doctor's notes, or treatment history",
-            uploaded: uploadedFiles.some(
-              (f: any) => f.category === "MEDICAL_RECORDS"
-            ),
-            required: true,
+              "If your name has changed, provide marriage certificates or legal name change documents",
+            uploaded:
+              uploadedFiles.filter((f: any) => f.category === "IDENTITY")
+                .length >= 2,
+            required: false,
+            helpText:
+              "Only required if name has changed from birth certificate",
           },
           {
             category: "PROOF_OF_RESIDENCE",
-            label: "Proof of Residence (2+ documents)",
+            label: "Proof of Physical Presence (2+ documents)",
             description:
-              "Utility bills, tax returns, school records, or property records from exposure period",
+              "Tax records, property records, school enrollment, utility bills, employment records, etc.",
             uploaded:
               uploadedFiles.filter((f: any) =>
                 [
@@ -131,9 +125,26 @@ export default function DocumentsPortal() {
                   "TAX_RETURN",
                   "SCHOOL_RECORDS",
                   "MORTGAGE_STATEMENT",
+                  "EMPLOYMENT_RECORDS",
                 ].includes(f.category || "")
               ).length >= 2,
             required: true,
+            helpText:
+              "Need at least 2 documents showing presence in affected area during exposure period",
+          },
+          {
+            category: "MEDICAL_RECORDS",
+            label: "Medical Records Showing Cancer Diagnosis",
+            description:
+              "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
+            uploaded: uploadedFiles.some(
+              (f: any) =>
+                f.category === "MEDICAL_RECORDS" ||
+                f.category === "PATHOLOGY_REPORT"
+            ),
+            required: true,
+            helpText:
+              "See RECA form pages 18-24 for specific documents accepted for each disease type",
           }
         );
       } else {
@@ -142,18 +153,22 @@ export default function DocumentsPortal() {
           {
             category: "IDENTITY",
             label: "Identification Documents",
-            description: "Birth certificate, driver's license, or passport",
+            description:
+              "Birth certificate, death certificate, marriage certificates as applicable",
             uploaded: uploadedFiles.some((f: any) => f.category === "IDENTITY"),
             required: true,
+            helpText: "Required to establish identity and relationships",
           },
           {
             category: "MEDICAL_RECORDS",
             label: "Medical Records",
-            description: "Relevant medical documentation",
+            description: "Medical documentation relevant to your claim type",
             uploaded: uploadedFiles.some(
               (f: any) => f.category === "MEDICAL_RECORDS"
             ),
             required: true,
+            helpText:
+              "Requirements vary by claim type - refer to your RECA form instructions",
           }
         );
       }
@@ -375,31 +390,49 @@ export default function DocumentsPortal() {
                   {requiredDocs.map((doc, index) => (
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-lg border border-cream-200 bg-white p-3"
+                      className={`rounded-lg border-2 p-3 transition-colors ${
+                        doc.uploaded
+                          ? "border-green-300 bg-green-50"
+                          : "border-sage-200 bg-white"
+                      }`}
                     >
-                      {doc.uploaded ? (
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
-                      ) : (
-                        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-sage-900">
-                          {doc.label}
-                          {doc.required && (
-                            <span className="ml-1 text-xs text-terracotta-600">
-                              *
-                            </span>
+                      <div className="flex items-start gap-3">
+                        {doc.uploaded ? (
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                        ) : (
+                          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-400" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-sage-900">
+                            {doc.label}
+                            {doc.required && (
+                              <span className="ml-1 text-xs text-terracotta-600">
+                                *
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-xs text-sage-600">
+                            {doc.description}
+                          </p>
+                          {doc.helpText && (
+                            <p className="mt-1.5 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
+                              💡 {doc.helpText}
+                            </p>
                           )}
-                        </p>
-                        <p className="mt-0.5 text-xs text-sage-600">
-                          {doc.description}
-                        </p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 rounded-lg bg-cream-50 p-3 text-xs text-sage-600">
-                  * Required documents must be uploaded before submission
+                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+                  <p className="mb-1 font-semibold">
+                    About Document Requirements:
+                  </p>
+                  <p className="text-[11px]">
+                    * = Required for your claim. Upload here for safekeeping and
+                    organization. Final submission will be via mail according to
+                    RECA requirements.
+                  </p>
                 </div>
               </CardContent>
             </Card>

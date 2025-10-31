@@ -28,6 +28,14 @@ interface PageProps {
 
 export default function RECAFormPage({ params }: PageProps) {
   const router = useRouter();
+  const push = useCallback(
+    (href: string) => router.push(href as any),
+    [router]
+  );
+  const replace = useCallback(
+    (href: string) => router.replace(href as any),
+    [router]
+  );
   const searchParams = useSearchParams();
   const { status } = useSession();
   const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(
@@ -77,31 +85,31 @@ export default function RECAFormPage({ params }: PageProps) {
             // User must have access to forms
             if (!data.canAccessForms) {
               // Redirect to service tier selection or payment
-              router.push("/service-tiers?error=payment_required");
+              push("/service-tiers?error=payment_required");
               return;
             }
 
             setHasAccess(true);
           } else {
             // Error checking subscription - redirect to service tiers
-            router.push("/service-tiers?error=subscription_check_failed");
+            push("/service-tiers?error=subscription_check_failed");
           }
         } catch (error) {
           console.error("Error checking subscription:", error);
-          router.push("/service-tiers?error=subscription_check_failed");
+          push("/service-tiers?error=subscription_check_failed");
         } finally {
           setCheckingAccess(false);
         }
       } else if (status === "unauthenticated") {
         // Not logged in - redirect to login
-        router.push(
+        push(
           "/login?callbackUrl=" + encodeURIComponent(window.location.pathname)
         );
       }
     }
 
     checkSubscriptionAccess();
-  }, [status, router]);
+  }, [status, push]);
 
   useEffect(() => {
     // Only load workflow state if user has access
@@ -116,10 +124,10 @@ export default function RECAFormPage({ params }: PageProps) {
       const filingForSelf = workflowState.formData.part_1?.filingForSelf;
       if (filingForSelf === true) {
         // Skip Part 2 - redirect to Part 3
-        router.replace(`/reca/form/${params.sessionId}?section=part_3`);
+        replace(`/reca/form/${params.sessionId}?section=part_3`);
       }
     }
-  }, [workflowState, currentSection, params.sessionId, router]);
+  }, [workflowState, currentSection, params.sessionId, replace]);
 
   const handleSaveSection = async (sectionData: any) => {
     if (!workflowState) return;
@@ -364,7 +372,7 @@ export default function RECAFormPage({ params }: PageProps) {
           </h2>
           <p className="mb-6 text-sage-700">{error || "Unknown error"}</p>
           <button
-            onClick={() => router.push("/portal")}
+            onClick={() => push("/portal")}
             className="rounded-full bg-terracotta-500 px-6 py-3 text-white hover:bg-terracotta-600"
           >
             Return to Portal

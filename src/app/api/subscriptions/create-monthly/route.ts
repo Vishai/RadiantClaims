@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import type Stripe from "stripe";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
@@ -77,10 +78,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Calculate next billing date
-    const nextBillingDate = new Date(
-      stripeSubscription.current_period_end * 1000
-    );
-    const billingCycleDay = nextBillingDate.getDate();
+    const subscriptionData = stripeSubscription as Stripe.Subscription;
+    const currentPeriodEnd =
+      subscriptionData.items.data[0]?.current_period_end ?? null;
+    const nextBillingDate =
+      currentPeriodEnd !== null ? new Date(currentPeriodEnd * 1000) : null;
+    const billingCycleDay = nextBillingDate?.getDate() ?? null;
 
     // Update subscription record
     await prisma.serviceSubscription.update({

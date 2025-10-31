@@ -11,6 +11,52 @@ const documentSchema = z.object({
   size: z.number(),
 });
 
+/**
+ * GET /api/documents?sessionId=xxx
+ * Get all uploaded documents for a session
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get("sessionId");
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: "sessionId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get uploaded files for this session
+    const files = await db.uploadedFile.findMany({
+      where: {
+        intakeSessionId: sessionId,
+        status: "READY",
+      },
+      orderBy: {
+        uploadedAt: "desc",
+      },
+      select: {
+        id: true,
+        category: true,
+        originalFilename: true,
+        fileKey: true,
+        sizeBytes: true,
+        uploadedAt: true,
+        requiresOriginal: true,
+      },
+    });
+
+    return NextResponse.json({ files });
+  } catch (error) {
+    console.error("Failed to fetch documents:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch documents" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

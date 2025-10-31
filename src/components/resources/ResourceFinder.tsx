@@ -96,8 +96,10 @@ export function ResourceFinder({
       const params = new URLSearchParams();
       if (state) params.append("state", state);
       if (county) params.append("county", county);
-      if (resourceType) params.append("resourceType", resourceType);
-      if (documentType) params.append("documentType", documentType);
+      if (resourceType && resourceType !== "all")
+        params.append("resourceType", resourceType);
+      if (documentType && documentType !== "all")
+        params.append("documentType", documentType);
 
       const response = await fetch(
         `/api/resources/search?${params.toString()}`
@@ -183,7 +185,7 @@ export function ResourceFinder({
                   <SelectValue placeholder="Select document type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Document</SelectItem>
+                  <SelectItem value="all">Any Document</SelectItem>
                   {DOCUMENT_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
@@ -203,7 +205,7 @@ export function ResourceFinder({
                   <SelectValue placeholder="Select resource type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any Type</SelectItem>
+                  <SelectItem value="all">Any Type</SelectItem>
                   {RESOURCE_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}

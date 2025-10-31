@@ -173,16 +173,13 @@ export function DocumentCategorySelector({
     onOpenChange(false);
   };
 
-  const groupedOptions = categoryOptions.reduce(
-    (acc, option) => {
-      if (!acc[option.group]) {
-        acc[option.group] = [];
-      }
-      acc[option.group].push(option);
-      return acc;
-    },
-    {} as Record<string, CategoryOption[]>
-  );
+  const groupedOptions = categoryOptions.reduce<
+    Record<string, CategoryOption[]>
+  >((acc, option) => {
+    const groupEntries = acc[option.group] ?? [];
+    acc[option.group] = [...groupEntries, option];
+    return acc;
+  }, {});
 
   const groupLabels: Record<string, string> = {
     identity: "Identity Documents",
@@ -227,7 +224,7 @@ export function DocumentCategorySelector({
           {Object.entries(groupedOptions).map(([groupKey, options]) => (
             <div key={groupKey}>
               <h4 className="mb-3 text-sm font-semibold text-sage-900">
-                {groupLabels[groupKey]}
+                {groupLabels[groupKey] ?? "Other Documents"}
               </h4>
               <div className="grid gap-2 sm:grid-cols-2">
                 {options.map((option) => {

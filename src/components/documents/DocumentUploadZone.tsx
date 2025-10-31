@@ -118,12 +118,11 @@ export function DocumentUploadZone({
 
       setPendingFiles((prev) => [...prev, ...validFiles]);
 
-      // If only one file and no category detected, show category selector immediately
-      if (validFiles.length === 1 && !validFiles[0].category) {
-        setCategorizingFile(validFiles[0]);
-      } else if (validFiles.length === 1 && validFiles[0].category) {
-        // If category detected, confirm it
-        setCategorizingFile(validFiles[0]);
+      if (validFiles.length === 1) {
+        const onlyFile = validFiles[0];
+        if (onlyFile) {
+          setCategorizingFile(onlyFile);
+        }
       } else {
         // Multiple files - categorize first one
         const firstUncategorized = validFiles.find((f) => !f.category);
@@ -132,39 +131,38 @@ export function DocumentUploadZone({
         }
       }
     },
-    [sessionId, maxSize, acceptedTypes, onUploadError]
+    [maxSize, acceptedTypes, onUploadError]
   );
 
   const handleCategoryConfirm = async (category: FileCategory) => {
     if (!categorizingFile) return;
 
+    const fileToCategorize = categorizingFile;
     const requiresOriginal = ORIGINAL_REQUIRED_CATEGORIES.includes(category);
 
     // Update pending file with category
     setPendingFiles((prev) =>
       prev.map((f) =>
-        f.id === categorizingFile.id ? { ...f, category, requiresOriginal } : f
+        f.id === fileToCategorize.id ? { ...f, category, requiresOriginal } : f
       )
     );
 
-    // Start upload immediately
-    const fileToUpload = {
-      ...categorizingFile,
-      category,
-      requiresOriginal,
-    };
+    const remaining = pendingFiles.filter(
+      (f) => f.id !== fileToCategorize.id && !f.category
+    );
 
     setCategorizingFile(null);
 
     // Upload this file
-    await uploadFile(fileToUpload as PendingFile & { category: FileCategory });
+    await uploadFile({
+      ...fileToCategorize,
+      category,
+      requiresOriginal,
+    } as PendingFile & { category: FileCategory });
 
-    // Check if there are more files to categorize
-    const remaining = pendingFiles.filter(
-      (f) => f.id !== categorizingFile.id && !f.category
-    );
-    if (remaining.length > 0) {
-      setCategorizingFile(remaining[0]);
+    const nextFile = remaining[0];
+    if (nextFile) {
+      setCategorizingFile(nextFile);
     }
   };
 
@@ -464,7 +462,7 @@ export function DocumentUploadZone({
             if (!open) {
               // Remove from pending if dialog is closed without categorizing
               setPendingFiles((prev) =>
-                prev.filter((f) => f.id !== categorizingFile.id)
+                prev.filter((f) => f.id !== categorizingFile?.id)
               );
               setCategorizingFile(null);
             }

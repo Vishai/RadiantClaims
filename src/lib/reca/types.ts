@@ -246,6 +246,7 @@ export type ProofOfPresenceDocumentType =
   | "OTHER";
 
 export interface Part9ProofOfPresence {
+  ldsChurchAssistance?: boolean; // Optional checkbox for LDS Church records assistance
   uploadedDocuments?: Array<{
     id: string;
     fileName: string;

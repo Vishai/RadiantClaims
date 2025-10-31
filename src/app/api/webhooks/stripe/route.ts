@@ -13,7 +13,6 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { addMonths } from "date-fns";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -96,8 +95,7 @@ export async function POST(req: NextRequest) {
  * This fires when the setup fee payment is successful
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const { userId, subscriptionId, intakeSessionId, paymentType } =
-    session.metadata || {};
+  const { userId, subscriptionId } = session.metadata || {};
 
   if (!userId || !subscriptionId) {
     console.error("Missing metadata in checkout session");
@@ -175,15 +173,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         },
       });
 
-      // Update with subscription ID
-      const nextBillingDate = new Date(
-        stripeSubscription.current_period_end * 1000
-      );
+      const subscriptionData = stripeSubscription as Stripe.Subscription;
+      const nextBillingDate = getNextBillingDate(subscriptionData);
       await prisma.serviceSubscription.update({
         where: { id: subscriptionId },
         data: {
           stripeSubscriptionId: stripeSubscription.id,
-          billingCycleDay: nextBillingDate.getDate(),
+          billingCycleDay: nextBillingDate?.getDate() ?? null,
           nextBillingDate,
           lastBillingDate: new Date(),
         },
@@ -221,16 +217,21 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       currency: "USD",
       status: "COMPLETED",
       paidAt: new Date(),
-      stripePaymentIntentId: invoice.payment_intent as string,
+      stripePaymentIntentId: getPaymentIntentId(invoice) ?? undefined,
       stripeInvoiceId: invoice.id,
     },
   });
 
   // Update subscription
-  const subscription = await stripe.subscriptions.retrieve(
-    invoice.subscription as string
-  );
-  const nextBillingDate = new Date(subscription.current_period_end * 1000);
+  const stripeSubscriptionId = getStripeSubscriptionId(invoice);
+  let nextBillingDate: Date | null = null;
+
+  if (stripeSubscriptionId) {
+    const subscriptionResponse =
+      await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const subscription = subscriptionResponse as Stripe.Subscription;
+    nextBillingDate = getNextBillingDate(subscription);
+  }
 
   await prisma.serviceSubscription.update({
     where: { id: subscriptionId },
@@ -285,7 +286,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       failedAt: new Date(),
       failureReason:
         invoice.last_finalization_error?.message || "Payment failed",
-      stripePaymentIntentId: invoice.payment_intent as string,
+      stripePaymentIntentId: getPaymentIntentId(invoice) ?? undefined,
       stripeInvoiceId: invoice.id,
     },
   });
@@ -370,7 +371,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
-  const nextBillingDate = new Date(subscription.current_period_end * 1000);
+  const nextBillingDate = getNextBillingDate(subscription);
 
   await prisma.serviceSubscription.update({
     where: { id: subscriptionId },
@@ -378,4 +379,48 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       nextBillingDate,
     },
   });
+}
+
+function getNextBillingDate(subscription: Stripe.Subscription): Date | null {
+  const firstItem = subscription.items.data[0];
+  if (!firstItem?.current_period_end) {
+    return null;
+  }
+
+  return new Date(firstItem.current_period_end * 1000);
+}
+
+function getPaymentIntentId(invoice: Stripe.Invoice): string | null {
+  const raw = (
+    invoice as {
+      payment_intent?: string | Stripe.PaymentIntent;
+    }
+  ).payment_intent;
+
+  if (!raw) {
+    return null;
+  }
+
+  return typeof raw === "string" ? raw : raw.id;
+}
+
+function getStripeSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const legacy = (
+    invoice as {
+      subscription?: string | Stripe.Subscription;
+    }
+  ).subscription;
+
+  if (legacy) {
+    return typeof legacy === "string" ? legacy : legacy.id;
+  }
+
+  const parentSubscription = invoice.parent?.subscription_details?.subscription;
+  if (!parentSubscription) {
+    return null;
+  }
+
+  return typeof parentSubscription === "string"
+    ? parentSubscription
+    : parentSubscription.id;
 }

@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import type { Route } from "next";
 import { useEffect, useState } from "react";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ import {
   Plus,
   Key,
   Upload,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +32,8 @@ interface Claimant {
   firstName: string;
   lastName: string;
   email: string;
+  state: string;
+  county: string;
   createdAt: string;
   claimType?: string;
   intakeSession: {
@@ -301,6 +305,27 @@ export default function CustomerPortal() {
                       >
                         <Upload className="h-4 w-4" />
                         Manage Documents
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          // Build context-aware URL for resource suggestions
+                          const params = new URLSearchParams();
+                          if (claim.state) {
+                            params.append("state", claim.state);
+                          }
+                          if (claim.county) {
+                            params.append("county", claim.county);
+                          }
+                          // Suggest resources based on claim context
+                          router.push(
+                            `/resources${params.toString() ? `?${params.toString()}` : ""}` as unknown as Route
+                          );
+                        }}
+                        className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Find Documents
                       </Button>
                       <Button
                         variant="outline"

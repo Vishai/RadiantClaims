@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
 /**
  * GET endpoint to check refund eligibility
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
