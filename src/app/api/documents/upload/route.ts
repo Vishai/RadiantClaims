@@ -87,10 +87,25 @@ export async function POST(req: NextRequest) {
         mimeType: file.type,
         sizeBytes: file.size,
         category: category as any,
-        status: "PENDING" as any,
+        status: "UPLOADING",
         requiresOriginal: requiresOriginal,
         uploadedAt: new Date(),
       },
+    });
+
+    // Trigger document intelligence processing asynchronously
+    // Don't await - let it process in background
+    fetch(
+      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/documents/process/${uploadedFile.id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: req.headers.get("cookie") || "",
+        },
+      }
+    ).catch((error) => {
+      console.error("Failed to trigger document processing:", error);
     });
 
     return NextResponse.json(

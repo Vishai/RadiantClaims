@@ -10,11 +10,7 @@ import { env } from "@/env.mjs";
 let s3Client: S3Client | null = null;
 
 function getS3Client(): S3Client | null {
-  if (
-    !env.R2_ACCESS_KEY_ID ||
-    !env.R2_SECRET_ACCESS_KEY ||
-    !env.R2_ENDPOINT
-  ) {
+  if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_ENDPOINT) {
     return null;
   }
 
@@ -74,3 +70,29 @@ export function generateFileKey(fileName: string): string {
 export const R2_PUBLIC_URL = env.R2_ENDPOINT
   ? `${env.R2_ENDPOINT}/${env.R2_BUCKET}`
   : "https://mock-r2-endpoint.example.com";
+
+/**
+ * Download a file from Vercel Blob storage or R2
+ * @param fileKeyOrUrl - Either an R2 key or a full Vercel Blob URL
+ */
+export async function getObject(fileKeyOrUrl: string): Promise<Buffer | null> {
+  try {
+    // If it's a full URL (Vercel Blob), fetch directly
+    if (fileKeyOrUrl.startsWith("http")) {
+      const response = await fetch(fileKeyOrUrl);
+      if (!response.ok) {
+        console.error(`Failed to fetch file: ${response.statusText}`);
+        return null;
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+
+    // Otherwise, treat as R2 key (not implemented yet)
+    console.warn("R2 getObject not yet implemented for keys");
+    return null;
+  } catch (error) {
+    console.error("Failed to download file:", error);
+    return null;
+  }
+}
