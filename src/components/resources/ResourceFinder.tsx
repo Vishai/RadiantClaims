@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ResourceCard } from "./ResourceCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,13 +78,7 @@ export function ResourceFinder({
   const [hasSearched, setHasSearched] = useState(false);
   const [resultsMessage, setResultsMessage] = useState("");
 
-  useEffect(() => {
-    if (autoSearch && state) {
-      handleSearch();
-    }
-  }, [autoSearch, state]);
-
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!state && !resourceType && !documentType) {
       return;
     }
@@ -114,7 +108,13 @@ export function ResourceFinder({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [state, resourceType, documentType, county]);
+
+  useEffect(() => {
+    if (autoSearch && state) {
+      void handleSearch();
+    }
+  }, [autoSearch, state, handleSearch]);
 
   const handleReset = () => {
     setState(initialState || "");

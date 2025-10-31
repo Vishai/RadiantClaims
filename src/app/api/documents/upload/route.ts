@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { put } from "@vercel/blob";
+import { uploadToR2, generateFileKey, getObject } from "@/lib/r2";
 import { nanoid } from "nanoid";
+import { processDocument } from "@/lib/document-intelligence/ocr";
+import {
+  categorizeDocument,
+  generateDocumentTags,
+  type FileCategory,
+} from "@/lib/document-intelligence/ai-categorization";
+import { extractEntities } from "@/lib/document-intelligence/entity-extraction";
+import { checkRECACompliance } from "@/lib/document-intelligence/reca-compliance";
+import { analyzeRisks } from "@/lib/document-intelligence/risk-analysis";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -68,34 +77,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate unique file key
+    // Generate unique file key for R2
     const fileExtension = file.name.split(".").pop();
     const fileKey = `${sessionId}/${nanoid()}.${fileExtension}`;
 
-    // Upload to Vercel Blob (or your storage provider)
-    let blobUrl: string;
-
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      // Production: Use Vercel Blob
-      const blob = await put(fileKey, file, {
-        access: "public",
-        addRandomSuffix: false,
-      });
-      blobUrl = blob.url;
-    } else {
-      // Development: Mock storage (just use a data URL for now)
-      console.warn(
-        "BLOB_READ_WRITE_TOKEN not set - using mock storage for development"
-      );
-      const buffer = Buffer.from(await file.arrayBuffer());
-      blobUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
-    }
+    // Upload to R2
+    const { url: r2Url, key: r2Key } = await uploadToR2(
+      fileKey,
+      file,
+      file.type
+    );
 
     // Create database record
     const uploadedFile = await db.uploadedFile.create({
       data: {
         intakeSessionId: sessionId,
-        fileKey: blobUrl, // Store the blob URL as fileKey
+        fileKey: r2Key, // Store the R2 key
         originalFilename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
@@ -107,19 +104,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Trigger document intelligence processing asynchronously
-    // Don't await - let it process in background
-    fetch(
-      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/documents/process/${uploadedFile.id}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: req.headers.get("cookie") || "",
-        },
+    // Process in background without blocking the response
+    processDocumentInBackground(uploadedFile.id, r2Key, file.type).catch(
+      (error) => {
+        console.error("Background document processing failed:", error);
       }
-    ).catch((error) => {
-      console.error("Failed to trigger document processing:", error);
-    });
+    );
 
     return NextResponse.json(
       {
@@ -127,6 +117,7 @@ export async function POST(req: NextRequest) {
         fileId: uploadedFile.id,
         category: uploadedFile.category,
         requiresOriginal: uploadedFile.requiresOriginal,
+        message: "File uploaded successfully. AI analysis in progress...",
       },
       { status: 201 }
     );
@@ -164,5 +155,231 @@ export async function GET(req: NextRequest) {
       { error: "Failed to fetch documents" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Process document in background with AI intelligence
+ */
+async function processDocumentInBackground(
+  fileId: string,
+  fileKey: string,
+  mimeType: string
+) {
+  try {
+    console.log(`🔬 Starting background processing for file: ${fileId}`);
+
+    // Update status to PROCESSING
+    await db.uploadedFile.update({
+      where: { id: fileId },
+      data: { status: "PROCESSING" },
+    });
+
+    // Download file from R2
+    const fileBuffer = await getObject(fileKey);
+    if (!fileBuffer) {
+      throw new Error("Failed to download file from storage");
+    }
+
+    // STEP 1: OCR & Quality Analysis
+    const { ocrResult, qualityMetrics } = await processDocument(
+      fileBuffer,
+      mimeType
+    );
+
+    console.log(
+      `✓ OCR completed for ${fileId}: ${ocrResult.text.length} chars extracted`
+    );
+
+    // STEP 2: AI Categorization (if we have enough text)
+    let finalCategory: FileCategory = "OTHER";
+    let categorizationResult;
+
+    if (ocrResult.text.length > 20) {
+      const currentFile = await db.uploadedFile.findUnique({
+        where: { id: fileId },
+        select: { category: true, originalFilename: true },
+      });
+
+      categorizationResult = await categorizeDocument(
+        ocrResult.text,
+        currentFile?.originalFilename || "",
+        currentFile?.category as FileCategory | undefined
+      );
+
+      // Use AI category if confidence is high and no manual category set
+      if (
+        categorizationResult.confidence > 0.7 &&
+        (!currentFile?.category || currentFile.category === "OTHER")
+      ) {
+        finalCategory = categorizationResult.category;
+      }
+
+      console.log(
+        `✓ AI categorization for ${fileId}: ${finalCategory} (${(categorizationResult.confidence * 100).toFixed(0)}%)`
+      );
+    }
+
+    // STEP 3: Generate Smart Tags
+    const documentTags = await generateDocumentTags(
+      ocrResult.text,
+      "", // filename not needed here
+      finalCategory,
+      qualityMetrics?.qualityScore || ocrResult.confidence
+    );
+
+    console.log(`✓ Generated ${documentTags.length} tags for ${fileId}`);
+
+    // STEP 4: Extract Entities (Phase 2)
+    let entities;
+    try {
+      entities = await extractEntities(
+        ocrResult.text,
+        finalCategory,
+        ocrResult.pageCount || 1
+      );
+      console.log(
+        `✓ Entity extraction for ${fileId}: ${entities.persons.length} persons, ${entities.dates.length} dates, ${entities.addresses.length} addresses`
+      );
+    } catch (error) {
+      console.error(`⚠️ Entity extraction failed for ${fileId}:`, error);
+      // Continue processing even if entity extraction fails
+      entities = {
+        persons: [],
+        dates: [],
+        addresses: [],
+        medical: [],
+        employment: [],
+      };
+    }
+
+    // STEP 5: RECA Compliance Check (Phase 2)
+    let complianceResult;
+    try {
+      // Get all documents for this session
+      const uploadedFile = await db.uploadedFile.findUnique({
+        where: { id: fileId },
+        select: { intakeSessionId: true },
+      });
+
+      if (uploadedFile?.intakeSessionId) {
+        const allDocuments = await db.uploadedFile.findMany({
+          where: { intakeSessionId: uploadedFile.intakeSessionId },
+          select: { id: true, category: true, ocrText: true, metadata: true },
+        });
+
+        complianceResult = await checkRECACompliance(
+          entities,
+          allDocuments,
+          ocrResult.text
+        );
+
+        console.log(
+          `✓ Compliance check for ${fileId}: ${complianceResult.claimTypeSuspected} claim, ${(complianceResult.checklistCoverage * 100).toFixed(0)}% complete`
+        );
+      }
+    } catch (error) {
+      console.error(`⚠️ Compliance check failed for ${fileId}:`, error);
+      // Continue processing even if compliance check fails
+    }
+
+    // STEP 6: Risk Analysis (Phase 2)
+    let riskAnalysis;
+    if (complianceResult) {
+      try {
+        riskAnalysis = await analyzeRisks(
+          entities,
+          complianceResult,
+          qualityMetrics
+            ? {
+                qualityScore: qualityMetrics.qualityScore,
+                isBlurry: qualityMetrics.isBlurry || false,
+                isLowContrast: qualityMetrics.isLowContrast || false,
+                recommendations: qualityMetrics.recommendations,
+              }
+            : undefined
+        );
+
+        console.log(
+          `✓ Risk analysis for ${fileId}: ${riskAnalysis.totalRisks} risks found (${riskAnalysis.highSeverityCount} high severity)`
+        );
+      } catch (error) {
+        console.error(`⚠️ Risk analysis failed for ${fileId}:`, error);
+        // Continue processing even if risk analysis fails
+      }
+    }
+
+    // STEP 7: Store Results
+    const metadata = {
+      ocrConfidence: ocrResult.confidence,
+      processingTimeMs: ocrResult.processingTimeMs,
+      pageCount: ocrResult.pageCount,
+      qualityMetrics: qualityMetrics
+        ? {
+            resolution: qualityMetrics.resolution,
+            qualityScore: qualityMetrics.qualityScore,
+            isBlurry: qualityMetrics.isBlurry,
+            isLowContrast: qualityMetrics.isLowContrast,
+            recommendations: qualityMetrics.recommendations,
+          }
+        : undefined,
+      aiCategorization: categorizationResult
+        ? {
+            suggestedCategory: categorizationResult.category,
+            confidence: categorizationResult.confidence,
+            reasoning: categorizationResult.reasoning,
+            alternatives: categorizationResult.alternativeCategories,
+          }
+        : undefined,
+      // Phase 2: Entity extraction
+      entities: entities,
+      entitiesExtractedAt: new Date().toISOString(),
+      // Phase 2: Compliance check
+      compliance: complianceResult,
+      complianceCheckedAt: complianceResult
+        ? new Date().toISOString()
+        : undefined,
+      // Phase 2: Risk analysis
+      risks: riskAnalysis,
+      risksAnalyzedAt: riskAnalysis ? new Date().toISOString() : undefined,
+    };
+
+    // Update file record
+    await db.uploadedFile.update({
+      where: { id: fileId },
+      data: {
+        ocrText: ocrResult.text,
+        ocrConfidence: ocrResult.confidence,
+        category: finalCategory,
+        metadata: JSON.stringify(metadata),
+        status: "READY",
+        processedAt: new Date(),
+      },
+    });
+
+    // Create tags
+    await db.documentTag.deleteMany({
+      where: { uploadedFileId: fileId },
+    });
+
+    if (documentTags.length > 0) {
+      await db.documentTag.createMany({
+        data: documentTags.map((tag) => ({
+          uploadedFileId: fileId,
+          tag: tag.tag,
+          confidence: tag.confidence,
+        })),
+      });
+    }
+
+    console.log(`✅ Background processing complete for ${fileId}`);
+  } catch (error) {
+    console.error(`❌ Background processing failed for ${fileId}:`, error);
+
+    // Update file status to FAILED
+    await db.uploadedFile.update({
+      where: { id: fileId },
+      data: { status: "FAILED" },
+    });
   }
 }

@@ -5,8 +5,12 @@
 
 import { createWorker, type Worker } from "tesseract.js";
 import sharp from "sharp";
-// @ts-ignore - pdf-parse doesn't have proper types
-import pdfParse from "pdf-parse";
+import { PDFDocument } from "pdf-lib";
+import { pdfToPng } from "pdf-to-png";
+
+// Use dynamic import for pdfjs-dist to avoid Next.js build issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pdfjsLib: any = null;
 
 export interface OCRResult {
   text: string;
@@ -70,7 +74,9 @@ export async function extractTextFromImage(
 }
 
 /**
- * Extract text from a PDF buffer
+ * Extract text from a PDF buffer using a hybrid approach:
+ * 1. First try pdfjs-dist for digital PDFs with embedded text
+ * 2. If no text found, fall back to OCR (convert pages to images and use Tesseract)
  */
 export async function extractTextFromPDF(
   pdfBuffer: Buffer
@@ -78,25 +84,152 @@ export async function extractTextFromPDF(
   const startTime = Date.now();
 
   try {
-    // @ts-ignore - pdf-parse types issue
-    const data = await pdfParse(pdfBuffer);
+    // Step 1: Try extracting text using PDF.js (works for digital PDFs)
+    const textContent = await extractTextWithPDFJS(pdfBuffer);
 
-    const processingTimeMs = Date.now() - startTime;
+    // If we got substantial text, return it
+    if (textContent.text.length > 50) {
+      console.log(
+        `✓ Extracted ${textContent.text.length} characters from PDF using PDF.js`
+      );
+      return {
+        text: textContent.text,
+        confidence: 0.95,
+        language: "eng",
+        processingTimeMs: Date.now() - startTime,
+        pageCount: textContent.pageCount,
+      };
+    }
 
-    // PDF extraction doesn't provide confidence, so we estimate based on text length
-    const confidence = data.text.length > 50 ? 0.95 : 0.7;
+    // Step 2: If no text found, it's likely a scanned PDF - use OCR
+    console.log(
+      "No text found in PDF, falling back to OCR for scanned document..."
+    );
+    const ocrResult = await extractTextFromScannedPDF(pdfBuffer);
 
     return {
-      text: data.text.trim(),
-      confidence,
-      language: "eng",
-      processingTimeMs,
-      pageCount: data.numpages,
+      ...ocrResult,
+      processingTimeMs: Date.now() - startTime,
     };
   } catch (error) {
     console.error("PDF text extraction failed:", error);
     throw new Error(
       `Failed to extract text from PDF: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+/**
+ * Extract text from a digital PDF using PDF.js
+ */
+async function extractTextWithPDFJS(
+  pdfBuffer: Buffer
+): Promise<{ text: string; pageCount: number }> {
+  try {
+    // Lazy load pdfjs-dist (only loads when needed)
+    if (!pdfjsLib) {
+      pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    }
+
+    // Load the PDF document
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(pdfBuffer),
+    });
+    const pdfDocument = await loadingTask.promise;
+    const pageCount = pdfDocument.numPages;
+
+    let fullText = "";
+
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
+
+      // Combine all text items
+      const pageText = textContent.items
+        .map((item: any) => {
+          if ("str" in item) {
+            return item.str;
+          }
+          return "";
+        })
+        .join(" ");
+
+      fullText += pageText + "\n";
+    }
+
+    return {
+      text: fullText.trim(),
+      pageCount,
+    };
+  } catch (error) {
+    console.error("PDF.js text extraction failed:", error);
+    return { text: "", pageCount: 0 };
+  }
+}
+
+/**
+ * Extract text from a scanned PDF using OCR
+ * Converts PDF pages to images and runs Tesseract on each page
+ */
+async function extractTextFromScannedPDF(
+  pdfBuffer: Buffer
+): Promise<OCRResult> {
+  try {
+    // Convert PDF pages to PNG images
+    const pngPages = await pdfToPng(pdfBuffer, {
+      disableFontFace: true,
+      useSystemFonts: false,
+    });
+
+    console.log(`Converting ${pngPages.length} PDF pages to images for OCR...`);
+
+    let fullText = "";
+    let totalConfidence = 0;
+    let worker: Worker | null = null;
+
+    try {
+      // Initialize Tesseract worker once for all pages
+      worker = await createWorker("eng", 1, {
+        logger: () => {}, // Suppress logs
+      });
+
+      // Process each page
+      for (let i = 0; i < pngPages.length; i++) {
+        console.log(`Processing page ${i + 1}/${pngPages.length} with OCR...`);
+
+        const pageBuffer = pngPages[i].content;
+
+        // Preprocess the image for better OCR
+        const processedImage = await preprocessImage(pageBuffer);
+
+        // Run OCR on the page
+        const {
+          data: { text, confidence },
+        } = await worker.recognize(processedImage);
+
+        fullText += `\n--- Page ${i + 1} ---\n${text}\n`;
+        totalConfidence += confidence;
+      }
+
+      const averageConfidence = totalConfidence / pngPages.length / 100; // Convert to 0-1
+
+      return {
+        text: fullText.trim(),
+        confidence: averageConfidence,
+        language: "eng",
+        processingTimeMs: 0, // Will be set by caller
+        pageCount: pngPages.length,
+      };
+    } finally {
+      if (worker) {
+        await worker.terminate();
+      }
+    }
+  } catch (error) {
+    console.error("Scanned PDF OCR failed:", error);
+    throw new Error(
+      `Failed to OCR scanned PDF: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 }

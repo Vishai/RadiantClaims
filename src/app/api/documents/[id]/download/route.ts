@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getObject } from "@/lib/r2";
 
 export async function GET(
   _req: NextRequest,
@@ -16,16 +17,18 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Fetch the file from blob storage
-    const response = await fetch(file.fileKey);
-    if (!response.ok) {
-      throw new Error("Failed to fetch file from storage");
+    // Fetch the file from R2
+    const buffer = await getObject(file.fileKey);
+
+    if (!buffer) {
+      return NextResponse.json(
+        { error: "Failed to fetch file from storage" },
+        { status: 500 }
+      );
     }
 
-    const blob = await response.blob();
-
     // Return file with download headers
-    return new NextResponse(blob, {
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": file.mimeType,
         "Content-Disposition": `attachment; filename="${file.originalFilename}"`,

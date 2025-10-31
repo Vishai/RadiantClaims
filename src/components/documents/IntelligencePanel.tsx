@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Brain,
   CheckCircle2,
@@ -63,18 +63,7 @@ export function IntelligencePanel({
   const [showOCRText, setShowOCRText] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (status === "UPLOADING" || status === "PROCESSING") {
-      // Poll for status updates
-      const interval = setInterval(checkProcessingStatus, 2000);
-      return () => clearInterval(interval);
-    } else {
-      // Load intelligence data if ready
-      loadIntelligenceData();
-    }
-  }, [fileId, status]);
-
-  const checkProcessingStatus = async () => {
+  const checkProcessingStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/documents/process/${fileId}`);
       if (response.ok) {
@@ -92,9 +81,9 @@ export function IntelligencePanel({
     } catch (err) {
       console.error("Failed to check status:", err);
     }
-  };
+  }, [fileId]);
 
-  const loadIntelligenceData = async () => {
+  const loadIntelligenceData = useCallback(async () => {
     try {
       const response = await fetch(`/api/documents/process/${fileId}`);
       if (response.ok) {
@@ -108,7 +97,20 @@ export function IntelligencePanel({
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileId]);
+
+  useEffect(() => {
+    if (status === "UPLOADING" || status === "PROCESSING") {
+      // Poll for status updates
+      const interval = setInterval(() => {
+        void checkProcessingStatus();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+
+    // Load intelligence data if ready
+    void loadIntelligenceData();
+  }, [status, checkProcessingStatus, loadIntelligenceData]);
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return "text-emerald-600";

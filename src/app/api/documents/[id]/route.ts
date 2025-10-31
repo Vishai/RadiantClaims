@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { del } from "@vercel/blob";
+import { deleteFromR2 } from "@/lib/r2";
 
 // DELETE - Remove a document
 export async function DELETE(
@@ -19,12 +19,12 @@ export async function DELETE(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Delete from blob storage
+    // Delete from R2 storage
     try {
-      await del(file.fileKey);
+      await deleteFromR2(file.fileKey);
     } catch (error) {
-      console.error("Error deleting from blob storage:", error);
-      // Continue even if blob deletion fails
+      console.error("Error deleting from R2 storage:", error);
+      // Continue even if R2 deletion fails
     }
 
     // Delete from database

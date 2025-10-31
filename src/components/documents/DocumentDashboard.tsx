@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DocumentCard } from "./DocumentCard";
+import { DocumentListItem } from "./DocumentListItem";
 import {
   DocumentCategorySelector,
   type FileCategory,
 } from "./DocumentCategorySelector";
-import { Loader2, FileX, Search } from "lucide-react";
+import { Loader2, FileX, Search, Grid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,6 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+interface AIIntelligence {
+  ocrConfidence?: number;
+  textLength?: number;
+  aiCategory?: string;
+  aiCategoryConfidence?: number;
+  aiReasoning?: string;
+  tags?: Array<{ tag: string; confidence: number }>;
+  qualityScore?: number;
+  recommendations?: string[];
+  pageCount?: number;
+}
 
 interface UploadedFile {
   id: string;
@@ -28,6 +42,7 @@ interface UploadedFile {
   isRequired?: boolean;
   requiresOriginal?: boolean;
   rejectionReason?: string | null;
+  aiIntelligence?: AIIntelligence | null;
 }
 
 interface DocumentDashboardProps {
@@ -44,17 +59,14 @@ export function DocumentDashboard({
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [categorizingDoc, setCategorizingDoc] = useState<{
     id: string;
     filename: string;
     currentCategory?: FileCategory;
   } | null>(null);
 
-  useEffect(() => {
-    loadDocuments();
-  }, [sessionId]);
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/documents?sessionId=${sessionId}`);
@@ -67,7 +79,11 @@ export function DocumentDashboard({
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
 
   const handleView = async (fileId: string) => {
     // Open document in new tab
@@ -174,7 +190,7 @@ export function DocumentDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Filters & View Toggle */}
       {documents.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
@@ -211,16 +227,36 @@ export function DocumentDashboard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="UPLOADING">Uploading</SelectItem>
               <SelectItem value="PENDING">Pending</SelectItem>
               <SelectItem value="APPROVED">Approved</SelectItem>
               <SelectItem value="REJECTED">Rejected</SelectItem>
               <SelectItem value="NEEDS_ATTENTION">Needs Attention</SelectItem>
             </SelectContent>
           </Select>
+          {/* View Mode Toggle */}
+          <div className="flex rounded-lg border border-sage-300 bg-white">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className={`rounded-r-none ${viewMode === "grid" ? "bg-sage-100" : ""}`}
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className={`rounded-l-none ${viewMode === "list" ? "bg-sage-100" : ""}`}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Documents Grid */}
+      {/* Documents Grid or List */}
       {filteredDocuments.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-sage-300 bg-cream-50 py-16">
           <FileX className="mb-4 h-16 w-16 text-sage-300" />
@@ -235,7 +271,7 @@ export function DocumentDashboard({
               : "Try adjusting your search or filters"}
           </p>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDocuments.map((doc) => (
             <DocumentCard
@@ -251,6 +287,29 @@ export function DocumentDashboard({
               isRequired={doc.isRequired}
               requiresOriginal={doc.requiresOriginal}
               rejectionReason={doc.rejectionReason}
+              aiIntelligence={doc.aiIntelligence || undefined}
+              onView={() => handleView(doc.id)}
+              onDownload={() => handleDownload(doc.id, doc.originalFilename)}
+              onDelete={() => handleDelete(doc.id)}
+              onRecategorize={() =>
+                handleRecategorize(doc.id, doc.originalFilename, doc.category)
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredDocuments.map((doc) => (
+            <DocumentListItem
+              key={doc.id}
+              id={doc.id}
+              originalFilename={doc.originalFilename}
+              category={doc.category}
+              status={doc.status}
+              sizeBytes={doc.sizeBytes}
+              uploadedAt={doc.uploadedAt}
+              mimeType={doc.mimeType}
+              aiIntelligence={doc.aiIntelligence || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
               onDelete={() => handleDelete(doc.id)}

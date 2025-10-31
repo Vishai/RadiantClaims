@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Heart,
   FileText,
@@ -41,15 +41,118 @@ export default function DocumentsPortal() {
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/portal/documents");
-    } else if (status === "authenticated") {
-      loadUserSession();
-    }
-  }, [status, router]);
+  const loadDocumentRequirements = useCallback(
+    async (sessionId: string, claimType?: string) => {
+      try {
+        // Fetch uploaded files
+        const response = await fetch(`/api/documents?sessionId=${sessionId}`);
+        if (!response.ok) return;
 
-  const loadUserSession = async () => {
+        const data = await response.json();
+        const uploadedFiles = data.files || [];
+        setUploadedCount(uploadedFiles.length);
+
+        // Define required documents based on claim type
+        const requirements: RequiredDocument[] = [];
+
+        if (claimType === "DOWNWINDER") {
+          requirements.push(
+            {
+              category: "IDENTITY",
+              label: "Birth Certificate",
+              description:
+                "Your birth certificate (or death certificate if filing for deceased person)",
+              uploaded: uploadedFiles.some(
+                (f: any) => f.category === "IDENTITY"
+              ),
+              required: true,
+              helpText: "Required to establish identity and eligibility",
+            },
+            {
+              category: "IDENTITY",
+              label: "Marriage/Name Change Certificates",
+              description:
+                "If your name has changed, provide marriage certificates or legal name change documents",
+              uploaded:
+                uploadedFiles.filter((f: any) => f.category === "IDENTITY")
+                  .length >= 2,
+              required: false,
+              helpText:
+                "Only required if name has changed from birth certificate",
+            },
+            {
+              category: "PROOF_OF_RESIDENCE",
+              label: "Proof of Physical Presence (2+ documents)",
+              description:
+                "Tax records, property records, school enrollment, utility bills, employment records, etc.",
+              uploaded:
+                uploadedFiles.filter((f: any) =>
+                  [
+                    "PROOF_OF_RESIDENCE",
+                    "UTILITY_BILL",
+                    "TAX_RETURN",
+                    "SCHOOL_RECORDS",
+                    "MORTGAGE_STATEMENT",
+                    "EMPLOYMENT_RECORDS",
+                  ].includes(f.category || "")
+                ).length >= 2,
+              required: true,
+              helpText:
+                "Need at least 2 documents showing presence in affected area during exposure period",
+            },
+            {
+              category: "MEDICAL_RECORDS",
+              label: "Medical Records Showing Cancer Diagnosis",
+              description:
+                "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
+              uploaded: uploadedFiles.some(
+                (f: any) =>
+                  f.category === "MEDICAL_RECORDS" ||
+                  f.category === "PATHOLOGY_REPORT"
+              ),
+              required: true,
+              helpText:
+                "See RECA form pages 18-24 for specific documents accepted for each disease type",
+            }
+          );
+        } else {
+          // Generic requirements for other claim types
+          requirements.push(
+            {
+              category: "IDENTITY",
+              label: "Identification Documents",
+              description:
+                "Birth certificate, death certificate, marriage certificates as applicable",
+              uploaded: uploadedFiles.some(
+                (f: any) => f.category === "IDENTITY"
+              ),
+              required: true,
+              helpText: "Required to establish identity and relationships",
+            },
+            {
+              category: "MEDICAL_RECORDS",
+              label: "Medical Records",
+              description: "Medical documentation relevant to your claim type",
+              uploaded: uploadedFiles.some(
+                (f: any) => f.category === "MEDICAL_RECORDS"
+              ),
+              required: true,
+              helpText:
+                "Requirements vary by claim type - refer to your RECA form instructions",
+            }
+          );
+        }
+
+        setRequiredDocs(requirements);
+      } catch (error) {
+        console.error("Failed to load requirements:", error);
+      }
+    },
+    []
+  );
+
+  const loadUserSession = useCallback(async () => {
+    setLoading(true);
     try {
       // Get user's intake session
       const response = await fetch("/api/portal/claims");
@@ -71,113 +174,15 @@ export default function DocumentsPortal() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadDocumentRequirements]);
 
-  const loadDocumentRequirements = async (
-    sessionId: string,
-    claimType?: string
-  ) => {
-    try {
-      // Fetch uploaded files
-      const response = await fetch(`/api/documents?sessionId=${sessionId}`);
-      if (!response.ok) return;
-
-      const data = await response.json();
-      const uploadedFiles = data.files || [];
-      setUploadedCount(uploadedFiles.length);
-
-      // Define required documents based on claim type
-      const requirements: RequiredDocument[] = [];
-
-      if (claimType === "DOWNWINDER") {
-        requirements.push(
-          {
-            category: "IDENTITY",
-            label: "Birth Certificate",
-            description:
-              "Your birth certificate (or death certificate if filing for deceased person)",
-            uploaded: uploadedFiles.some((f: any) => f.category === "IDENTITY"),
-            required: true,
-            helpText: "Required to establish identity and eligibility",
-          },
-          {
-            category: "IDENTITY",
-            label: "Marriage/Name Change Certificates",
-            description:
-              "If your name has changed, provide marriage certificates or legal name change documents",
-            uploaded:
-              uploadedFiles.filter((f: any) => f.category === "IDENTITY")
-                .length >= 2,
-            required: false,
-            helpText:
-              "Only required if name has changed from birth certificate",
-          },
-          {
-            category: "PROOF_OF_RESIDENCE",
-            label: "Proof of Physical Presence (2+ documents)",
-            description:
-              "Tax records, property records, school enrollment, utility bills, employment records, etc.",
-            uploaded:
-              uploadedFiles.filter((f: any) =>
-                [
-                  "PROOF_OF_RESIDENCE",
-                  "UTILITY_BILL",
-                  "TAX_RETURN",
-                  "SCHOOL_RECORDS",
-                  "MORTGAGE_STATEMENT",
-                  "EMPLOYMENT_RECORDS",
-                ].includes(f.category || "")
-              ).length >= 2,
-            required: true,
-            helpText:
-              "Need at least 2 documents showing presence in affected area during exposure period",
-          },
-          {
-            category: "MEDICAL_RECORDS",
-            label: "Medical Records Showing Cancer Diagnosis",
-            description:
-              "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
-            uploaded: uploadedFiles.some(
-              (f: any) =>
-                f.category === "MEDICAL_RECORDS" ||
-                f.category === "PATHOLOGY_REPORT"
-            ),
-            required: true,
-            helpText:
-              "See RECA form pages 18-24 for specific documents accepted for each disease type",
-          }
-        );
-      } else {
-        // Generic requirements for other claim types
-        requirements.push(
-          {
-            category: "IDENTITY",
-            label: "Identification Documents",
-            description:
-              "Birth certificate, death certificate, marriage certificates as applicable",
-            uploaded: uploadedFiles.some((f: any) => f.category === "IDENTITY"),
-            required: true,
-            helpText: "Required to establish identity and relationships",
-          },
-          {
-            category: "MEDICAL_RECORDS",
-            label: "Medical Records",
-            description: "Medical documentation relevant to your claim type",
-            uploaded: uploadedFiles.some(
-              (f: any) => f.category === "MEDICAL_RECORDS"
-            ),
-            required: true,
-            helpText:
-              "Requirements vary by claim type - refer to your RECA form instructions",
-          }
-        );
-      }
-
-      setRequiredDocs(requirements);
-    } catch (error) {
-      console.error("Failed to load requirements:", error);
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login?callbackUrl=/portal/documents");
+    } else if (status === "authenticated") {
+      void loadUserSession();
     }
-  };
+  }, [status, router, loadUserSession]);
 
   const handleUploadComplete = () => {
     // Refresh the dashboard

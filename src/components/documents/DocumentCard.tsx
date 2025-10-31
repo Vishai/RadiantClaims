@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   FileText,
   Image as ImageIcon,
@@ -15,6 +16,7 @@ import {
   Clock,
   AlertCircle,
   Mail,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +34,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { AIIntelligenceModal } from "./AIIntelligenceModal";
+
+interface AIIntelligence {
+  ocrConfidence?: number;
+  textLength?: number;
+  aiCategory?: string;
+  aiCategoryConfidence?: number;
+  aiReasoning?: string;
+  tags?: Array<{ tag: string; confidence: number }>;
+  qualityScore?: number;
+  recommendations?: string[];
+  pageCount?: number;
+}
 
 interface DocumentCardProps {
   id: string;
@@ -45,6 +60,7 @@ interface DocumentCardProps {
   isRequired?: boolean;
   requiresOriginal?: boolean;
   rejectionReason?: string | null;
+  aiIntelligence?: AIIntelligence;
   onView?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
@@ -64,6 +80,7 @@ export function DocumentCard({
   isRequired = false,
   requiresOriginal = false,
   rejectionReason,
+  aiIntelligence,
   onView,
   onDownload,
   onDelete,
@@ -71,6 +88,7 @@ export function DocumentCard({
   className,
 }: DocumentCardProps) {
   const [imageError, setImageError] = useState(false);
+  const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false);
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return ImageIcon;
@@ -162,10 +180,13 @@ export function DocumentCard({
             {/* Thumbnail or Icon */}
             <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-sage-100">
               {thumbnailKey && !imageError ? (
-                <img
+                <Image
                   src={`/api/documents/${id}/thumbnail`}
                   alt={originalFilename}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                  unoptimized
                   onError={() => setImageError(true)}
                 />
               ) : (
@@ -295,6 +316,69 @@ export function DocumentCard({
             </div>
           )}
 
+          {/* AI Intelligence Section - Compact */}
+          {aiIntelligence && status === "READY" && (
+            <div className="space-y-2 rounded-lg border border-indigo-200 bg-indigo-50/30 p-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-medium text-indigo-900">
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                  AI Analysis
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-indigo-700">
+                  {aiIntelligence.ocrConfidence !== undefined && (
+                    <Badge
+                      variant="outline"
+                      className="h-5 border-indigo-300 bg-indigo-100 px-1.5 text-[10px]"
+                    >
+                      {(aiIntelligence.ocrConfidence * 100).toFixed(0)}% OCR
+                    </Badge>
+                  )}
+                  {aiIntelligence.pageCount !== undefined && (
+                    <span className="text-indigo-600">
+                      {aiIntelligence.pageCount}pg
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Smart Tags - Most Important First */}
+              {aiIntelligence.tags && aiIntelligence.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {aiIntelligence.tags.slice(0, 3).map((tag) => (
+                    <Badge
+                      key={tag.tag}
+                      variant="outline"
+                      className="h-5 border-amber-300 bg-amber-50 px-1.5 text-[10px] text-amber-700"
+                      title={`${(tag.confidence * 100).toFixed(0)}% confidence`}
+                    >
+                      {tag.tag.replace(/_/g, " ")}
+                    </Badge>
+                  ))}
+                  {aiIntelligence.tags.length > 3 && (
+                    <Badge
+                      variant="outline"
+                      className="h-5 border-gray-300 bg-gray-50 px-1.5 text-[10px] text-gray-600"
+                    >
+                      +{aiIntelligence.tags.length - 3}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="flex gap-2 pt-2">
             {onView && (
@@ -320,8 +404,28 @@ export function DocumentCard({
               </Button>
             )}
           </div>
+
+          {/* AI Intelligence Button - Show if document has intelligence */}
+          {status === "READY" && aiIntelligence && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIntelligenceModalOpen(true)}
+              className="w-full rounded-full border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
+            >
+              <Sparkles className="mr-1 h-3 w-3" />
+              View AI Intelligence
+            </Button>
+          )}
         </div>
       </CardContent>
+
+      {/* AI Intelligence Modal */}
+      <AIIntelligenceModal
+        documentId={id}
+        isOpen={intelligenceModalOpen}
+        onClose={() => setIntelligenceModalOpen(false)}
+      />
     </Card>
   );
 }

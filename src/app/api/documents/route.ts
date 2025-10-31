@@ -27,27 +27,68 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get uploaded files for this session
+    // Get uploaded files for this session with AI intelligence data
     const files = await db.uploadedFile.findMany({
       where: {
         intakeSessionId: sessionId,
-        status: "READY",
       },
       orderBy: {
         uploadedAt: "desc",
       },
-      select: {
-        id: true,
-        category: true,
-        originalFilename: true,
-        fileKey: true,
-        sizeBytes: true,
-        uploadedAt: true,
-        requiresOriginal: true,
+      include: {
+        tags: {
+          select: {
+            tag: true,
+            confidence: true,
+          },
+          orderBy: {
+            confidence: "desc",
+          },
+        },
       },
     });
 
-    return NextResponse.json({ files });
+    // Transform files to include parsed AI intelligence
+    const filesWithIntelligence = files.map((file) => {
+      let aiIntelligence = null;
+
+      // Parse metadata if file is processed
+      if (file.status === "READY" && file.metadata) {
+        try {
+          const metadata = JSON.parse(file.metadata);
+          aiIntelligence = {
+            ocrConfidence: file.ocrConfidence,
+            textLength: file.ocrText?.length || 0,
+            aiCategory: metadata.aiCategorization?.suggestedCategory,
+            aiCategoryConfidence: metadata.aiCategorization?.confidence,
+            aiReasoning: metadata.aiCategorization?.reasoning,
+            tags: file.tags,
+            qualityScore: metadata.qualityMetrics?.qualityScore,
+            recommendations: metadata.qualityMetrics?.recommendations,
+            pageCount: metadata.pageCount,
+          };
+        } catch (error) {
+          console.error("Failed to parse metadata for file:", file.id, error);
+        }
+      }
+
+      return {
+        id: file.id,
+        category: file.category,
+        originalFilename: file.originalFilename,
+        fileKey: file.fileKey,
+        mimeType: file.mimeType,
+        sizeBytes: file.sizeBytes,
+        status: file.status,
+        uploadedAt: file.uploadedAt,
+        requiresOriginal: file.requiresOriginal,
+        thumbnailKey: file.thumbnailKey,
+        rejectionReason: file.rejectionReason,
+        aiIntelligence,
+      };
+    });
+
+    return NextResponse.json({ files: filesWithIntelligence });
   } catch (error) {
     console.error("Failed to fetch documents:", error);
     return NextResponse.json(
