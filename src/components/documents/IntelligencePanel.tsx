@@ -189,7 +189,6 @@ export function IntelligencePanel({
   const {
     ocrConfidence,
     textLength,
-    category,
     qualityScore,
     tags,
     recommendations,

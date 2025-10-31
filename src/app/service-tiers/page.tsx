@@ -49,7 +49,32 @@ export default function ServiceTiersPage() {
     try {
       sessionStorage.setItem("selectedServiceTier", "DIY_PREP");
       sessionStorage.setItem("diy_terms_accepted", "true");
-      router.push("/reca/start?tier=diy");
+
+      // Create subscription record via API
+      const response = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: "DIY_PREP",
+          policyType: "TERMS_OF_SERVICE",
+          policyVersion: "1.0",
+          ipAddress: window.location.hostname,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create subscription");
+      }
+
+      const data = await response.json();
+
+      // Redirect to Stripe checkout for payment
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        // Fallback to portal if no checkout needed
+        router.push("/portal");
+      }
     } catch (error) {
       console.error("Error:", error);
       alert("Failed to continue. Please try again.");
@@ -62,7 +87,25 @@ export default function ServiceTiersPage() {
     try {
       sessionStorage.setItem("selectedServiceTier", "LEGAL_REP");
       sessionStorage.setItem("legal_terms_accepted", "true");
-      router.push("/reca/start?tier=legal");
+
+      // Create subscription record via API
+      const response = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: "LEGAL_REP",
+          policyType: "TERMS_OF_SERVICE",
+          policyVersion: "1.0",
+          ipAddress: window.location.hostname,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create subscription");
+      }
+
+      // Redirect to portal dashboard (they can start from there)
+      router.push("/portal");
     } catch (error) {
       console.error("Error:", error);
       alert("Failed to continue. Please try again.");
