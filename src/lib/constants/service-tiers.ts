@@ -66,9 +66,11 @@ export const SERVICE_TIERS = {
     pricing: {
       setupFee: 0,
       monthlyFee: 0,
+      attorneyFeeAmount: 2000,
       attorneyFeePercentage: 2,
+      recaAwardAmount: 100000,
       attorneyFeeNote:
-        "Attorney fees (2% of award) are paid directly by the Department of Justice. This is governed by federal RECA regulations.",
+        "Attorney fees are limited to 2% of the $100,000 RECA award ($2,000) and are paid directly by the Department of Justice. This is governed by federal RECA regulations (42 U.S.C. § 2210 note).",
       currency: "USD",
     },
 

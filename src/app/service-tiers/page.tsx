@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   CheckCircle,
   Heart,
@@ -22,30 +23,48 @@ import {
 } from "lucide-react";
 import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
+import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
+import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
 
 export default function ServiceTiersPage() {
   const router = useRouter();
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [showDIYAgreement, setShowDIYAgreement] = useState(false);
+  const [showLegalAgreement, setShowLegalAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
     setSelectedTier(tierId);
+
+    // Show appropriate agreement dialog
+    if (tierId === "DIY_PREP") {
+      setShowDIYAgreement(true);
+    } else {
+      setShowLegalAgreement(true);
+    }
+  };
+
+  const handleDIYAccept = async () => {
     setIsLoading(true);
-
     try {
-      // Store tier selection in session storage for next step
-      sessionStorage.setItem("selectedServiceTier", tierId);
-
-      // Route based on tier selection
-      if (tierId === "DIY_PREP") {
-        // DIY path: Go to payment/signup page
-        router.push("/reca/start?tier=diy");
-      } else {
-        // Legal path: Go to RECA start (no payment required)
-        router.push("/reca/start?tier=legal");
-      }
+      sessionStorage.setItem("selectedServiceTier", "DIY_PREP");
+      sessionStorage.setItem("diy_terms_accepted", "true");
+      router.push("/reca/start?tier=diy");
     } catch (error) {
-      console.error("Error selecting tier:", error);
+      console.error("Error:", error);
+      alert("Failed to continue. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleLegalAccept = async () => {
+    setIsLoading(true);
+    try {
+      sessionStorage.setItem("selectedServiceTier", "LEGAL_REP");
+      sessionStorage.setItem("legal_terms_accepted", "true");
+      router.push("/reca/start?tier=legal");
+    } catch (error) {
+      console.error("Error:", error);
       alert("Failed to continue. Please try again.");
       setIsLoading(false);
     }
@@ -482,6 +501,36 @@ export default function ServiceTiersPage() {
           </div>
         </div>
       </footer>
+
+      {/* DIY Terms Agreement Dialog */}
+      <Dialog open={showDIYAgreement} onOpenChange={setShowDIYAgreement}>
+        <DialogContent className="max-w-4xl rounded-3xl">
+          <DIYTermsAgreement
+            onAccept={handleDIYAccept}
+            onDecline={() => {
+              setShowDIYAgreement(false);
+              setSelectedTier(null);
+              setIsLoading(false);
+            }}
+            isLoading={isLoading}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Legal Representation Agreement Dialog */}
+      <Dialog open={showLegalAgreement} onOpenChange={setShowLegalAgreement}>
+        <DialogContent className="max-w-4xl rounded-3xl">
+          <LegalRepresentationAgreement
+            onAccept={handleLegalAccept}
+            onDecline={() => {
+              setShowLegalAgreement(false);
+              setSelectedTier(null);
+              setIsLoading(false);
+            }}
+            isLoading={isLoading}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

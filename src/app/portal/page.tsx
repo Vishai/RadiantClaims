@@ -24,6 +24,7 @@ import {
   Key,
   Upload,
   BookOpen,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -156,6 +157,14 @@ export default function CustomerPortal() {
             <span className="text-sm text-sage-600">
               {session?.user?.name || session?.user?.email}
             </span>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/portal/subscription")}
+              className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+            >
+              <CreditCard className="h-4 w-4" />
+              Subscription
+            </Button>
             <Button
               variant="outline"
               onClick={() => router.push("/portal/change-password")}
