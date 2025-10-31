@@ -73,16 +73,29 @@ export async function POST(req: NextRequest) {
     const fileKey = `${sessionId}/${nanoid()}.${fileExtension}`;
 
     // Upload to Vercel Blob (or your storage provider)
-    const blob = await put(fileKey, file, {
-      access: "public",
-      addRandomSuffix: false,
-    });
+    let blobUrl: string;
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      // Production: Use Vercel Blob
+      const blob = await put(fileKey, file, {
+        access: "public",
+        addRandomSuffix: false,
+      });
+      blobUrl = blob.url;
+    } else {
+      // Development: Mock storage (just use a data URL for now)
+      console.warn(
+        "BLOB_READ_WRITE_TOKEN not set - using mock storage for development"
+      );
+      const buffer = Buffer.from(await file.arrayBuffer());
+      blobUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
+    }
 
     // Create database record
     const uploadedFile = await db.uploadedFile.create({
       data: {
         intakeSessionId: sessionId,
-        fileKey: blob.url, // Store the blob URL as fileKey
+        fileKey: blobUrl, // Store the blob URL as fileKey
         originalFilename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
