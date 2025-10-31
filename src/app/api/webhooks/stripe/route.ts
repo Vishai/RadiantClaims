@@ -1,0 +1,381 @@
+/**
+ * Stripe Webhook Handler
+ *
+ * Handles all Stripe webhook events including:
+ * - checkout.session.completed (setup fee paid)
+ * - invoice.payment_succeeded (monthly payment successful)
+ * - invoice.payment_failed (monthly payment failed)
+ * - customer.subscription.deleted (subscription canceled)
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import Stripe from "stripe";
+import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
+import { addMonths } from "date-fns";
+
+export async function POST(req: NextRequest) {
+  const body = await req.text();
+  const signature = headers().get("stripe-signature");
+
+  if (!signature) {
+    return NextResponse.json(
+      { error: "No signature provided" },
+      { status: 400 }
+    );
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      STRIPE_CONFIG.WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("⚠️  Webhook signature verification failed:", err);
+    return NextResponse.json(
+      { error: "Webhook signature verification failed" },
+      { status: 400 }
+    );
+  }
+
+  console.log(`✅ Webhook received: ${event.type}`);
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(
+          event.data.object as Stripe.Checkout.Session
+        );
+        break;
+
+      case "invoice.payment_succeeded":
+        await handleInvoicePaymentSucceeded(
+          event.data.object as Stripe.Invoice
+        );
+        break;
+
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription
+        );
+        break;
+
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription
+        );
+        break;
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("Error handling webhook:", error);
+    return NextResponse.json(
+      {
+        error: "Webhook handler failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Handle checkout.session.completed
+ * This fires when the setup fee payment is successful
+ */
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const { userId, subscriptionId, intakeSessionId, paymentType } =
+    session.metadata || {};
+
+  if (!userId || !subscriptionId) {
+    console.error("Missing metadata in checkout session");
+    return;
+  }
+
+  console.log(`💰 Checkout completed for user ${userId}`);
+
+  // Update subscription
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      setupFeePaid: true,
+      setupFeePaidAt: new Date(),
+      status: "ACTIVE",
+    },
+  });
+
+  // Update payment record
+  if (session.payment_intent) {
+    await prisma.payment.updateMany({
+      where: {
+        subscriptionId,
+        stripePaymentIntentId: session.payment_intent as string,
+      },
+      data: {
+        status: "COMPLETED",
+        paidAt: new Date(),
+      },
+    });
+  } else {
+    // Create payment record if it doesn't exist
+    await prisma.payment.create({
+      data: {
+        subscriptionId,
+        paymentType: "SETUP_FEE",
+        amount: 149.99,
+        currency: "USD",
+        status: "COMPLETED",
+        paidAt: new Date(),
+        stripePaymentIntentId: session.payment_intent as string,
+      },
+    });
+  }
+
+  // Create audit log
+  await prisma.auditLog.create({
+    data: {
+      userId,
+      action: "PAYMENT_SUCCEEDED",
+      resourceType: "Payment",
+      resourceId: subscriptionId,
+      ipAddress: "stripe-webhook",
+      metadata: JSON.stringify({
+        paymentType: "SETUP_FEE",
+        amount: 149.99,
+        checkoutSessionId: session.id,
+      }),
+    },
+  });
+
+  // Automatically create monthly subscription after setup fee
+  try {
+    const subscription = await prisma.serviceSubscription.findUnique({
+      where: { id: subscriptionId },
+    });
+
+    if (subscription?.stripeCustomerId && !subscription.stripeSubscriptionId) {
+      const stripeSubscription = await stripe.subscriptions.create({
+        customer: subscription.stripeCustomerId,
+        items: [{ price: STRIPE_CONFIG.DIY_MONTHLY.priceId }],
+        metadata: {
+          userId,
+          subscriptionId,
+        },
+      });
+
+      // Update with subscription ID
+      const nextBillingDate = new Date(
+        stripeSubscription.current_period_end * 1000
+      );
+      await prisma.serviceSubscription.update({
+        where: { id: subscriptionId },
+        data: {
+          stripeSubscriptionId: stripeSubscription.id,
+          billingCycleDay: nextBillingDate.getDate(),
+          nextBillingDate,
+          lastBillingDate: new Date(),
+        },
+      });
+
+      console.log(`✅ Monthly subscription created: ${stripeSubscription.id}`);
+    }
+  } catch (error) {
+    console.error("Error creating monthly subscription:", error);
+  }
+}
+
+/**
+ * Handle invoice.payment_succeeded
+ * This fires when a monthly subscription payment is successful
+ */
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+  const subscriptionId = invoice.metadata?.subscriptionId;
+
+  if (!subscriptionId) {
+    console.log("No subscriptionId in invoice metadata, skipping");
+    return;
+  }
+
+  console.log(
+    `💰 Invoice payment succeeded for subscription ${subscriptionId}`
+  );
+
+  // Create payment record
+  await prisma.payment.create({
+    data: {
+      subscriptionId,
+      paymentType: "MONTHLY_FEE",
+      amount: (invoice.amount_paid || 0) / 100,
+      currency: "USD",
+      status: "COMPLETED",
+      paidAt: new Date(),
+      stripePaymentIntentId: invoice.payment_intent as string,
+      stripeInvoiceId: invoice.id,
+    },
+  });
+
+  // Update subscription
+  const subscription = await stripe.subscriptions.retrieve(
+    invoice.subscription as string
+  );
+  const nextBillingDate = new Date(subscription.current_period_end * 1000);
+
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      status: "ACTIVE",
+      lastBillingDate: new Date(),
+      nextBillingDate,
+    },
+  });
+
+  // Create audit log
+  const userId = invoice.metadata?.userId;
+  if (userId) {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: "PAYMENT_SUCCEEDED",
+        resourceType: "Payment",
+        resourceId: subscriptionId,
+        ipAddress: "stripe-webhook",
+        metadata: JSON.stringify({
+          paymentType: "MONTHLY_FEE",
+          amount: (invoice.amount_paid || 0) / 100,
+          invoiceId: invoice.id,
+        }),
+      },
+    });
+  }
+}
+
+/**
+ * Handle invoice.payment_failed
+ * This fires when a monthly subscription payment fails
+ */
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const subscriptionId = invoice.metadata?.subscriptionId;
+
+  if (!subscriptionId) {
+    return;
+  }
+
+  console.log(`❌ Invoice payment failed for subscription ${subscriptionId}`);
+
+  // Create failed payment record
+  await prisma.payment.create({
+    data: {
+      subscriptionId,
+      paymentType: "MONTHLY_FEE",
+      amount: (invoice.amount_due || 0) / 100,
+      currency: "USD",
+      status: "FAILED",
+      failedAt: new Date(),
+      failureReason:
+        invoice.last_finalization_error?.message || "Payment failed",
+      stripePaymentIntentId: invoice.payment_intent as string,
+      stripeInvoiceId: invoice.id,
+    },
+  });
+
+  // Update subscription status to PAST_DUE
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      status: "PAST_DUE",
+    },
+  });
+
+  // Create audit log
+  const userId = invoice.metadata?.userId;
+  if (userId) {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: "PAYMENT_FAILED",
+        resourceType: "Payment",
+        resourceId: subscriptionId,
+        ipAddress: "stripe-webhook",
+        severity: "WARNING",
+        metadata: JSON.stringify({
+          paymentType: "MONTHLY_FEE",
+          amount: (invoice.amount_due || 0) / 100,
+          reason: invoice.last_finalization_error?.message,
+        }),
+      },
+    });
+  }
+}
+
+/**
+ * Handle customer.subscription.deleted
+ * This fires when a subscription is canceled
+ */
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const subscriptionId = subscription.metadata?.subscriptionId;
+
+  if (!subscriptionId) {
+    return;
+  }
+
+  console.log(`🗑️  Subscription deleted: ${subscriptionId}`);
+
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      status: "CANCELED",
+      canceledAt: new Date(),
+      cancelReason: "User canceled subscription in Stripe",
+    },
+  });
+
+  // Create audit log
+  const userId = subscription.metadata?.userId;
+  if (userId) {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: "SUBSCRIPTION_CANCELED",
+        resourceType: "ServiceSubscription",
+        resourceId: subscriptionId,
+        ipAddress: "stripe-webhook",
+        metadata: JSON.stringify({
+          canceledAt: new Date().toISOString(),
+        }),
+      },
+    });
+  }
+}
+
+/**
+ * Handle customer.subscription.updated
+ * This fires when subscription details change
+ */
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const subscriptionId = subscription.metadata?.subscriptionId;
+
+  if (!subscriptionId) {
+    return;
+  }
+
+  const nextBillingDate = new Date(subscription.current_period_end * 1000);
+
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      nextBillingDate,
+    },
+  });
+}

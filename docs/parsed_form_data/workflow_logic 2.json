@@ -1,0 +1,777 @@
+{
+  "workflow_name": "RadiantClaims RECA Downwinder Claim Assistant",
+  "version": "1.0",
+  "purpose": "Interactive guided workflow to help users complete RECA Downwinder Claim Form",
+
+  "workflow_stages": {
+    "stage_1_initial_assessment": {
+      "title": "Initial Eligibility Assessment",
+      "order": 1,
+      "questions": [
+        {
+          "id": "q1_relationship",
+          "question": "Who is filing this claim?",
+          "type": "radio",
+          "options": [
+            {
+              "value": "self",
+              "label": "I became ill with a compensable disease",
+              "next": "q2_self"
+            },
+            {
+              "value": "spouse",
+              "label": "I am the surviving spouse of someone who became ill",
+              "next": "q2_spouse"
+            },
+            {
+              "value": "child",
+              "label": "I am the surviving child of someone who became ill",
+              "next": "q2_child"
+            },
+            {
+              "value": "parent",
+              "label": "I am the parent of someone who became ill",
+              "next": "q2_parent"
+            },
+            {
+              "value": "grandchild",
+              "label": "I am the grandchild of someone who became ill",
+              "next": "q2_grandparent"
+            },
+            {
+              "value": "grandparent",
+              "label": "I am the grandparent of someone who became ill",
+              "next": "q2_grandparent"
+            }
+          ],
+          "help_text": "This determines which sections of the form you need to complete."
+        },
+        {
+          "id": "q2_self",
+          "conditional": "q1_relationship === 'self'",
+          "question": "Have you been diagnosed with one of the compensable cancers listed by RECA?",
+          "type": "radio",
+          "options": [
+            {
+              "value": "yes",
+              "label": "Yes, I have been diagnosed",
+              "next": "q3_exposure"
+            },
+            {
+              "value": "no",
+              "label": "No or I'm not sure",
+              "next": "show_disease_list"
+            }
+          ]
+        },
+        {
+          "id": "q2_spouse",
+          "conditional": "q1_relationship === 'spouse'",
+          "question": "Is the person who became ill deceased?",
+          "type": "radio",
+          "options": [
+            { "value": "yes", "label": "Yes", "next": "q2_spouse_b" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_spouse_not_deceased"
+            }
+          ],
+          "validation": "Must be YES to be eligible as surviving spouse"
+        },
+        {
+          "id": "q2_spouse_b",
+          "conditional": "q2_spouse === 'yes'",
+          "question": "Were you married to the person who became ill for at least one year immediately before their death?",
+          "type": "radio",
+          "options": [
+            { "value": "yes", "label": "Yes", "next": "q3_exposure" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_spouse_one_year"
+            }
+          ],
+          "validation": "Must be YES to be eligible as surviving spouse"
+        },
+        {
+          "id": "q2_child",
+          "conditional": "q1_relationship === 'child'",
+          "question": "Is the person who became ill deceased?",
+          "type": "radio",
+          "options": [
+            { "value": "yes", "label": "Yes", "next": "q3_exposure" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_child_not_deceased"
+            }
+          ],
+          "validation": "Must be YES to be eligible as surviving child"
+        },
+        {
+          "id": "q3_exposure",
+          "question": "Was the person who became ill physically present in a designated affected area during the required time periods?",
+          "type": "checkbox_multi",
+          "options": [
+            {
+              "value": "option_1a",
+              "label": "In a designated affected area for at least 1 year between Jan 21, 1951 - Nov 6, 1962"
+            },
+            {
+              "value": "option_1b",
+              "label": "In a designated affected area for the entire period Jun 30, 1962 - Jul 31, 1962"
+            },
+            {
+              "value": "option_2",
+              "label": "In the State of New Mexico for at least 1 year between Sep 24, 1944 - Nov 6, 1962"
+            },
+            {
+              "value": "not_sure",
+              "label": "I'm not sure / Need to see the list of areas"
+            }
+          ],
+          "help_text": "At least ONE of these must be true to be eligible.",
+          "next": "show_affected_areas"
+        }
+      ],
+      "outcomes": {
+        "eligible": {
+          "message": "Based on your answers, you appear to be eligible to file a RECA Downwinder claim. Let's proceed with completing the form.",
+          "next_stage": "stage_2_form_completion"
+        },
+        "ineligible_spouse_not_deceased": {
+          "message": "Unfortunately, to file as a surviving spouse, the person who became ill must be deceased. You are not eligible to file this claim at this time.",
+          "type": "error"
+        },
+        "ineligible_spouse_one_year": {
+          "message": "Unfortunately, to file as a surviving spouse, you must have been married to the person who became ill for at least one year immediately before their death. You are not eligible to file under this relationship category.",
+          "type": "error"
+        },
+        "ineligible_child_not_deceased": {
+          "message": "Unfortunately, to file as a surviving child, the person who became ill must be deceased. You are not eligible to file this claim at this time.",
+          "type": "error"
+        },
+        "ineligible_no_exposure": {
+          "message": "Unfortunately, to be eligible for RECA Downwinder compensation, the person who became ill must have been physically present in a designated affected area during the required time periods. Based on your answers, you may not be eligible.",
+          "type": "error",
+          "note": "Consider reviewing the affected areas list carefully or contacting RECA at 1-800-729-7327"
+        }
+      }
+    },
+
+    "stage_2_form_completion": {
+      "title": "Complete Claim Form",
+      "order": 2,
+      "description": "Step-by-step guided form completion based on relationship type",
+      "sections": {
+        "section_part_1": {
+          "form_part": "part_1",
+          "title": "Your Information",
+          "always_required": true,
+          "description": "Tell us about yourself - the person filing this claim",
+          "field_groups": [
+            {
+              "group": "name_info",
+              "title": "Name Information",
+              "fields": [
+                "first_name",
+                "middle_name",
+                "last_name",
+                "former_names"
+              ]
+            },
+            {
+              "group": "identification",
+              "title": "Identification",
+              "fields": ["ssn", "dob"],
+              "help_text": "Your Social Security Number and Date of Birth"
+            },
+            {
+              "group": "contact_info",
+              "title": "Contact Information",
+              "fields": [
+                "mailing_address",
+                "city",
+                "state",
+                "zip_code",
+                "phone_day",
+                "phone_evening",
+                "email"
+              ]
+            },
+            {
+              "group": "residence",
+              "title": "Residence (if different from mailing)",
+              "fields": ["residence_address"],
+              "optional": true
+            },
+            {
+              "group": "tribal_info",
+              "title": "Tribal Affiliation (Optional)",
+              "fields": [
+                "tribal_affiliation",
+                "tribal_census_number",
+                "tribal_assistance"
+              ],
+              "optional": true,
+              "note": "Complete if you are a member of an Indian Tribe and want RECA to request enrollment information"
+            }
+          ]
+        },
+        "section_part_2": {
+          "form_part": "part_2",
+          "title": "Information About the Person Who Became Ill",
+          "conditional": "relationship !== 'self'",
+          "description": "Provide information about the person who was diagnosed with the illness",
+          "field_groups": [
+            {
+              "group": "claimant_identity",
+              "title": "Claimant Identity",
+              "fields": [
+                "first_name",
+                "middle_name",
+                "last_name",
+                "former_names",
+                "ssn",
+                "dob",
+                "dod"
+              ]
+            }
+          ]
+        },
+        "section_part_4_5_6_7": {
+          "title": "Relationship Documentation",
+          "description": "Complete the appropriate section based on your relationship",
+          "conditional_sections": {
+            "self_filer": {
+              "form_part": "part_4",
+              "conditional": "relationship === 'self'",
+              "description": "As a self-filer, you need minimal relationship documentation",
+              "required_docs_checklist": true
+            },
+            "surviving_spouse": {
+              "form_part": "part_5",
+              "conditional": "relationship === 'spouse'",
+              "description": "Answer questions about your marriage to the person who became ill",
+              "fields_required": true,
+              "required_docs_checklist": true
+            },
+            "surviving_child": {
+              "form_part": "part_6",
+              "conditional": "relationship === 'child'",
+              "description": "Provide information about your relationship and any siblings",
+              "fields_required": true,
+              "required_docs_checklist": true,
+              "special_note": "You can expedite your claim by having siblings sign the Attached Signatures form"
+            },
+            "parent_grandparent": {
+              "form_part": "part_7",
+              "conditional": "relationship === 'parent' || relationship === 'grandchild' || relationship === 'grandparent'",
+              "description": "RECA staff will contact you for additional documentation",
+              "required_docs_checklist": true,
+              "special_note": "Submit initial documents now; staff will guide you on additional requirements"
+            }
+          }
+        },
+        "section_part_8": {
+          "form_part": "part_8",
+          "title": "Exposure Information",
+          "always_required": true,
+          "description": "Document where and when the person was physically present in affected areas",
+          "ui_components": [
+            {
+              "component": "exposure_timeline",
+              "description": "Interactive timeline showing eligible time periods"
+            },
+            {
+              "component": "affected_areas_map",
+              "description": "Map showing all designated affected areas with filters"
+            },
+            {
+              "component": "location_entry_form",
+              "description": "Add multiple locations with time periods",
+              "repeating": true
+            }
+          ],
+          "validation": {
+            "rule": "At least one location must be provided with time period meeting eligibility criteria"
+          }
+        },
+        "section_part_9": {
+          "form_part": "part_9",
+          "title": "Proof of Presence",
+          "always_required": true,
+          "description": "Upload or mail documents proving presence in affected areas",
+          "ui_components": [
+            {
+              "component": "document_types_guide",
+              "description": "Interactive list showing what documents are accepted"
+            },
+            {
+              "component": "document_uploader",
+              "description": "Upload documents (if filing electronically) or prepare checklist for mailing"
+            },
+            {
+              "component": "lds_church_request",
+              "description": "Optional checkbox for LDS Church assistance with contact information"
+            }
+          ]
+        },
+        "section_part_10": {
+          "form_part": "part_10",
+          "title": "Compensable Disease",
+          "always_required": true,
+          "description": "Select which cancer(s) the person was diagnosed with",
+          "ui_components": [
+            {
+              "component": "disease_selector",
+              "description": "Searchable/filterable list of 19 compensable cancers",
+              "multi_select": true
+            },
+            {
+              "component": "disease_info_modal",
+              "description": "Click any disease to see details and required medical records"
+            }
+          ]
+        },
+        "section_part_11": {
+          "form_part": "part_11",
+          "title": "Medical Proof of Disease",
+          "always_required": true,
+          "description": "Upload or mail medical records proving the cancer diagnosis",
+          "ui_components": [
+            {
+              "component": "medical_records_guide",
+              "description": "Disease-specific guide showing which medical records are accepted",
+              "conditional": "Based on diseases selected in Part 10"
+            },
+            {
+              "component": "medical_document_uploader",
+              "description": "Upload medical records with categorization"
+            },
+            {
+              "component": "cancer_registry_option",
+              "description": "Option to have RECA contact state cancer registry"
+            },
+            {
+              "component": "resep_clinic_info",
+              "description": "Optional field for RESEP clinic assistance information"
+            }
+          ]
+        },
+        "section_part_12": {
+          "form_part": "part_12",
+          "title": "Previous Payments",
+          "always_required": true,
+          "description": "Disclose any previous payments or claims related to this illness",
+          "fields_required": true
+        },
+        "section_part_13_14": {
+          "form_part": "part_13",
+          "title": "Attorney Representation (Optional)",
+          "description": "You are NOT required to hire an attorney. If you do, provide their information here.",
+          "conditional_fields": true,
+          "note": "Fee limitations: 2% for initial claims, 10% for resubmissions"
+        },
+        "section_part_15": {
+          "form_part": "part_15",
+          "title": "Legal Guardian (If Applicable)",
+          "conditional": "has_legal_guardian === true",
+          "description": "Only for court-appointed guardians (power of attorney does NOT qualify)"
+        },
+        "section_part_16": {
+          "form_part": "part_16",
+          "title": "Signature & Submission",
+          "always_required": true,
+          "description": "Review and sign your completed claim",
+          "ui_components": [
+            {
+              "component": "claim_summary",
+              "description": "Comprehensive review of all entered information"
+            },
+            {
+              "component": "signature_pad",
+              "description": "Electronic signature or note to print and sign"
+            },
+            {
+              "component": "submission_method_selector",
+              "description": "Choose electronic submission or generate PDF for mailing"
+            }
+          ]
+        }
+      }
+    },
+
+    "stage_3_supporting_forms": {
+      "title": "Complete Supporting Forms",
+      "order": 3,
+      "description": "Additional required and optional forms based on your claim",
+      "forms": {
+        "certification_of_identity": {
+          "always_required": true,
+          "title": "Certification of Identity and Privacy Act Release",
+          "description": "Required for all claims to verify your identity"
+        },
+        "medical_info_release": {
+          "conditional": "part_11.cancer_registry_authorization === true",
+          "title": "Authorization to Release Medical Information",
+          "description": "Required only if requesting RECA contact state cancer registry"
+        },
+        "tribal_records_release": {
+          "conditional": "part_1.tribal_affiliation !== null",
+          "title": "Release of Tribal Vital Records",
+          "description": "Required if requesting tribal enrollment information"
+        },
+        "surviving_beneficiaries_signatures": {
+          "conditional": "relationship === 'child' && user_wants_expedite === true",
+          "title": "Attached Signatures of Eligible Surviving Beneficiaries",
+          "description": "Optional form to expedite claims when filing as surviving child"
+        }
+      }
+    },
+
+    "stage_4_document_preparation": {
+      "title": "Prepare Documents for Submission",
+      "order": 4,
+      "description": "Organize required documents and prepare your submission package",
+      "steps": [
+        {
+          "step": 1,
+          "title": "Review Document Checklist",
+          "description": "See a personalized list of all required documents based on your claim type",
+          "ui_component": "dynamic_checklist",
+          "features": [
+            "Categorized by document type (vital records, medical records, presence proof)",
+            "Indicates which are REQUIRED vs OPTIONAL",
+            "Shows certification requirements (certified vs original vs photocopy)",
+            "Electronic vs mail filing differences highlighted"
+          ]
+        },
+        {
+          "step": 2,
+          "title": "Upload or Organize Documents",
+          "description": "Upload documents for electronic filing OR organize them for mailing",
+          "conditional_paths": {
+            "electronic_filing": {
+              "action": "Upload photocopies of documents",
+              "note": "Electronic filing accepts photocopies; certified/original only needed if requested later"
+            },
+            "mail_filing": {
+              "action": "Print checklist and gather certified/original documents",
+              "note": "Mail filing requires certified or original documents (photocopies not accepted)"
+            }
+          }
+        },
+        {
+          "step": 3,
+          "title": "Generate Submission Package",
+          "description": "Create your final submission",
+          "outputs": {
+            "electronic_submission": {
+              "files": [
+                "Completed claim form (digitally signed)",
+                "All required supporting forms",
+                "Uploaded documents"
+              ],
+              "action": "Submit via www.justice.gov/civil/reca portal"
+            },
+            "mail_submission": {
+              "files": [
+                "Printed claim form (hand-signed)",
+                "Printed supporting forms (signed where required)",
+                "Document submission checklist",
+                "Cover letter (auto-generated)"
+              ],
+              "action": "Mail to: RECA Program, P.O. Box 146, Ben Franklin Station, Washington, DC 20044-0146"
+            }
+          }
+        }
+      ]
+    },
+
+    "stage_5_review_submit": {
+      "title": "Final Review and Submission",
+      "order": 5,
+      "description": "Review everything one last time before submitting",
+      "components": {
+        "comprehensive_review": {
+          "sections": [
+            "Personal Information Summary",
+            "Claimant Information (if different from filer)",
+            "Relationship Documentation Summary",
+            "Exposure Locations and Time Periods",
+            "Compensable Disease(s) Selected",
+            "Documents Attached/To Be Mailed",
+            "Previous Payments Disclosure",
+            "Attorney Information (if applicable)",
+            "Supporting Forms Completed"
+          ]
+        },
+        "completeness_check": {
+          "validation_rules": [
+            "All required fields completed",
+            "At least one exposure location with valid time period",
+            "At least one compensable disease selected",
+            "Medical records confirmation checked",
+            "Signature provided",
+            "All conditional required documents addressed"
+          ],
+          "warnings": [
+            "Missing optional documents that could expedite claim",
+            "Recommended documents not provided"
+          ]
+        },
+        "submission_options": {
+          "electronic": {
+            "enabled": true,
+            "url": "www.justice.gov/civil/reca",
+            "advantages": [
+              "Faster processing",
+              "Photocopies accepted",
+              "Digital signature accepted",
+              "Immediate confirmation"
+            ]
+          },
+          "mail": {
+            "enabled": true,
+            "address": {
+              "line1": "Radiation Exposure Compensation Program",
+              "line2": "U.S. Department of Justice",
+              "line3": "P.O. Box 146",
+              "line4": "Ben Franklin Station",
+              "line5": "Washington, DC 20044-0146"
+            },
+            "requirements": [
+              "Must include signed original forms",
+              "Certified or original supporting documents",
+              "Keep copies for your records"
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "ui_integration_specifications": {
+    "claim_details_page": {
+      "new_button": {
+        "id": "assist_me_button",
+        "label": "Assist Me in Filling Form",
+        "position": "Below claim header, alongside existing action buttons",
+        "icon": "form_assist_icon",
+        "color": "primary",
+        "description": "Opens interactive guided workflow"
+      },
+      "existing_buttons": {
+        "continue_claim": {
+          "function": "Resume working on claim where user left off",
+          "note": "May overlap with assist_me functionality"
+        },
+        "view_details": {
+          "function": "View read-only claim information"
+        }
+      },
+      "button_relationship_analysis": {
+        "potential_overlap": {
+          "issue": "'Continue Claim' and 'Assist Me in Filling Form' may serve similar purposes",
+          "recommendation": "Clarify distinction in user experience",
+          "options": [
+            {
+              "option": "A",
+              "description": "Replace 'Continue Claim' with 'Assist Me in Filling Form'",
+              "pros": "Single clear path, no confusion",
+              "cons": "Removes direct data entry option for advanced users"
+            },
+            {
+              "option": "B",
+              "description": "Keep both but differentiate clearly",
+              "pros": "Flexible for different user types",
+              "cons": "Need clear UI distinction",
+              "implementation": {
+                "continue_claim": {
+                  "label": "Continue Claim (Direct Entry)",
+                  "description": "Resume filling out the form directly",
+                  "icon": "edit_icon"
+                },
+                "assist_me": {
+                  "label": "Guided Form Assistant",
+                  "description": "Step-by-step help with explanations",
+                  "icon": "help_wizard_icon",
+                  "badge": "Recommended"
+                }
+              }
+            },
+            {
+              "option": "C",
+              "description": "Make 'Assist Me' the default, 'Continue' for returning users",
+              "pros": "Guides new users, preserves direct access for experienced users",
+              "implementation": {
+                "logic": "If user has saved progress, show 'Continue Claim'. If new/incomplete claim, show 'Start Guided Assistant' as primary action."
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "data_persistence_strategy": {
+    "approach": "Save-as-you-go with claim record integration",
+    "details": {
+      "auto_save": {
+        "frequency": "After each completed section or every 2 minutes",
+        "storage": "Existing claim record in database",
+        "fields_added": [
+          "workflow_stage (current stage number)",
+          "workflow_section (current section within stage)",
+          "form_data_json (all entered form fields)",
+          "documents_uploaded (array of document references)",
+          "eligibility_data (screening question responses)",
+          "completion_percentage",
+          "last_updated_timestamp"
+        ]
+      },
+      "resume_capability": {
+        "behavior": "User can close and return to exact position in workflow",
+        "implementation": "Load workflow_stage and workflow_section on re-entry",
+        "visual_indicator": "Progress bar showing completion percentage"
+      },
+      "data_export": {
+        "format": "JSON to PDF mapping for final form generation",
+        "purpose": "Convert saved workflow data into official RECA form format"
+      }
+    }
+  },
+
+  "pdf_generation": {
+    "purpose": "Generate official RECA form with user's data pre-filled",
+    "use_cases": [
+      "User completes workflow but wants to mail instead of electronic submit",
+      "User wants to review full form before electronic submission",
+      "Backup/printable copy for user records"
+    ],
+    "specifications": {
+      "source_template": "RECA_Downwinder_Claim_Form.pdf (original blank form)",
+      "mapping": "Map workflow JSON fields to PDF form fields",
+      "output": "Fillable PDF or flattened PDF (user preference)",
+      "features": [
+        "All entered data pre-populated in correct fields",
+        "Checkboxes marked based on user selections",
+        "Signature fields left blank for hand signature",
+        "Generate supporting forms with data pre-filled",
+        "Include document checklist as separate page"
+      ]
+    }
+  },
+
+  "open_questions_and_decisions": {
+    "question_1": {
+      "question": "Does 'Continue Claim' workflow already exist?",
+      "implications": "If yes, need to understand overlap with new guided workflow",
+      "required_info": [
+        "What happens when user clicks 'Continue Claim'?",
+        "Is there existing form filling functionality?",
+        "How is current claim data stored?"
+      ]
+    },
+    "question_2": {
+      "question": "Should guided workflow directly modify claim records or only assist with form generation?",
+      "options": {
+        "option_a": {
+          "approach": "Direct modification",
+          "description": "Workflow saves directly to claim record as user progresses",
+          "pros": "Single source of truth, no data sync issues",
+          "cons": "Tighter coupling to database schema"
+        },
+        "option_b": {
+          "approach": "Workflow as separate assistant",
+          "description": "Workflow maintains its own state, generates forms/data at the end",
+          "pros": "Decoupled, can work offline, easier to update",
+          "cons": "Need sync mechanism, potential data duplication"
+        }
+      },
+      "recommendation": "Option A (Direct modification) for seamless user experience and data integrity"
+    },
+    "question_3": {
+      "question": "What file upload mechanism exists for documents?",
+      "required_info": [
+        "Current document storage solution (S3, database, etc.)?",
+        "File size limits?",
+        "Supported file types?",
+        "Document categorization system?"
+      ]
+    },
+    "question_4": {
+      "question": "Is electronic submission to RECA.gov API-enabled or manual upload?",
+      "implications": {
+        "if_api": "Can potentially auto-submit completed forms",
+        "if_manual": "Generate PDF for user to upload to RECA portal"
+      }
+    },
+    "question_5": {
+      "question": "Should we create a completely new UI workflow or integrate into existing claim flow?",
+      "options": {
+        "new_modal_flow": "Open assistant in modal/overlay, separate from main claim editing",
+        "integrated_inline": "Replace existing claim form with guided sections",
+        "hybrid": "Guided mode as option, traditional form still available"
+      },
+      "recommendation": "Hybrid approach - guided mode as default/recommended, direct form editing still available"
+    }
+  },
+
+  "technical_requirements": {
+    "frontend": {
+      "framework": "Based on existing RadiantClaims stack (likely React/Next.js)",
+      "state_management": "Need to handle multi-step form state with persistence",
+      "components_needed": [
+        "Multi-step form wizard",
+        "Conditional field renderer",
+        "Document uploader",
+        "Signature pad",
+        "PDF viewer/generator",
+        "Progress tracker",
+        "Validation system",
+        "Help text / tooltips system"
+      ]
+    },
+    "backend": {
+      "data_storage": "Extend existing claim table schema or create related workflow_progress table",
+      "api_endpoints_needed": [
+        "POST /api/claims/{id}/workflow/save - Save workflow progress",
+        "GET /api/claims/{id}/workflow - Load workflow state",
+        "POST /api/claims/{id}/workflow/validate - Validate section completion",
+        "POST /api/claims/{id}/generate-pdf - Generate pre-filled PDF",
+        "GET /api/workflow/disease-requirements/{diseaseId} - Get disease-specific medical record requirements"
+      ],
+      "document_handling": "Integrate with existing document upload system"
+    },
+    "pdf_generation": {
+      "libraries": [
+        "pdf-lib (for filling PDF forms)",
+        "jsPDF (for generating from scratch)",
+        "PDFKit (server-side option)"
+      ],
+      "requirements": [
+        "Map JSON form data to PDF field names",
+        "Handle checkboxes and radio buttons",
+        "Support signature field placement",
+        "Generate multi-page documents with proper formatting"
+      ]
+    }
+  },
+
+  "success_metrics": {
+    "user_experience": {
+      "completion_rate": "% of users who start workflow and complete it",
+      "time_to_complete": "Average time from start to submission",
+      "error_rate": "% of submissions with missing/incorrect information",
+      "user_satisfaction": "Rating/feedback on guided experience"
+    },
+    "operational": {
+      "claim_approval_rate": "% of assisted claims approved vs manual submissions",
+      "processing_time": "Time from submission to approval for assisted vs manual",
+      "support_tickets": "Reduction in help requests for form completion"
+    }
+  }
+}

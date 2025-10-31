@@ -12,7 +12,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, ArrowRight, CheckCircle, AlertCircle, Lock, UserPlus, Mail } from "lucide-react";
+import {
+  Heart,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+  Lock,
+  UserPlus,
+  Mail,
+} from "lucide-react";
+
+interface SubscriptionStatus {
+  hasSubscription: boolean;
+  needsToSelectTier: boolean;
+  tier: "DIY_PREP" | "LEGAL_REP" | null;
+  status: string | null;
+  canAccessForms: boolean;
+  needsPayment?: boolean;
+  setupFeePaid?: boolean;
+  referredToFirm?: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
 
 function RECAStartContent() {
   const router = useRouter();
@@ -21,6 +45,9 @@ function RECAStartContent() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthOptions, setShowAuthOptions] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatus | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
 
   useEffect(() => {
     const id = searchParams.get("sessionId");
@@ -33,10 +60,59 @@ function RECAStartContent() {
   useEffect(() => {
     if (status === "unauthenticated") {
       setShowAuthOptions(true);
+      setCheckingSubscription(false);
     }
   }, [status]);
 
+  // Check subscription status for authenticated users
+  useEffect(() => {
+    async function checkSubscription() {
+      if (status === "authenticated") {
+        try {
+          const response = await fetch("/api/subscriptions/status");
+          if (response.ok) {
+            const data = await response.json();
+            setSubscriptionStatus(data);
+          }
+        } catch (error) {
+          console.error("Error checking subscription:", error);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else if (status === "unauthenticated") {
+        setCheckingSubscription(false);
+      }
+    }
+
+    checkSubscription();
+  }, [status]);
+
   const handleStart = async (asGuest: boolean = false) => {
+    // For authenticated users, check subscription status
+    if (status === "authenticated" && subscriptionStatus) {
+      // If no subscription, redirect to tier selection
+      if (subscriptionStatus.needsToSelectTier) {
+        router.push("/service-tiers");
+        return;
+      }
+
+      // If DIY user hasn't paid, redirect to checkout
+      if (
+        subscriptionStatus.needsPayment &&
+        subscriptionStatus.tier === "DIY_PREP"
+      ) {
+        router.push("/service-tiers");
+        return;
+      }
+
+      // If can't access forms for any reason, show error
+      if (!subscriptionStatus.canAccessForms) {
+        alert("Please complete your payment to access the RECA form.");
+        router.push("/service-tiers");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -128,7 +204,7 @@ function RECAStartContent() {
                 1
               </div>
               <div>
-                <h3 className="font-semibold text-sage-900 mb-1">
+                <h3 className="mb-1 font-semibold text-sage-900">
                   Provide Your Information
                 </h3>
                 <p className="text-sm text-sage-700">
@@ -142,7 +218,7 @@ function RECAStartContent() {
                 2
               </div>
               <div>
-                <h3 className="font-semibold text-sage-900 mb-1">
+                <h3 className="mb-1 font-semibold text-sage-900">
                   Document Exposure & Disease
                 </h3>
                 <p className="text-sm text-sage-700">
@@ -156,7 +232,7 @@ function RECAStartContent() {
                 3
               </div>
               <div>
-                <h3 className="font-semibold text-sage-900 mb-1">
+                <h3 className="mb-1 font-semibold text-sage-900">
                   Review & Generate PDF
                 </h3>
                 <p className="text-sm text-sage-700">
@@ -173,27 +249,36 @@ function RECAStartContent() {
         {showAuthOptions && status === "unauthenticated" ? (
           <Card className="mb-8 rounded-3xl border-2 border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-peach-50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sage-900">Choose How to Continue</CardTitle>
+              <CardTitle className="text-sage-900">
+                Choose How to Continue
+              </CardTitle>
               <CardDescription className="text-sage-700">
-                To save your progress and track your claim, please create an account or sign in
+                To save your progress and track your claim, please create an
+                account or sign in
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <Link href="/reca/signup" className="block">
-                  <div className="h-full rounded-2xl border-2 border-terracotta-300 bg-white p-6 transition-all hover:border-terracotta-500 hover:shadow-md cursor-pointer">
+                  <div className="h-full cursor-pointer rounded-2xl border-2 border-terracotta-300 bg-white p-6 transition-all hover:border-terracotta-500 hover:shadow-md">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-terracotta-100">
                       <UserPlus className="h-6 w-6 text-terracotta-600" />
                     </div>
-                    <h3 className="mb-2 font-semibold text-sage-900">Create Account</h3>
-                    <p className="text-sm text-sage-700 mb-3">
+                    <h3 className="mb-2 font-semibold text-sage-900">
+                      Create Account
+                    </h3>
+                    <p className="mb-3 text-sm text-sage-700">
                       Unlock powerful tracking tools and save your progress
                     </p>
                     <div className="space-y-1.5 text-xs text-sage-600">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-3 w-3 text-emerald-600" />
-                        <span className="font-medium text-emerald-900">Payout Pulse</span>
-                        <span className="text-sage-600">- Track payout timeline</span>
+                        <span className="font-medium text-emerald-900">
+                          Payout Pulse
+                        </span>
+                        <span className="text-sage-600">
+                          - Track payout timeline
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-3 w-3 text-emerald-600" />
@@ -212,13 +297,16 @@ function RECAStartContent() {
                 </Link>
 
                 <Link href="/login?callbackUrl=/reca/start" className="block">
-                  <div className="h-full rounded-2xl border-2 border-sage-300 bg-white p-6 transition-all hover:border-sage-500 hover:shadow-md cursor-pointer">
+                  <div className="h-full cursor-pointer rounded-2xl border-2 border-sage-300 bg-white p-6 transition-all hover:border-sage-500 hover:shadow-md">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-sage-100">
                       <Lock className="h-6 w-6 text-sage-600" />
                     </div>
-                    <h3 className="mb-2 font-semibold text-sage-900">Sign In</h3>
+                    <h3 className="mb-2 font-semibold text-sage-900">
+                      Sign In
+                    </h3>
                     <p className="text-sm text-sage-700">
-                      Already have an account? Log in to continue your existing claim
+                      Already have an account? Log in to continue your existing
+                      claim
                     </p>
                   </div>
                 </Link>
@@ -237,11 +325,14 @@ function RECAStartContent() {
 
               <div className="rounded-2xl border-2 border-cream-300 bg-white p-6">
                 <div className="mb-4 flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+                  <Mail className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
                   <div>
-                    <h3 className="mb-1 font-semibold text-sage-900">Continue as Guest</h3>
+                    <h3 className="mb-1 font-semibold text-sage-900">
+                      Continue as Guest
+                    </h3>
                     <p className="text-sm text-sage-700">
-                      Start without an account. You'll receive a magic link via email to resume later.
+                      Start without an account. You'll receive a magic link via
+                      email to resume later.
                     </p>
                   </div>
                 </div>
@@ -254,7 +345,8 @@ function RECAStartContent() {
                   {isLoading ? "Loading..." : "Continue as Guest"}
                 </Button>
                 <p className="mt-3 text-xs text-sage-600">
-                  Note: Guest sessions expire after 7 days. We recommend creating an account for the best experience.
+                  Note: Guest sessions expire after 7 days. We recommend
+                  creating an account for the best experience.
                 </p>
               </div>
             </CardContent>
@@ -265,13 +357,13 @@ function RECAStartContent() {
             <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
                   <div className="text-sm text-sage-700">
-                    <p className="font-semibold mb-1">Your Progress is Saved</p>
+                    <p className="mb-1 font-semibold">Your Progress is Saved</p>
                     <p>
-                      Don't worry about completing everything in one sitting. Your
-                      progress is automatically saved every 2 minutes. You can return
-                      anytime to continue where you left off.
+                      Don't worry about completing everything in one sitting.
+                      Your progress is automatically saved every 2 minutes. You
+                      can return anytime to continue where you left off.
                     </p>
                   </div>
                 </div>
@@ -284,14 +376,14 @@ function RECAStartContent() {
         <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
               <div className="text-sm text-sage-700">
-                <p className="font-semibold mb-1">Time Estimate</p>
+                <p className="mb-1 font-semibold">Time Estimate</p>
                 <p>
-                  Plan for approximately 45-60 minutes to complete the form. Have
-                  the following ready:
+                  Plan for approximately 45-60 minutes to complete the form.
+                  Have the following ready:
                 </p>
-                <ul className="mt-2 ml-4 list-disc space-y-1">
+                <ul className="ml-4 mt-2 list-disc space-y-1">
                   <li>Birth certificates and Social Security numbers</li>
                   <li>Information about exposure locations and dates</li>
                   <li>Medical records or diagnosis information</li>
@@ -305,18 +397,99 @@ function RECAStartContent() {
         {/* Start Button - Only show for authenticated users */}
         {status === "authenticated" && (
           <div className="text-center">
-            <Button
-              size="lg"
-              onClick={() => handleStart(false)}
-              disabled={isLoading}
-              className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
-            >
-              {isLoading ? "Loading..." : "Start RECA Form"}
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <p className="mt-4 text-sm text-sage-600">
-              Estimated time: 45-60 minutes • Auto-saves your progress
-            </p>
+            {checkingSubscription ? (
+              <div className="py-8">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+                <p className="mt-4 text-sage-600">
+                  Checking your subscription...
+                </p>
+              </div>
+            ) : subscriptionStatus?.needsToSelectTier ? (
+              <div className="space-y-4">
+                <Card className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-peach-50 shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                      <div className="text-sm text-sage-700">
+                        <p className="mb-1 font-semibold">Choose Your Path</p>
+                        <p>
+                          Before you can start your RECA claim, please select
+                          your service tier.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Button
+                  size="lg"
+                  onClick={() => router.push("/service-tiers")}
+                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
+                >
+                  Choose Your Service Tier
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : subscriptionStatus?.needsPayment ? (
+              <div className="space-y-4">
+                <Card className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-peach-50 shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <Lock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                      <div className="text-sm text-sage-700">
+                        <p className="mb-1 font-semibold">Payment Required</p>
+                        <p>
+                          Complete your payment to unlock access to the RECA
+                          form builder.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Button
+                  size="lg"
+                  onClick={() => router.push("/service-tiers")}
+                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
+                >
+                  Complete Payment
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : subscriptionStatus?.canAccessForms ? (
+              <>
+                <Button
+                  size="lg"
+                  onClick={() => handleStart(false)}
+                  disabled={isLoading}
+                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
+                >
+                  {isLoading ? "Loading..." : "Start RECA Form"}
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+                <p className="mt-4 text-sm text-sage-600">
+                  Estimated time: 45-60 minutes • Auto-saves your progress
+                </p>
+                {subscriptionStatus.tier === "LEGAL_REP" &&
+                  subscriptionStatus.referredToFirm && (
+                    <Card className="mt-6 rounded-3xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                          <div className="text-sm text-sage-700">
+                            <p className="mb-1 font-semibold">
+                              Legal Representation Active
+                            </p>
+                            <p>
+                              Your case has been referred to{" "}
+                              {subscriptionStatus.referredToFirm.name}. They
+                              will be in touch soon to discuss your claim.
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+              </>
+            ) : null}
           </div>
         )}
 
@@ -350,14 +523,16 @@ function RECAStartContent() {
 
 export default function RECAStartPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-cream-50">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
-          <p className="mt-4 text-sage-600">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-cream-50">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+            <p className="mt-4 text-sage-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <RECAStartContent />
     </Suspense>
   );

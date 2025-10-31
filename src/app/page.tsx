@@ -25,7 +25,7 @@ export default function HomePage() {
           </div>
           <Link href="/login">
             <Button variant="outline" className="border-sage-300 text-sage-700">
-              Admin Login
+              Login
             </Button>
           </Link>
         </div>
@@ -47,8 +47,8 @@ export default function HomePage() {
                 <span className="font-semibold text-terracotta-600">
                   $100,000 RECA compensation
                 </span>
-                . We prepare your documents, partner attorneys handle the filing.
-                You keep 98% of your award.
+                . Choose from DIY document preparation or full legal
+                representation with Heritage Law Offices.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/eligibility">
@@ -59,21 +59,61 @@ export default function HomePage() {
                     Check Eligibility
                   </Button>
                 </Link>
-                <Link href="/reca/start">
+                <Link href="/service-tiers">
                   <Button
                     size="lg"
                     variant="outline"
                     className="rounded-full border-2 border-sage-300 px-8 py-6 text-lg font-medium text-sage-700 hover:bg-sage-50"
                   >
-                    Start Your Free Claim Packet
+                    Choose Your Path
                   </Button>
                 </Link>
               </div>
-              <p className="mt-6 mb-8 text-sm text-sage-600">
-                <strong>Important:</strong> RadiantClaims provides document
-                preparation only. Legal representation is provided by our partner
-                law firm. We are not your attorney.
-              </p>
+
+              {/* Two Path Messaging */}
+              <div className="mx-auto mt-8 max-w-3xl rounded-lg border-2 border-sage-200 bg-sage-50 p-6">
+                <h3 className="mb-4 text-center font-semibold text-sage-900">
+                  Two Ways to File Your Claim
+                </h3>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-lg border border-cream-200 bg-white p-4">
+                    <p className="mb-2 font-semibold text-sage-900">
+                      PATH 1: DIY Prep
+                    </p>
+                    <p className="mb-2 text-sm text-sage-700">
+                      $149.99 setup + $24.99/month
+                    </p>
+                    <p className="text-xs text-sage-600">
+                      We prepare your documents. You file with DOJ.
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-cream-200 bg-white p-4">
+                    <p className="mb-2 font-semibold text-sage-900">
+                      PATH 2: Legal Rep
+                    </p>
+                    <p className="mb-2 text-sm text-sage-700">
+                      No upfront cost
+                    </p>
+                    <p className="text-xs text-sage-600">
+                      Heritage Law Offices reviews and files for you.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-sage-200 pt-4">
+                  <p className="text-xs text-sage-600">
+                    <strong>Document Prep:</strong> RadiantClaims provides
+                    document preparation services only. We are not a law firm
+                    and do not provide legal advice.
+                    <br />
+                    <strong>Legal Services:</strong> Provided by Heritage Law
+                    Offices, a licensed law firm. Standard 2% RECA attorney fee
+                    applies (paid by DOJ).
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -95,9 +135,9 @@ export default function HomePage() {
                       ✓
                     </div>
                     <div className="text-sage-800">
-                      <strong>Lived</strong> in Utah, Idaho, New Mexico, Arizona,
-                      or Nevada for at least 1 year between January 1951 -
-                      November 1962
+                      <strong>Lived</strong> in Utah, Idaho, New Mexico,
+                      Arizona, or Nevada for at least 1 year between January
+                      1951 - November 1962
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -105,8 +145,9 @@ export default function HomePage() {
                       ✓
                     </div>
                     <div className="text-sage-800">
-                      <strong>Diagnosed</strong> with a covered cancer (leukemia,
-                      thyroid, breast, lung, colon, brain, and others)
+                      <strong>Diagnosed</strong> with a covered cancer
+                      (leukemia, thyroid, breast, lung, colon, brain, and
+                      others)
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
@@ -142,8 +183,9 @@ export default function HomePage() {
 
               <div className="rounded-3xl bg-white p-8 shadow-sm md:p-12">
                 <p className="mb-6 text-lg leading-relaxed text-sage-700">
-                  The <strong>Radiation Exposure Compensation Act (RECA)</strong>{" "}
-                  is a federal program that provides{" "}
+                  The{" "}
+                  <strong>Radiation Exposure Compensation Act (RECA)</strong> is
+                  a federal program that provides{" "}
                   <span className="font-semibold text-terracotta-600">
                     $100,000 tax-free payments
                   </span>{" "}
@@ -257,8 +299,8 @@ export default function HomePage() {
                   <CardContent className="text-center">
                     <p className="text-sm leading-relaxed text-sage-700">
                       Connect with trusted financial advisors to protect your
-                      award and build long-term security—while maintaining benefit
-                      eligibility.
+                      award and build long-term security—while maintaining
+                      benefit eligibility.
                     </p>
                   </CardContent>
                 </Card>
@@ -280,9 +322,9 @@ export default function HomePage() {
                 Know Someone Who May Qualify?
               </h2>
               <p className="mb-8 text-center text-lg leading-relaxed text-sage-700">
-                Help us connect eligible families and receive $50 when their claim
-                packet is approved by the Department of Justice. Every referral
-                helps a family access the benefits they deserve.
+                Help us connect eligible families and receive $50 when their
+                claim packet is approved by the Department of Justice. Every
+                referral helps a family access the benefits they deserve.
               </p>
               <div className="flex justify-center">
                 <Link href="/referral-program">

@@ -13,7 +13,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, FileText, CheckCircle, Clock, AlertCircle, Plus, Key } from "lucide-react";
+import {
+  Heart,
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Plus,
+  Key,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 
 interface Claimant {
@@ -65,7 +74,10 @@ export default function CustomerPortal() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
+    const statusConfig: Record<
+      string,
+      { label: string; className: string; icon: any }
+    > = {
       DRAFT: {
         label: "Draft",
         className: "bg-sage-100 text-sage-700 border-sage-200",
@@ -93,7 +105,8 @@ export default function CustomerPortal() {
       },
       SUBMITTED: {
         label: "Submitted",
-        className: "bg-terracotta-100 text-terracotta-700 border-terracotta-200",
+        className:
+          "bg-terracotta-100 text-terracotta-700 border-terracotta-200",
         icon: CheckCircle,
       },
     };
@@ -103,7 +116,7 @@ export default function CustomerPortal() {
 
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${config?.className || ''}`}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${config?.className || ""}`}
       >
         {Icon && <Icon className="h-3.5 w-3.5" />}
         {config?.label}
@@ -131,7 +144,9 @@ export default function CustomerPortal() {
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
               <Heart className="h-5 w-5 text-white" fill="white" />
             </div>
-            <span className="text-2xl font-bold text-sage-800">RadiantClaims</span>
+            <span className="text-2xl font-bold text-sage-800">
+              RadiantClaims
+            </span>
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-sm text-sage-600">
@@ -199,7 +214,8 @@ export default function CustomerPortal() {
                         {claim.firstName} {claim.lastName}
                       </CardTitle>
                       <CardDescription className="text-sage-600">
-                        Started on {new Date(claim.createdAt).toLocaleDateString()}
+                        Started on{" "}
+                        {new Date(claim.createdAt).toLocaleDateString()}
                       </CardDescription>
                     </div>
                     {claim.intakeSession &&
@@ -251,7 +267,7 @@ export default function CustomerPortal() {
                                 onClick={() =>
                                   router.push(
                                     claim.intakeSession?.recaWorkflowStage
-                                      ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || 'part_1'}`
+                                      ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || "part_1"}`
                                       : `/reca/start?sessionId=${claim.intakeSession?.id}`
                                   )
                                 }
@@ -268,7 +284,7 @@ export default function CustomerPortal() {
                               <Button
                                 onClick={() =>
                                   router.push(
-                                    `/intake/step2?token=${claim.intakeSession?.resumeToken || ''}`
+                                    `/intake/step2?token=${claim.intakeSession?.resumeToken || ""}`
                                   )
                                 }
                                 className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
@@ -280,7 +296,17 @@ export default function CustomerPortal() {
                         )}
                       <Button
                         variant="outline"
-                        onClick={() => router.push(`/portal/claim/${claim.id}` as any)}
+                        onClick={() => router.push("/portal/documents")}
+                        className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Manage Documents
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          router.push(`/portal/claim/${claim.id}` as any)
+                        }
                         className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                       >
                         View Details

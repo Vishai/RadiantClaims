@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { FormWizard } from "@/components/reca/wizard/FormWizard";
 import { Part1Form } from "@/components/reca/parts/Part1Form";
 import { Part2Form } from "@/components/reca/parts/Part2Form";
@@ -19,10 +20,7 @@ import Part13Form from "@/components/reca/parts/Part13Form";
 import Part14Form from "@/components/reca/parts/Part14Form";
 import Part15Form from "@/components/reca/parts/Part15Form";
 import Part16Form from "@/components/reca/parts/Part16Form";
-import {
-  RECAWorkflowState,
-  RECAWorkflowSection,
-} from "@/lib/reca/types";
+import { RECAWorkflowState, RECAWorkflowSection } from "@/lib/reca/types";
 
 interface PageProps {
   params: { sessionId: string };
@@ -31,11 +29,14 @@ interface PageProps {
 export default function RECAFormPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { status } = useSession();
   const [workflowState, setWorkflowState] = useState<RECAWorkflowState | null>(
     null
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
   const currentSection =
     (searchParams.get("section") as RECAWorkflowSection) || "part_1";
@@ -58,18 +59,56 @@ export default function RECAFormPage({ params }: PageProps) {
       setWorkflowState(data);
     } catch (err) {
       console.error("Error loading workflow:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load workflow"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load workflow");
     } finally {
       setIsLoading(false);
     }
   }, [params.sessionId]);
 
+  // Check subscription access for authenticated users
   useEffect(() => {
-    // Load workflow state regardless of auth status (RECA forms are public)
-    loadWorkflowState();
-  }, [loadWorkflowState]);
+    async function checkSubscriptionAccess() {
+      if (status === "authenticated") {
+        try {
+          const response = await fetch("/api/subscriptions/status");
+          if (response.ok) {
+            const data = await response.json();
+
+            // User must have access to forms
+            if (!data.canAccessForms) {
+              // Redirect to service tier selection or payment
+              router.push("/service-tiers?error=payment_required");
+              return;
+            }
+
+            setHasAccess(true);
+          } else {
+            // Error checking subscription - redirect to service tiers
+            router.push("/service-tiers?error=subscription_check_failed");
+          }
+        } catch (error) {
+          console.error("Error checking subscription:", error);
+          router.push("/service-tiers?error=subscription_check_failed");
+        } finally {
+          setCheckingAccess(false);
+        }
+      } else if (status === "unauthenticated") {
+        // Not logged in - redirect to login
+        router.push(
+          "/login?callbackUrl=" + encodeURIComponent(window.location.pathname)
+        );
+      }
+    }
+
+    checkSubscriptionAccess();
+  }, [status, router]);
+
+  useEffect(() => {
+    // Only load workflow state if user has access
+    if (hasAccess && !checkingAccess) {
+      loadWorkflowState();
+    }
+  }, [hasAccess, checkingAccess, loadWorkflowState]);
 
   // Redirect Part 2 if filing for self
   useEffect(() => {
@@ -142,8 +181,8 @@ export default function RECAFormPage({ params }: PageProps) {
         if (workflowState.formData.part_1?.filingForSelf === true) {
           return (
             <div className="flex min-h-[400px] items-center justify-center">
-              <div className="text-center max-w-md">
-                <p className="text-lg font-semibold text-sage-900 mb-2">
+              <div className="max-w-md text-center">
+                <p className="mb-2 text-lg font-semibold text-sage-900">
                   Redirecting...
                 </p>
                 <p className="text-sage-600">
@@ -278,8 +317,8 @@ export default function RECAFormPage({ params }: PageProps) {
       // Add more cases as we implement them
       default:
         return (
-          <div className="text-center py-12">
-            <p className="text-sage-700 mb-4">
+          <div className="py-12 text-center">
+            <p className="mb-4 text-sage-700">
               Section "{currentSection}" is coming soon!
             </p>
             <p className="text-sm text-sage-600">
@@ -290,12 +329,27 @@ export default function RECAFormPage({ params }: PageProps) {
     }
   };
 
-  if (isLoading) {
+  // Show loading state while checking access or loading form
+  if (checkingAccess || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-terracotta-500 border-t-transparent"></div>
-          <p className="text-sage-700">Loading form...</p>
+          <p className="text-sage-700">
+            {checkingAccess ? "Verifying subscription..." : "Loading form..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if user doesn't have access
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-terracotta-500 border-t-transparent"></div>
+          <p className="text-sage-700">Redirecting...</p>
         </div>
       </div>
     );
@@ -305,10 +359,10 @@ export default function RECAFormPage({ params }: PageProps) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50">
         <div className="max-w-md text-center">
-          <h2 className="text-2xl font-bold text-sage-900 mb-4">
+          <h2 className="mb-4 text-2xl font-bold text-sage-900">
             Error Loading Form
           </h2>
-          <p className="text-sage-700 mb-6">{error || "Unknown error"}</p>
+          <p className="mb-6 text-sage-700">{error || "Unknown error"}</p>
           <button
             onClick={() => router.push("/portal")}
             className="rounded-full bg-terracotta-500 px-6 py-3 text-white hover:bg-terracotta-600"

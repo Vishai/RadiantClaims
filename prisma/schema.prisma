@@ -73,6 +73,7 @@ model User {
   comments              ClaimantComment[]
   reviewActions         ReviewAction[]
   notifications         Notification[]
+  serviceSubscription   ServiceSubscription? // Link to subscription
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
@@ -213,7 +214,7 @@ model IntakeSession {
   currentStep      IntakeStep          @default(SCREENING)
   status           IntakeStatus        @default(DRAFT)
   claimType        ClaimType?
-  isPremiumService Boolean             @default(false) // $250 full service tier
+  isPremiumService Boolean             @default(false) // DEPRECATED: Use serviceSubscription.tier instead
   completedSteps   String[]            @default([]) // Array of completed step names
   expiresAt        DateTime // Token expiration (7 days default)
   lastActivityAt   DateTime            @default(now())
@@ -232,11 +233,23 @@ model IntakeSession {
   recaSupportingForms   Json?             // Supporting forms data (medical release, identity cert, tribal, beneficiaries)
   recaValidationErrors  Json?             // Current validation errors by section
 
+  // PDF Generation & Download Tracking (for refund policy enforcement)
+  recaFormPdfGenerated    Boolean   @default(false)
+  recaFormPdfGeneratedAt  DateTime?
+  recaFormPdfDownloaded   Boolean   @default(false) // Once true, refund is not allowed
+  recaFormPdfDownloadedAt DateTime?
+  recaFormPdfDownloadCount Int     @default(0)
+
+  // Service Subscription Link
+  serviceSubscriptionId   String?
+  serviceSubscription     ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id])
+
   @@index([resumeToken])
   @@index([claimantId])
   @@index([status])
   @@index([expiresAt])
   @@index([recaWorkflowStage])
+  @@index([serviceSubscriptionId])
 }
 
 // Screening questions and answers for conditional logic
@@ -477,6 +490,18 @@ enum AuditAction {
   REVISION_REQUESTED
   NOTIFICATION_SENT
   WORKFLOW_STATUS_CHANGED
+  // Service Subscription Actions
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_UPGRADED
+  SUBSCRIPTION_DOWNGRADED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_REACTIVATED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  REFUND_REQUESTED
+  REFUND_PROCESSED
+  FIRM_SERVICE_FEE_PAID
+  PDF_DOWNLOADED
 }
 
 enum AuditSeverity {
@@ -569,6 +594,7 @@ model LawFirm {
   users                 User[]                 // Attorney users at this firm
   claimantAssignments   ClaimantAssignment[]
   policyAcceptances     PolicyAcceptance[]
+  referredSubscriptions ServiceSubscription[]  // Subscriptions referred to this firm
   serviceAgreementUrl   String?                // Signed service provider agreement
   serviceAgreementDate  DateTime?
   createdAt             DateTime               @default(now())
@@ -797,6 +823,15 @@ model DocumentResource {
   specialInstructions    String?      @db.Text
   isTribal               Boolean      @default(false)
   tribalAffiliation      String?      // "Navajo Nation", "Hopi Tribe", etc.
+
+  // NEW: Purpose and context messaging
+  purposeDescription     String?      @db.Text // "Visit this office to obtain certified birth certificates for RECA claims"
+  whatToBring            String[]     // ["Photo ID", "Proof of relationship", "$20 cash or check"]
+  appointmentRequired    Boolean      @default(false)
+  acceptsMailRequests    Boolean      @default(true)
+  acceptsOnlineRequests  Boolean      @default(false)
+  estimatedCost          Float?       // Dollar amount (e.g., 20.00)
+
   claimantDocumentStatuses ClaimantDocumentStatus[]
 
   @@index([state, county])
@@ -1138,4 +1173,118 @@ model LifecycleNotificationPreference {
 
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
+}
+
+// ============================================================================
+// SERVICE TIERS & PAYMENT SYSTEM
+// ============================================================================
+
+enum ServiceTier {
+  DIY_PREP    // $149.99 setup + $24.99/mo - Document preparation only
+  LEGAL_REP   // No upfront cost - Full legal representation via Heritage Law
+}
+
+enum SubscriptionStatus {
+  ACTIVE      // Subscription is active and in good standing
+  PAST_DUE    // Payment failed, grace period
+  CANCELED    // User canceled subscription
+  PAUSED      // Temporarily paused (future feature)
+}
+
+enum PaymentType {
+  SETUP_FEE         // One-time $149.99 setup fee for DIY path
+  MONTHLY_FEE       // $24.99/mo subscription for DIY path
+  FIRM_SERVICE_FEE  // $1,000 paid by Heritage Law to RadiantClaims
+}
+
+enum PaymentStatus {
+  PENDING    // Payment initiated but not completed
+  COMPLETED  // Payment successful
+  FAILED     // Payment failed
+  REFUNDED   // Payment was refunded
+}
+
+// Service subscription - tracks which tier user is on and payment status
+model ServiceSubscription {
+  id                String              @id @default(cuid())
+  userId            String              @unique
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tier              ServiceTier         @default(DIY_PREP)
+  status            SubscriptionStatus  @default(ACTIVE)
+
+  // DIY Path Pricing ($149.99 + $24.99/mo)
+  setupFeePaid      Boolean             @default(false)
+  setupFeeAmount    Float?              // 149.99
+  setupFeePaidAt    DateTime?
+
+  monthlyFeeAmount  Float?              // 24.99
+  billingCycleDay   Int?                // Day of month for billing (1-28)
+  nextBillingDate   DateTime?
+  lastBillingDate   DateTime?
+
+  // Legal Path Tracking (referral to Heritage Law)
+  referredToFirmId  String?
+  referredToFirm    LawFirm?            @relation(fields: [referredToFirmId], references: [id])
+  referredAt        DateTime?
+  firmServiceFee    Float?              // 1000.00
+  firmServiceFeePaid Boolean            @default(false)
+  firmServiceFeePaidAt DateTime?
+
+  // Stripe Integration
+  stripeCustomerId      String?         @unique
+  stripeSubscriptionId  String?         @unique
+
+  // Lifecycle
+  startedAt         DateTime            @default(now())
+  canceledAt        DateTime?
+  cancelReason      String?             @db.Text
+
+  // Relations
+  payments          Payment[]
+  intakeSessions    IntakeSession[]
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([tier])
+  @@index([status])
+  @@index([nextBillingDate])
+  @@index([referredToFirmId])
+}
+
+// Payment tracking - all payment events
+model Payment {
+  id                  String              @id @default(cuid())
+  subscriptionId      String
+  subscription        ServiceSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  paymentType         PaymentType
+  amount              Float               // Amount in USD
+  currency            String              @default("USD")
+  status              PaymentStatus       @default(PENDING)
+
+  // Stripe Integration
+  stripePaymentIntentId String?           @unique
+  stripeChargeId        String?
+  stripeInvoiceId       String?
+
+  // Lifecycle
+  paidAt              DateTime?
+  failedAt            DateTime?
+  failureReason       String?             @db.Text
+  refundedAt          DateTime?
+  refundReason        String?             @db.Text
+
+  // Metadata
+  metadata            String?             @db.Text // JSON for additional context
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([paymentType])
+  @@index([paidAt])
 }
