@@ -96,13 +96,16 @@ export async function GET(
     // Build response
     const response: IntelligenceResponse = {
       ocrConfidence: metadata.ocrConfidence || 0,
-      textLength: file.extractedText?.length || 0,
+      textLength: metadata.textLength || 0,
       entities: metadata.entities,
       compliance: metadata.compliance,
       risks: metadata.risks,
       quality: metadata.qualityMetrics,
       aiCategorization: metadata.aiCategorization,
-      tags: file.tags,
+      tags: file.tags.map((t) => ({
+        tag: t.tag,
+        confidence: t.confidence ?? undefined,
+      })),
       metadata: {
         processingTimeMs: metadata.processingTimeMs,
         entitiesExtractedAt: metadata.entitiesExtractedAt,

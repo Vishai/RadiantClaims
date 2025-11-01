@@ -11,12 +11,14 @@ import {
   JurisdictionMatch,
   NameConsistencyCheck,
   EligibilityFlag,
+  DocumentQualification,
 } from "./schemas/compliance-schema";
 import {
   ClaimType,
   getRequirements,
   calculateCompleteness,
   getMissingRequirements,
+  checkDocumentQualification,
 } from "./schemas/reca-requirements";
 import {
   isCoveredCounty,
@@ -39,7 +41,13 @@ interface Document {
 export async function checkRECACompliance(
   entities: EntityExtractionResult,
   allDocuments: Document[],
-  ocrText: string
+  ocrText: string,
+  currentDocumentCategory?: FileCategory | null,
+  aiCategorizationResult?: {
+    category: FileCategory;
+    confidence: number;
+    reasoning: string;
+  }
 ): Promise<RECAComplianceResult> {
   // Step 1: Determine claim type
   const { claimType, confidence, reasoning } = detectClaimType(
@@ -67,19 +75,27 @@ export async function checkRECACompliance(
     suggestion: generateSuggestion(req.category, claimType),
   }));
 
-  // Step 5: Date sanity checks
+  // Step 5: Check if current document qualifies as a required document
+  const documentQualification = checkCurrentDocumentQualification(
+    currentDocumentCategory,
+    claimType,
+    entities,
+    aiCategorizationResult
+  );
+
+  // Step 6: Date sanity checks
   const dateSanity = performDateSanityChecks(entities);
 
-  // Step 6: Jurisdiction check (for downwinders)
+  // Step 7: Jurisdiction check (for downwinders)
   const jurisdictionMatch = checkJurisdiction(entities, claimType);
 
-  // Step 7: Name consistency check
+  // Step 8: Name consistency check
   const nameConsistency = checkNameConsistency(entities);
 
-  // Step 8: Eligibility flags
+  // Step 9: Eligibility flags
   const eligibilityFlags = checkEligibility(entities, claimType);
 
-  // Step 9: Disease match check
+  // Step 10: Disease match check
   const diseaseMatch = checkDiseaseMatch(entities);
 
   return {
@@ -87,6 +103,7 @@ export async function checkRECACompliance(
     claimTypeConfidence: confidence,
     claimTypeReasoning: reasoning,
     checklistCoverage,
+    documentQualification,
     missingRequirements,
     dateSanity,
     jurisdictionMatch,
@@ -368,6 +385,13 @@ function checkJurisdiction(
 
   if (coveredAddresses.length > 0) {
     const addr = coveredAddresses[0];
+    if (!addr) {
+      return {
+        inCoveredCounties: false,
+        confidence: 0.3,
+        issues: ["No valid address found"],
+      };
+    }
     return {
       county: addr.county || undefined,
       state: addr.state || undefined,
@@ -379,9 +403,10 @@ function checkJurisdiction(
     };
   }
 
+  const firstAddr = residenceAddresses[0];
   return {
-    county: residenceAddresses[0].county || undefined,
-    state: residenceAddresses[0].state || undefined,
+    county: firstAddr?.county || undefined,
+    state: firstAddr?.state || undefined,
     inCoveredCounties: false,
     confidence: 0.8,
     issues: [
@@ -412,7 +437,7 @@ function checkNameConsistency(
 
   if (claimants.length > 1) {
     const names = claimants.map((c) => c.name);
-    const uniqueNames = [...new Set(names)];
+    const uniqueNames = Array.from(new Set(names));
 
     if (uniqueNames.length > 1) {
       checks.push({
@@ -535,4 +560,186 @@ function generateSuggestion(
   };
 
   return suggestions[category] || "Upload supporting documentation";
+}
+
+/**
+ * Check if the current document qualifies as a required document for the claim
+ */
+function checkCurrentDocumentQualification(
+  documentCategory: FileCategory | null | undefined,
+  claimType: ClaimType,
+  entities: EntityExtractionResult,
+  aiCategorizationResult?: {
+    category: FileCategory;
+    confidence: number;
+    reasoning: string;
+  }
+): DocumentQualification {
+  // If no document category provided, return unknown
+  if (!documentCategory) {
+    return {
+      status: "UNKNOWN",
+      confidence: 0,
+      reason:
+        "Document category could not be determined. The AI was unable to categorize this document.",
+      issues: [
+        "Document type is unclear or not recognized",
+        "Manual review recommended",
+      ],
+    };
+  }
+
+  // Check if AI detected a different category than what user selected
+  let categoryMismatch;
+  let effectiveCategory = documentCategory;
+
+  if (aiCategorizationResult && aiCategorizationResult.category !== documentCategory) {
+    const aiConfidence = aiCategorizationResult.confidence;
+    const shouldUseAiCategory = aiConfidence >= 0.75; // High confidence threshold
+
+    categoryMismatch = {
+      userSelected: documentCategory,
+      aiDetected: aiCategorizationResult.category,
+      aiConfidence,
+      shouldUseAiCategory,
+      explanation: shouldUseAiCategory
+        ? `AI detected this as "${formatCategoryName(aiCategorizationResult.category)}" with ${Math.round(aiConfidence * 100)}% confidence, which differs from your selection of "${formatCategoryName(documentCategory)}". The AI classification will be used for qualification checking.`
+        : `You classified this as "${formatCategoryName(documentCategory)}", but AI detected it might be "${formatCategoryName(aiCategorizationResult.category)}" (${Math.round(aiConfidence * 100)}% confidence). Your classification will be used, but please verify.`,
+    };
+
+    // If AI is highly confident, use AI category for qualification check
+    if (shouldUseAiCategory) {
+      effectiveCategory = aiCategorizationResult.category;
+    }
+  }
+
+  // Check if document matches any requirement (using effective category)
+  const qualificationCheck = checkDocumentQualification(
+    effectiveCategory,
+    claimType
+  );
+
+  if (!qualificationCheck.qualifies) {
+    return {
+      status: "DOES_NOT_QUALIFY",
+      confidence: 0.85,
+      reason: `This document (${formatCategoryName(effectiveCategory)}) is not a required document type for ${claimType} claims.`,
+      issues: [
+        "This document type is not part of the required documentation checklist",
+        "Consider uploading required documents instead",
+      ],
+      categoryMismatch,
+    };
+  }
+
+  // Document qualifies - now check if it has quality issues
+  const issues: string[] = [];
+  let confidence = 0.9;
+
+  // Check for jurisdiction issues (downwinders only)
+  if (
+    claimType === "downwinder" &&
+    (effectiveCategory === "PROOF_OF_RESIDENCE" ||
+      effectiveCategory === "UTILITY_BILL" ||
+      effectiveCategory === "MORTGAGE_STATEMENT")
+  ) {
+    const hasValidAddress = entities.addresses.some(
+      (addr) =>
+        addr.county && addr.state && isCoveredCounty(addr.county, addr.state)
+    );
+
+    if (!hasValidAddress) {
+      confidence = 0.6;
+      issues.push(
+        "No address found in covered county - document may not qualify"
+      );
+      return {
+        status: "NEEDS_VERIFICATION",
+        confidence,
+        reason: `This ${formatCategoryName(effectiveCategory)} appears to qualify, but the address may not be in a covered county.`,
+        matchedRequirement: {
+          category: qualificationCheck.matchedRequirement!.category,
+          name: qualificationCheck.matchedRequirement!.name,
+          priority: qualificationCheck.matchedRequirement!.priority,
+        },
+        issues,
+        categoryMismatch,
+      };
+    }
+  }
+
+  // Check for disease match (medical documents)
+  if (
+    effectiveCategory === "MEDICAL_RECORDS" ||
+    effectiveCategory === "PATHOLOGY_REPORT" ||
+    effectiveCategory === "DISCHARGE_SUMMARY" ||
+    effectiveCategory === "TREATMENT_RECORDS" ||
+    effectiveCategory === "TUMOR_REGISTRY"
+  ) {
+    const hasDiagnosis = entities.medical.some((m) => m.diagnosis);
+
+    if (!hasDiagnosis) {
+      confidence = 0.7;
+      issues.push("No clear diagnosis found in medical document");
+      return {
+        status: "NEEDS_VERIFICATION",
+        confidence,
+        reason: `This ${formatCategoryName(effectiveCategory)} qualifies, but no clear medical diagnosis was found.`,
+        matchedRequirement: {
+          category: qualificationCheck.matchedRequirement!.category,
+          name: qualificationCheck.matchedRequirement!.name,
+          priority: qualificationCheck.matchedRequirement!.priority,
+        },
+        issues,
+        categoryMismatch,
+      };
+    }
+
+    // Check if diagnosis is covered
+    const diagnosis = entities.medical.find((m) => m.diagnosis)?.diagnosis;
+    if (diagnosis && !isCoveredDisease(diagnosis)) {
+      confidence = 0.5;
+      issues.push(
+        `Diagnosis "${diagnosis}" may not be a covered disease under RECA`
+      );
+      return {
+        status: "NEEDS_VERIFICATION",
+        confidence,
+        reason: `This medical document may not qualify - the diagnosed condition may not be covered by RECA.`,
+        matchedRequirement: {
+          category: qualificationCheck.matchedRequirement!.category,
+          name: qualificationCheck.matchedRequirement!.name,
+          priority: qualificationCheck.matchedRequirement!.priority,
+        },
+        issues,
+        categoryMismatch,
+      };
+    }
+  }
+
+  // Document qualifies!
+  return {
+    status: "QUALIFIES",
+    confidence,
+    reason: qualificationCheck.isAlternative
+      ? `This ${formatCategoryName(effectiveCategory)} qualifies as an acceptable alternative for "${qualificationCheck.matchedRequirement!.name}".`
+      : `This ${formatCategoryName(effectiveCategory)} qualifies as a required document for "${qualificationCheck.matchedRequirement!.name}".`,
+    matchedRequirement: {
+      category: qualificationCheck.matchedRequirement!.category,
+      name: qualificationCheck.matchedRequirement!.name,
+      priority: qualificationCheck.matchedRequirement!.priority,
+    },
+    issues: issues.length > 0 ? issues : undefined,
+    categoryMismatch,
+  };
+}
+
+/**
+ * Format category name for display
+ */
+function formatCategoryName(category: FileCategory): string {
+  return category
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
 }

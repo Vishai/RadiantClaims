@@ -271,7 +271,9 @@ async function processDocumentInBackground(
         complianceResult = await checkRECACompliance(
           entities,
           allDocuments,
-          ocrResult.text
+          ocrResult.text,
+          finalCategory, // Pass the current document's category for qualification check
+          categorizationResult // Pass AI categorization to detect mismatches
         );
 
         console.log(

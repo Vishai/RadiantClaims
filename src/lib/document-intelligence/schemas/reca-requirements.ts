@@ -190,3 +190,44 @@ export function getMissingRequirements(
     return !isSatisfied;
   });
 }
+
+/**
+ * Check if a single document qualifies as a required document type
+ * Returns detailed qualification information
+ */
+export function checkDocumentQualification(
+  documentCategory: FileCategory,
+  claimType: ClaimType
+): {
+  qualifies: boolean;
+  matchedRequirement: RequiredDocument | null;
+  isAlternative: boolean;
+} {
+  const requirements = getRequirements(claimType);
+
+  for (const requirement of requirements) {
+    // Check if document directly matches the requirement
+    if (requirement.category === documentCategory) {
+      return {
+        qualifies: true,
+        matchedRequirement: requirement,
+        isAlternative: false,
+      };
+    }
+
+    // Check if document is an acceptable alternative
+    if (requirement.alternatives?.includes(documentCategory)) {
+      return {
+        qualifies: true,
+        matchedRequirement: requirement,
+        isAlternative: true,
+      };
+    }
+  }
+
+  return {
+    qualifies: false,
+    matchedRequirement: null,
+    isAlternative: false,
+  };
+}

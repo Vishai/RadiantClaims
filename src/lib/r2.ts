@@ -64,7 +64,13 @@ export async function uploadToR2(
     ContentType: contentType,
   });
 
-  await client.send(command);
+  try {
+    await client.send(command);
+    console.log(`✓ Uploaded file to R2: ${key} (${buffer.length} bytes)`);
+  } catch (error) {
+    console.error(`❌ Failed to upload to R2:`, error);
+    throw new Error(`R2 upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
 
   // Construct the public URL
   // R2 public URL format: https://<account-id>.r2.cloudflarestorage.com/<bucket>/<key>
@@ -164,6 +170,7 @@ export async function getObject(fileKeyOrUrl: string): Promise<Buffer | null> {
       Key: fileKeyOrUrl,
     });
 
+    console.log(`📥 Fetching file from R2: ${fileKeyOrUrl}`);
     const response = await client.send(command);
     const stream = response.Body;
 
@@ -177,9 +184,11 @@ export async function getObject(fileKeyOrUrl: string): Promise<Buffer | null> {
     for await (const chunk of stream as any) {
       chunks.push(chunk);
     }
-    return Buffer.concat(chunks);
+    const buffer = Buffer.concat(chunks);
+    console.log(`✓ Downloaded file from R2: ${fileKeyOrUrl} (${buffer.length} bytes)`);
+    return buffer;
   } catch (error) {
-    console.error("Failed to download file:", error);
+    console.error(`❌ Failed to download file from R2 (key: ${fileKeyOrUrl}):`, error);
     return null;
   }
 }

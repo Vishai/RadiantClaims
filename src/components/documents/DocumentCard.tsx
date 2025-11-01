@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   FileText,
@@ -87,8 +88,13 @@ export function DocumentCard({
   onRecategorize,
   className,
 }: DocumentCardProps) {
+  const router = useRouter();
   const [imageError, setImageError] = useState(false);
   const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false);
+
+  const handleCardClick = () => {
+    router.push(`/portal/documents/${id}`);
+  };
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return ImageIcon;
@@ -170,9 +176,10 @@ export function DocumentCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-shadow hover:shadow-md",
+        "overflow-hidden transition-shadow hover:shadow-md cursor-pointer",
         className
       )}
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
@@ -212,7 +219,7 @@ export function DocumentCard({
 
           {/* Actions Menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <span className="sr-only">Open menu</span>
                 <svg
@@ -263,9 +270,9 @@ export function DocumentCard({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="space-y-2">
-          {/* Category & Status Badges */}
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="space-y-3">
+          {/* Status & Badges - Single Row */}
+          <div className="flex flex-wrap items-center gap-1.5">
             <Badge
               variant="outline"
               className="border-sage-300 bg-sage-50 text-sage-700"
@@ -273,150 +280,70 @@ export function DocumentCard({
               {getCategoryLabel(category)}
             </Badge>
             {getStatusBadge(status)}
-            {isRequired && (
+            {aiIntelligence && status === "READY" && (
               <Badge
                 variant="outline"
-                className="border-terracotta-300 bg-terracotta-50 text-terracotta-700"
+                className="border-purple-300 bg-purple-50 text-purple-700"
               >
-                Required
-              </Badge>
-            )}
-            {requiresOriginal && (
-              <Badge
-                variant="outline"
-                className="gap-1 border-amber-300 bg-amber-50 text-amber-700"
-              >
-                <Mail className="h-3 w-3" />
-                Original May Be Required
+                <Sparkles className="mr-1 h-3 w-3" />
+                AI
               </Badge>
             )}
           </div>
 
           {/* Rejection Reason */}
           {status === "REJECTED" && rejectionReason && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-              <p className="font-medium">Rejection Reason:</p>
-              <p className="mt-1 text-xs">{rejectionReason}</p>
+            <div className="rounded-lg bg-red-50 p-2.5 text-sm text-red-700">
+              <p className="font-medium text-xs">Rejected:</p>
+              <p className="mt-0.5 text-xs">{rejectionReason}</p>
             </div>
           )}
 
-          {/* Original Document Notice */}
-          {requiresOriginal && status === "APPROVED" && (
-            <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-              <p className="flex items-center gap-2 font-medium">
-                <Mail className="h-4 w-4" />
-                Original Typically Required
-              </p>
-              <p className="mt-1 text-xs">
-                Documents in this category typically must be submitted as{" "}
-                <strong>originals</strong> (not photocopies). Check current DOJ
-                requirements before submitting your claim packet. Originals are
-                returned after processing.
-              </p>
-            </div>
-          )}
-
-          {/* AI Intelligence Section - Compact */}
-          {aiIntelligence && status === "READY" && (
-            <div className="space-y-2 rounded-lg border border-indigo-200 bg-indigo-50/30 p-2.5 text-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 font-medium text-indigo-900">
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                    />
-                  </svg>
-                  AI Analysis
-                </div>
-                <div className="flex items-center gap-1 text-[10px] text-indigo-700">
-                  {aiIntelligence.ocrConfidence !== undefined && (
-                    <Badge
-                      variant="outline"
-                      className="h-5 border-indigo-300 bg-indigo-100 px-1.5 text-[10px]"
-                    >
-                      {(aiIntelligence.ocrConfidence * 100).toFixed(0)}% OCR
-                    </Badge>
-                  )}
-                  {aiIntelligence.pageCount !== undefined && (
-                    <span className="text-indigo-600">
-                      {aiIntelligence.pageCount}pg
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Smart Tags - Most Important First */}
-              {aiIntelligence.tags && aiIntelligence.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {aiIntelligence.tags.slice(0, 3).map((tag) => (
-                    <Badge
-                      key={tag.tag}
-                      variant="outline"
-                      className="h-5 border-amber-300 bg-amber-50 px-1.5 text-[10px] text-amber-700"
-                      title={`${(tag.confidence * 100).toFixed(0)}% confidence`}
-                    >
-                      {tag.tag.replace(/_/g, " ")}
-                    </Badge>
-                  ))}
-                  {aiIntelligence.tags.length > 3 && (
-                    <Badge
-                      variant="outline"
-                      className="h-5 border-gray-300 bg-gray-50 px-1.5 text-[10px] text-gray-600"
-                    >
-                      +{aiIntelligence.tags.length - 3}
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="flex gap-2 pt-2">
+          {/* Actions - All in one row */}
+          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
             {onView && (
               <Button
                 size="sm"
-                variant="outline"
-                onClick={onView}
-                className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView();
+                }}
+                className="flex-1"
+                title="View Document"
               >
-                <Eye className="mr-1 h-3 w-3" />
-                View
+                <Eye className="h-4 w-4" />
               </Button>
             )}
             {onDownload && (
               <Button
                 size="sm"
-                variant="outline"
-                onClick={onDownload}
-                className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownload();
+                }}
+                className="flex-1"
+                title="Download"
               >
-                <Download className="mr-1 h-3 w-3" />
-                Download
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
+            {status === "READY" && aiIntelligence && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIntelligenceModalOpen(true);
+                }}
+                className="flex-1 text-purple-600 hover:bg-purple-50"
+                title="View AI Intelligence"
+              >
+                <Sparkles className="h-4 w-4" />
               </Button>
             )}
           </div>
-
-          {/* AI Intelligence Button - Show if document has intelligence */}
-          {status === "READY" && aiIntelligence && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIntelligenceModalOpen(true)}
-              className="w-full rounded-full border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
-            >
-              <Sparkles className="mr-1 h-3 w-3" />
-              View AI Intelligence
-            </Button>
-          )}
         </div>
       </CardContent>
 

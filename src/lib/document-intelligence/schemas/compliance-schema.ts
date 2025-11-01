@@ -45,11 +45,37 @@ export interface EligibilityFlag {
   severity?: "high" | "medium" | "low";
 }
 
+export type DocumentQualificationStatus =
+  | "QUALIFIES"
+  | "DOES_NOT_QUALIFY"
+  | "NEEDS_VERIFICATION"
+  | "UNKNOWN";
+
+export interface DocumentQualification {
+  status: DocumentQualificationStatus;
+  confidence: number; // 0-1
+  reason: string;
+  matchedRequirement?: {
+    category: string;
+    name: string;
+    priority: "high" | "medium" | "low";
+  };
+  issues?: string[];
+  categoryMismatch?: {
+    userSelected: string;
+    aiDetected: string;
+    aiConfidence: number;
+    shouldUseAiCategory: boolean;
+    explanation: string;
+  };
+}
+
 export interface RECAComplianceResult {
   claimTypeSuspected: ClaimType;
   claimTypeConfidence: number; // 0-1
   claimTypeReasoning: string;
   checklistCoverage: number; // 0-1 (percentage complete)
+  documentQualification: DocumentQualification; // NEW: Does this specific document qualify?
   missingRequirements: MissingRequirement[];
   dateSanity: DateSanityCheck[];
   jurisdictionMatch: JurisdictionMatch;

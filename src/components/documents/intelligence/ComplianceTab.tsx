@@ -12,8 +12,21 @@ interface ComplianceTabProps {
 export function ComplianceTab({ data }: ComplianceTabProps) {
   const { compliance } = data;
 
-  const completenessPercent = Math.round(compliance.checklistCoverage * 100);
-  const confidencePercent = Math.round(compliance.claimTypeConfidence * 100);
+  // Defensive check for missing data
+  if (!compliance) {
+    return (
+      <div className="space-y-6 py-4">
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">
+            Compliance data is not available. Please try refreshing the page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const completenessPercent = Math.round((compliance.checklistCoverage ?? 0) * 100);
+  const confidencePercent = Math.round((compliance.claimTypeConfidence ?? 0) * 100);
 
   return (
     <div className="space-y-6 py-4">

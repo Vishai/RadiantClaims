@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RiskFlag } from "@/lib/document-intelligence/schemas";
 import {
   ChevronDown,
   ChevronUp,
@@ -42,7 +41,20 @@ export function RisksTab({ data }: RisksTabProps) {
   const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
   const [expandedRisks, setExpandedRisks] = useState<Set<number>>(new Set());
 
-  const riskScore = Math.round(risks.overallRiskScore * 100);
+  // Defensive check for missing data
+  if (!risks) {
+    return (
+      <div className="space-y-6 py-4">
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">
+            Risk analysis data is not available. Please try refreshing the page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const riskScore = Math.round((risks.overallRiskScore ?? 0) * 100);
 
   // Get risk score color and label
   const getRiskLevel = (score: number) => {

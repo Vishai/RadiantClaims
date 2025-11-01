@@ -12,11 +12,24 @@ interface OverviewTabProps {
 export function OverviewTab({ data }: OverviewTabProps) {
   const { compliance, risks, aiCategorization } = data;
 
+  // Defensive check for missing data
+  if (!compliance || !risks) {
+    return (
+      <div className="space-y-6 py-4">
+        <div className="rounded-lg border p-4">
+          <p className="text-sm text-muted-foreground">
+            Intelligence data is incomplete. Please try refreshing the page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate completeness percentage
-  const completenessPercent = Math.round(compliance.checklistCoverage * 100);
+  const completenessPercent = Math.round((compliance.checklistCoverage ?? 0) * 100);
 
   // Get top 3 missing requirements
-  const topMissing = compliance.missingRequirements
+  const topMissing = (compliance.missingRequirements ?? [])
     .sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -24,7 +37,7 @@ export function OverviewTab({ data }: OverviewTabProps) {
     .slice(0, 3);
 
   // Get top 5 risks
-  const topRisks = risks.risks
+  const topRisks = (risks.risks ?? [])
     .sort((a, b) => {
       const severityOrder = { high: 0, medium: 1, low: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
@@ -64,10 +77,10 @@ export function OverviewTab({ data }: OverviewTabProps) {
             <span className="text-sm font-medium">Claim Type:</span>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="capitalize">
-                {compliance.claimTypeSuspected}
+                {compliance.claimTypeSuspected ?? "Unknown"}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {Math.round(compliance.claimTypeConfidence * 100)}% confident
+                {Math.round((compliance.claimTypeConfidence ?? 0) * 100)}% confident
               </span>
             </div>
           </div>
@@ -174,14 +187,14 @@ export function OverviewTab({ data }: OverviewTabProps) {
       )}
 
       {/* Actionable Recommendations */}
-      {risks.recommendedActions.length > 0 && (
+      {(risks.recommendedActions ?? []).length > 0 && (
         <div className="rounded-lg border bg-blue-50 p-4 dark:bg-blue-950">
           <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <CheckCircle2 className="h-5 w-5 text-blue-500" />
             Recommended Actions
           </h3>
           <ul className="list-inside list-disc space-y-2">
-            {risks.recommendedActions.map((action, idx) => (
+            {(risks.recommendedActions ?? []).map((action, idx) => (
               <li key={idx} className="text-sm">
                 {action}
               </li>

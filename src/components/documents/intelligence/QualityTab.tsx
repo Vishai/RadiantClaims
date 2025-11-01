@@ -13,7 +13,7 @@ export function QualityTab({ data }: QualityTabProps) {
   const { ocrConfidence, quality } = data;
 
   // Convert OCR confidence to 0-100 scale
-  const ocrPercent = Math.round(ocrConfidence * 100);
+  const ocrPercent = Math.round((ocrConfidence ?? 0) * 100);
 
   // Quality score (if available)
   const qualityPercent = quality?.qualityScore

@@ -6,11 +6,11 @@
 import { createWorker, type Worker } from "tesseract.js";
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
-import { pdfToPng } from "pdf-to-png";
 
-// Use dynamic import for pdfjs-dist to avoid Next.js build issues
+// PDF.js will be dynamically imported when needed
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let pdfjsLib: any = null;
+let pdfjsLoading: Promise<any> | null = null;
 
 export interface OCRResult {
   text: string;
@@ -127,13 +127,24 @@ async function extractTextWithPDFJS(
 ): Promise<{ text: string; pageCount: number }> {
   try {
     // Lazy load pdfjs-dist (only loads when needed)
+    // Use a singleton pattern to avoid race conditions
     if (!pdfjsLib) {
-      pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      if (!pdfjsLoading) {
+        pdfjsLoading = import("pdfjs-dist/legacy/build/pdf.mjs").then(
+          (module) => {
+            pdfjsLib = module;
+            return module;
+          }
+        );
+      }
+      await pdfjsLoading;
     }
 
     // Load the PDF document
     const loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(pdfBuffer),
+      useSystemFonts: true,
+      verbosity: 0, // Suppress warnings
     });
     const pdfDocument = await loadingTask.promise;
     const pageCount = pdfDocument.numPages;
@@ -175,63 +186,17 @@ async function extractTextWithPDFJS(
 async function extractTextFromScannedPDF(
   pdfBuffer: Buffer
 ): Promise<OCRResult> {
-  try {
-    // Convert PDF pages to PNG images
-    const pngPages = await pdfToPng(pdfBuffer, {
-      disableFontFace: true,
-      useSystemFonts: false,
-    });
+  // For now, we'll skip OCR for scanned PDFs as it requires canvas/rendering
+  // which is complex in Node.js environment
+  console.log("⚠️  OCR for scanned PDFs is not yet implemented");
 
-    console.log(`Converting ${pngPages.length} PDF pages to images for OCR...`);
-
-    let fullText = "";
-    let totalConfidence = 0;
-    let worker: Worker | null = null;
-
-    try {
-      // Initialize Tesseract worker once for all pages
-      worker = await createWorker("eng", 1, {
-        logger: () => {}, // Suppress logs
-      });
-
-      // Process each page
-      for (let i = 0; i < pngPages.length; i++) {
-        console.log(`Processing page ${i + 1}/${pngPages.length} with OCR...`);
-
-        const pageBuffer = pngPages[i].content;
-
-        // Preprocess the image for better OCR
-        const processedImage = await preprocessImage(pageBuffer);
-
-        // Run OCR on the page
-        const {
-          data: { text, confidence },
-        } = await worker.recognize(processedImage);
-
-        fullText += `\n--- Page ${i + 1} ---\n${text}\n`;
-        totalConfidence += confidence;
-      }
-
-      const averageConfidence = totalConfidence / pngPages.length / 100; // Convert to 0-1
-
-      return {
-        text: fullText.trim(),
-        confidence: averageConfidence,
-        language: "eng",
-        processingTimeMs: 0, // Will be set by caller
-        pageCount: pngPages.length,
-      };
-    } finally {
-      if (worker) {
-        await worker.terminate();
-      }
-    }
-  } catch (error) {
-    console.error("Scanned PDF OCR failed:", error);
-    throw new Error(
-      `Failed to OCR scanned PDF: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-  }
+  return {
+    text: "",
+    confidence: 0,
+    language: "eng",
+    processingTimeMs: 0,
+    pageCount: 0,
+  };
 }
 
 /**

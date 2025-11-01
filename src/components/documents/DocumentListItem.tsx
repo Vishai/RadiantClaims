@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   FileText,
   Image as ImageIcon,
@@ -12,10 +13,12 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AIIntelligenceModal } from "./AIIntelligenceModal";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -42,9 +45,11 @@ interface DocumentListItemProps {
   onDownload?: () => void;
   onDelete?: () => void;
   onRecategorize?: () => void;
+  onViewIntelligence?: () => void;
 }
 
 export function DocumentListItem({
+  id,
   originalFilename,
   category,
   status,
@@ -56,7 +61,10 @@ export function DocumentListItem({
   onDownload,
   onDelete,
   onRecategorize,
+  onViewIntelligence,
 }: DocumentListItemProps) {
+  const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false);
+
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return ImageIcon;
     if (mimeType === "application/pdf") return FileText;
@@ -145,44 +153,34 @@ export function DocumentListItem({
         </div>
       </div>
 
-      {/* AI Intelligence - Inline */}
+      {/* AI Intelligence Badge - Minimal */}
       {aiIntelligence && status === "READY" && (
-        <div className="flex flex-shrink-0 items-center gap-2">
-          {aiIntelligence.ocrConfidence !== undefined && (
-            <Badge
-              variant="outline"
-              className="border-indigo-300 bg-indigo-50 text-indigo-700"
-            >
-              {(aiIntelligence.ocrConfidence * 100).toFixed(0)}% OCR
-            </Badge>
-          )}
-          {aiIntelligence.tags && aiIntelligence.tags.length > 0 && (
-            <div className="flex items-center gap-1">
-              {aiIntelligence.tags.slice(0, 2).map((tag) => (
-                <Badge
-                  key={tag.tag}
-                  variant="outline"
-                  className="border-amber-300 bg-amber-50 text-amber-700"
-                  title={`${(tag.confidence * 100).toFixed(0)}% confidence`}
-                >
-                  {tag.tag.replace(/_/g, " ")}
-                </Badge>
-              ))}
-              {aiIntelligence.tags.length > 2 && (
-                <Badge
-                  variant="outline"
-                  className="border-gray-300 bg-gray-50 text-gray-600"
-                >
-                  +{aiIntelligence.tags.length - 2}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
+        <Badge
+          variant="outline"
+          className="flex-shrink-0 border-purple-300 bg-purple-50 text-purple-700"
+        >
+          <Sparkles className="mr-1 h-3 w-3" />
+          AI Analyzed
+          {aiIntelligence.ocrConfidence !== undefined &&
+            ` · ${(aiIntelligence.ocrConfidence * 100).toFixed(0)}%`}
+        </Badge>
       )}
 
       {/* Actions */}
       <div className="flex flex-shrink-0 items-center gap-1">
+        {aiIntelligence && status === "READY" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={
+              onViewIntelligence || (() => setIntelligenceModalOpen(true))
+            }
+            className="h-8 px-2 text-purple-600 hover:bg-purple-50"
+            title="View AI Intelligence"
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
+        )}
         {onView && (
           <Button
             size="sm"
@@ -228,6 +226,13 @@ export function DocumentListItem({
           </Button>
         )}
       </div>
+
+      {/* AI Intelligence Modal */}
+      <AIIntelligenceModal
+        documentId={id}
+        isOpen={intelligenceModalOpen}
+        onClose={() => setIntelligenceModalOpen(false)}
+      />
     </div>
   );
 }
