@@ -241,9 +241,32 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
 
           {/* Metadata Row */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="border-sage-300 bg-sage-50">
-              {getCategoryLabel(document.category)}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-sage-600">Your Classification:</span>
+              <Badge variant="outline" className="border-sage-300 bg-sage-50">
+                {getCategoryLabel(document.category)}
+              </Badge>
+            </div>
+
+            {intelligence?.aiCategorization && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-sage-600">AI Detected:</span>
+                <Badge
+                  variant="outline"
+                  className={`border-blue-300 bg-blue-50 text-blue-700 ${
+                    intelligence.aiCategorization.category !== document.category
+                      ? 'ring-2 ring-yellow-400 ring-offset-1'
+                      : ''
+                  }`}
+                >
+                  {getCategoryLabel(intelligence.aiCategorization.category)}
+                  <span className="ml-1 text-xs opacity-75">
+                    ({Math.round(intelligence.aiCategorization.confidence * 100)}%)
+                  </span>
+                </Badge>
+              </div>
+            )}
+
             {getStatusBadge(document.status)}
             {document.status === "READY" && intelligence && (
               <Badge variant="outline" className="border-purple-300 bg-purple-50 text-purple-700">
