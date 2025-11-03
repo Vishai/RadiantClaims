@@ -3,7 +3,7 @@
  * Defines types for compliance validation results
  */
 
-import { ClaimType, RequiredDocument } from "./reca-requirements";
+import { ClaimType } from "./reca-requirements";
 
 export interface MissingRequirement {
   item: string;

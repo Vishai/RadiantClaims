@@ -15,7 +15,6 @@ import {
 } from "./schemas/compliance-schema";
 import {
   ClaimType,
-  getRequirements,
   calculateCompleteness,
   getMissingRequirements,
   checkDocumentQualification,
@@ -41,7 +40,7 @@ interface Document {
 export async function checkRECACompliance(
   entities: EntityExtractionResult,
   allDocuments: Document[],
-  ocrText: string,
+  _ocrText: string,
   currentDocumentCategory?: FileCategory | null,
   aiCategorizationResult?: {
     category: FileCategory;
@@ -187,12 +186,6 @@ function detectClaimType(
   }
 
   // Determine claim type
-  const scores = {
-    downwinder: downwinderScore,
-    onsite: onsiteScore,
-    uranium: uraniumScore,
-  };
-
   const maxScore = Math.max(downwinderScore, onsiteScore, uraniumScore);
   const totalScore = downwinderScore + onsiteScore + uraniumScore;
 
@@ -518,14 +511,31 @@ function checkDiseaseMatch(entities: EntityExtractionResult): {
     };
   }
 
-  const diagnosis = medicalRecords[0].diagnosis!;
+  const firstRecord = medicalRecords[0];
+  if (!firstRecord) {
+    return {
+      diagnosisFound: false,
+      isCoveredDisease: false,
+      confidence: 0,
+    };
+  }
+
+  const diagnosis = firstRecord.diagnosis;
+  if (!diagnosis) {
+    return {
+      diagnosisFound: false,
+      isCoveredDisease: false,
+      confidence: 0,
+    };
+  }
+
   const isCovered = isCoveredDisease(diagnosis);
 
   return {
     diagnosisFound: true,
     isCoveredDisease: isCovered,
     diagnosisName: diagnosis,
-    confidence: medicalRecords[0].confidence,
+    confidence: firstRecord.confidence ?? 0,
   };
 }
 
@@ -593,7 +603,10 @@ function checkCurrentDocumentQualification(
   let categoryMismatch;
   let effectiveCategory = documentCategory;
 
-  if (aiCategorizationResult && aiCategorizationResult.category !== documentCategory) {
+  if (
+    aiCategorizationResult &&
+    aiCategorizationResult.category !== documentCategory
+  ) {
     const aiConfidence = aiCategorizationResult.confidence;
     const shouldUseAiCategory = aiConfidence >= 0.75; // High confidence threshold
 

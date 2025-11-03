@@ -16,7 +16,6 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-  Mail,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -78,8 +77,6 @@ export function DocumentCard({
   uploadedAt,
   mimeType,
   thumbnailKey,
-  isRequired = false,
-  requiresOriginal = false,
   rejectionReason,
   aiIntelligence,
   onView,
@@ -176,7 +173,7 @@ export function DocumentCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-shadow hover:shadow-md cursor-pointer",
+        "cursor-pointer overflow-hidden transition-shadow hover:shadow-md",
         className
       )}
       onClick={handleCardClick}
@@ -294,7 +291,7 @@ export function DocumentCard({
           {/* Rejection Reason */}
           {status === "REJECTED" && rejectionReason && (
             <div className="rounded-lg bg-red-50 p-2.5 text-sm text-red-700">
-              <p className="font-medium text-xs">Rejected:</p>
+              <p className="text-xs font-medium">Rejected:</p>
               <p className="mt-0.5 text-xs">{rejectionReason}</p>
             </div>
           )}

@@ -28,7 +28,7 @@ export async function GET(
     }
 
     // Return file for inline viewing
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": file.mimeType,
         "Content-Disposition": `inline; filename="${file.originalFilename}"`,

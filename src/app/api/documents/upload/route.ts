@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { uploadToR2, generateFileKey, getObject } from "@/lib/r2";
+import { uploadToR2, getObject } from "@/lib/r2";
 import { nanoid } from "nanoid";
 import { processDocument } from "@/lib/document-intelligence/ocr";
 import {
@@ -82,11 +82,7 @@ export async function POST(req: NextRequest) {
     const fileKey = `${sessionId}/${nanoid()}.${fileExtension}`;
 
     // Upload to R2
-    const { url: r2Url, key: r2Key } = await uploadToR2(
-      fileKey,
-      file,
-      file.type
-    );
+    const { key: r2Key } = await uploadToR2(fileKey, file, file.type);
 
     // Create database record
     const uploadedFile = await db.uploadedFile.create({

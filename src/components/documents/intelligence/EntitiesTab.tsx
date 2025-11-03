@@ -28,6 +28,7 @@ interface EntitiesTabProps {
 
 export function EntitiesTab({ data }: EntitiesTabProps) {
   const { entities } = data;
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Defensive check for missing data
   if (!entities) {
@@ -35,13 +36,13 @@ export function EntitiesTab({ data }: EntitiesTabProps) {
       <div className="space-y-6 py-4">
         <div className="rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">
-            Entity extraction data is not available. Please try refreshing the page.
+            Entity extraction data is not available. Please try refreshing the
+            page.
           </p>
         </div>
       </div>
     );
   }
-  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, fieldId: string) => {
     navigator.clipboard.writeText(text);

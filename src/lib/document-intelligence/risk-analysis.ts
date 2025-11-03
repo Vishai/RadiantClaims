@@ -211,7 +211,7 @@ function analyzeQualityRisks(qualityMetrics: QualityMetrics): RiskFlag[] {
  * Analyze eligibility risks
  */
 function analyzeEligibilityRisks(
-  entities: EntityExtractionResult,
+  _entities: EntityExtractionResult,
   compliance: RECAComplianceResult
 ): RiskFlag[] {
   const risks: RiskFlag[] = [];

@@ -5,7 +5,6 @@
 
 import { createWorker, type Worker } from "tesseract.js";
 import sharp from "sharp";
-import { PDFDocument } from "pdf-lib";
 
 // PDF.js will be dynamically imported when needed
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -184,7 +183,7 @@ async function extractTextWithPDFJS(
  * Converts PDF pages to images and runs Tesseract on each page
  */
 async function extractTextFromScannedPDF(
-  pdfBuffer: Buffer
+  _pdfBuffer: Buffer
 ): Promise<OCRResult> {
   // For now, we'll skip OCR for scanned PDFs as it requires canvas/rendering
   // which is complex in Node.js environment
