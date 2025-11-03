@@ -384,7 +384,8 @@ export default function EligibilityCheckPage() {
                   <li className="flex gap-2">
                     <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
                     <span>
-                      We help them complete their claim at no cost to them
+                      We help them complete their claim with affordable DIY
+                      service or no-upfront-cost legal representation
                     </span>
                   </li>
                   <li className="flex gap-2">

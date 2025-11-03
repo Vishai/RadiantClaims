@@ -7,7 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight, Check, FileText, Scale, DollarSign, TrendingUp, Heart } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  Scale,
+  DollarSign,
+  TrendingUp,
+  Heart,
+} from "lucide-react";
 
 export default function HowItWorksPage() {
   return (
@@ -77,11 +85,15 @@ export default function HowItWorksPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-sage-600" />
-                    <span className="text-sage-800">Diagnosed with a covered primary cancer</span>
+                    <span className="text-sage-800">
+                      Diagnosed with a covered primary cancer
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-sage-600" />
-                    <span className="text-sage-800">Met latency requirement (2-5 years)</span>
+                    <span className="text-sage-800">
+                      Met latency requirement (2-5 years)
+                    </span>
                   </li>
                 </ul>
                 <p className="mt-4 text-sm font-semibold text-sage-900">
@@ -121,15 +133,16 @@ export default function HowItWorksPage() {
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-peach-600" />
                     <span className="text-sage-800">
-                      <strong>Proof of residence:</strong> School records, church
-                      membership, tax documents, utility bills (need 2+ sources)
+                      <strong>Proof of residence:</strong> School records,
+                      church membership, tax documents, utility bills (need 2+
+                      sources)
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-peach-600" />
                     <span className="text-sage-800">
-                      <strong>Medical proof:</strong> Pathology reports, discharge
-                      summaries, oncologist letters
+                      <strong>Medical proof:</strong> Pathology reports,
+                      discharge summaries, oncologist letters
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -141,9 +154,9 @@ export default function HowItWorksPage() {
                   </li>
                 </ul>
                 <p className="text-sage-700">
-                  We review your documents for completeness and organize them into
-                  a <strong>DOJ-ready packet</strong>—saving your attorney hours
-                  of administrative work.
+                  We review your documents for completeness and organize them
+                  into a <strong>DOJ-ready packet</strong>—saving your attorney
+                  hours of administrative work.
                 </p>
               </CardContent>
             </Card>
@@ -178,19 +191,27 @@ export default function HowItWorksPage() {
                 <ul className="mb-4 space-y-2">
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-terracotta-600" />
-                    <span className="text-sage-800">Review your claim for compliance</span>
+                    <span className="text-sage-800">
+                      Review your claim for compliance
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-terracotta-600" />
-                    <span className="text-sage-800">File your claim with the Department of Justice</span>
+                    <span className="text-sage-800">
+                      File your claim with the Department of Justice
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-terracotta-600" />
-                    <span className="text-sage-800">Respond to any DOJ requests for additional information</span>
+                    <span className="text-sage-800">
+                      Respond to any DOJ requests for additional information
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-terracotta-600" />
-                    <span className="text-sage-800">Represent you throughout the approval process</span>
+                    <span className="text-sage-800">
+                      Represent you throughout the approval process
+                    </span>
                   </li>
                 </ul>
                 <div className="rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6">
@@ -198,8 +219,8 @@ export default function HowItWorksPage() {
                     Attorney Fee (You Pay Directly to Law Firm):
                   </p>
                   <p className="mt-2 text-sm text-sage-800">
-                    • <strong>2% of your award</strong> for initial successful claims
-                    ($2,000 on a $100,000 award)
+                    • <strong>2% of your award</strong> for initial successful
+                    claims ($2,000 on a $100,000 award)
                   </p>
                   <p className="text-sm text-sage-800">
                     • Up to <strong>10% of your award</strong> for resubmitted
@@ -300,16 +321,21 @@ export default function HowItWorksPage() {
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-peach-600" />
                     <span className="text-sage-800">
-                      Preserve RECA funds while maintaining SSI/Medicaid eligibility
+                      Preserve RECA funds while maintaining SSI/Medicaid
+                      eligibility
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-peach-600" />
-                    <span className="text-sage-800">Create long-term income strategies</span>
+                    <span className="text-sage-800">
+                      Create long-term income strategies
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-1 h-5 w-5 text-peach-600" />
-                    <span className="text-sage-800">Build family legacy through ethical investment</span>
+                    <span className="text-sage-800">
+                      Build family legacy through ethical investment
+                    </span>
                   </li>
                 </ul>
                 <div className="rounded-2xl bg-gradient-to-br from-cream-100 to-peach-50 p-6">
@@ -318,8 +344,8 @@ export default function HowItWorksPage() {
                   </p>
                   <p className="mt-2 text-sm text-sage-700">
                     Financial planning is completely separate from your claim
-                    filing and is <strong>100% optional</strong>. You are free to
-                    manage your award however you choose.
+                    filing and is <strong>100% optional</strong>. You are free
+                    to manage your award however you choose.
                   </p>
                 </div>
               </CardContent>
@@ -329,7 +355,9 @@ export default function HowItWorksPage() {
           {/* Key Disclosures */}
           <Card className="mt-12 rounded-3xl border-2 border-cream-300 bg-gradient-to-br from-cream-50 to-peach-50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sage-900">Important Legal Disclosures</CardTitle>
+              <CardTitle className="text-sage-900">
+                Important Legal Disclosures
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p className="text-sage-700">
@@ -338,21 +366,23 @@ export default function HowItWorksPage() {
                 provide legal advice or legal representation.
               </p>
               <p className="text-sage-700">
-                <strong>Legal representation is provided by our partner law firm.</strong>{" "}
-                Attorney fees are paid directly to the law firm and are capped by
-                federal statute at 2% for initial claims and up to 10% for
+                <strong>
+                  Legal representation is provided by our partner law firm.
+                </strong>{" "}
+                Attorney fees are paid directly to the law firm and are capped
+                by federal statute at 2% for initial claims and up to 10% for
                 resubmitted claims.
               </p>
               <p className="text-sage-700">
                 <strong>Our service is free to claimants.</strong> RadiantClaims
-                is compensated by the law firm for administrative services—not by
-                you.
+                is compensated by the law firm for administrative services—not
+                by you.
               </p>
               <p className="text-sage-700">
                 <strong>Referral to financial advisors is optional.</strong>{" "}
-                Financial planning services are separate from claim filing and are
-                provided by independent Registered Investment Advisers who operate
-                under a fiduciary standard.
+                Financial planning services are separate from claim filing and
+                are provided by independent Registered Investment Advisers who
+                operate under a fiduciary standard.
               </p>
               <p className="text-sage-700">
                 <strong>Eligibility does not guarantee approval.</strong> All
@@ -366,7 +396,8 @@ export default function HowItWorksPage() {
           <div className="mt-12 rounded-3xl bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-8 text-center text-white shadow-lg">
             <h2 className="mb-4 text-3xl font-bold">Ready to Get Started?</h2>
             <p className="mb-6 text-lg text-terracotta-50">
-              Begin your free claim packet today. No cost, no obligation.
+              Start with our free eligibility check, then choose between
+              affordable DIY service or no-upfront-cost legal representation.
             </p>
             <Link href="/intake">
               <Button

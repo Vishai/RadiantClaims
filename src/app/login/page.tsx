@@ -105,7 +105,9 @@ function LoginForm() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sage-800">Email</Label>
+                <Label htmlFor="email" className="text-sage-800">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -118,7 +120,9 @@ function LoginForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sage-800">Password</Label>
+                <Label htmlFor="password" className="text-sage-800">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -130,7 +134,7 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div className="rounded-2xl bg-terracotta-50 p-3 text-sm text-terracotta-800 border border-terracotta-200">
+                <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
                   {error}
                 </div>
               )}
@@ -144,10 +148,19 @@ function LoginForm() {
               </Button>
             </form>
 
-            <div className="mt-6 border-t border-cream-200 pt-6 text-center">
+            <div className="mt-6 space-y-4 border-t border-cream-200 pt-6 text-center">
+              <p className="text-sm text-sage-600">
+                Don't have an account?{" "}
+                <Link
+                  href={`/register${searchParams.get("callbackUrl") ? `?callbackUrl=${searchParams.get("callbackUrl")}` : ""}`}
+                  className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
+                >
+                  Create Account
+                </Link>
+              </p>
               <Link
                 href="/"
-                className="text-sm text-sage-600 transition-colors hover:text-terracotta-600"
+                className="block text-sm text-sage-600 transition-colors hover:text-terracotta-600"
               >
                 ← Back to Home
               </Link>
@@ -161,14 +174,16 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
-          <p className="mt-4 text-sage-600">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+            <p className="mt-4 text-sage-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

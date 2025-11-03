@@ -37,16 +37,16 @@ function ResultContent() {
           borderColor: "border-green-200",
           title: "Great News! You Likely Qualify",
           description:
-            "Based on your answers, you appear to meet the basic RECA eligibility requirements.",
+            "Based on your answers, you appear to meet the basic RECA eligibility requirements. The next step is choosing how you want to prepare and file your claim documents.",
           nextSteps: [
+            "Choose between DIY document prep or full legal representation",
             "Start gathering your residence proof documents",
             "Obtain medical records showing your cancer diagnosis",
-            "Choose between DIY document prep or full legal representation",
           ],
           ctaText:
             intent === "someone-else" || intent === "someone-else-relative"
               ? "We'll Contact Them Soon"
-              : "Start Your Claim",
+              : "Choose Your Path",
           ctaLink: "/service-tiers",
         };
       case "unlikely":
@@ -57,13 +57,13 @@ function ResultContent() {
           borderColor: "border-yellow-200",
           title: "Latency Period May Be an Issue",
           description:
-            "The cancer diagnosis appears to have occurred too soon after exposure, but we recommend professional review.",
+            "The cancer diagnosis appears to have occurred too soon after the exposure period. However, some cases have exceptions or special circumstances. We recommend professional legal review.",
           nextSteps: [
-            "We can help verify the exact dates with your documents",
-            "Some cases have exceptions or special circumstances",
-            "Contact us for a detailed eligibility consultation",
+            "Heritage Law Offices can verify exact dates with your documents",
+            "Some cases qualify under special circumstances",
+            "Our Legal Representation path includes professional review at no upfront cost",
           ],
-          ctaText: "Get Expert Review",
+          ctaText: "Get Attorney Review",
           ctaLink: "/service-tiers",
         };
       case "ineligible":
@@ -72,16 +72,17 @@ function ResultContent() {
           iconColor: "text-red-600",
           bgColor: "from-red-50 to-cream-100",
           borderColor: "border-red-200",
-          title: "Unfortunately, You May Not Qualify",
+          title: "You May Not Qualify",
           description:
-            "Based on your answers, you may not meet the basic RECA eligibility requirements.",
+            "Based on your answers, you do not appear to meet the basic RECA eligibility requirements. This could be due to location, cancer type, or timing requirements.",
           nextSteps: [
-            "Review the full eligibility requirements to confirm",
+            "Review the full eligibility requirements in case we missed something",
             "Check if other family members might qualify",
-            "Contact us if you believe there's been an error",
+            "Consider referring someone else who may be eligible (earn $50)",
           ],
           ctaText: "Review Full Requirements",
           ctaLink: "/eligibility",
+          showServiceLink: false, // Don't show service tier link for ineligible
         };
       default:
         return {

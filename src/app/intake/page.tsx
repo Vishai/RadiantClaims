@@ -143,7 +143,9 @@ function IntakeForm() {
         });
 
         if (signInResult?.error) {
-          setError("Account created but auto-login failed. Please login manually.");
+          setError(
+            "Account created but auto-login failed. Please login manually."
+          );
           setTimeout(() => {
             router.push(`/login?callbackUrl=${nextRoute}`);
           }, 3000);
@@ -178,7 +180,10 @@ function IntakeForm() {
             </span>
           </Link>
           <Link href="/">
-            <Button variant="outline" className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50">
+            <Button
+              variant="outline"
+              className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+            >
               Back to Home
             </Button>
           </Link>
@@ -191,14 +196,17 @@ function IntakeForm() {
             Start Your Free Claim Packet
           </h1>
           <p className="text-lg text-sage-700">
-            Fill out the information below to begin. We'll guide you through every step.
+            Fill out the information below to begin. We'll guide you through
+            every step.
           </p>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
 
         <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-sage-900">Claimant Information</CardTitle>
+            <CardTitle className="text-sage-900">
+              Claimant Information
+            </CardTitle>
             <CardDescription className="text-sage-600">
               Please fill out all required information to begin your claim
               process
@@ -247,7 +255,9 @@ function IntakeForm() {
               />
 
               <div className="space-y-4 border-t border-cream-200 pt-6">
-                <h3 className="text-lg font-semibold text-sage-900">Address Information</h3>
+                <h3 className="text-lg font-semibold text-sage-900">
+                  Address Information
+                </h3>
 
                 <FormField
                   form={form}
@@ -296,39 +306,46 @@ function IntakeForm() {
                   placeholder="Enter code if you have one"
                 />
                 <p className="mt-2 text-xs text-sage-600">
-                  Have a referral code? Enter it here to help us connect you with the right resources.
+                  Have a referral code? Enter it here to help us connect you
+                  with the right resources.
                 </p>
               </div>
 
               {error && (
-                <div className="rounded-2xl bg-terracotta-50 p-4 text-sm text-terracotta-800 border border-terracotta-200">
+                <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-4 text-sm text-terracotta-800">
                   {error}
                 </div>
               )}
 
               {accountCreated && (
-                <div className="rounded-2xl bg-emerald-50 p-6 border-2 border-emerald-200">
+                <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-6">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 flex-shrink-0">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-emerald-900 mb-2">
+                      <h3 className="mb-2 font-semibold text-emerald-900">
                         Account Created Successfully!
                       </h3>
-                      <p className="text-sm text-emerald-800 mb-3">
-                        We've created your RadiantClaims account. Save these credentials
-                        to log in and track your claim status:
+                      <p className="mb-3 text-sm text-emerald-800">
+                        We've created your RadiantClaims account. Save these
+                        credentials to log in and track your claim status:
                       </p>
-                      <div className="rounded-lg bg-white p-4 border border-emerald-200 mb-3">
+                      <div className="mb-3 rounded-lg border border-emerald-200 bg-white p-4">
                         <div className="space-y-2 text-sm">
                           <div>
-                            <span className="font-medium text-sage-700">Email:</span>{" "}
-                            <code className="text-sage-900">{accountCreated.email}</code>
+                            <span className="font-medium text-sage-700">
+                              Email:
+                            </span>{" "}
+                            <code className="text-sage-900">
+                              {accountCreated.email}
+                            </code>
                           </div>
                           <div>
-                            <span className="font-medium text-sage-700">Temporary Password:</span>{" "}
-                            <code className="text-sage-900 font-mono bg-cream-100 px-2 py-1 rounded">
+                            <span className="font-medium text-sage-700">
+                              Temporary Password:
+                            </span>{" "}
+                            <code className="rounded bg-cream-100 px-2 py-1 font-mono text-sage-900">
                               {accountCreated.password}
                             </code>
                           </div>
@@ -365,8 +382,9 @@ function IntakeForm() {
 
         <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
           <p className="text-sm text-sage-700">
-            <strong>100% free for claimants.</strong> We prepare your documents at no cost to you.
-            Attorney fees are paid directly to the law firm and are capped at 2% by federal statute.
+            Choose between our DIY document preparation service (starting at
+            $149.99) or full legal representation with no upfront cost (2%
+            attorney fee paid from your award, capped by federal statute).
           </p>
         </div>
       </main>
@@ -412,14 +430,16 @@ function IntakeForm() {
 
 export default function IntakePage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-cream-50">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
-          <p className="mt-4 text-sage-600">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-cream-50">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+            <p className="mt-4 text-sage-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <IntakeForm />
     </Suspense>
   );

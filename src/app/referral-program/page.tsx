@@ -49,9 +49,12 @@ export default function ReferralProgramPage() {
           {/* How It Works */}
           <Card className="mb-8 rounded-3xl border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl text-sage-900">How Referral Rewards Work</CardTitle>
+              <CardTitle className="text-2xl text-sage-900">
+                How Referral Rewards Work
+              </CardTitle>
               <CardDescription className="text-sage-600">
-                It's simple—and every referral helps a family access their benefits
+                It's simple—and every referral helps a family access their
+                benefits
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -65,9 +68,9 @@ export default function ReferralProgramPage() {
                       Submit a Referral
                     </h3>
                     <p className="text-sage-700">
-                      Know someone who lived in Utah, Idaho, New Mexico, Arizona,
-                      or Nevada during the 1951-1962 nuclear testing period? Share
-                      their basic contact information with us.
+                      Know someone who lived in Utah, Idaho, New Mexico,
+                      Arizona, or Nevada during the 1951-1962 nuclear testing
+                      period? Share their basic contact information with us.
                     </p>
                   </div>
                 </div>
@@ -82,8 +85,8 @@ export default function ReferralProgramPage() {
                     </h3>
                     <p className="text-sage-700">
                       Our team reaches out and helps them complete their claim
-                      packet—completely free. We handle all the document prep and
-                      attorney coordination.
+                      packet—completely free. We handle all the document prep
+                      and attorney coordination.
                     </p>
                   </div>
                 </div>
@@ -97,9 +100,10 @@ export default function ReferralProgramPage() {
                       Earn $50 When Approved
                     </h3>
                     <p className="text-sage-700">
-                      If the Department of Justice approves their claim and issues
-                      the $100,000 award, you receive <strong>$50</strong> as a
-                      thank-you for connecting us with an eligible family.
+                      If the Department of Justice approves their claim and
+                      issues the $100,000 award, you receive{" "}
+                      <strong>$50</strong> as a thank-you for connecting us with
+                      an eligible family.
                     </p>
                   </div>
                 </div>
@@ -116,13 +120,16 @@ export default function ReferralProgramPage() {
               <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader>
                   <Users className="mb-2 h-8 w-8 text-sage-600" />
-                  <CardTitle className="text-sage-900">Help Your Community</CardTitle>
+                  <CardTitle className="text-sage-900">
+                    Help Your Community
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-sage-700">
                     Many eligible families don't know about RECA or feel
                     overwhelmed by the process. Your referral connects them with
-                    expert help—100% free.
+                    expert help—free eligibility check, then affordable DIY
+                    document prep or no-upfront-cost legal representation.
                   </p>
                 </CardContent>
               </Card>
@@ -130,7 +137,9 @@ export default function ReferralProgramPage() {
               <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader>
                   <DollarSign className="mb-2 h-8 w-8 text-terracotta-600" />
-                  <CardTitle className="text-sage-900">Earn Fair Compensation</CardTitle>
+                  <CardTitle className="text-sage-900">
+                    Earn Fair Compensation
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-sage-700">
@@ -143,7 +152,9 @@ export default function ReferralProgramPage() {
               <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader>
                   <FileCheck className="mb-2 h-8 w-8 text-peach-600" />
-                  <CardTitle className="text-sage-900">No Work Required</CardTitle>
+                  <CardTitle className="text-sage-900">
+                    No Work Required
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-sage-700">
@@ -156,12 +167,15 @@ export default function ReferralProgramPage() {
               <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader>
                   <Gift className="mb-2 h-8 w-8 text-terracotta-500" />
-                  <CardTitle className="text-sage-900">Life-Changing Impact</CardTitle>
+                  <CardTitle className="text-sage-900">
+                    Life-Changing Impact
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-sage-700">
                     A $100,000 award can mean financial security, medical care,
-                    education for grandchildren, or peace of mind for aging parents.
+                    education for grandchildren, or peace of mind for aging
+                    parents.
                   </p>
                 </CardContent>
               </Card>
@@ -171,17 +185,26 @@ export default function ReferralProgramPage() {
           {/* Terms & Conditions */}
           <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sage-900">Referral Program Terms</CardTitle>
+              <CardTitle className="text-sage-900">
+                Referral Program Terms
+              </CardTitle>
               <CardDescription className="text-sage-600">
                 Please review these requirements carefully
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-sage-700">
               <div>
-                <h4 className="mb-2 font-semibold text-sage-900">Eligibility:</h4>
+                <h4 className="mb-2 font-semibold text-sage-900">
+                  Eligibility:
+                </h4>
                 <ul className="ml-6 list-disc space-y-1">
-                  <li>Referrer must be 18+ years old and a U.S. citizen or resident</li>
-                  <li>Cannot refer yourself or members of your immediate household</li>
+                  <li>
+                    Referrer must be 18+ years old and a U.S. citizen or
+                    resident
+                  </li>
+                  <li>
+                    Cannot refer yourself or members of your immediate household
+                  </li>
                   <li>Referred individual must complete full intake process</li>
                 </ul>
               </div>
@@ -190,8 +213,8 @@ export default function ReferralProgramPage() {
                 <h4 className="mb-2 font-semibold text-sage-900">Payment:</h4>
                 <ul className="ml-6 list-disc space-y-1">
                   <li>
-                    Bonus paid <strong>only after</strong> the Department of Justice
-                    approves the claim and issues the $100,000 award
+                    Bonus paid <strong>only after</strong> the Department of
+                    Justice approves the claim and issues the $100,000 award
                   </li>
                   <li>Payment made within 30 days of award notification</li>
                   <li>
@@ -199,14 +222,16 @@ export default function ReferralProgramPage() {
                     RadiantClaims, not from claimant's award)
                   </li>
                   <li>
-                    W-9 form required; 1099 issued if total payments exceed $600 in
-                    a calendar year
+                    W-9 form required; 1099 issued if total payments exceed $600
+                    in a calendar year
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="mb-2 font-semibold text-sage-900">Prohibitions:</h4>
+                <h4 className="mb-2 font-semibold text-sage-900">
+                  Prohibitions:
+                </h4>
                 <ul className="ml-6 list-disc space-y-1">
                   <li>
                     Referrer may not engage in unauthorized practice of law or
@@ -217,14 +242,16 @@ export default function ReferralProgramPage() {
                     guarantee claim approval
                   </li>
                   <li>
-                    Referrer may not share confidential information about referred
-                    individuals
+                    Referrer may not share confidential information about
+                    referred individuals
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="mb-2 font-semibold text-sage-900">Data & Privacy:</h4>
+                <h4 className="mb-2 font-semibold text-sage-900">
+                  Data & Privacy:
+                </h4>
                 <ul className="ml-6 list-disc space-y-1">
                   <li>
                     Referred individual's data will only be used for RECA claim
@@ -243,39 +270,48 @@ export default function ReferralProgramPage() {
           {/* Legal Disclaimer */}
           <Card className="mb-8 rounded-3xl border-2 border-cream-300 bg-gradient-to-br from-cream-50 to-peach-50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-sage-900">Important Legal Disclosures</CardTitle>
+              <CardTitle className="text-sage-900">
+                Important Legal Disclosures
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-sage-700">
               <p>
-                <strong>No attorney-client relationship is formed by referring someone.</strong>{" "}
+                <strong>
+                  No attorney-client relationship is formed by referring
+                  someone.
+                </strong>{" "}
                 You are not providing legal services or legal representation.
               </p>
               <p>
-                <strong>Referral bonus is paid by RadiantClaims only.</strong> This
-                is a marketing incentive, not a share of attorney fees or legal
-                services compensation.
+                <strong>Referral bonus is paid by RadiantClaims only.</strong>{" "}
+                This is a marketing incentive, not a share of attorney fees or
+                legal services compensation.
               </p>
               <p>
                 <strong>No guarantee of approval.</strong> Payment is contingent
-                upon DOJ approval of the claim. Eligibility does not guarantee award.
+                upon DOJ approval of the claim. Eligibility does not guarantee
+                award.
               </p>
               <p>
                 <strong>Tax implications.</strong> Referral bonuses are taxable
                 income. Consult a tax professional for guidance.
               </p>
               <p>
-                <strong>Program modifications.</strong> RadiantClaims reserves the
-                right to modify or discontinue the referral program at any time with
-                notice.
+                <strong>Program modifications.</strong> RadiantClaims reserves
+                the right to modify or discontinue the referral program at any
+                time with notice.
               </p>
             </CardContent>
           </Card>
 
           {/* CTA */}
           <div className="rounded-3xl bg-gradient-to-br from-sage-600 to-sage-700 p-8 text-center text-white shadow-lg">
-            <h2 className="mb-4 text-3xl font-bold">Ready to Refer a Family?</h2>
+            <h2 className="mb-4 text-3xl font-bold">
+              Ready to Refer a Family?
+            </h2>
             <p className="mb-6 text-lg text-sage-50">
-              Help us connect eligible individuals with the benefits they deserve.
+              Help us connect eligible individuals with the benefits they
+              deserve.
             </p>
             <Link href="/intake">
               <Button

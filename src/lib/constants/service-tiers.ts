@@ -22,12 +22,12 @@ export const SERVICE_TIERS = {
     },
 
     features: [
-      "Eligibility assessment",
       "Document checklist & organization",
-      "RECA form preparation",
-      "Ongoing portal access",
-      "Document tracking",
-      "Progress tracking",
+      "Step-by-step document gathering guidance",
+      "Professional RECA form preparation",
+      "Secure portal access for document uploads",
+      "Document tracking & status updates",
+      "Progress tracking through completion",
     ],
 
     userResponsibilities: [
@@ -76,12 +76,12 @@ export const SERVICE_TIERS = {
 
     features: [
       "Everything in DIY Path, plus:",
-      "Attorney review of all documents",
-      "Legal representation throughout process",
+      "Professional attorney review of all documents",
+      "Full legal representation throughout the process",
       "Attorney submits claim to DOJ on your behalf",
-      "Resubmission assistance if claim is denied",
-      "Legal guidance on complex issues",
-      "Communication with DOJ on your behalf",
+      "Resubmission assistance if claim is initially denied",
+      "Legal guidance on complex eligibility issues",
+      "Direct communication with DOJ on your behalf",
     ],
 
     userResponsibilities: [
