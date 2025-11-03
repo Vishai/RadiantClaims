@@ -51,12 +51,12 @@ export default function HomePage() {
                 representation with Heritage Law Offices.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href="/eligibility">
+                <Link href="/eligibility-check">
                   <Button
                     size="lg"
                     className="rounded-full bg-terracotta-500 px-8 py-6 text-lg font-medium shadow-lg hover:bg-terracotta-600"
                   >
-                    Check Eligibility
+                    Quick Eligibility Check
                   </Button>
                 </Link>
                 <Link href="/service-tiers">
@@ -160,11 +160,21 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <Link href="/eligibility">
-                  <Button className="w-full rounded-full bg-sage-600 py-6 text-lg font-medium hover:bg-sage-700 sm:w-auto">
-                    See Full Eligibility Criteria →
-                  </Button>
-                </Link>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Link href="/eligibility-check">
+                    <Button className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-medium hover:bg-terracotta-600 sm:w-auto">
+                      Take Quick Check →
+                    </Button>
+                  </Link>
+                  <Link href="/eligibility">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-full border-2 border-sage-300 py-6 text-lg font-medium hover:bg-sage-50 sm:w-auto"
+                    >
+                      Full Eligibility Info
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

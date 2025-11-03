@@ -4,13 +4,18 @@ import { IntelligenceResponse } from "@/app/api/documents/[id]/intelligence/rout
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { QUALIFICATION_COPY } from "../qualification-utils";
+import { cn } from "@/lib/utils";
 
 interface OverviewTabProps {
   data: IntelligenceResponse;
 }
 
 export function OverviewTab({ data }: OverviewTabProps) {
-  const { compliance, risks, aiCategorization } = data;
+  const { compliance, risks, aiCategorization, qualification } = data;
+  const qualificationCopy = qualification
+    ? QUALIFICATION_COPY[qualification.status]
+    : null;
 
   // Defensive check for missing data
   if (!compliance || !risks) {
@@ -26,7 +31,9 @@ export function OverviewTab({ data }: OverviewTabProps) {
   }
 
   // Calculate completeness percentage
-  const completenessPercent = Math.round((compliance.checklistCoverage ?? 0) * 100);
+  const completenessPercent = Math.round(
+    (compliance.checklistCoverage ?? 0) * 100
+  );
 
   // Get top 3 missing requirements
   const topMissing = (compliance.missingRequirements ?? [])
@@ -59,6 +66,49 @@ export function OverviewTab({ data }: OverviewTabProps) {
 
   return (
     <div className="space-y-6 py-4">
+      {qualification && qualificationCopy && (
+        <div
+          className={cn("rounded-lg border p-4", qualificationCopy.className)}
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none">
+              {qualificationCopy.icon}
+            </span>
+            <div className="flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-semibold">
+                  {qualificationCopy.label}
+                </h3>
+                <span className="text-xs uppercase tracking-wide opacity-80">
+                  {Math.round(qualification.confidence * 100)}% confidence
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed">{qualification.reason}</p>
+
+              {qualification.matchedRequirement && (
+                <p className="text-xs font-medium">
+                  ✓ Satisfies: {qualification.matchedRequirement.name}
+                </p>
+              )}
+
+              {qualification.suggestion && (
+                <p className="text-xs text-muted-foreground">
+                  {qualification.suggestion}
+                </p>
+              )}
+
+              {qualification.issues && qualification.issues.length > 0 && (
+                <ul className="list-inside list-disc text-xs opacity-80">
+                  {qualification.issues.map((issue, idx) => (
+                    <li key={`${issue}-${idx}`}>{issue}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI-Generated Summary */}
       {aiCategorization && (
         <div className="rounded-lg border p-4">
@@ -80,7 +130,8 @@ export function OverviewTab({ data }: OverviewTabProps) {
                 {compliance.claimTypeSuspected ?? "Unknown"}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {Math.round((compliance.claimTypeConfidence ?? 0) * 100)}% confident
+                {Math.round((compliance.claimTypeConfidence ?? 0) * 100)}%
+                confident
               </span>
             </div>
           </div>

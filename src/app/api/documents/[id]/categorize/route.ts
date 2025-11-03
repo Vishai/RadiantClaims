@@ -18,6 +18,7 @@ const categorizeSchema = z.object({
     "EMPLOYMENT_RECORDS",
     "OTHER",
   ]),
+  lockCategory: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -27,12 +28,24 @@ export async function PATCH(
   try {
     const { id } = params;
     const body = await req.json();
-    const { category } = categorizeSchema.parse(body);
+    const { category, lockCategory } = categorizeSchema.parse(body);
 
     // Update the file category
+    const updateData: Record<string, any> = { category };
+
+    if (lockCategory === true) {
+      updateData.categoryLocked = true;
+      updateData.categoryLockedAt = new Date();
+      updateData.categoryLockedBy = "user";
+    } else if (lockCategory === false) {
+      updateData.categoryLocked = false;
+      updateData.categoryLockedAt = null;
+      updateData.categoryLockedBy = null;
+    }
+
     const updatedFile = await db.uploadedFile.update({
       where: { id },
-      data: { category },
+      data: updateData,
     });
 
     return NextResponse.json(

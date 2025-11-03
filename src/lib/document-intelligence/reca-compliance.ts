@@ -12,6 +12,9 @@ import {
   NameConsistencyCheck,
   EligibilityFlag,
   DocumentQualification,
+  DocumentDjApprovalImpact,
+  DocumentUserAction,
+  DocumentQualificationStatus,
 } from "./schemas/compliance-schema";
 import {
   ClaimType,
@@ -42,10 +45,17 @@ export async function checkRECACompliance(
   allDocuments: Document[],
   _ocrText: string,
   currentDocumentCategory?: FileCategory | null,
-  aiCategorizationResult?: {
-    category: FileCategory;
-    confidence: number;
-    reasoning: string;
+  context?: {
+    userSelectedCategory?: FileCategory | null;
+    aiCategorizationResult?: {
+      category: FileCategory;
+      confidence: number;
+      reasoning: string;
+    };
+    heuristicReason?: string;
+    heuristicSignals?: string[];
+    autoCorrected?: boolean;
+    categoryLocked?: boolean;
   }
 ): Promise<RECAComplianceResult> {
   // Step 1: Determine claim type
@@ -79,7 +89,14 @@ export async function checkRECACompliance(
     currentDocumentCategory,
     claimType,
     entities,
-    aiCategorizationResult
+    {
+      userSelectedCategory: context?.userSelectedCategory,
+      aiCategorizationResult: context?.aiCategorizationResult,
+      heuristicReason: context?.heuristicReason,
+      heuristicSignals: context?.heuristicSignals,
+      autoCorrected: context?.autoCorrected,
+      categoryLocked: context?.categoryLocked,
+    }
   );
 
   // Step 6: Date sanity checks
@@ -576,18 +593,41 @@ function generateSuggestion(
  * Check if the current document qualifies as a required document for the claim
  */
 function checkCurrentDocumentQualification(
-  documentCategory: FileCategory | null | undefined,
+  finalDocumentCategory: FileCategory | null | undefined,
   claimType: ClaimType,
   entities: EntityExtractionResult,
-  aiCategorizationResult?: {
-    category: FileCategory;
-    confidence: number;
-    reasoning: string;
-  }
+  options: {
+    userSelectedCategory?: FileCategory | null;
+    aiCategorizationResult?: {
+      category: FileCategory;
+      confidence: number;
+      reasoning: string;
+    };
+    heuristicReason?: string;
+    heuristicSignals?: string[];
+    autoCorrected?: boolean;
+    categoryLocked?: boolean;
+  } = {}
 ): DocumentQualification {
-  // If no document category provided, return unknown
-  if (!documentCategory) {
-    return {
+  const userSelectedCategory = options.userSelectedCategory ?? null;
+  const aiCategorizationResult = options.aiCategorizationResult;
+  const heuristicReason = options.heuristicReason;
+  const heuristicSignals = options.heuristicSignals;
+  const autoCorrected = options.autoCorrected ?? false;
+  const categoryLocked = options.categoryLocked ?? false;
+
+  let effectiveCategory = finalDocumentCategory ?? null;
+
+  if (!effectiveCategory && aiCategorizationResult) {
+    effectiveCategory = aiCategorizationResult.category;
+  }
+
+  if (!effectiveCategory && userSelectedCategory) {
+    effectiveCategory = userSelectedCategory;
+  }
+
+  if (!effectiveCategory) {
+    return buildQualificationResponse({
       status: "UNKNOWN",
       confidence: 0,
       reason:
@@ -596,60 +636,139 @@ function checkCurrentDocumentQualification(
         "Document type is unclear or not recognized",
         "Manual review recommended",
       ],
-    };
+    });
   }
 
-  // Check if AI detected a different category than what user selected
-  let categoryMismatch;
-  let effectiveCategory = documentCategory;
+  let categoryMismatch: DocumentQualification["categoryMismatch"] | undefined;
 
-  if (
-    aiCategorizationResult &&
-    aiCategorizationResult.category !== documentCategory
-  ) {
-    const aiConfidence = aiCategorizationResult.confidence;
-    const shouldUseAiCategory = aiConfidence >= 0.75; // High confidence threshold
+  if (userSelectedCategory && userSelectedCategory !== effectiveCategory) {
+    const aiConfidence =
+      aiCategorizationResult?.category === effectiveCategory
+        ? aiCategorizationResult.confidence
+        : autoCorrected
+          ? 0.9
+          : 0.85;
+    const shouldUseAiCategory = !categoryLocked || autoCorrected;
+    const reasoningSnippet = aiCategorizationResult?.reasoning
+      ? ` because ${aiCategorizationResult.reasoning}`
+      : "";
+    const heuristicSnippet = heuristicReason ? ` ${heuristicReason}` : "";
 
     categoryMismatch = {
-      userSelected: documentCategory,
+      userSelected: userSelectedCategory,
+      aiDetected: effectiveCategory,
+      aiConfidence,
+      shouldUseAiCategory,
+      explanation: categoryLocked
+        ? `Category locked as "${formatCategoryName(effectiveCategory)}". ${heuristicSnippet ? heuristicSnippet : ""}`
+        : `AI switched this from "${formatCategoryName(userSelectedCategory)}" to "${formatCategoryName(effectiveCategory)}"${aiCategorizationResult ? ` with ${Math.round((aiCategorizationResult.confidence ?? 0) * 100)}% confidence${reasoningSnippet}` : ""}.${heuristicSnippet ? ` ${heuristicSnippet}` : ""} Please verify the category and recategorize if necessary.`,
+    };
+  } else if (
+    userSelectedCategory &&
+    aiCategorizationResult &&
+    aiCategorizationResult.category !== userSelectedCategory
+  ) {
+    const aiConfidence = aiCategorizationResult.confidence;
+    const shouldUseAiCategory = aiConfidence >= 0.75 && !categoryLocked;
+
+    if (shouldUseAiCategory) {
+      effectiveCategory = aiCategorizationResult.category;
+    }
+
+    categoryMismatch = {
+      userSelected: userSelectedCategory,
       aiDetected: aiCategorizationResult.category,
       aiConfidence,
       shouldUseAiCategory,
       explanation: shouldUseAiCategory
-        ? `AI detected this as "${formatCategoryName(aiCategorizationResult.category)}" with ${Math.round(aiConfidence * 100)}% confidence, which differs from your selection of "${formatCategoryName(documentCategory)}". The AI classification will be used for qualification checking.`
-        : `You classified this as "${formatCategoryName(documentCategory)}", but AI detected it might be "${formatCategoryName(aiCategorizationResult.category)}" (${Math.round(aiConfidence * 100)}% confidence). Your classification will be used, but please verify.`,
+        ? `AI detected this as "${formatCategoryName(aiCategorizationResult.category)}" with ${Math.round(aiConfidence * 100)}% confidence${aiCategorizationResult.reasoning ? ` because ${aiCategorizationResult.reasoning}` : ""}. Review and update the category if that looks correct.`
+        : `AI suggested "${formatCategoryName(aiCategorizationResult.category)}" (${Math.round(aiConfidence * 100)}% confidence). Double-check that your selection is correct.`,
     };
-
-    // If AI is highly confident, use AI category for qualification check
-    if (shouldUseAiCategory) {
-      effectiveCategory = aiCategorizationResult.category;
-    }
   }
 
-  // Check if document matches any requirement (using effective category)
+  const aiReasoningIssue = aiCategorizationResult?.reasoning
+    ? `AI reasoning: ${aiCategorizationResult.reasoning}`
+    : undefined;
+
   const qualificationCheck = checkDocumentQualification(
     effectiveCategory,
     claimType
   );
 
   if (!qualificationCheck.qualifies) {
-    return {
-      status: "DOES_NOT_QUALIFY",
+    const status: DocumentQualificationStatus =
+      effectiveCategory === "OTHER" ? "SUPPORTING" : "DOES_NOT_QUALIFY";
+
+    const issues =
+      status === "SUPPORTING"
+        ? [
+            "Does not match any required document type. Treat as optional supporting evidence until categorized.",
+          ]
+        : [
+            "This document type is not part of the required documentation checklist",
+            "Consider uploading required documents instead",
+          ];
+
+    if (aiReasoningIssue) {
+      issues.push(aiReasoningIssue);
+    }
+    if (heuristicReason) {
+      issues.push(heuristicReason);
+    }
+    if (heuristicSignals?.length) {
+      issues.push(
+        `Heuristic signals detected: ${heuristicSignals.slice(0, 5).join(", ")}`
+      );
+    }
+
+    const isOtherCategory = effectiveCategory === "OTHER";
+
+    const suggestionOverride = isOtherCategory
+      ? aiCategorizationResult?.reasoning
+        ? `AI moved this to "${formatCategoryName(effectiveCategory)}" because ${aiCategorizationResult.reasoning}. Recategorize it if this is actually a required document (e.g., medical evidence).`
+        : "This now sits in the Other bucket. Recategorize it if it should satisfy a DOJ requirement, or keep it only as supporting context."
+      : status === "SUPPORTING"
+        ? "Keep this as supporting context or recategorize it if the AI guessed incorrectly."
+        : "Recategorize this upload to the correct document type or replace it with a required document.";
+
+    const userActionOverride: DocumentUserAction = isOtherCategory
+      ? "RECATEGORIZE"
+      : status === "SUPPORTING"
+        ? categoryMismatch
+          ? "VERIFY_CATEGORY"
+          : "NONE"
+        : "RECATEGORIZE";
+
+    return buildQualificationResponse({
+      status,
       confidence: 0.85,
-      reason: `This document (${formatCategoryName(effectiveCategory)}) is not a required document type for ${claimType} claims.`,
-      issues: [
-        "This document type is not part of the required documentation checklist",
-        "Consider uploading required documents instead",
-      ],
+      reason:
+        status === "SUPPORTING"
+          ? `This document (${formatCategoryName(effectiveCategory)}) doesn't satisfy a DOJ requirement but may provide helpful background information.`
+          : `This document (${formatCategoryName(effectiveCategory)}) is not a required document type for ${claimType} claims.`,
+      issues,
       categoryMismatch,
-    };
+      suggestionOverride,
+      userActionOverride,
+      impactOverride: status === "SUPPORTING" ? "NEUTRAL" : "HARMFUL",
+    });
   }
 
-  // Document qualifies - now check if it has quality issues
-  const issues: string[] = [];
+  const issues: string[] = aiReasoningIssue ? [aiReasoningIssue] : [];
+  if (heuristicReason) {
+    issues.push(heuristicReason);
+  }
+  if (heuristicSignals?.length) {
+    issues.push(
+      `Heuristic signals detected: ${heuristicSignals.slice(0, 5).join(", ")}`
+    );
+  }
   let confidence = 0.9;
+  let status: DocumentQualificationStatus = "QUALIFIES";
+  let reason = qualificationCheck.isAlternative
+    ? `This ${formatCategoryName(effectiveCategory)} qualifies as an acceptable alternative for "${qualificationCheck.matchedRequirement!.name}".`
+    : `This ${formatCategoryName(effectiveCategory)} qualifies as a required document for "${qualificationCheck.matchedRequirement!.name}".`;
 
-  // Check for jurisdiction issues (downwinders only)
   if (
     claimType === "downwinder" &&
     (effectiveCategory === "PROOF_OF_RESIDENCE" ||
@@ -666,22 +785,11 @@ function checkCurrentDocumentQualification(
       issues.push(
         "No address found in covered county - document may not qualify"
       );
-      return {
-        status: "NEEDS_VERIFICATION",
-        confidence,
-        reason: `This ${formatCategoryName(effectiveCategory)} appears to qualify, but the address may not be in a covered county.`,
-        matchedRequirement: {
-          category: qualificationCheck.matchedRequirement!.category,
-          name: qualificationCheck.matchedRequirement!.name,
-          priority: qualificationCheck.matchedRequirement!.priority,
-        },
-        issues,
-        categoryMismatch,
-      };
+      status = "SUPPORTING";
+      reason = `This ${formatCategoryName(effectiveCategory)} appears to qualify, but the address may not be in a covered county.`;
     }
   }
 
-  // Check for disease match (medical documents)
   if (
     effectiveCategory === "MEDICAL_RECORDS" ||
     effectiveCategory === "PATHOLOGY_REPORT" ||
@@ -694,57 +802,35 @@ function checkCurrentDocumentQualification(
     if (!hasDiagnosis) {
       confidence = 0.7;
       issues.push("No clear diagnosis found in medical document");
-      return {
-        status: "NEEDS_VERIFICATION",
-        confidence,
-        reason: `This ${formatCategoryName(effectiveCategory)} qualifies, but no clear medical diagnosis was found.`,
-        matchedRequirement: {
-          category: qualificationCheck.matchedRequirement!.category,
-          name: qualificationCheck.matchedRequirement!.name,
-          priority: qualificationCheck.matchedRequirement!.priority,
-        },
-        issues,
-        categoryMismatch,
-      };
+      status = "SUPPORTING";
+      reason = `This ${formatCategoryName(effectiveCategory)} qualifies, but no clear medical diagnosis was found.`;
     }
 
-    // Check if diagnosis is covered
     const diagnosis = entities.medical.find((m) => m.diagnosis)?.diagnosis;
     if (diagnosis && !isCoveredDisease(diagnosis)) {
       confidence = 0.5;
       issues.push(
         `Diagnosis "${diagnosis}" may not be a covered disease under RECA`
       );
-      return {
-        status: "NEEDS_VERIFICATION",
-        confidence,
-        reason: `This medical document may not qualify - the diagnosed condition may not be covered by RECA.`,
-        matchedRequirement: {
-          category: qualificationCheck.matchedRequirement!.category,
-          name: qualificationCheck.matchedRequirement!.name,
-          priority: qualificationCheck.matchedRequirement!.priority,
-        },
-        issues,
-        categoryMismatch,
-      };
+      status = "SUPPORTING";
+      reason = `This medical document may not qualify - the diagnosed condition may not be covered by RECA.`;
     }
   }
 
-  // Document qualifies!
-  return {
-    status: "QUALIFIES",
+  return buildQualificationResponse({
+    status,
     confidence,
-    reason: qualificationCheck.isAlternative
-      ? `This ${formatCategoryName(effectiveCategory)} qualifies as an acceptable alternative for "${qualificationCheck.matchedRequirement!.name}".`
-      : `This ${formatCategoryName(effectiveCategory)} qualifies as a required document for "${qualificationCheck.matchedRequirement!.name}".`,
-    matchedRequirement: {
-      category: qualificationCheck.matchedRequirement!.category,
-      name: qualificationCheck.matchedRequirement!.name,
-      priority: qualificationCheck.matchedRequirement!.priority,
-    },
-    issues: issues.length > 0 ? issues : undefined,
+    reason,
+    matchedRequirement: qualificationCheck.matchedRequirement
+      ? {
+          category: qualificationCheck.matchedRequirement.category,
+          name: qualificationCheck.matchedRequirement.name,
+          priority: qualificationCheck.matchedRequirement.priority,
+        }
+      : undefined,
+    issues,
     categoryMismatch,
-  };
+  });
 }
 
 /**
@@ -755,4 +841,135 @@ function formatCategoryName(category: FileCategory): string {
     .split("_")
     .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
     .join(" ");
+}
+
+interface QualificationResponseOptions {
+  status: DocumentQualificationStatus;
+  confidence: number;
+  reason: string;
+  matchedRequirement?: {
+    category: string;
+    name: string;
+    priority: "high" | "medium" | "low";
+  };
+  issues?: string[];
+  categoryMismatch?: DocumentQualification["categoryMismatch"];
+  suggestionOverride?: string;
+  userActionOverride?: DocumentUserAction;
+  impactOverride?: DocumentDjApprovalImpact;
+}
+
+function buildQualificationResponse(
+  options: QualificationResponseOptions
+): DocumentQualification {
+  const {
+    status,
+    confidence,
+    reason,
+    matchedRequirement,
+    categoryMismatch,
+    suggestionOverride,
+    userActionOverride,
+    impactOverride,
+  } = options;
+
+  const issues =
+    options.issues && options.issues.length > 0
+      ? options.issues.filter(Boolean)
+      : undefined;
+
+  const djApprovalImpact = impactOverride ?? getDefaultDjApprovalImpact(status);
+
+  const userActionNeeded =
+    userActionOverride ?? getDefaultUserAction(status, categoryMismatch);
+
+  const suggestion =
+    suggestionOverride ??
+    getDefaultSuggestion(status, matchedRequirement, categoryMismatch, issues);
+
+  return {
+    status,
+    confidence,
+    reason,
+    matchedRequirement,
+    issues,
+    categoryMismatch,
+    djApprovalImpact,
+    userActionNeeded,
+    suggestion,
+  };
+}
+
+function getDefaultDjApprovalImpact(
+  status: DocumentQualificationStatus
+): DocumentDjApprovalImpact {
+  switch (status) {
+    case "QUALIFIES":
+      return "REQUIRED";
+    case "SUPPORTING":
+      return "HELPFUL";
+    case "DOES_NOT_QUALIFY":
+      return "HARMFUL";
+    case "UNKNOWN":
+    default:
+      return "NEUTRAL";
+  }
+}
+
+function getDefaultUserAction(
+  status: DocumentQualificationStatus,
+  categoryMismatch?: DocumentQualification["categoryMismatch"]
+): DocumentUserAction {
+  switch (status) {
+    case "QUALIFIES":
+      return categoryMismatch?.shouldUseAiCategory ? "VERIFY_CATEGORY" : "NONE";
+    case "SUPPORTING":
+      return categoryMismatch ? "VERIFY_CATEGORY" : "NONE";
+    case "DOES_NOT_QUALIFY":
+      return categoryMismatch ? "RECATEGORIZE" : "DELETE_OR_FIX";
+    case "UNKNOWN":
+    default:
+      return "VERIFY_CATEGORY";
+  }
+}
+
+function getDefaultSuggestion(
+  status: DocumentQualificationStatus,
+  matchedRequirement?: {
+    name: string;
+  },
+  categoryMismatch?: DocumentQualification["categoryMismatch"],
+  issues?: string[]
+): string {
+  if (status === "QUALIFIES") {
+    if (categoryMismatch?.shouldUseAiCategory) {
+      return `Review the AI suggestion (${formatCategoryName(categoryMismatch.aiDetected as FileCategory)}) and update the category if it looks correct.`;
+    }
+
+    if (matchedRequirement) {
+      return `Keep this document. It satisfies the "${matchedRequirement.name}" requirement.`;
+    }
+
+    return "Keep this document. It counts toward your DOJ submission.";
+  }
+
+  if (status === "SUPPORTING") {
+    if (categoryMismatch?.shouldUseAiCategory) {
+      return `Double-check the category. The AI thinks this might be ${formatCategoryName(categoryMismatch.aiDetected as FileCategory)}.`;
+    }
+
+    return "Keep this as supporting evidence, but upload or verify required documents to increase claim readiness.";
+  }
+
+  if (status === "DOES_NOT_QUALIFY") {
+    if (categoryMismatch) {
+      return `Recategorize this file to ${formatCategoryName(categoryMismatch.aiDetected as FileCategory)} or delete it if it's not relevant.`;
+    }
+
+    return "Remove this upload or replace it with a required document so it doesn't inflate completeness.";
+  }
+
+  return issues?.length
+    ? "AI found potential issues with this document. Review the feedback and update the category if needed."
+    : "AI is still analyzing this upload. Check back soon or categorize it manually.";
 }

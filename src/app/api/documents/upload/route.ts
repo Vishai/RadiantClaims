@@ -11,6 +11,8 @@ import {
 import { extractEntities } from "@/lib/document-intelligence/entity-extraction";
 import { checkRECACompliance } from "@/lib/document-intelligence/reca-compliance";
 import { analyzeRisks } from "@/lib/document-intelligence/risk-analysis";
+import { detectCategoryFromText } from "@/lib/document-intelligence/heuristic-categorization";
+import { analyzeOtherDocument } from "@/lib/document-intelligence/other-document-analyzer";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -177,6 +179,17 @@ async function processDocumentInBackground(
       throw new Error("Failed to download file from storage");
     }
 
+    const currentFile = await db.uploadedFile.findUnique({
+      where: { id: fileId },
+      select: {
+        category: true,
+        originalFilename: true,
+        categoryLocked: true,
+      },
+    });
+
+    const userSelectedCategory = currentFile?.category as FileCategory | null;
+
     // STEP 1: OCR & Quality Analysis
     const { ocrResult, qualityMetrics } = await processDocument(
       fileBuffer,
@@ -188,15 +201,15 @@ async function processDocumentInBackground(
     );
 
     // STEP 2: AI Categorization (if we have enough text)
-    let finalCategory: FileCategory = "OTHER";
+    let finalCategory: FileCategory = userSelectedCategory ?? "OTHER";
     let categorizationResult;
+    let categoryAutoCorrected = false;
+    let categoryAutoCorrectionSource: "ai" | "heuristic" | undefined;
+    let heuristicCategorization;
+
+    const categoryIsLocked = currentFile?.categoryLocked ?? false;
 
     if (ocrResult.text.length > 20) {
-      const currentFile = await db.uploadedFile.findUnique({
-        where: { id: fileId },
-        select: { category: true, originalFilename: true },
-      });
-
       categorizationResult = await categorizeDocument(
         ocrResult.text,
         currentFile?.originalFilename || "",
@@ -204,16 +217,38 @@ async function processDocumentInBackground(
       );
 
       // Use AI category if confidence is high and no manual category set
-      if (
-        categorizationResult.confidence > 0.7 &&
-        (!currentFile?.category || currentFile.category === "OTHER")
-      ) {
+      if (!categoryIsLocked && categorizationResult.confidence > 0.75) {
+        if (categorizationResult.category !== finalCategory) {
+          finalCategory = categorizationResult.category;
+          categoryAutoCorrected =
+            (!!userSelectedCategory &&
+              userSelectedCategory !== categorizationResult.category) ||
+            finalCategory === "OTHER";
+          categoryAutoCorrectionSource = "ai";
+        }
+      } else if (!userSelectedCategory && !categoryIsLocked) {
         finalCategory = categorizationResult.category;
       }
 
       console.log(
         `✓ AI categorization for ${fileId}: ${finalCategory} (${(categorizationResult.confidence * 100).toFixed(0)}%)`
       );
+    }
+
+    heuristicCategorization = detectCategoryFromText(ocrResult.text);
+
+    if (
+      heuristicCategorization &&
+      heuristicCategorization.confidence >= 0.85 &&
+      heuristicCategorization.category !== finalCategory &&
+      !categoryIsLocked
+    ) {
+      console.log(
+        `⚙️  Heuristic recategorization applied for ${fileId}: ${finalCategory} → ${heuristicCategorization.category}`
+      );
+      finalCategory = heuristicCategorization.category;
+      categoryAutoCorrected = true;
+      categoryAutoCorrectionSource = "heuristic";
     }
 
     // STEP 3: Generate Smart Tags
@@ -268,8 +303,15 @@ async function processDocumentInBackground(
           entities,
           allDocuments,
           ocrResult.text,
-          finalCategory, // Pass the current document's category for qualification check
-          categorizationResult // Pass AI categorization to detect mismatches
+          finalCategory,
+          {
+            userSelectedCategory,
+            aiCategorizationResult: categorizationResult,
+            heuristicReason: heuristicCategorization?.reason,
+            heuristicSignals: heuristicCategorization?.matchedSignals,
+            autoCorrected: categoryAutoCorrected,
+            categoryLocked: categoryIsLocked,
+          }
         );
 
         console.log(
@@ -307,11 +349,24 @@ async function processDocumentInBackground(
       }
     }
 
+    let otherDocumentAnalysis;
+    if (finalCategory === "OTHER") {
+      try {
+        otherDocumentAnalysis = await analyzeOtherDocument(
+          ocrResult.text,
+          currentFile?.originalFilename || fileId
+        );
+      } catch (error) {
+        console.error("OTHER document analysis failed:", error);
+      }
+    }
+
     // STEP 7: Store Results
     const metadata = {
       ocrConfidence: ocrResult.confidence,
       processingTimeMs: ocrResult.processingTimeMs,
       pageCount: ocrResult.pageCount,
+      textLength: ocrResult.text.length,
       qualityMetrics: qualityMetrics
         ? {
             resolution: qualityMetrics.resolution,
@@ -329,6 +384,15 @@ async function processDocumentInBackground(
             alternatives: categorizationResult.alternativeCategories,
           }
         : undefined,
+      categoryInsights: {
+        userSelectedCategory,
+        finalCategory,
+        autoCorrected: categoryAutoCorrected,
+        autoCorrectionSource: categoryAutoCorrectionSource,
+        heuristicReason: heuristicCategorization?.reason,
+        heuristicSignals: heuristicCategorization?.matchedSignals,
+        categoryLocked: categoryIsLocked,
+      },
       // Phase 2: Entity extraction
       entities: entities,
       entitiesExtractedAt: new Date().toISOString(),
@@ -337,9 +401,17 @@ async function processDocumentInBackground(
       complianceCheckedAt: complianceResult
         ? new Date().toISOString()
         : undefined,
+      documentQualification: complianceResult?.documentQualification,
+      djApprovalImpact:
+        complianceResult?.documentQualification?.djApprovalImpact,
+      qualificationSuggestion:
+        complianceResult?.documentQualification?.suggestion,
+      qualificationUserAction:
+        complianceResult?.documentQualification?.userActionNeeded,
       // Phase 2: Risk analysis
       risks: riskAnalysis,
       risksAnalyzedAt: riskAnalysis ? new Date().toISOString() : undefined,
+      otherDocumentAnalysis,
     };
 
     // Update file record

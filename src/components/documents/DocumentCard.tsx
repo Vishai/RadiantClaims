@@ -17,6 +17,7 @@ import {
   Clock,
   AlertCircle,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { AIIntelligenceModal } from "./AIIntelligenceModal";
+import type { DocumentQualificationSummary } from "./types";
+import { QUALIFICATION_COPY } from "./qualification-utils";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -52,6 +55,7 @@ interface DocumentCardProps {
   id: string;
   originalFilename: string;
   category?: string;
+  categoryLocked?: boolean;
   status: string;
   sizeBytes: number;
   uploadedAt: string;
@@ -66,6 +70,53 @@ interface DocumentCardProps {
   onDelete?: () => void;
   onRecategorize?: () => void;
   className?: string;
+  qualification?: DocumentQualificationSummary | null;
+}
+
+function QualificationBadge({
+  qualification,
+}: {
+  qualification: DocumentQualificationSummary;
+}) {
+  const config = QUALIFICATION_COPY[qualification.status];
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-3 text-xs shadow-sm",
+        config.className
+      )}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex items-start gap-3">
+        <span className="text-lg leading-none">{config.icon}</span>
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold uppercase tracking-wide">
+            {config.label}
+          </p>
+          <p className="text-[11px] leading-relaxed opacity-80">
+            {qualification.status === "QUALIFIES" &&
+            qualification.matchedRequirementName
+              ? `Satisfies: ${qualification.matchedRequirementName}`
+              : config.description}
+          </p>
+          {qualification.suggestion && (
+            <p className="text-[11px] leading-relaxed text-current">
+              {qualification.suggestion}
+            </p>
+          )}
+          {qualification.issues && qualification.issues.length > 0 && (
+            <ul className="list-inside list-disc text-[11px] opacity-80">
+              {qualification.issues.slice(0, 2).map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+              {qualification.issues.length > 2 && <li>More issues detected</li>}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function DocumentCard({
@@ -84,6 +135,8 @@ export function DocumentCard({
   onDelete,
   onRecategorize,
   className,
+  categoryLocked,
+  qualification,
 }: DocumentCardProps) {
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
@@ -276,6 +329,14 @@ export function DocumentCard({
             >
               {getCategoryLabel(category)}
             </Badge>
+            {categoryLocked && (
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-700"
+              >
+                <Lock className="mr-1 h-3 w-3" /> Locked
+              </Badge>
+            )}
             {getStatusBadge(status)}
             {aiIntelligence && status === "READY" && (
               <Badge
@@ -287,6 +348,24 @@ export function DocumentCard({
               </Badge>
             )}
           </div>
+
+          {qualification && (
+            <QualificationBadge qualification={qualification} />
+          )}
+          {qualification?.userActionNeeded === "RECATEGORIZE" &&
+            onRecategorize && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full border-dashed text-xs"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRecategorize();
+                }}
+              >
+                Fix category now
+              </Button>
+            )}
 
           {/* Rejection Reason */}
           {status === "REJECTED" && rejectionReason && (

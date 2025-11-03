@@ -51,22 +51,58 @@ export async function GET(req: NextRequest) {
     // Transform files to include parsed AI intelligence
     const filesWithIntelligence = files.map((file) => {
       let aiIntelligence = null;
+      let qualification = null;
+      let otherDocumentAnalysis = null;
 
       // Parse metadata if file is processed
       if (file.status === "READY" && file.metadata) {
         try {
-          const metadata = JSON.parse(file.metadata);
+          const metadata =
+            typeof file.metadata === "string"
+              ? JSON.parse(file.metadata)
+              : file.metadata;
+
           aiIntelligence = {
             ocrConfidence: file.ocrConfidence,
-            textLength: file.ocrText?.length || 0,
-            aiCategory: metadata.aiCategorization?.suggestedCategory,
-            aiCategoryConfidence: metadata.aiCategorization?.confidence,
-            aiReasoning: metadata.aiCategorization?.reasoning,
+            textLength:
+              typeof metadata?.textLength === "number"
+                ? metadata.textLength
+                : file.ocrText?.length || 0,
+            aiCategory: metadata?.aiCategorization?.suggestedCategory,
+            aiCategoryConfidence: metadata?.aiCategorization?.confidence,
+            aiReasoning: metadata?.aiCategorization?.reasoning,
             tags: file.tags,
-            qualityScore: metadata.qualityMetrics?.qualityScore,
-            recommendations: metadata.qualityMetrics?.recommendations,
-            pageCount: metadata.pageCount,
+            qualityScore: metadata?.qualityMetrics?.qualityScore,
+            recommendations: metadata?.qualityMetrics?.recommendations,
+            pageCount: metadata?.pageCount,
           };
+
+          const qualificationSource =
+            metadata?.documentQualification ||
+            metadata?.compliance?.documentQualification;
+
+          if (qualificationSource) {
+            qualification = {
+              status: qualificationSource.status,
+              confidence: qualificationSource.confidence,
+              reason: qualificationSource.reason,
+              matchedRequirementName:
+                qualificationSource.matchedRequirement?.name,
+              matchedRequirementCategory:
+                qualificationSource.matchedRequirement?.category,
+              matchedRequirementPriority:
+                qualificationSource.matchedRequirement?.priority,
+              djApprovalImpact: qualificationSource.djApprovalImpact,
+              userActionNeeded: qualificationSource.userActionNeeded,
+              suggestion: qualificationSource.suggestion,
+              issues: qualificationSource.issues ?? [],
+              categoryMismatch: qualificationSource.categoryMismatch ?? null,
+            };
+          }
+
+          if (metadata?.otherDocumentAnalysis) {
+            otherDocumentAnalysis = metadata.otherDocumentAnalysis;
+          }
         } catch (error) {
           console.error("Failed to parse metadata for file:", file.id, error);
         }
@@ -75,6 +111,7 @@ export async function GET(req: NextRequest) {
       return {
         id: file.id,
         category: file.category,
+        categoryLocked: file.categoryLocked,
         originalFilename: file.originalFilename,
         fileKey: file.fileKey,
         mimeType: file.mimeType,
@@ -85,6 +122,8 @@ export async function GET(req: NextRequest) {
         thumbnailKey: file.thumbnailKey,
         rejectionReason: file.rejectionReason,
         aiIntelligence,
+        qualification,
+        otherDocumentAnalysis,
       };
     });
 

@@ -14,11 +14,14 @@ import {
   Clock,
   AlertCircle,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AIIntelligenceModal } from "./AIIntelligenceModal";
+import type { DocumentQualificationSummary } from "./types";
+import { QUALIFICATION_COPY } from "./qualification-utils";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -36,11 +39,13 @@ interface DocumentListItemProps {
   id: string;
   originalFilename: string;
   category?: string;
+  categoryLocked?: boolean;
   status: string;
   sizeBytes: number;
   uploadedAt: string;
   mimeType: string;
   aiIntelligence?: AIIntelligence;
+  qualification?: DocumentQualificationSummary | null;
   onView?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
@@ -52,11 +57,13 @@ export function DocumentListItem({
   id,
   originalFilename,
   category,
+  categoryLocked,
   status,
   sizeBytes,
   uploadedAt,
   mimeType,
   aiIntelligence,
+  qualification,
   onView,
   onDownload,
   onDelete,
@@ -126,6 +133,10 @@ export function DocumentListItem({
   };
 
   const StatusIcon = getStatusIcon(status);
+  const qualificationCopy = qualification
+    ? QUALIFICATION_COPY[qualification.status]
+    : null;
+  const needsRecategorize = qualification?.userActionNeeded === "RECATEGORIZE";
 
   return (
     <div className="flex items-center gap-4 rounded-lg border border-sage-200 bg-white p-3 transition-shadow hover:shadow-md">
@@ -143,9 +154,24 @@ export function DocumentListItem({
           <StatusIcon
             className={cn("h-4 w-4 flex-shrink-0", getStatusColor(status))}
           />
+          {qualificationCopy && (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                qualificationCopy.className
+              )}
+            >
+              {qualificationCopy.label}
+            </span>
+          )}
         </div>
         <div className="mt-0.5 flex items-center gap-3 text-xs text-sage-600">
           <span>{getCategoryLabel(category)}</span>
+          {categoryLocked && (
+            <span className="flex items-center gap-1 text-amber-700">
+              <Lock className="h-3 w-3" /> Locked
+            </span>
+          )}
           <span>•</span>
           <span>{formatFileSize(sizeBytes)}</span>
           <span>•</span>
@@ -206,10 +232,10 @@ export function DocumentListItem({
         {onRecategorize && (
           <Button
             size="sm"
-            variant="ghost"
+            variant={needsRecategorize ? "destructive" : "ghost"}
             onClick={onRecategorize}
             className="h-8 px-2"
-            title="Change Category"
+            title={needsRecategorize ? "Fix category" : "Change category"}
           >
             <Edit2 className="h-4 w-4" />
           </Button>

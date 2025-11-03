@@ -313,6 +313,9 @@ model UploadedFile {
   isRequired       Boolean           @default(false)
   requiresOriginal Boolean           @default(false) // Document must be mailed as original
   rejectionReason  String?           @db.Text
+  categoryLocked   Boolean           @default(false)
+  categoryLockedAt DateTime?
+  categoryLockedBy String?
   validatedBy      String?           // Staff member who validated
   validatedAt      DateTime?
   reviewedBy       String?           // Lawyer who reviewed

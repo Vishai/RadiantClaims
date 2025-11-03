@@ -16,6 +16,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify that the user exists in the database
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: "User not found. Please log out and log back in.",
+          code: "USER_NOT_FOUND",
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { tier, policyType, policyVersion, ipAddress } = body;
 

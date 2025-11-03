@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { DocumentCard } from "./DocumentCard";
 import { DocumentListItem } from "./DocumentListItem";
-import {
-  DocumentCategorySelector,
-  type FileCategory,
-} from "./DocumentCategorySelector";
+import type { FileCategory } from "./DocumentCategorySelector";
 import { Loader2, FileX, Search, Grid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type {
+  DocumentQualificationSummary,
+  SupportingDocumentInsight,
+} from "./types";
+import { RecategorizeModal } from "./RecategorizeModal";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -34,6 +36,7 @@ interface UploadedFile {
   id: string;
   originalFilename: string;
   category?: FileCategory;
+  categoryLocked?: boolean;
   status: string;
   sizeBytes: number;
   uploadedAt: string;
@@ -43,6 +46,8 @@ interface UploadedFile {
   requiresOriginal?: boolean;
   rejectionReason?: string | null;
   aiIntelligence?: AIIntelligence | null;
+  qualification?: DocumentQualificationSummary | null;
+  otherDocumentAnalysis?: SupportingDocumentInsight | null;
 }
 
 interface DocumentDashboardProps {
@@ -60,11 +65,10 @@ export function DocumentDashboard({
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [categorizingDoc, setCategorizingDoc] = useState<{
-    id: string;
-    filename: string;
-    currentCategory?: FileCategory;
-  } | null>(null);
+  const [categorizingDoc, setCategorizingDoc] = useState<UploadedFile | null>(
+    null
+  );
+  const [recategorizing, setRecategorizing] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -109,9 +113,9 @@ export function DocumentDashboard({
     }
   };
 
-  const handleDelete = async (fileId: string) => {
+  const handleDelete = async (fileId: string): Promise<boolean> => {
     if (!confirm("Are you sure you want to delete this document?")) {
-      return;
+      return false;
     }
 
     try {
@@ -122,23 +126,29 @@ export function DocumentDashboard({
       if (response.ok) {
         setDocuments((prev) => prev.filter((doc) => doc.id !== fileId));
         onRefresh?.();
+        return true;
       }
     } catch (error) {
       console.error("Failed to delete document:", error);
     }
+
+    return false;
   };
 
-  const handleRecategorize = (
-    fileId: string,
-    filename: string,
-    currentCategory?: FileCategory
-  ) => {
-    setCategorizingDoc({ id: fileId, filename, currentCategory });
+  const handleRecategorize = (file: UploadedFile) => {
+    setCategorizingDoc(file);
   };
 
-  const handleCategoryConfirm = async (category: FileCategory) => {
+  const handleCategoryConfirm = async ({
+    category,
+    lockCategory,
+  }: {
+    category: FileCategory;
+    lockCategory: boolean;
+  }) => {
     if (!categorizingDoc) return;
 
+    setRecategorizing(true);
     try {
       const response = await fetch(
         `/api/documents/${categorizingDoc.id}/categorize`,
@@ -147,23 +157,49 @@ export function DocumentDashboard({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ category }),
+          body: JSON.stringify({ category, lockCategory }),
         }
       );
 
       if (response.ok) {
         setDocuments((prev) =>
           prev.map((doc) =>
-            doc.id === categorizingDoc.id ? { ...doc, category } : doc
+            doc.id === categorizingDoc.id
+              ? {
+                  ...doc,
+                  category,
+                  categoryLocked: lockCategory,
+                  qualification: doc.qualification
+                    ? {
+                        ...doc.qualification,
+                        status: "UNKNOWN",
+                        issues: [],
+                        suggestion:
+                          "Qualification will refresh after the next analysis run.",
+                      }
+                    : null,
+                }
+              : doc
           )
         );
         onRefresh?.();
+        setCategorizingDoc(null);
+      } else {
+        let message = "Failed to update category";
+        try {
+          const data = await response.json();
+          if (data?.error) message = data.error;
+        } catch (error) {
+          console.error("Failed to parse categorize response:", error);
+        }
+        throw new Error(message);
       }
     } catch (error) {
       console.error("Failed to update category:", error);
+      throw error;
+    } finally {
+      setRecategorizing(false);
     }
-
-    setCategorizingDoc(null);
   };
 
   // Filter documents
@@ -279,6 +315,7 @@ export function DocumentDashboard({
               id={doc.id}
               originalFilename={doc.originalFilename}
               category={doc.category}
+              categoryLocked={doc.categoryLocked}
               status={doc.status}
               sizeBytes={doc.sizeBytes}
               uploadedAt={doc.uploadedAt}
@@ -288,12 +325,11 @@ export function DocumentDashboard({
               requiresOriginal={doc.requiresOriginal}
               rejectionReason={doc.rejectionReason}
               aiIntelligence={doc.aiIntelligence || undefined}
+              qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
               onDelete={() => handleDelete(doc.id)}
-              onRecategorize={() =>
-                handleRecategorize(doc.id, doc.originalFilename, doc.category)
-              }
+              onRecategorize={() => handleRecategorize(doc)}
             />
           ))}
         </div>
@@ -305,17 +341,17 @@ export function DocumentDashboard({
               id={doc.id}
               originalFilename={doc.originalFilename}
               category={doc.category}
+              categoryLocked={doc.categoryLocked}
               status={doc.status}
               sizeBytes={doc.sizeBytes}
               uploadedAt={doc.uploadedAt}
               mimeType={doc.mimeType}
               aiIntelligence={doc.aiIntelligence || undefined}
+              qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
               onDelete={() => handleDelete(doc.id)}
-              onRecategorize={() =>
-                handleRecategorize(doc.id, doc.originalFilename, doc.category)
-              }
+              onRecategorize={() => handleRecategorize(doc)}
             />
           ))}
         </div>
@@ -329,16 +365,36 @@ export function DocumentDashboard({
         </p>
       )}
 
-      {/* Category Selector Dialog */}
-      {categorizingDoc && (
-        <DocumentCategorySelector
-          open={!!categorizingDoc}
-          onOpenChange={(open) => !open && setCategorizingDoc(null)}
-          currentCategory={categorizingDoc.currentCategory}
-          onConfirm={handleCategoryConfirm}
-          fileName={categorizingDoc.filename}
-        />
-      )}
+      <RecategorizeModal
+        open={!!categorizingDoc}
+        onClose={() => {
+          if (recategorizing) return;
+          setCategorizingDoc(null);
+        }}
+        fileName={categorizingDoc?.originalFilename ?? ""}
+        currentCategory={categorizingDoc?.category}
+        qualification={categorizingDoc?.qualification ?? null}
+        otherAnalysis={categorizingDoc?.otherDocumentAnalysis ?? null}
+        aiIntelligence={categorizingDoc?.aiIntelligence ?? null}
+        isCategoryLocked={categorizingDoc?.categoryLocked ?? false}
+        onConfirm={handleCategoryConfirm}
+        onKeepSupporting={
+          categorizingDoc?.qualification?.status === "SUPPORTING"
+            ? () => setCategorizingDoc(null)
+            : undefined
+        }
+        onDelete={
+          categorizingDoc
+            ? async () => {
+                const deleted = await handleDelete(categorizingDoc.id);
+                if (deleted) {
+                  setCategorizingDoc(null);
+                }
+              }
+            : undefined
+        }
+        isSubmitting={recategorizing}
+      />
     </div>
   );
 }

@@ -15,7 +15,15 @@ import { ProvenanceTab } from "./intelligence/ProvenanceTab";
 import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { XCircle, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
+import {
+  XCircle,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+  Info,
+} from "lucide-react";
+import type { DocumentQualification } from "@/lib/document-intelligence/schemas/compliance-schema";
+import { QUALIFICATION_COPY } from "./qualification-utils";
 
 interface DocumentDetailViewProps {
   document: any;
@@ -28,11 +36,13 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   const [showPDF, setShowPDF] = useState(true);
 
   // Fetch intelligence data
-  const { data: intelligence, error, isLoading } = useSWR(
-    `/api/documents/${document.id}/intelligence`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const {
+    data: intelligence,
+    error,
+    isLoading,
+  } = useSWR(`/api/documents/${document.id}/intelligence`, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   const handleDownload = async () => {
     window.open(`/api/documents/${document.id}/download`, "_blank");
@@ -99,33 +109,54 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const renderQualificationAlert = (qualification: any) => {
+  const formatUserAction = (
+    action: DocumentQualification["userActionNeeded"]
+  ) => {
+    switch (action) {
+      case "VERIFY_CATEGORY":
+        return "Verify the category";
+      case "RECATEGORIZE":
+        return "Recategorize this upload";
+      case "DELETE_OR_FIX":
+        return "Delete or replace this document";
+      default:
+        return null;
+    }
+  };
+
+  const renderQualificationAlert = (
+    qualification?: DocumentQualification | null
+  ) => {
     if (!qualification) return null;
 
-    const alertConfigs = {
+    const alertConfigs: Record<
+      DocumentQualification["status"],
+      {
+        icon: typeof CheckCircle2;
+        bgColor: string;
+        iconColor: string;
+        titleColor: string;
+      }
+    > = {
       QUALIFIES: {
-        variant: "default" as const,
         icon: CheckCircle2,
         bgColor: "bg-green-50 border-green-200",
         iconColor: "text-green-600",
         titleColor: "text-green-900",
       },
+      SUPPORTING: {
+        icon: Info,
+        bgColor: "bg-blue-50 border-blue-200",
+        iconColor: "text-blue-600",
+        titleColor: "text-blue-900",
+      },
       DOES_NOT_QUALIFY: {
-        variant: "destructive" as const,
         icon: XCircle,
         bgColor: "bg-red-50 border-red-200",
         iconColor: "text-red-600",
         titleColor: "text-red-900",
       },
-      NEEDS_VERIFICATION: {
-        variant: "default" as const,
-        icon: AlertTriangle,
-        bgColor: "bg-yellow-50 border-yellow-200",
-        iconColor: "text-yellow-600",
-        titleColor: "text-yellow-900",
-      },
       UNKNOWN: {
-        variant: "default" as const,
         icon: HelpCircle,
         bgColor: "bg-gray-50 border-gray-200",
         iconColor: "text-gray-600",
@@ -133,55 +164,76 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
       },
     };
 
-    const config = alertConfigs[qualification.status as keyof typeof alertConfigs];
+    const config = alertConfigs[qualification.status];
     if (!config) return null;
 
     const Icon = config.icon;
+    const copy = QUALIFICATION_COPY[qualification.status];
+    const nextAction = formatUserAction(qualification.userActionNeeded);
 
     return (
       <Alert className={`${config.bgColor} border-2`}>
         <Icon className={`h-5 w-5 ${config.iconColor}`} />
-        <AlertTitle className={config.titleColor}>
-          {qualification.status === "QUALIFIES" && "Document Qualifies"}
-          {qualification.status === "DOES_NOT_QUALIFY" && "Document Does Not Qualify"}
-          {qualification.status === "NEEDS_VERIFICATION" && "Verification Needed"}
-          {qualification.status === "UNKNOWN" && "Qualification Unknown"}
-        </AlertTitle>
+        <AlertTitle className={config.titleColor}>{copy.label}</AlertTitle>
         <AlertDescription>
           <p className="mb-2">{qualification.reason}</p>
 
+          {qualification.matchedRequirement && (
+            <p className="text-xs font-semibold">
+              ✓ Satisfies: {qualification.matchedRequirement.name}
+            </p>
+          )}
+
+          {qualification.suggestion && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {qualification.suggestion}
+            </p>
+          )}
+
+          {nextAction && (
+            <p className="mt-2 text-xs font-medium text-current">
+              Next step: {nextAction}
+            </p>
+          )}
+
           {/* Category Mismatch Warning */}
           {qualification.categoryMismatch && (
-            <div className="mt-3 rounded-md bg-white/50 p-3 border border-current/20">
-              <p className="text-xs font-semibold mb-1 flex items-center gap-1">
+            <div className="border-current/20 mt-3 rounded-md border bg-white/50 p-3">
+              <p className="mb-1 flex items-center gap-1 text-xs font-semibold">
                 <AlertTriangle className="h-3 w-3" />
                 Category Mismatch Detected
               </p>
-              <p className="text-xs mb-2">{qualification.categoryMismatch.explanation}</p>
-              <div className="text-xs grid grid-cols-2 gap-2">
+              <p className="mb-2 text-xs">
+                {qualification.categoryMismatch.explanation}
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="font-medium">Your Selection:</span>
                   <br />
-                  {qualification.categoryMismatch.userSelected.split('_').map((w: string) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
+                  {qualification.categoryMismatch.userSelected
+                    .split("_")
+                    .map((w: string) => w.charAt(0) + w.slice(1).toLowerCase())
+                    .join(" ")}
                 </div>
                 <div>
                   <span className="font-medium">AI Detected:</span>
                   <br />
-                  {qualification.categoryMismatch.aiDetected.split('_').map((w: string) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
-                  {' '}
-                  ({Math.round(qualification.categoryMismatch.aiConfidence * 100)}%)
+                  {qualification.categoryMismatch.aiDetected
+                    .split("_")
+                    .map((w: string) => w.charAt(0) + w.slice(1).toLowerCase())
+                    .join(" ")}{" "}
+                  (
+                  {Math.round(
+                    qualification.categoryMismatch.aiConfidence * 100
+                  )}
+                  %)
                 </div>
               </div>
             </div>
           )}
 
-          {qualification.matchedRequirement && (
-            <p className="text-xs mt-2">
-              <strong>Satisfies:</strong> {qualification.matchedRequirement.name}
-            </p>
-          )}
           {qualification.issues && qualification.issues.length > 0 && (
-            <ul className="mt-2 list-inside list-disc text-xs space-y-1">
+            <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
               {qualification.issues.map((issue: string, idx: number) => (
                 <li key={idx}>{issue}</li>
               ))}
@@ -219,11 +271,7 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-              >
+              <Button variant="outline" size="sm" onClick={handleDownload}>
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
@@ -242,7 +290,9 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
           {/* Metadata Row */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1">
-              <span className="text-xs text-sage-600">Your Classification:</span>
+              <span className="text-xs text-sage-600">
+                Your Classification:
+              </span>
               <Badge variant="outline" className="border-sage-300 bg-sage-50">
                 {getCategoryLabel(document.category)}
               </Badge>
@@ -255,13 +305,15 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
                   variant="outline"
                   className={`border-blue-300 bg-blue-50 text-blue-700 ${
                     intelligence.aiCategorization.category !== document.category
-                      ? 'ring-2 ring-yellow-400 ring-offset-1'
-                      : ''
+                      ? "ring-2 ring-yellow-400 ring-offset-1"
+                      : ""
                   }`}
                 >
                   {getCategoryLabel(intelligence.aiCategorization.category)}
                   <span className="ml-1 text-xs opacity-75">
-                    ({Math.round(intelligence.aiCategorization.confidence * 100)}%)
+                    (
+                    {Math.round(intelligence.aiCategorization.confidence * 100)}
+                    %)
                   </span>
                 </Badge>
               </div>
@@ -269,7 +321,10 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
 
             {getStatusBadge(document.status)}
             {document.status === "READY" && intelligence && (
-              <Badge variant="outline" className="border-purple-300 bg-purple-50 text-purple-700">
+              <Badge
+                variant="outline"
+                className="border-purple-300 bg-purple-50 text-purple-700"
+              >
                 AI Analyzed
               </Badge>
             )}
@@ -322,9 +377,9 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
             </h2>
 
             {/* Document Qualification Alert */}
-            {intelligence?.compliance?.documentQualification && (
+            {intelligence?.qualification && (
               <div className="mb-4">
-                {renderQualificationAlert(intelligence.compliance.documentQualification)}
+                {renderQualificationAlert(intelligence.qualification)}
               </div>
             )}
 

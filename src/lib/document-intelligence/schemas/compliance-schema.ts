@@ -47,9 +47,21 @@ export interface EligibilityFlag {
 
 export type DocumentQualificationStatus =
   | "QUALIFIES"
+  | "SUPPORTING"
   | "DOES_NOT_QUALIFY"
-  | "NEEDS_VERIFICATION"
   | "UNKNOWN";
+
+export type DocumentUserAction =
+  | "NONE"
+  | "VERIFY_CATEGORY"
+  | "RECATEGORIZE"
+  | "DELETE_OR_FIX";
+
+export type DocumentDjApprovalImpact =
+  | "REQUIRED"
+  | "HELPFUL"
+  | "NEUTRAL"
+  | "HARMFUL";
 
 export interface DocumentQualification {
   status: DocumentQualificationStatus;
@@ -68,6 +80,9 @@ export interface DocumentQualification {
     shouldUseAiCategory: boolean;
     explanation: string;
   };
+  djApprovalImpact: DocumentDjApprovalImpact;
+  userActionNeeded: DocumentUserAction;
+  suggestion: string;
 }
 
 export interface RECAComplianceResult {

@@ -4,7 +4,9 @@ import type {
   EntityExtractionResult,
   RECAComplianceResult,
   RiskAnalysisResult,
+  DocumentQualification,
 } from "@/lib/document-intelligence/schemas";
+import type { OtherDocumentAnalysis } from "@/lib/document-intelligence/other-document-analyzer";
 
 export interface IntelligenceResponse {
   ocrConfidence: number;
@@ -22,6 +24,8 @@ export interface IntelligenceResponse {
     confidence: number;
     reasoning: string;
   };
+  qualification?: DocumentQualification;
+  otherDocumentAnalysis?: OtherDocumentAnalysis | null;
   tags: Array<{ tag: string; confidence?: number }>;
   metadata: {
     processingTimeMs?: number;
@@ -102,6 +106,10 @@ export async function GET(
       risks: metadata.risks,
       quality: metadata.qualityMetrics,
       aiCategorization: metadata.aiCategorization,
+      qualification:
+        metadata.documentQualification ||
+        metadata.compliance?.documentQualification,
+      otherDocumentAnalysis: metadata.otherDocumentAnalysis ?? null,
       tags: file.tags.map((t) => ({
         tag: t.tag,
         confidence: t.confidence ?? undefined,

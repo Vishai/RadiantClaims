@@ -62,11 +62,17 @@ export default function ServiceTiersPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create subscription");
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        // Check for specific error codes
+        if (data.code === "USER_NOT_FOUND") {
+          alert("Your session has expired. Please log out and log back in.");
+          router.push("/login");
+          return;
+        }
+        throw new Error(data.error || "Failed to create subscription");
+      }
 
       // Redirect to Stripe checkout for payment
       if (data.checkoutUrl) {
@@ -77,7 +83,11 @@ export default function ServiceTiersPage() {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to continue. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to continue. Please try again."
+      );
       setIsLoading(false);
     }
   };
@@ -100,15 +110,27 @@ export default function ServiceTiersPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to create subscription");
+        // Check for specific error codes
+        if (data.code === "USER_NOT_FOUND") {
+          alert("Your session has expired. Please log out and log back in.");
+          router.push("/login");
+          return;
+        }
+        throw new Error(data.error || "Failed to create subscription");
       }
 
       // Redirect to portal dashboard (they can start from there)
       router.push("/portal");
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to continue. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to continue. Please try again."
+      );
       setIsLoading(false);
     }
   };
@@ -126,12 +148,12 @@ export default function ServiceTiersPage() {
               RadiantClaims
             </span>
           </Link>
-          <Link href="/eligibility">
+          <Link href="/eligibility-check">
             <Button
               variant="outline"
               className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
             >
-              Back to Eligibility
+              Check Eligibility
             </Button>
           </Link>
         </div>
