@@ -19,7 +19,6 @@ import {
   AlertCircle,
   Lock,
   UserPlus,
-  Mail,
 } from "lucide-react";
 
 interface SubscriptionStatus {
@@ -87,30 +86,13 @@ function RECAStartContent() {
     checkSubscription();
   }, [status]);
 
-  const handleStart = async (asGuest: boolean = false) => {
-    // For authenticated users, check subscription status
-    if (status === "authenticated" && subscriptionStatus) {
-      // If no subscription, redirect to tier selection
-      if (subscriptionStatus.needsToSelectTier) {
-        router.push("/service-tiers");
-        return;
-      }
-
-      // If DIY user hasn't paid, redirect to checkout
-      if (
-        subscriptionStatus.needsPayment &&
-        subscriptionStatus.tier === "DIY_PREP"
-      ) {
-        router.push("/service-tiers");
-        return;
-      }
-
-      // If can't access forms for any reason, show error
-      if (!subscriptionStatus.canAccessForms) {
-        alert("Please complete your payment to access the RECA form.");
-        router.push("/service-tiers");
-        return;
-      }
+  const handleStart = async () => {
+    if (
+      status !== "authenticated" ||
+      checkingSubscription ||
+      !subscriptionStatus?.canAccessForms
+    ) {
+      return;
     }
 
     setIsLoading(true);
@@ -123,12 +105,14 @@ function RECAStartContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             claimType: "DOWNWINDER",
-            isGuest: asGuest,
           }),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to create session");
+          const error = await response.json().catch(() => null);
+          throw new Error(
+            error?.error || error?.message || "Failed to create session"
+          );
         }
 
         const data = await response.json();
@@ -146,10 +130,6 @@ function RECAStartContent() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleContinueAsGuest = () => {
-    handleStart(true);
   };
 
   return (
@@ -311,44 +291,6 @@ function RECAStartContent() {
                   </div>
                 </Link>
               </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-cream-300"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-gradient-to-br from-terracotta-50 to-peach-50 px-2 text-sage-600">
-                    Or
-                  </span>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border-2 border-cream-300 bg-white p-6">
-                <div className="mb-4 flex items-start gap-3">
-                  <Mail className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
-                  <div>
-                    <h3 className="mb-1 font-semibold text-sage-900">
-                      Continue as Guest
-                    </h3>
-                    <p className="text-sm text-sage-700">
-                      Start without an account. You'll receive a magic link via
-                      email to resume later.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleContinueAsGuest}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                >
-                  {isLoading ? "Loading..." : "Continue as Guest"}
-                </Button>
-                <p className="mt-3 text-xs text-sage-600">
-                  Note: Guest sessions expire after 7 days. We recommend
-                  creating an account for the best experience.
-                </p>
-              </div>
             </CardContent>
           </Card>
         ) : (
@@ -458,7 +400,7 @@ function RECAStartContent() {
               <>
                 <Button
                   size="lg"
-                  onClick={() => handleStart(false)}
+                  onClick={handleStart}
                   disabled={isLoading}
                   className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
                 >

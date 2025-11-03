@@ -37,6 +37,23 @@ export const env = createEnv({
     // Upstash Redis for rate limiting
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+    // Stripe payments
+    STRIPE_SECRET_KEY:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().optional(),
+    STRIPE_PRICE_ID_DIY_SETUP:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().optional(),
+    STRIPE_PRICE_ID_DIY_MONTHLY:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().optional(),
+    STRIPE_WEBHOOK_SECRET:
+      process.env.NODE_ENV === "production"
+        ? z.string()
+        : z.string().optional(),
   },
 
   /**
@@ -64,6 +81,10 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_PRICE_ID_DIY_SETUP: process.env.STRIPE_PRICE_ID_DIY_SETUP,
+    STRIPE_PRICE_ID_DIY_MONTHLY: process.env.STRIPE_PRICE_ID_DIY_MONTHLY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

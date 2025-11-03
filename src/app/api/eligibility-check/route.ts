@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,14 +22,12 @@ export async function POST(request: NextRequest) {
       // Step 4: Cancer
       hasCancer,
       cancerType,
-      diagnosisYear,
       // Step 5: Latency
       latencyMet,
       // Step 6: Referral Info (if applicable)
       referrerName,
       referrerEmail,
       referrerPhone,
-      referrerConsent,
     } = data;
 
     // Calculate eligibility
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
       referrerEmail
     ) {
       // Check if referrer already has a referral code
-      const existingReferral = await prisma.referral.findFirst({
+      const existingReferral = await db.referral.findFirst({
         where: { contact: referrerEmail },
       });
 
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
         // Generate a unique referral code
         const referralCode = `REF-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
-        referralRecord = await prisma.referral.create({
+        referralRecord = await db.referral.create({
           data: {
             code: referralCode,
             referrerName: referrerName || "Unknown",
@@ -113,29 +111,12 @@ export async function POST(request: NextRequest) {
         .replace(/\s+/g, "_");
     }
 
-    const claimant = await prisma.claimant.create({
+    const claimant = await db.claimant.create({
       data: claimantData,
     });
 
     // Store the eligibility check metadata in notes or a separate table
     // For now, we'll return this data
-    const eligibilityCheckData = {
-      intent,
-      residenceInfo: {
-        state: residenceState,
-        duration: residenceDuration,
-        county: arizonaCounty || nevadaCounty,
-      },
-      cancerInfo: {
-        hasCancer,
-        type: cancerType,
-        diagnosisYear,
-      },
-      latencyMet,
-      eligibilityStatus,
-      submittedAt: new Date().toISOString(),
-    };
-
     // TODO: Send notification emails
     // - Confirmation to the claimant/referral subject
     // - Notification to referrer if applicable

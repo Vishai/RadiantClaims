@@ -193,7 +193,7 @@ function IntakeForm() {
       <main className="container mx-auto max-w-3xl px-6 py-12">
         <div className="mb-8 text-center">
           <h1 className="mb-4 text-4xl font-bold text-sage-900">
-            Start Your Free Claim Packet
+            Start Your Claim Packet
           </h1>
           <p className="text-lg text-sage-700">
             Fill out the information below to begin. We'll guide you through

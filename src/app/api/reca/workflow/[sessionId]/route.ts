@@ -8,6 +8,7 @@ import {
   SaveWorkflowRequest,
   SaveWorkflowResponse,
 } from "@/lib/reca/types";
+import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 
 /**
  * Pre-populate Part 1 (Filer Information) from Claimant intake data
@@ -43,7 +44,11 @@ function preFillPart1FromClaimant(formData: any, claimant: any) {
  * This maintains data consistency and prevents duplicate data entry
  */
 function autoPopulatePart2ForSelfFiler(formData: any) {
-  if (formData.part_1 && !formData.part_2 && formData.part_3?.relationship === "Self") {
+  if (
+    formData.part_1 &&
+    !formData.part_2 &&
+    formData.part_3?.relationship === "Self"
+  ) {
     formData.part_2 = {
       firstName: formData.part_1.firstName,
       middleName: formData.part_1.middleName,
@@ -68,6 +73,10 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     const { sessionId } = params;
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // Find the intake session
     const intakeSession = await db.intakeSession.findUnique({
@@ -99,12 +108,19 @@ export async function GET(
       );
     }
 
-    // Check authorization - must be the owner, guest with valid session, or an admin/attorney
-    const isOwner = session?.user?.id && session.user.id === intakeSession.claimant?.userId;
-    const isAdminOrAttorney = session?.user?.role === "ADMIN" || session?.user?.role === "ATTORNEY";
-    const isGuestSession = !intakeSession.claimant?.userId; // Guest sessions have no linked user
+    // Check authorization - must be the owner with active subscription or an admin/attorney
+    const userId = session.user.id;
+    const userRole = (session.user as { role?: string }).role;
+    const isOwner = userId && userId === intakeSession.claimant?.userId;
+    const isAdminOrAttorney = userRole === "ADMIN" || userRole === "ATTORNEY";
 
-    if (!isOwner && !isAdminOrAttorney && !isGuestSession) {
+    let hasPaidAccess = false;
+    if (isOwner) {
+      const access = await getActiveSubscriptionAccess(userId);
+      hasPaidAccess = !!access;
+    }
+
+    if (!isAdminOrAttorney && !(isOwner && hasPaidAccess)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -116,8 +132,7 @@ export async function GET(
     const workflowState: RECAWorkflowState = {
       sessionId: intakeSession.id,
       currentStage: (intakeSession.recaWorkflowStage || 1) as RECAWorkflowStage,
-      currentSection:
-        (intakeSession.recaWorkflowSection as any) || "part_1",
+      currentSection: (intakeSession.recaWorkflowSection as any) || "part_1",
       completionPercentage: intakeSession.recaCompletionPercent || 0,
       formData,
       supportingForms: (intakeSession.recaSupportingForms as any) || {},
@@ -156,6 +171,10 @@ export async function POST(
     const { sessionId } = params;
     const body: SaveWorkflowRequest = await req.json();
 
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Find the intake session
     const intakeSession = await db.intakeSession.findUnique({
       where: { id: sessionId },
@@ -169,12 +188,19 @@ export async function POST(
       );
     }
 
-    // Check authorization - must be the owner, guest with valid session, or an admin/attorney
-    const isOwner = session?.user?.id && session.user.id === intakeSession.claimant?.userId;
-    const isAdminOrAttorney = session?.user?.role === "ADMIN" || session?.user?.role === "ATTORNEY";
-    const isGuestSession = !intakeSession.claimant?.userId; // Guest sessions have no linked user
+    // Check authorization - must be the owner with active subscription or an admin/attorney
+    const userId = session.user.id;
+    const userRole = (session.user as { role?: string }).role;
+    const isOwner = userId && userId === intakeSession.claimant?.userId;
+    const isAdminOrAttorney = userRole === "ADMIN" || userRole === "ATTORNEY";
 
-    if (!isOwner && !isAdminOrAttorney && !isGuestSession) {
+    let hasPaidAccess = false;
+    if (isOwner) {
+      const access = await getActiveSubscriptionAccess(userId);
+      hasPaidAccess = !!access;
+    }
+
+    if (!isAdminOrAttorney && !(isOwner && hasPaidAccess)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -210,7 +236,8 @@ export async function POST(
           body.currentSection || intakeSession.recaWorkflowSection,
         recaFormData: updatedFormData,
         recaSupportingForms: updatedSupportingForms,
-        recaEligibilityData: (body.eligibilityData as any) || intakeSession.recaEligibilityData,
+        recaEligibilityData:
+          (body.eligibilityData as any) || intakeSession.recaEligibilityData,
         recaCompletionPercent: completionPercentage,
         lastActivityAt: new Date(),
         updatedAt: new Date(),

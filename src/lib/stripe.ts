@@ -12,7 +12,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-10-29.clover",
+  apiVersion: "2024-06-20" as Stripe.LatestApiVersion,
   typescript: true,
   appInfo: {
     name: "RadiantClaims",

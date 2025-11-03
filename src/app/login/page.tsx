@@ -80,6 +80,14 @@ function LoginForm() {
     }
   };
 
+  const callbackUrl = searchParams.get("callbackUrl") ?? undefined;
+  const registerHref = callbackUrl
+    ? {
+        pathname: "/register",
+        query: { callbackUrl },
+      }
+    : "/register";
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
       <div className="w-full max-w-md px-6">
@@ -152,7 +160,7 @@ function LoginForm() {
               <p className="text-sm text-sage-600">
                 Don't have an account?{" "}
                 <Link
-                  href={`/register${searchParams.get("callbackUrl") ? `?callbackUrl=${searchParams.get("callbackUrl")}` : ""}`}
+                  href={registerHref}
                   className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
                 >
                   Create Account

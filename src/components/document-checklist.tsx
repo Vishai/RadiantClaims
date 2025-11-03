@@ -13,6 +13,7 @@ import {
   Edit,
 } from "lucide-react";
 import Link from "next/link";
+import type { Route } from "next";
 import {
   ChecklistSection,
   DocumentRequirement,
@@ -277,7 +278,7 @@ export function DocumentChecklistComponent({
                                       </p>
                                       <div className="flex flex-wrap gap-3">
                                         <Link
-                                          href="/forms/lds-reca"
+                                          href={"/forms/lds-reca" as Route}
                                           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
                                         >
                                           <Edit className="h-4 w-4" />

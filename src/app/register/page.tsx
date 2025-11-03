@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,9 @@ import {
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
+const LOGIN_ROUTE = "/login" as Route;
+const DEFAULT_REDIRECT_ROUTE = "/portal" as Route;
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,6 +29,7 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const callbackUrlParam = searchParams.get("callbackUrl");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,14 +79,17 @@ function RegisterForm() {
       if (result?.error) {
         setError("Account created but login failed. Please try logging in.");
         setTimeout(() => {
-          router.push("/login");
+          router.push(LOGIN_ROUTE);
         }, 2000);
         return;
       }
 
       // Redirect to callback URL or default location
-      const callbackUrl = searchParams.get("callbackUrl") || "/portal";
-      router.push(callbackUrl);
+      const safeCallbackUrl =
+        callbackUrlParam && callbackUrlParam.startsWith("/")
+          ? (callbackUrlParam as Route)
+          : DEFAULT_REDIRECT_ROUTE;
+      router.push(safeCallbackUrl);
       router.refresh();
     } catch (err) {
       setError("An error occurred. Please try again.");
@@ -90,6 +98,14 @@ function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  const loginHref =
+    callbackUrlParam && callbackUrlParam.startsWith("/")
+      ? {
+          pathname: LOGIN_ROUTE,
+          query: { callbackUrl: callbackUrlParam },
+        }
+      : LOGIN_ROUTE;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
@@ -195,7 +211,7 @@ function RegisterForm() {
               <p className="text-sm text-sage-600">
                 Already have an account?{" "}
                 <Link
-                  href={`/login${searchParams.get("callbackUrl") ? `?callbackUrl=${searchParams.get("callbackUrl")}` : ""}`}
+                  href={loginHref}
                   className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
                 >
                   Sign In

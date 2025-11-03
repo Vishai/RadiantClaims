@@ -202,7 +202,7 @@ export default function CustomerPortal() {
                 No claims yet
               </h3>
               <p className="mb-6 text-center text-sage-600">
-                Start your free claim packet to begin the process
+                Start your claim packet to begin the process
               </p>
               <Button
                 onClick={() => router.push("/intake")}

@@ -2,28 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Heart,
-  Download,
-  Save,
-  ArrowLeft,
-  Printer,
-  AlertCircle,
-} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Download, ArrowLeft, Printer, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function LDSRECAFormPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl") || "/intake/step2";
+  const allowedReturnUrls = [
+    "/intake/step2",
+    "/portal",
+    "/service-tiers",
+  ] as const satisfies readonly Route[];
+  type AllowedReturnUrl = (typeof allowedReturnUrls)[number];
+
+  const requestedReturnUrl = searchParams.get("returnUrl");
+  const returnUrl: AllowedReturnUrl =
+    requestedReturnUrl &&
+    allowedReturnUrls.includes(requestedReturnUrl as AllowedReturnUrl)
+      ? (requestedReturnUrl as AllowedReturnUrl)
+      : "/intake/step2";
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {

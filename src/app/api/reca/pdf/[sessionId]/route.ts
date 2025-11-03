@@ -3,13 +3,13 @@
  * Generates a comprehensive PDF package for RECA claims
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { generateRECAPDF } from '@/lib/reca/pdf-generator';
-import { fillOfficialRECAPDF } from '@/lib/reca/pdf-form-filler';
-import * as path from 'path';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { generateRECAPDF } from "@/lib/reca/pdf-generator";
+import { fillOfficialRECAPDF } from "@/lib/reca/pdf-form-filler";
+import * as path from "path";
 
 export async function GET(
   _request: NextRequest,
@@ -19,9 +19,33 @@ export async function GET(
     // Authenticate user
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Confirm active subscription before allowing download
+    const subscription = await db.serviceSubscription.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        tier: true,
+        status: true,
+        setupFeePaid: true,
+      },
+    });
+
+    const isLegalTier =
+      subscription?.tier === "LEGAL_REP" && subscription.status !== "CANCELED";
+    const isActiveDIY =
+      subscription?.tier === "DIY_PREP" &&
+      subscription.setupFeePaid === true &&
+      subscription.status === "ACTIVE";
+
+    if (!subscription || (!isLegalTier && !isActiveDIY)) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        {
+          error:
+            "An active RadiantClaims subscription is required to download completed RECA documents.",
+        },
+        { status: 403 }
       );
     }
 
@@ -32,18 +56,12 @@ export async function GET(
     });
 
     if (!intakeSession) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // Verify ownership
     if (intakeSession.claimant?.email !== session.user.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Parse form data
@@ -52,13 +70,18 @@ export async function GET(
 
     if (!formData) {
       return NextResponse.json(
-        { error: 'No form data found' },
+        { error: "No form data found" },
         { status: 400 }
       );
     }
 
     // Path to the official RECA PDF template
-    const officialPdfPath = path.join(process.cwd(), 'public', 'forms', 'reca-downwinder-claim-form.pdf');
+    const officialPdfPath = path.join(
+      process.cwd(),
+      "public",
+      "forms",
+      "reca-downwinder-claim-form.pdf"
+    );
 
     // Generate the filled official RECA PDF
     const pdfBytes = await fillOfficialRECAPDF({
@@ -68,19 +91,31 @@ export async function GET(
       officialPdfPath,
     });
 
+    if (!intakeSession.recaFormPdfDownloaded) {
+      await db.intakeSession.update({
+        where: { id: params.sessionId },
+        data: {
+          recaFormPdfDownloaded: true,
+          recaFormPdfDownloadedAt: new Date(),
+        },
+      });
+    }
+
     // Return PDF with appropriate headers
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="RECA-Downwinder-Form-${params.sessionId}.pdf"`,
-        'Cache-Control': 'no-cache',
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="RECA-Downwinder-Form-${params.sessionId}.pdf"`,
+        "Cache-Control": "no-cache",
       },
     });
-
   } catch (error) {
-    console.error('Error generating RECA PDF:', error);
+    console.error("Error generating RECA PDF:", error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: "Failed to generate PDF",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -96,21 +131,41 @@ export async function POST(
 ) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const generatePackage = searchParams.get('package') === 'true';
+    const generatePackage = searchParams.get("package") === "true";
 
     if (!generatePackage) {
-      return NextResponse.json(
-        { error: 'Invalid request' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     // Authenticate user
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const subscription = await db.serviceSubscription.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        tier: true,
+        status: true,
+        setupFeePaid: true,
+      },
+    });
+
+    const isLegalTier =
+      subscription?.tier === "LEGAL_REP" && subscription.status !== "CANCELED";
+    const isActiveDIY =
+      subscription?.tier === "DIY_PREP" &&
+      subscription.setupFeePaid === true &&
+      subscription.status === "ACTIVE";
+
+    if (!subscription || (!isLegalTier && !isActiveDIY)) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        {
+          error:
+            "An active RadiantClaims subscription is required to download completed RECA documents.",
+        },
+        { status: 403 }
       );
     }
 
@@ -121,25 +176,24 @@ export async function POST(
     });
 
     if (!intakeSession) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     // Verify ownership
     if (intakeSession.claimant?.email !== session.user.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const formData = intakeSession.recaFormData as any;
     const supportingForms = intakeSession.recaSupportingForms as any;
 
     // Path to the official RECA PDF template
-    const officialPdfPath = path.join(process.cwd(), 'public', 'forms', 'reca-downwinder-claim-form.pdf');
+    const officialPdfPath = path.join(
+      process.cwd(),
+      "public",
+      "forms",
+      "reca-downwinder-claim-form.pdf"
+    );
 
     // Generate both PDFs
     const filledFormBytes = await fillOfficialRECAPDF({
@@ -156,20 +210,32 @@ export async function POST(
       sessionId: params.sessionId,
     });
 
+    if (!intakeSession.recaFormPdfDownloaded) {
+      await db.intakeSession.update({
+        where: { id: params.sessionId },
+        data: {
+          recaFormPdfDownloaded: true,
+          recaFormPdfDownloadedAt: new Date(),
+        },
+      });
+    }
+
     // For now, return the filled official form
     // TODO: In the future, create a ZIP package with both PDFs
     return new NextResponse(Buffer.from(filledFormBytes), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="RECA-Complete-Package-${params.sessionId}.pdf"`,
-        'Cache-Control': 'no-cache',
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="RECA-Complete-Package-${params.sessionId}.pdf"`,
+        "Cache-Control": "no-cache",
       },
     });
-
   } catch (error) {
-    console.error('Error generating RECA package:', error);
+    console.error("Error generating RECA package:", error);
     return NextResponse.json(
-      { error: 'Failed to generate package', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: "Failed to generate package",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

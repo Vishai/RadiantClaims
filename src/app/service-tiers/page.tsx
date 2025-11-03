@@ -29,7 +29,7 @@ import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAg
 
 export default function ServiceTiersPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showDIYAgreement, setShowDIYAgreement] = useState(false);
   const [showLegalAgreement, setShowLegalAgreement] = useState(false);
@@ -671,7 +671,10 @@ export default function ServiceTiersPage() {
                   if (selectedTier) {
                     sessionStorage.setItem("pendingServiceTier", selectedTier);
                   }
-                  router.push("/register?callbackUrl=/service-tiers");
+                  router.push({
+                    pathname: "/register",
+                    query: { callbackUrl: "/service-tiers" },
+                  } as any);
                 }}
                 className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-semibold hover:bg-terracotta-600"
               >
@@ -687,7 +690,10 @@ export default function ServiceTiersPage() {
                         selectedTier
                       );
                     }
-                    router.push("/login?callbackUrl=/service-tiers");
+                    router.push({
+                      pathname: "/login",
+                      query: { callbackUrl: "/service-tiers" },
+                    } as any);
                   }}
                   className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
                 >

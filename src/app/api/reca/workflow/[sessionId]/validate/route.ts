@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 import {
   ValidateSectionRequest,
   ValidateSectionResponse,
@@ -22,6 +23,10 @@ export async function POST(
     const { sessionId } = params;
     const body: ValidateSectionRequest = await req.json();
 
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Find the intake session
     const intakeSession = await db.intakeSession.findUnique({
       where: { id: sessionId },
@@ -35,12 +40,18 @@ export async function POST(
       );
     }
 
-    // Check authorization
-    if (
-      session?.user?.id !== intakeSession.claimant?.userId &&
-      session?.user?.role !== "ADMIN" &&
-      session?.user?.role !== "ATTORNEY"
-    ) {
+    const userId = session.user.id;
+    const userRole = (session.user as { role?: string }).role;
+    const isOwner = userId && userId === intakeSession.claimant?.userId;
+    const isAdminOrAttorney = userRole === "ADMIN" || userRole === "ATTORNEY";
+
+    let hasPaidAccess = false;
+    if (isOwner) {
+      const access = await getActiveSubscriptionAccess(userId);
+      hasPaidAccess = !!access;
+    }
+
+    if (!isAdminOrAttorney && !(isOwner && hasPaidAccess)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -136,7 +147,10 @@ function validatePart1(data: any): FieldError[] {
     errors.push({ field: "dob", message: "Date of birth is required" });
   }
   if (!data.mailingAddress?.trim()) {
-    errors.push({ field: "mailingAddress", message: "Mailing address is required" });
+    errors.push({
+      field: "mailingAddress",
+      message: "Mailing address is required",
+    });
   }
   if (!data.city?.trim()) {
     errors.push({ field: "city", message: "City is required" });
@@ -188,7 +202,10 @@ function validatePart3(data: any): FieldError[] {
     "Grandparent",
   ];
   if (!validRelationships.includes(data.relationship)) {
-    errors.push({ field: "relationship", message: "Relationship selection is required" });
+    errors.push({
+      field: "relationship",
+      message: "Relationship selection is required",
+    });
   }
 
   return errors;
@@ -368,7 +385,10 @@ function validatePart16(data: any): FieldError[] {
     errors.push({ field: "signature", message: "Signature is required" });
   }
   if (!data.signatureDate) {
-    errors.push({ field: "signatureDate", message: "Signature date is required" });
+    errors.push({
+      field: "signatureDate",
+      message: "Signature date is required",
+    });
   }
   if (!data.authorizationAcknowledgment) {
     errors.push({
@@ -384,7 +404,10 @@ function validateEligibility(data: any): FieldError[] {
   const errors: FieldError[] = [];
 
   if (!data.relationship) {
-    errors.push({ field: "relationship", message: "Relationship must be selected" });
+    errors.push({
+      field: "relationship",
+      message: "Relationship must be selected",
+    });
   }
   if (
     !data.exposureOptions ||

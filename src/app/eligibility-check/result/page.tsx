@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +28,20 @@ function ResultContent() {
   const intent = searchParams.get("intent");
   const name = searchParams.get("name");
 
-  const getResultConfig = () => {
+  type ResultConfig = {
+    icon: typeof CheckCircle2;
+    iconColor: string;
+    bgColor: string;
+    borderColor: string;
+    title: string;
+    description: string;
+    nextSteps: string[];
+    ctaText: string;
+    ctaLink: Route;
+    showServiceLink?: boolean;
+  };
+
+  const getResultConfig = (): ResultConfig => {
     switch (eligibility) {
       case "likely":
         return {

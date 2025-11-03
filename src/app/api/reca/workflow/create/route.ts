@@ -1,6 +1,6 @@
 /**
  * RECA Workflow Creation API
- * Creates a new RECA workflow session (anonymous or authenticated)
+ * Creates a new RECA workflow session for authenticated, paying users.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,19 +13,58 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { claimType, isGuest = false } = body;
 
-    // Check if user is authenticated (optional - allows anonymous workflow)
+    // Require authenticated users – guest access is disabled for paid launch
     const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id || !session.user.email) {
+      return NextResponse.json(
+        { error: "You must be signed in to start a RECA claim." },
+        { status: 401 }
+      );
+    }
+
+    if (isGuest) {
+      return NextResponse.json(
+        {
+          error:
+            "Guest access is no longer available. Please sign in with an active subscription.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const subscription = await db.serviceSubscription.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        tier: true,
+        status: true,
+        setupFeePaid: true,
+      },
+    });
+
+    const isLegalTier = subscription?.tier === "LEGAL_REP";
+    const isActiveDIY =
+      subscription?.tier === "DIY_PREP" &&
+      subscription?.setupFeePaid === true &&
+      subscription?.status === "ACTIVE";
+
+    if (!subscription || (!isLegalTier && !isActiveDIY)) {
+      return NextResponse.json(
+        {
+          error:
+            "An active RadiantClaims subscription is required to access the RECA form.",
+        },
+        { status: 403 }
+      );
+    }
 
     let claimantId: string | null = null;
 
-    // If authenticated and not explicitly requesting guest mode, try to associate with existing claimant
-    if (session?.user?.email && session?.user?.id && !isGuest) {
+    // Associate workflow with the caller's claimant profile
+    if (session.user.email && session.user.id) {
       let claimant = await db.claimant.findFirst({
         where: {
-          OR: [
-            { email: session.user.email },
-            { userId: session.user.id }
-          ]
+          OR: [{ email: session.user.email }, { userId: session.user.id }],
         },
       });
 
@@ -57,30 +96,29 @@ export async function POST(request: NextRequest) {
       claimantId = claimant.id;
     }
 
-    // Generate resume token for anonymous sessions
+    // Generate resume token so the user can resume progress
     const resumeToken = `reca_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 
     // Set expiration (7 days from now)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create intake session for RECA workflow (with or without claimant)
-    // Claimant will be created later from form data if not authenticated
+    // Create intake session for RECA workflow (claimant linked when available)
     const intakeSession = await db.intakeSession.create({
       data: {
         resumeToken: resumeToken,
         ...(claimantId && {
           claimant: {
-            connect: { id: claimantId }
-          }
+            connect: { id: claimantId },
+          },
         }),
         currentStep: "SCREENING", // IntakeStep enum
         recaFormData: {},
         recaSupportingForms: {},
         recaEligibilityData: undefined,
-        recaWorkflowSection: "part_1",  // Fixed field name
-        recaWorkflowStage: 1,           // Fixed field name
-        recaCompletionPercent: 0,       // Fixed field name
+        recaWorkflowSection: "part_1", // Fixed field name
+        recaWorkflowStage: 1, // Fixed field name
+        recaCompletionPercent: 0, // Fixed field name
         expiresAt: expiresAt,
       },
     });
@@ -89,7 +127,6 @@ export async function POST(request: NextRequest) {
       sessionId: intakeSession.id,
       claimantId: claimantId,
       message: "RECA workflow session created successfully",
-      isAnonymous: !session?.user?.email,
     });
   } catch (error) {
     console.error("Error creating RECA workflow session:", error);

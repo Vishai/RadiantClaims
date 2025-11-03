@@ -63,7 +63,7 @@ export default function HowItWorksPage() {
                   </div>
                   <div>
                     <CardTitle className="text-2xl text-sage-900">
-                      Step 1: Free Eligibility Check
+                      Step 1: Eligibility Check
                     </CardTitle>
                     <CardDescription className="text-sage-600">
                       We verify you meet the RECA requirements
@@ -396,15 +396,15 @@ export default function HowItWorksPage() {
           <div className="mt-12 rounded-3xl bg-gradient-to-br from-terracotta-500 to-terracotta-600 p-8 text-center text-white shadow-lg">
             <h2 className="mb-4 text-3xl font-bold">Ready to Get Started?</h2>
             <p className="mb-6 text-lg text-terracotta-50">
-              Start with our free eligibility check, then choose between
-              affordable DIY service or no-upfront-cost legal representation.
+              Start with our eligibility check, then choose between affordable
+              DIY service or no-upfront-cost legal representation.
             </p>
             <Link href="/intake">
               <Button
                 size="lg"
                 className="rounded-full bg-white px-8 py-6 text-lg font-semibold text-terracotta-600 hover:bg-cream-50"
               >
-                Start Your Free Claim Packet →
+                Start Your Claim Packet →
               </Button>
             </Link>
           </div>
