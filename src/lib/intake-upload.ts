@@ -15,6 +15,7 @@ export type FileCategory =
   | "TAX_RETURN"
   | "SCHOOL_RECORDS"
   | "EMPLOYMENT_RECORDS"
+  | "LDS_CHURCH_RECORDS"
   | "OTHER";
 
 export interface UploadFileParams {
@@ -93,11 +94,14 @@ export async function uploadFile({
     }
 
     // Step 3b: Confirm upload success
-    const confirmResponse = await fetch(`/api/intake/upload/${uploadedFileId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ success: true }),
-    });
+    const confirmResponse = await fetch(
+      `/api/intake/upload/${uploadedFileId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ success: true }),
+      }
+    );
 
     if (!confirmResponse.ok) {
       throw new Error("Failed to confirm upload");
@@ -275,6 +279,7 @@ export function generateSuggestedFilename(
     TAX_RETURN: "tax",
     SCHOOL_RECORDS: "school",
     EMPLOYMENT_RECORDS: "employment",
+    LDS_CHURCH_RECORDS: "lds_church",
     OTHER: "document",
   };
 

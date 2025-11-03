@@ -1,8 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Info, FileText, Mail } from "lucide-react";
-import { ChecklistSection, DocumentRequirement } from "@/lib/document-checklist";
+import {
+  CheckCircle2,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  FileText,
+  Mail,
+  Download,
+  Edit,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  ChecklistSection,
+  DocumentRequirement,
+} from "@/lib/document-checklist";
 import { FileCategory } from "@/lib/intake-upload";
 
 interface DocumentChecklistProps {
@@ -19,7 +33,9 @@ export function DocumentChecklistComponent({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["identity", "residence", "medical"])
   );
-  const [expandedRequirements, setExpandedRequirements] = useState<Set<string>>(new Set());
+  const [expandedRequirements, setExpandedRequirements] = useState<Set<string>>(
+    new Set()
+  );
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => {
@@ -94,7 +110,9 @@ export function DocumentChecklistComponent({
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   )}
                 </div>
-                <p className="mt-1 text-sm text-sage-600">{section.description}</p>
+                <p className="mt-1 text-sm text-sage-600">
+                  {section.description}
+                </p>
 
                 {/* Progress bar */}
                 <div className="mt-3 flex items-center gap-3">
@@ -123,7 +141,8 @@ export function DocumentChecklistComponent({
                 <div className="space-y-4">
                   {section.requirements.map((req) => {
                     const requirementId = `${section.id}-${req.category}`;
-                    const isReqExpanded = expandedRequirements.has(requirementId);
+                    const isReqExpanded =
+                      expandedRequirements.has(requirementId);
                     const status = getRequirementStatus(req);
                     const uploaded = getUploadedCount(req.category);
 
@@ -145,8 +164,8 @@ export function DocumentChecklistComponent({
                                     status === "partial"
                                       ? "text-amber-500"
                                       : req.isRequired
-                                      ? "text-terracotta-500"
-                                      : "text-sage-300"
+                                        ? "text-terracotta-500"
+                                        : "text-sage-300"
                                   }`}
                                 />
                               )}
@@ -189,17 +208,20 @@ export function DocumentChecklistComponent({
                                         uploaded >= req.minRequired
                                           ? "text-emerald-700"
                                           : uploaded > 0
-                                          ? "text-amber-700"
-                                          : "text-sage-500"
+                                            ? "text-amber-700"
+                                            : "text-sage-500"
                                       }`}
                                     >
-                                      {uploaded} of {req.minRequired} minimum uploaded
+                                      {uploaded} of {req.minRequired} minimum
+                                      uploaded
                                     </span>
-                                    {uploaded < req.minRequired && req.isRequired && (
-                                      <span className="text-terracotta-600">
-                                        • {req.minRequired - uploaded} more needed
-                                      </span>
-                                    )}
+                                    {uploaded < req.minRequired &&
+                                      req.isRequired && (
+                                        <span className="text-terracotta-600">
+                                          • {req.minRequired - uploaded} more
+                                          needed
+                                        </span>
+                                      )}
                                   </div>
 
                                   {/* Timeframe note */}
@@ -213,7 +235,9 @@ export function DocumentChecklistComponent({
 
                                 {/* Upload button */}
                                 <button
-                                  onClick={() => onCategorySelect?.(req.category)}
+                                  onClick={() =>
+                                    onCategorySelect?.(req.category)
+                                  }
                                   className="flex-shrink-0 rounded-lg bg-terracotta-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-terracotta-600"
                                 >
                                   Upload
@@ -226,7 +250,8 @@ export function DocumentChecklistComponent({
                                 className="mt-3 flex items-center gap-2 text-xs font-medium text-sage-700 hover:text-sage-900"
                               >
                                 <Info className="h-3.5 w-3.5" />
-                                {isReqExpanded ? "Hide" : "Show"} tips & examples
+                                {isReqExpanded ? "Hide" : "Show"} tips &
+                                examples
                                 {isReqExpanded ? (
                                   <ChevronUp className="h-3.5 w-3.5" />
                                 ) : (
@@ -237,6 +262,52 @@ export function DocumentChecklistComponent({
                               {/* Tips and Examples (expanded) */}
                               {isReqExpanded && (
                                 <div className="mt-3 space-y-3 rounded-lg bg-sage-50 p-4">
+                                  {/* Fill Out LDS Form (if applicable) */}
+                                  {req.category === "LDS_CHURCH_RECORDS" && (
+                                    <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                                      <h5 className="mb-2 text-sm font-semibold text-blue-900">
+                                        Fill Out the LDS RECA Form
+                                      </h5>
+                                      <p className="mb-3 text-xs text-blue-800">
+                                        Fill out this form online, then
+                                        download, sign, and mail it to the LDS
+                                        Church. They will send membership
+                                        records directly to the DOJ to help
+                                        prove your residence.
+                                      </p>
+                                      <div className="flex flex-wrap gap-3">
+                                        <Link
+                                          href="/forms/lds-reca"
+                                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          Fill Out Form Online
+                                        </Link>
+                                        <a
+                                          href="/forms/lds-reca-form-2025.pdf"
+                                          download
+                                          className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-600 bg-white px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
+                                        >
+                                          <Download className="h-4 w-4" />
+                                          Download Blank PDF
+                                        </a>
+                                      </div>
+                                      <p className="mt-3 text-xs text-blue-700">
+                                        <strong>Mail completed form to:</strong>
+                                        <br />
+                                        RECA RESEARCH
+                                        <br />
+                                        Global Services Department
+                                        <br />
+                                        3740 West Market Center Drive
+                                        <br />
+                                        Riverton, UT 84065
+                                        <br />
+                                        Phone: 1-801-240-3500
+                                      </p>
+                                    </div>
+                                  )}
+
                                   {/* Tips */}
                                   <div>
                                     <h5 className="mb-2 text-xs font-semibold uppercase tracking-wide text-sage-700">
@@ -248,7 +319,9 @@ export function DocumentChecklistComponent({
                                           key={idx}
                                           className="flex gap-2 text-xs text-sage-700"
                                         >
-                                          <span className="text-terracotta-500">•</span>
+                                          <span className="text-terracotta-500">
+                                            •
+                                          </span>
                                           <span>{tip}</span>
                                         </li>
                                       ))}

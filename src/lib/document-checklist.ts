@@ -68,12 +68,13 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 2,
         isRequired: true,
         requiresOriginal: true,
-        originalNote: "A certified or notarized copy will be required in your final mailing. Upload a clear photo/scan now.",
+        originalNote:
+          "A certified or notarized copy will be required in your final mailing. Upload a clear photo/scan now.",
         tips: [
           "Make sure your ID is current and not expired",
           "Ensure all text is clearly readable",
           "Both front and back if applicable",
-          "You'll need to obtain a certified copy later for mailing"
+          "You'll need to obtain a certified copy later for mailing",
         ],
         examples: [
           "Driver's License (front & back)",
@@ -100,7 +101,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         requiresOriginal: true,
         timeframeNote:
           "Documents must show residence during the qualifying period: 1951-1962",
-        originalNote: "Original historical documents will be required in your final mailing. Upload clear photos/scans now.",
+        originalNote:
+          "Original historical documents will be required in your final mailing. Upload clear photos/scans now.",
         validationRules: {
           mustShowNameAndAddress: true,
           mustBeWithinDateRange: RECA_ATMOSPHERIC_PERIOD,
@@ -135,7 +137,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         timeframeNote: "From 1951-1962 period preferred",
-        originalNote: "Original bills preferred if available. Upload photos/scans now.",
+        originalNote:
+          "Original bills preferred if available. Upload photos/scans now.",
         tips: [
           "These are particularly strong evidence if you have them",
           "Gas, electric, water, or telephone bills all qualify",
@@ -152,13 +155,15 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       {
         category: "SCHOOL_RECORDS",
         title: "School Records (If Applicable)",
-        description: "Report cards, enrollment records, or transcripts showing attendance during 1951-1962",
+        description:
+          "Report cards, enrollment records, or transcripts showing attendance during 1951-1962",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
         timeframeNote: "For claimants who attended school during 1951-1962",
-        originalNote: "Original or certified copies required. Upload scans now.",
+        originalNote:
+          "Original or certified copies required. Upload scans now.",
         tips: [
           "Report cards showing your name and school address",
           "Enrollment records or attendance certificates",
@@ -170,6 +175,32 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
           "School enrollment records",
           "Transcripts",
           "School photos with names/dates",
+        ],
+      },
+      {
+        category: "LDS_CHURCH_RECORDS",
+        title: "LDS Church Membership Records (If Applicable)",
+        description:
+          "For members of The Church of Jesus Christ of Latter-day Saints, you can request the church to provide membership records to the DOJ to help prove residence during 1951-1962",
+        minRequired: 0,
+        maxAllowed: 2,
+        isRequired: false,
+        requiresOriginal: true,
+        timeframeNote:
+          "For members who lived in the affected area during 1951-1962",
+        originalNote:
+          "Complete the RECA Research Application form and mail it directly to the church. The church will send their report directly to the DOJ.",
+        tips: [
+          "Download the LDS RECA Form below and fill it out completely",
+          "Mail the completed form to: RECA RESEARCH, Global Services Department, 3740 West Market Center Drive, Riverton, UT 84065",
+          "The church will check historical ward information and send a report directly to the DOJ",
+          "This service is free and can provide strong evidence of residence",
+          "Upload a copy of your completed form here for your records",
+          "The church will NOT email records - they send directly to the DOJ",
+        ],
+        examples: [
+          "Completed LDS RECA Research Application form",
+          "Copy of church response (if received)",
         ],
       },
     ],
@@ -188,7 +219,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 3,
         isRequired: true,
         requiresOriginal: true,
-        originalNote: "Certified copies from medical facility required. Upload scans now, request certified copies later.",
+        originalNote:
+          "Certified copies from medical facility required. Upload scans now, request certified copies later.",
         tips: [
           "Must include diagnosis date and cancer type",
           "Should be on official letterhead from the pathology lab",
@@ -227,12 +259,14 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       {
         category: "DISCHARGE_SUMMARY",
         title: "Hospital Discharge Summaries",
-        description: "Summaries from hospitalizations related to your cancer treatment",
+        description:
+          "Summaries from hospitalizations related to your cancer treatment",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Certified copies from hospital required. Upload scans now.",
+        originalNote:
+          "Certified copies from hospital required. Upload scans now.",
         tips: [
           "Include summaries from surgery, chemotherapy admissions, etc.",
           "Should mention cancer diagnosis and treatment provided",
@@ -302,7 +336,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         timeframeNote: "From 1951-1962 period if available",
-        originalNote: "Original or certified IRS copies required. Upload scans now.",
+        originalNote:
+          "Original or certified IRS copies required. Upload scans now.",
         tips: [
           "Federal or state tax returns showing your address",
           "These are strong evidence if you have them",
@@ -367,12 +402,17 @@ export function getTotalOptional(): number {
 /**
  * Calculate checklist progress based on uploaded files
  */
-export function calculateProgress(uploadedFiles: Array<{ category: FileCategory | null }>) {
+export function calculateProgress(
+  uploadedFiles: Array<{ category: FileCategory | null }>
+) {
   const categoryCounts = new Map<FileCategory, number>();
 
   uploadedFiles.forEach((file) => {
     if (file.category) {
-      categoryCounts.set(file.category, (categoryCounts.get(file.category) || 0) + 1);
+      categoryCounts.set(
+        file.category,
+        (categoryCounts.get(file.category) || 0) + 1
+      );
     }
   });
 
@@ -393,6 +433,7 @@ export function calculateProgress(uploadedFiles: Array<{ category: FileCategory 
   return {
     requiredMet,
     requiredTotal,
-    percentComplete: requiredTotal > 0 ? Math.round((requiredMet / requiredTotal) * 100) : 0,
+    percentComplete:
+      requiredTotal > 0 ? Math.round((requiredMet / requiredTotal) * 100) : 0,
   };
 }
