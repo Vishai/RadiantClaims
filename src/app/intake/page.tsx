@@ -379,14 +379,6 @@ function IntakeForm() {
             </form>
           </CardContent>
         </Card>
-
-        <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
-          <p className="text-sm text-sage-700">
-            Choose between our DIY document preparation service (starting at
-            $149.99) or full legal representation with no upfront cost (2%
-            attorney fee paid from your award, capped by federal statute).
-          </p>
-        </div>
       </main>
 
       <footer className="mt-20 border-t border-cream-200 bg-white py-12">

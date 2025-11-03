@@ -24,10 +24,10 @@ export function MailInProcessBanner() {
             </h3>
 
             <p className="mb-4 text-sm text-blue-800">
-              The Department of Justice requires certain documents to be submitted as{" "}
-              <strong>certified copies or originals</strong>. Until the new digital portal
-              opens in <strong>December</strong>, we're using this streamlined process to
-              make things easier for you:
+              The Department of Justice requires certain documents to be
+              submitted as <strong>certified copies or originals</strong>. Until
+              the new digital portal opens, we're using this streamlined process
+              to make things easier for you:
             </p>
 
             {/* Process Steps */}
@@ -39,11 +39,13 @@ export function MailInProcessBanner() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Upload className="h-4 w-4 text-blue-600" />
-                    <h4 className="font-semibold text-blue-900">Upload Digital Copies</h4>
+                    <h4 className="font-semibold text-blue-900">
+                      Upload Digital Copies
+                    </h4>
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
-                    Take photos or scans of all your documents and upload them here. Don't
-                    worry about getting certified copies yet!
+                    Take photos or scans of all your documents and upload them
+                    here. Don't worry about getting certified copies yet!
                   </p>
                 </div>
               </div>
@@ -55,11 +57,14 @@ export function MailInProcessBanner() {
                 <div>
                   <div className="flex items-center gap-2">
                     <FileCheck className="h-4 w-4 text-blue-600" />
-                    <h4 className="font-semibold text-blue-900">We Validate & Review</h4>
+                    <h4 className="font-semibold text-blue-900">
+                      We Validate & Review
+                    </h4>
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
-                    Our team reviews your uploads to ensure everything is complete and
-                    correct. Then our lawyer reviews printed copies for approval.
+                    Our team reviews your uploads to ensure everything is
+                    complete and correct. Then our lawyer reviews printed copies
+                    for approval.
                   </p>
                 </div>
               </div>
@@ -71,12 +76,14 @@ export function MailInProcessBanner() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-blue-600" />
-                    <h4 className="font-semibold text-blue-900">You Mail the Originals</h4>
+                    <h4 className="font-semibold text-blue-900">
+                      You Mail the Originals
+                    </h4>
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
-                    Once approved, we'll send you a prepaid envelope and clear instructions.
-                    You'll replace our printed copies with your certified copies/originals
-                    and mail to the DOJ.
+                    Once approved, we'll send you a prepaid envelope and clear
+                    instructions. You'll replace our printed copies with your
+                    certified copies/originals and mail to the DOJ.
                   </p>
                 </div>
               </div>
@@ -87,11 +94,14 @@ export function MailInProcessBanner() {
               <div className="flex items-start gap-2">
                 <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
                 <div>
-                  <h4 className="font-semibold text-emerald-900">Why This Works Better</h4>
+                  <h4 className="font-semibold text-emerald-900">
+                    Why This Works Better
+                  </h4>
                   <p className="mt-1 text-xs text-emerald-800">
-                    This ensures your documents are complete and correct <em>before</em> you go
-                    through the effort of obtaining certified copies. It saves you time and
-                    helps us catch any issues early. It's more convenient and service-oriented!
+                    This ensures your documents are complete and correct{" "}
+                    <em>before</em> you go through the effort of obtaining
+                    certified copies. It saves you time and helps us catch any
+                    issues early. It's more convenient and service-oriented!
                   </p>
                 </div>
               </div>
@@ -100,9 +110,9 @@ export function MailInProcessBanner() {
             {/* Temporary Process Note */}
             <div className="mt-4 rounded-lg bg-amber-50 p-3">
               <p className="text-xs text-amber-900">
-                <strong>Note:</strong> This process is temporary until the DOJ digital portal
-                launches in December. We'll shift to fully digital submission as soon as it's
-                available.
+                <strong>Note:</strong> This process is temporary until the DOJ
+                digital portal launches. We'll shift to fully digital submission
+                as soon as it's available.
               </p>
             </div>
           </div>
