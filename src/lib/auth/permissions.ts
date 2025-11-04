@@ -78,6 +78,30 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "user:invite",
     "user:remove",
   ],
+  STAFF_REVIEWER: [
+    "claimant:view",
+    "claimant:view-all",
+    "document:view",
+    "document:download",
+    "comment:create",
+    "comment:view",
+    "review:approve",
+    "review:request-revision",
+  ],
+  SENIOR_REVIEWER: [
+    "claimant:view",
+    "claimant:view-all",
+    "claimant:update",
+    "document:view",
+    "document:download",
+    "document:approve",
+    "document:reject",
+    "comment:create",
+    "comment:view",
+    "comment:view-internal",
+    "review:approve",
+    "review:request-revision",
+  ],
 };
 
 /**

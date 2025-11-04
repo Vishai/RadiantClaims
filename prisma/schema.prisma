@@ -44,38 +44,41 @@ model Session {
 enum UserRole {
   CUSTOMER
   ADMIN
-  ATTORNEY        // Attorney user from partner firm
-  FIRM_ADMIN      // Law firm administrator
+  ATTORNEY // Attorney user from partner firm
+  FIRM_ADMIN // Law firm administrator
+  STAFF_REVIEWER // Can review claims and AI results
+  SENIOR_REVIEWER // Can approve/reject claims
 }
 
 model User {
-  id                    String            @id @default(cuid())
+  id                    String               @id @default(cuid())
   name                  String?
-  email                 String?           @unique
+  email                 String?              @unique
   emailVerified         DateTime?
   password              String?
   image                 String?
-  role                  UserRole          @default(CUSTOMER)
-  firmId                String?           // Link to law firm for attorneys
-  firm                  LawFirm?          @relation(fields: [firmId], references: [id], onDelete: SetNull)
+  role                  UserRole             @default(CUSTOMER)
+  firmId                String? // Link to law firm for attorneys
+  firm                  LawFirm?             @relation(fields: [firmId], references: [id], onDelete: SetNull)
   accounts              Account[]
   sessions              Session[]
   claimants             Claimant[] // Customer users can have multiple claims
   auditLogs             AuditLog[]
-  mfaEnabled            Boolean           @default(false)
+  mfaEnabled            Boolean              @default(false)
   mfaConfig             MFAConfig?
   rememberMeTokens      RememberMeToken[]
   passwordChangedAt     DateTime?
-  passwordResetRequired Boolean           @default(false)
-  passwordResetToken    String?           @unique
+  passwordResetRequired Boolean              @default(false)
+  passwordResetToken    String?              @unique
   passwordResetExpires  DateTime?
   policyAcceptances     PolicyAcceptance[]
   comments              ClaimantComment[]
   reviewActions         ReviewAction[]
   notifications         Notification[]
   serviceSubscription   ServiceSubscription? // Link to subscription
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  staffActions          StaffAction[] // NEW: AI validation staff actions
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
   @@index([email])
   @@index([role])
@@ -105,39 +108,39 @@ model Referral {
 }
 
 model Claimant {
-  id                  String                 @id @default(cuid())
-  userId              String?                // Link to User account (nullable for legacy)
-  user                User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName           String
-  lastName            String
-  email               String
-  phone               String
-  dob                 DateTime
-  address1            String
-  address2            String?
-  city                String
-  county              String
-  state               String
-  postalCode          String
-  referralCode        String?
-  referral            Referral?              @relation(fields: [referralCode], references: [code])
-  documents           Document[]
-  intakeSession       IntakeSession?
-  firmAssignments     ClaimantAssignment[]   // Assigned law firms
-  comments            ClaimantComment[]      // Comments from attorneys/staff
-  reviewActions       ReviewAction[]         // Review history
-  notifications       Notification[]         // Related notifications
+  id                      String                           @id @default(cuid())
+  userId                  String? // Link to User account (nullable for legacy)
+  user                    User?                            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName               String
+  lastName                String
+  email                   String
+  phone                   String
+  dob                     DateTime
+  address1                String
+  address2                String?
+  city                    String
+  county                  String
+  state                   String
+  postalCode              String
+  referralCode            String?
+  referral                Referral?                        @relation(fields: [referralCode], references: [code])
+  documents               Document[]
+  intakeSession           IntakeSession?
+  firmAssignments         ClaimantAssignment[] // Assigned law firms
+  comments                ClaimantComment[] // Comments from attorneys/staff
+  reviewActions           ReviewAction[] // Review history
+  notifications           Notification[] // Related notifications
   // NEW FIELDS FOR RECA DOCUMENTATION
-  claimType              ClaimType?
-  relationshipToClaimant RelationshipType?
-  cancerType             String?              // Reference to specific cancer
-  documentStatuses       ClaimantDocumentStatus[]
+  claimType               ClaimType?
+  relationshipToClaimant  RelationshipType?
+  cancerType              String? // Reference to specific cancer
+  documentStatuses        ClaimantDocumentStatus[]
   // CLAIM LIFECYCLE TRACKING
-  lifecycle              ClaimLifecycle?
-  queuePosition          ClaimQueuePosition?
+  lifecycle               ClaimLifecycle?
+  queuePosition           ClaimQueuePosition?
   notificationPreferences LifecycleNotificationPreference?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  createdAt               DateTime                         @default(now())
+  updatedAt               DateTime                         @updatedAt
 
   @@index([userId])
   @@index([email])
@@ -207,42 +210,47 @@ enum ClaimType {
 
 // Main intake session - allows save/resume without account
 model IntakeSession {
-  id               String              @id @default(cuid())
-  resumeToken      String              @unique // Magic link token
-  claimantId       String?             @unique
-  claimant         Claimant?           @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  currentStep      IntakeStep          @default(SCREENING)
-  status           IntakeStatus        @default(DRAFT)
-  claimType        ClaimType?
-  isPremiumService Boolean             @default(false) // DEPRECATED: Use serviceSubscription.tier instead
-  completedSteps   String[]            @default([]) // Array of completed step names
-  expiresAt        DateTime // Token expiration (7 days default)
-  lastActivityAt   DateTime            @default(now())
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  intakeResponses  IntakeResponse[]
-  uploadedFiles    UploadedFile[]
-  consentRecords   ConsentRecord[]
-  packetSubmission PacketSubmission?
+  id                    String            @id @default(cuid())
+  resumeToken           String            @unique // Magic link token
+  claimantId            String?           @unique
+  claimant              Claimant?         @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  currentStep           IntakeStep        @default(SCREENING)
+  status                IntakeStatus      @default(DRAFT)
+  claimType             ClaimType?
+  isPremiumService      Boolean           @default(false) // DEPRECATED: Use serviceSubscription.tier instead
+  completedSteps        String[]          @default([]) // Array of completed step names
+  expiresAt             DateTime // Token expiration (7 days default)
+  lastActivityAt        DateTime          @default(now())
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  intakeResponses       IntakeResponse[]
+  uploadedFiles         UploadedFile[]
+  consentRecords        ConsentRecord[]
+  packetSubmission      PacketSubmission?
   // RECA Workflow Fields
-  recaWorkflowStage     Int?              // 1-5 for workflow stages (1=eligibility, 2=form, 3=supporting, 4=docs, 5=review)
-  recaWorkflowSection   String?           // Current section (e.g., "part_1", "part_8", "supporting_forms")
-  recaFormData          Json?             // All form field values from parts 1-16
-  recaEligibilityData   Json?             // Eligibility assessment results (relationship, exposure, disease)
+  recaWorkflowStage     Int? // 1-5 for workflow stages (1=eligibility, 2=form, 3=supporting, 4=docs, 5=review)
+  recaWorkflowSection   String? // Current section (e.g., "part_1", "part_8", "supporting_forms")
+  recaFormData          Json? // All form field values from parts 1-16
+  recaEligibilityData   Json? // Eligibility assessment results (relationship, exposure, disease)
   recaCompletionPercent Int?              @default(0) // 0-100 progress tracking
-  recaSupportingForms   Json?             // Supporting forms data (medical release, identity cert, tribal, beneficiaries)
-  recaValidationErrors  Json?             // Current validation errors by section
+  recaSupportingForms   Json? // Supporting forms data (medical release, identity cert, tribal, beneficiaries)
+  recaValidationErrors  Json? // Current validation errors by section
 
   // PDF Generation & Download Tracking (for refund policy enforcement)
-  recaFormPdfGenerated    Boolean   @default(false)
-  recaFormPdfGeneratedAt  DateTime?
-  recaFormPdfDownloaded   Boolean   @default(false) // Once true, refund is not allowed
-  recaFormPdfDownloadedAt DateTime?
-  recaFormPdfDownloadCount Int     @default(0)
+  recaFormPdfGenerated     Boolean   @default(false)
+  recaFormPdfGeneratedAt   DateTime?
+  recaFormPdfDownloaded    Boolean   @default(false) // Once true, refund is not allowed
+  recaFormPdfDownloadedAt  DateTime?
+  recaFormPdfDownloadCount Int       @default(0)
 
   // Service Subscription Link
-  serviceSubscriptionId   String?
-  serviceSubscription     ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id])
+  serviceSubscriptionId String?
+  serviceSubscription   ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id])
+
+  // NEW: AI Validation Relations
+  claimReadiness ClaimReadiness?
+  agentLogs      AgentExecutionLog[]
+  staffActions   StaffAction[]
 
   @@index([resumeToken])
   @@index([claimantId])
@@ -254,13 +262,13 @@ model IntakeSession {
 
 // Screening questions and answers for conditional logic
 model IntakeResponse {
-  id               String         @id @default(cuid())
-  intakeSessionId  String
-  intakeSession    IntakeSession  @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
-  questionKey      String // e.g., "exposure_location", "diagnosis_year"
-  questionText     String         @db.Text
-  answerValue      String         @db.Text // JSON for complex answers
-  createdAt        DateTime       @default(now())
+  id              String        @id @default(cuid())
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  questionKey     String // e.g., "exposure_location", "diagnosis_year"
+  questionText    String        @db.Text
+  answerValue     String        @db.Text // JSON for complex answers
+  createdAt       DateTime      @default(now())
 
   @@unique([intakeSessionId, questionKey])
   @@index([intakeSessionId])
@@ -273,9 +281,16 @@ enum FileStatus {
   READY
   FAILED
   REJECTED
-  VALIDATED        // Staff validated the digital copy
-  AWAITING_REVIEW  // Ready for lawyer review
-  APPROVED         // Lawyer approved for submission
+  VALIDATED // Staff validated the digital copy
+  AWAITING_REVIEW // Ready for lawyer review
+  APPROVED // Lawyer approved for submission
+}
+
+enum CustomerFileStatus {
+  PROCESSING // AI validation in progress
+  VERIFIED // All good, show green checkmark
+  NEEDS_REVIEW // Issues found, show warning
+  ERROR // Processing failed
 }
 
 enum FileCategory {
@@ -301,24 +316,24 @@ model UploadedFile {
   intakeSession    IntakeSession     @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
   fileKey          String            @unique // R2 object key
   originalFilename String
-  normalizedName   String?           // Auto-suggested: last_first_residence_2020.pdf
+  normalizedName   String? // Auto-suggested: last_first_residence_2020.pdf
   mimeType         String
   sizeBytes        Int
   category         FileCategory?
   status           FileStatus        @default(UPLOADING)
   ocrText          String?           @db.Text // Extracted text
-  ocrConfidence    Float?            // 0-1 confidence score
+  ocrConfidence    Float? // 0-1 confidence score
   metadata         String?           @db.Text // JSON: extracted dates, names, etc.
-  thumbnailKey     String?           // Preview image for PDFs/images
+  thumbnailKey     String? // Preview image for PDFs/images
   isRequired       Boolean           @default(false)
   requiresOriginal Boolean           @default(false) // Document must be mailed as original
   rejectionReason  String?           @db.Text
   categoryLocked   Boolean           @default(false)
   categoryLockedAt DateTime?
   categoryLockedBy String?
-  validatedBy      String?           // Staff member who validated
+  validatedBy      String? // Staff member who validated
   validatedAt      DateTime?
-  reviewedBy       String?           // Lawyer who reviewed
+  reviewedBy       String? // Lawyer who reviewed
   reviewedAt       DateTime?
   reviewNotes      String?           @db.Text
   uploadedAt       DateTime          @default(now())
@@ -326,10 +341,20 @@ model UploadedFile {
   tags             DocumentTag[]
   comments         ClaimantComment[] // Comments related to this file
 
+  // NEW: AI Validation Fields
+  customerStatus       CustomerFileStatus  @default(PROCESSING)
+  userNotes            String?             @db.Text
+  userConfirmed        Boolean             @default(false)
+  userReportedIssue    String?             @db.Text
+  extractedDataSummary Json? // Flattened key data for quick access
+  validation           DocumentValidation? // NEW: AI validation relation
+  agentLogs            AgentExecutionLog[] // NEW: Agent execution logs
+
   @@index([intakeSessionId])
   @@index([fileKey])
   @@index([category])
   @@index([status])
+  @@index([customerStatus])
 }
 
 // Auto-tagging system
@@ -354,15 +379,15 @@ enum ConsentType {
 
 // Legal consent + e-signature tracking
 model ConsentRecord {
-  id               String        @id @default(cuid())
-  intakeSessionId  String
-  intakeSession    IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
-  consentType      ConsentType
-  consentText      String        @db.Text // Full text of what was agreed to
-  signatureData    String?       @db.Text // Base64 signature image or typed name
-  ipAddress        String
-  userAgent        String?       @db.Text
-  agreedAt         DateTime      @default(now())
+  id              String        @id @default(cuid())
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  consentType     ConsentType
+  consentText     String        @db.Text // Full text of what was agreed to
+  signatureData   String?       @db.Text // Base64 signature image or typed name
+  ipAddress       String
+  userAgent       String?       @db.Text
+  agreedAt        DateTime      @default(now())
 
   @@index([intakeSessionId])
   @@index([consentType])
@@ -373,31 +398,31 @@ enum PacketStatus {
   READY
   DELIVERED
   FAILED
-  PRINTED           // Digital copies printed for review
-  READY_TO_MAIL     // Approved and ready for client to mail
-  MAILED_BY_CLIENT  // Client confirmed they mailed it
+  PRINTED // Digital copies printed for review
+  READY_TO_MAIL // Approved and ready for client to mail
+  MAILED_BY_CLIENT // Client confirmed they mailed it
 }
 
 // Final packet assembly tracking
 model PacketSubmission {
-  id                    String         @id @default(cuid())
-  intakeSessionId       String         @unique
-  intakeSession         IntakeSession  @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  id                    String        @id @default(cuid())
+  intakeSessionId       String        @unique
+  intakeSession         IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
   packetFileKey         String? // R2 key for final PDF
-  status                PacketStatus   @default(GENERATING)
-  fileCount             Int            @default(0)
-  totalSizeBytes        Int            @default(0)
+  status                PacketStatus  @default(GENERATING)
+  fileCount             Int           @default(0)
+  totalSizeBytes        Int           @default(0)
   generatedAt           DateTime?
   deliveredAt           DateTime?
   deliveredTo           String? // Attorney email
   printedAt             DateTime? // When digital copies were printed
   printedBy             String? // Staff who printed
-  mailingInstructions   String?        @db.Text // Custom instructions for claimant
+  mailingInstructions   String?       @db.Text // Custom instructions for claimant
   trackingNumber        String? // If prepaid envelope has tracking
-  prepaidEnvelopeIssued Boolean        @default(false)
-  errorMessage          String?        @db.Text
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  prepaidEnvelopeIssued Boolean       @default(false)
+  errorMessage          String?       @db.Text
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   @@index([status])
   @@index([generatedAt])
@@ -405,17 +430,17 @@ model PacketSubmission {
 
 // Jurisdiction-specific document requirements
 model JurisdictionRequirement {
-  id                    String   @id @default(cuid())
-  state                 String // e.g., "UT", "NV", "AZ"
-  county                String? // Optional for county-specific requirements
-  documentCategory      String // Maps to FileCategory
-  requiresOriginal      Boolean  @default(false)
-  isRequired            Boolean  @default(true)
-  specificInstructions  String?  @db.Text
-  helpfulLinks          String?  @db.Text // JSON array of {title, url}
-  exampleDocuments      String?  @db.Text // JSON array of example doc types
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  state                String // e.g., "UT", "NV", "AZ"
+  county               String? // Optional for county-specific requirements
+  documentCategory     String // Maps to FileCategory
+  requiresOriginal     Boolean  @default(false)
+  isRequired           Boolean  @default(true)
+  specificInstructions String?  @db.Text
+  helpfulLinks         String?  @db.Text // JSON array of {title, url}
+  exampleDocuments     String?  @db.Text // JSON array of example doc types
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@unique([state, county, documentCategory])
   @@index([state])
@@ -435,14 +460,14 @@ enum EmailType {
 }
 
 model EmailPreference {
-  id               String      @id @default(cuid())
+  id               String    @id @default(cuid())
   email            String
   emailType        EmailType
-  isUnsubscribed   Boolean     @default(false)
+  isUnsubscribed   Boolean   @default(false)
   unsubscribedAt   DateTime?
-  unsubscribeToken String      @unique @default(cuid())
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  unsubscribeToken String    @unique @default(cuid())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@unique([email, emailType])
   @@index([email])
@@ -516,12 +541,12 @@ enum AuditSeverity {
 
 model AuditLog {
   id           String        @id @default(cuid())
-  userId       String?       // Null for anonymous/failed login attempts
+  userId       String? // Null for anonymous/failed login attempts
   user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   action       AuditAction
   severity     AuditSeverity @default(INFO)
-  resourceType String?       // e.g., "User", "Claimant", "Document"
-  resourceId   String?       // ID of affected resource
+  resourceType String? // e.g., "User", "Claimant", "Document"
+  resourceId   String? // ID of affected resource
   ipAddress    String
   userAgent    String?       @db.Text
   metadata     String?       @db.Text // JSON with additional context
@@ -537,8 +562,8 @@ model AuditLog {
 }
 
 enum MFAMethod {
-  TOTP  // Time-based One-Time Password (Google Authenticator, Authy)
-  SMS   // Future: SMS-based verification
+  TOTP // Time-based One-Time Password (Google Authenticator, Authy)
+  SMS // Future: SMS-based verification
   EMAIL // Future: Email-based verification
 }
 
@@ -547,8 +572,8 @@ model MFAConfig {
   userId      String    @unique
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   method      MFAMethod
-  secret      String    // Encrypted TOTP secret
-  backupCodes String[]  // Encrypted backup codes
+  secret      String // Encrypted TOTP secret
+  backupCodes String[] // Encrypted backup codes
   isEnabled   Boolean   @default(false)
   enabledAt   DateTime?
   lastUsedAt  DateTime?
@@ -581,27 +606,27 @@ enum FirmStatus {
 
 // Law firm multi-tenancy
 model LawFirm {
-  id                    String                 @id @default(cuid())
+  id                    String                @id @default(cuid())
   name                  String
-  slug                  String                 @unique // URL-safe identifier
+  slug                  String                @unique // URL-safe identifier
   address               String?
   city                  String?
   state                 String?
   postalCode            String?
   phone                 String?
-  email                 String?                @unique
-  status                FirmStatus             @default(ACTIVE)
-  licenseNumber         String?                // Bar association number
+  email                 String?               @unique
+  status                FirmStatus            @default(ACTIVE)
+  licenseNumber         String? // Bar association number
   primaryContactName    String?
   primaryContactEmail   String?
-  users                 User[]                 // Attorney users at this firm
+  users                 User[] // Attorney users at this firm
   claimantAssignments   ClaimantAssignment[]
   policyAcceptances     PolicyAcceptance[]
-  referredSubscriptions ServiceSubscription[]  // Subscriptions referred to this firm
-  serviceAgreementUrl   String?                // Signed service provider agreement
+  referredSubscriptions ServiceSubscription[] // Subscriptions referred to this firm
+  serviceAgreementUrl   String? // Signed service provider agreement
   serviceAgreementDate  DateTime?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
   @@index([slug])
   @@index([status])
@@ -609,35 +634,35 @@ model LawFirm {
 }
 
 enum ClaimantWorkflowStatus {
-  INTAKE              // Claimant filling out intake
-  DOCUMENTS_PENDING   // Waiting for document uploads
-  INTERNAL_REVIEW     // Radiant Claims staff review
-  READY_FOR_ATTORNEY  // Ready for attorney review
-  ATTORNEY_REVIEWING  // Attorney actively reviewing
-  REVISION_REQUESTED  // Attorney requested changes
-  ATTORNEY_APPROVED   // Attorney approved for submission
-  PACKET_PRINTED      // Physical packet printed
-  MAILING_READY       // Ready for client to mail
-  CLIENT_MAILED       // Client confirmed mailing
-  DOJ_SUBMITTED       // Submitted to DOJ
-  DOJ_PROCESSING      // DOJ is processing
-  APPROVED            // DOJ approved
-  REJECTED            // DOJ rejected
-  WITHDRAWN           // Claim withdrawn
+  INTAKE // Claimant filling out intake
+  DOCUMENTS_PENDING // Waiting for document uploads
+  INTERNAL_REVIEW // Radiant Claims staff review
+  READY_FOR_ATTORNEY // Ready for attorney review
+  ATTORNEY_REVIEWING // Attorney actively reviewing
+  REVISION_REQUESTED // Attorney requested changes
+  ATTORNEY_APPROVED // Attorney approved for submission
+  PACKET_PRINTED // Physical packet printed
+  MAILING_READY // Ready for client to mail
+  CLIENT_MAILED // Client confirmed mailing
+  DOJ_SUBMITTED // Submitted to DOJ
+  DOJ_PROCESSING // DOJ is processing
+  APPROVED // DOJ approved
+  REJECTED // DOJ rejected
+  WITHDRAWN // Claim withdrawn
 }
 
 // Link claimants to law firms
 model ClaimantAssignment {
-  id            String                  @id @default(cuid())
-  claimantId    String
-  claimant      Claimant                @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  firmId        String
-  firm          LawFirm                 @relation(fields: [firmId], references: [id], onDelete: Restrict)
-  status        ClaimantWorkflowStatus  @default(INTAKE)
-  assignedAt    DateTime                @default(now())
-  assignedBy    String?                 // Admin who made assignment
-  notes         String?                 @db.Text
-  updatedAt     DateTime                @updatedAt
+  id         String                 @id @default(cuid())
+  claimantId String
+  claimant   Claimant               @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  firmId     String
+  firm       LawFirm                @relation(fields: [firmId], references: [id], onDelete: Restrict)
+  status     ClaimantWorkflowStatus @default(INTAKE)
+  assignedAt DateTime               @default(now())
+  assignedBy String? // Admin who made assignment
+  notes      String?                @db.Text
+  updatedAt  DateTime               @updatedAt
 
   @@unique([claimantId, firmId])
   @@index([claimantId])
@@ -654,17 +679,17 @@ enum PolicyType {
 
 // Track policy acceptance by firms and users
 model PolicyAcceptance {
-  id             String     @id @default(cuid())
-  userId         String?
-  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firmId         String?
-  firm           LawFirm?   @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  policyType     PolicyType
-  policyVersion  String     // e.g., "v1.2"
-  policyText     String     @db.Text
-  ipAddress      String
-  userAgent      String?    @db.Text
-  acceptedAt     DateTime   @default(now())
+  id            String     @id @default(cuid())
+  userId        String?
+  user          User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firmId        String?
+  firm          LawFirm?   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  policyType    PolicyType
+  policyVersion String // e.g., "v1.2"
+  policyText    String     @db.Text
+  ipAddress     String
+  userAgent     String?    @db.Text
+  acceptedAt    DateTime   @default(now())
 
   @@index([userId])
   @@index([firmId])
@@ -675,29 +700,29 @@ enum CommentType {
   GENERAL
   REVISION_REQUEST
   APPROVAL_NOTE
-  INTERNAL_NOTE  // Only visible to Radiant staff
+  INTERNAL_NOTE // Only visible to Radiant staff
 }
 
 // Comment system for attorney-staff communication
 model ClaimantComment {
-  id               String       @id @default(cuid())
-  claimantId       String
-  claimant         Claimant     @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  authorId         String
-  author           User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  commentType      CommentType  @default(GENERAL)
-  content          String       @db.Text
-  relatedFileId    String?      // If commenting on specific document
-  relatedFile      UploadedFile? @relation(fields: [relatedFileId], references: [id], onDelete: SetNull)
-  isInternal       Boolean      @default(false) // Only visible to Radiant staff
-  isResolved       Boolean      @default(false)
-  resolvedAt       DateTime?
-  resolvedBy       String?
-  parentCommentId  String?      // For threading
-  parentComment    ClaimantComment? @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
-  replies          ClaimantComment[] @relation("CommentThread")
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id              String            @id @default(cuid())
+  claimantId      String
+  claimant        Claimant          @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  commentType     CommentType       @default(GENERAL)
+  content         String            @db.Text
+  relatedFileId   String? // If commenting on specific document
+  relatedFile     UploadedFile?     @relation(fields: [relatedFileId], references: [id], onDelete: SetNull)
+  isInternal      Boolean           @default(false) // Only visible to Radiant staff
+  isResolved      Boolean           @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  parentCommentId String? // For threading
+  parentComment   ClaimantComment?  @relation("CommentThread", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         ClaimantComment[] @relation("CommentThread")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([claimantId])
   @@index([authorId])
@@ -716,17 +741,17 @@ enum ReviewActionType {
 
 // Track all review actions for audit trail
 model ReviewAction {
-  id           String           @id @default(cuid())
-  claimantId   String
-  claimant     Claimant         @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  reviewerId   String
-  reviewer     User             @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
-  actionType   ReviewActionType
-  targetType   String           // "claimant", "document", "packet"
-  targetId     String           // ID of document/packet being reviewed
-  notes        String?          @db.Text
-  metadata     String?          @db.Text // JSON: changed fields, etc.
-  createdAt    DateTime         @default(now())
+  id         String           @id @default(cuid())
+  claimantId String
+  claimant   Claimant         @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  reviewerId String
+  reviewer   User             @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  actionType ReviewActionType
+  targetType String // "claimant", "document", "packet"
+  targetId   String // ID of document/packet being reviewed
+  notes      String?          @db.Text
+  metadata   String?          @db.Text // JSON: changed fields, etc.
+  createdAt  DateTime         @default(now())
 
   @@index([claimantId])
   @@index([reviewerId])
@@ -751,19 +776,19 @@ enum NotificationStatus {
 
 // Notification system for attorneys
 model Notification {
-  id              String             @id @default(cuid())
-  userId          String
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type            NotificationType
-  status          NotificationStatus @default(UNREAD)
-  title           String
-  message         String             @db.Text
-  claimantId      String?            // Related claimant
-  claimant        Claimant?          @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  actionUrl       String?            // Deep link to relevant page
-  metadata        String?            @db.Text // JSON: additional context
-  readAt          DateTime?
-  createdAt       DateTime           @default(now())
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       NotificationType
+  status     NotificationStatus @default(UNREAD)
+  title      String
+  message    String             @db.Text
+  claimantId String? // Related claimant
+  claimant   Claimant?          @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  actionUrl  String? // Deep link to relevant page
+  metadata   String?            @db.Text // JSON: additional context
+  readAt     DateTime?
+  createdAt  DateTime           @default(now())
 
   @@index([userId])
   @@index([status])
@@ -776,17 +801,17 @@ model Notification {
 // ============================================================================
 
 model RECAForm {
-  id              String       @id @default(cuid())
-  formType        RECAFormType @unique
-  fileName        String       // "RECA Downwinder Claim Form.pdf"
-  fileKey         String       // Path or S3/R2 key
-  version         String       // "Revised July 2025"
-  pageCount       Int
-  description     String       @db.Text
-  instructions    String       @db.Text
-  oMBApprovalNo   String?      // "1105-0052"
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  formType      RECAFormType @unique
+  fileName      String // "RECA Downwinder Claim Form.pdf"
+  fileKey       String // Path or S3/R2 key
+  version       String // "Revised July 2025"
+  pageCount     Int
+  description   String       @db.Text
+  instructions  String       @db.Text
+  oMBApprovalNo String? // "1105-0052"
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([formType])
 }
@@ -804,11 +829,11 @@ enum RECAFormType {
 
 model DocumentResource {
   id                     String       @id @default(cuid())
-  state                  String       // "UT", "ID", "NM", "AZ", "NV"
-  county                 String?      // null = state-level resource
+  state                  String // "UT", "ID", "NM", "AZ", "NV"
+  county                 String? // null = state-level resource
   resourceType           ResourceType
   name                   String
-  department             String?      // "Member and Statistical Records Division"
+  department             String? // "Member and Statistical Records Division"
   address                String?
   address2               String?
   city                   String?
@@ -820,20 +845,20 @@ model DocumentResource {
   website                String?
   email                  String?
   notes                  String?      @db.Text
-  documentTypesProvided  String[]     // ["BIRTH_CERTIFICATE", "DEATH_CERTIFICATE"]
+  documentTypesProvided  String[] // ["BIRTH_CERTIFICATE", "DEATH_CERTIFICATE"]
   certificationAvailable Boolean      @default(true)
-  processingTimeDays     Int?         // Estimated turnaround time
+  processingTimeDays     Int? // Estimated turnaround time
   specialInstructions    String?      @db.Text
   isTribal               Boolean      @default(false)
-  tribalAffiliation      String?      // "Navajo Nation", "Hopi Tribe", etc.
+  tribalAffiliation      String? // "Navajo Nation", "Hopi Tribe", etc.
 
   // NEW: Purpose and context messaging
-  purposeDescription     String?      @db.Text // "Visit this office to obtain certified birth certificates for RECA claims"
-  whatToBring            String[]     // ["Photo ID", "Proof of relationship", "$20 cash or check"]
-  appointmentRequired    Boolean      @default(false)
-  acceptsMailRequests    Boolean      @default(true)
-  acceptsOnlineRequests  Boolean      @default(false)
-  estimatedCost          Float?       // Dollar amount (e.g., 20.00)
+  purposeDescription    String?  @db.Text // "Visit this office to obtain certified birth certificates for RECA claims"
+  whatToBring           String[] // ["Photo ID", "Proof of relationship", "$20 cash or check"]
+  appointmentRequired   Boolean  @default(false)
+  acceptsMailRequests   Boolean  @default(true)
+  acceptsOnlineRequests Boolean  @default(false)
+  estimatedCost         Float? // Dollar amount (e.g., 20.00)
 
   claimantDocumentStatuses ClaimantDocumentStatus[]
 
@@ -882,22 +907,22 @@ enum ResourceType {
 // ============================================================================
 
 model DocumentRequirement {
-  id                     String           @id @default(cuid())
-  claimType              ClaimType?       // null = applies to all claim types
+  id                     String              @id @default(cuid())
+  claimType              ClaimType? // null = applies to all claim types
   relationshipToClaimant RelationshipType
-  documentType           String           // "BIRTH_CERTIFICATE", "PATHOLOGY_REPORT"
-  displayName            String           // "Birth Certificate"
-  description            String           @db.Text
-  requiresCertification  Boolean          // Must be certified/original for mail
-  acceptsDigital         Boolean          // Can submit digitally
+  documentType           String // "BIRTH_CERTIFICATE", "PATHOLOGY_REPORT"
+  displayName            String // "Birth Certificate"
+  description            String              @db.Text
+  requiresCertification  Boolean // Must be certified/original for mail
+  acceptsDigital         Boolean // Can submit digitally
   isRequired             Boolean
   priority               RequirementPriority
-  resourceTypes          ResourceType[]   // Where to get this document
-  notes                  String?          @db.Text
-  formSection            String?          // "Part 4", "Part 9", etc.
-  multipleRequired       Boolean          @default(false) // e.g., need 2+ proof of residence
-  quantityRequired       Int?             // How many needed
-  exampleDocuments       String[]         // Specific examples
+  resourceTypes          ResourceType[] // Where to get this document
+  notes                  String?             @db.Text
+  formSection            String? // "Part 4", "Part 9", etc.
+  multipleRequired       Boolean             @default(false) // e.g., need 2+ proof of residence
+  quantityRequired       Int? // How many needed
+  exampleDocuments       String[] // Specific examples
 
   @@unique([claimType, relationshipToClaimant, documentType])
   @@index([claimType])
@@ -914,9 +939,9 @@ enum RelationshipType {
 }
 
 enum RequirementPriority {
-  HIGH      // Required - claim cannot proceed without this
-  MEDIUM    // Strongly recommended - helps establish claim
-  OPTIONAL  // Helpful but not required
+  HIGH // Required - claim cannot proceed without this
+  MEDIUM // Strongly recommended - helps establish claim
+  OPTIONAL // Helpful but not required
 }
 
 // ============================================================================
@@ -924,13 +949,13 @@ enum RequirementPriority {
 // ============================================================================
 
 model MedicalRecordRequirement {
-  id                 String   @id @default(cuid())
-  cancerType         String   // "LEUKEMIA", "THYROID_CANCER", etc.
-  recordType         String   // "PATHOLOGY_REPORT", "AUTOPSY_REPORT"
-  displayName        String   // "Pathology report of tissue biopsy"
-  description        String   @db.Text
-  priority           Int      // 1 = most preferred, higher = alternatives
-  formSection        String?  // Reference to form (e.g., "Part 11")
+  id          String  @id @default(cuid())
+  cancerType  String // "LEUKEMIA", "THYROID_CANCER", etc.
+  recordType  String // "PATHOLOGY_REPORT", "AUTOPSY_REPORT"
+  displayName String // "Pathology report of tissue biopsy"
+  description String  @db.Text
+  priority    Int // 1 = most preferred, higher = alternatives
+  formSection String? // Reference to form (e.g., "Part 11")
 
   @@unique([cancerType, recordType])
   @@index([cancerType])
@@ -941,19 +966,19 @@ model MedicalRecordRequirement {
 // ============================================================================
 
 model ClaimantDocumentStatus {
-  id                   String               @id @default(cuid())
-  claimantId           String
-  claimant             Claimant             @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  documentType         String               // Maps to DocumentRequirement.documentType
-  status               DocumentStatusType
-  requestedDate        DateTime?
-  receivedDate         DateTime?
-  uploadedDate         DateTime?
-  notes                String?              @db.Text
-  resourceContactedId  String?              // Which resource they contacted
-  resourceContacted    DocumentResource?    @relation(fields: [resourceContactedId], references: [id])
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  id                  String             @id @default(cuid())
+  claimantId          String
+  claimant            Claimant           @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  documentType        String // Maps to DocumentRequirement.documentType
+  status              DocumentStatusType
+  requestedDate       DateTime?
+  receivedDate        DateTime?
+  uploadedDate        DateTime?
+  notes               String?            @db.Text
+  resourceContactedId String? // Which resource they contacted
+  resourceContacted   DocumentResource?  @relation(fields: [resourceContactedId], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@unique([claimantId, documentType])
   @@index([claimantId])
@@ -961,12 +986,12 @@ model ClaimantDocumentStatus {
 }
 
 enum DocumentStatusType {
-  NOT_STARTED    // Haven't begun obtaining this document
-  REQUESTED      // Contacted the resource to request it
-  AWAITING       // Waiting to receive from resource
-  RECEIVED       // Received but not uploaded
-  UPLOADED       // Uploaded to our system
-  VERIFIED       // Staff verified the document
+  NOT_STARTED // Haven't begun obtaining this document
+  REQUESTED // Contacted the resource to request it
+  AWAITING // Waiting to receive from resource
+  RECEIVED // Received but not uploaded
+  UPLOADED // Uploaded to our system
+  VERIFIED // Staff verified the document
 }
 
 // ============================================================================
@@ -976,84 +1001,84 @@ enum DocumentStatusType {
 // DOJ Processing Milestones - Official DOJ workflow stages
 enum DOJMilestone {
   // Pre-Submission
-  NOT_SUBMITTED              // Claim not yet submitted to DOJ
+  NOT_SUBMITTED // Claim not yet submitted to DOJ
 
   // DOJ Receipt & Initial Review (Week 1-2)
-  RECEIVED_BY_DOJ            // DOJ received the claim packet
-  INITIAL_REVIEW             // DOJ performing initial completeness review
-  INCOMPLETE_RETURNED        // DOJ returned claim as incomplete
+  RECEIVED_BY_DOJ // DOJ received the claim packet
+  INITIAL_REVIEW // DOJ performing initial completeness review
+  INCOMPLETE_RETURNED // DOJ returned claim as incomplete
 
   // Document Verification (Week 2-8)
-  DOCUMENT_VERIFICATION      // DOJ verifying submitted documents
+  DOCUMENT_VERIFICATION // DOJ verifying submitted documents
   REQUESTING_ADDITIONAL_DOCS // DOJ requested additional documentation
-  CANCER_REGISTRY_LOOKUP     // DOJ checking state cancer registries
-  MEDICAL_RECORDS_REQUEST    // DOJ requested medical records from providers
+  CANCER_REGISTRY_LOOKUP // DOJ checking state cancer registries
+  MEDICAL_RECORDS_REQUEST // DOJ requested medical records from providers
 
   // Eligibility Assessment (Week 8-16)
-  ELIGIBILITY_REVIEW         // DOJ assessing eligibility criteria
-  EXPOSURE_VERIFICATION      // Verifying exposure location and dates
-  DISEASE_VERIFICATION       // Verifying compensable disease
-  RELATIONSHIP_VERIFICATION  // Verifying relationship (for survivors)
+  ELIGIBILITY_REVIEW // DOJ assessing eligibility criteria
+  EXPOSURE_VERIFICATION // Verifying exposure location and dates
+  DISEASE_VERIFICATION // Verifying compensable disease
+  RELATIONSHIP_VERIFICATION // Verifying relationship (for survivors)
 
   // Final Review & Decision (Week 16-24)
-  FINAL_REVIEW               // Final review by DOJ adjudicator
-  APPROVED_PENDING_PAYMENT   // Approved, awaiting payment processing
-  PAYMENT_PROCESSING         // Payment being processed by Treasury
-  PAYMENT_ISSUED             // Payment check/wire issued
+  FINAL_REVIEW // Final review by DOJ adjudicator
+  APPROVED_PENDING_PAYMENT // Approved, awaiting payment processing
+  PAYMENT_PROCESSING // Payment being processed by Treasury
+  PAYMENT_ISSUED // Payment check/wire issued
 
   // Terminal States
-  CLAIM_APPROVED             // Claim fully approved and paid
-  CLAIM_DENIED               // Claim denied
-  CLAIM_WITHDRAWN            // Claim withdrawn by claimant
-  APPEAL_IN_PROGRESS         // Appeal filed and in progress
-  APPEAL_APPROVED            // Appeal approved
-  APPEAL_DENIED              // Appeal denied
+  CLAIM_APPROVED // Claim fully approved and paid
+  CLAIM_DENIED // Claim denied
+  CLAIM_WITHDRAWN // Claim withdrawn by claimant
+  APPEAL_IN_PROGRESS // Appeal filed and in progress
+  APPEAL_APPROVED // Appeal approved
+  APPEAL_DENIED // Appeal denied
 }
 
 // Track claim lifecycle from submission to payout
 model ClaimLifecycle {
-  id                      String        @id @default(cuid())
-  claimantId              String        @unique
-  claimant                Claimant      @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  claimantId String   @unique
+  claimant   Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
 
   // Current Status
-  currentMilestone        DOJMilestone  @default(NOT_SUBMITTED)
-  currentMilestoneDate    DateTime      @default(now())
+  currentMilestone     DOJMilestone @default(NOT_SUBMITTED)
+  currentMilestoneDate DateTime     @default(now())
 
   // Key Dates
-  submittedToRadiantAt    DateTime?     // When submitted to RadiantClaims
-  submittedToDOJAt        DateTime?     // When mailed to DOJ
-  receivedByDOJAt         DateTime?     // When DOJ logged receipt
-  completenessReviewAt    DateTime?     // When DOJ completed initial review
-  eligibilityReviewAt     DateTime?     // When DOJ started eligibility review
-  approvedAt              DateTime?     // When DOJ approved claim
-  deniedAt                DateTime?     // When DOJ denied claim
-  paymentIssuedAt         DateTime?     // When Treasury issued payment
-  paymentReceivedAt       DateTime?     // When claimant received payment
+  submittedToRadiantAt DateTime? // When submitted to RadiantClaims
+  submittedToDOJAt     DateTime? // When mailed to DOJ
+  receivedByDOJAt      DateTime? // When DOJ logged receipt
+  completenessReviewAt DateTime? // When DOJ completed initial review
+  eligibilityReviewAt  DateTime? // When DOJ started eligibility review
+  approvedAt           DateTime? // When DOJ approved claim
+  deniedAt             DateTime? // When DOJ denied claim
+  paymentIssuedAt      DateTime? // When Treasury issued payment
+  paymentReceivedAt    DateTime? // When claimant received payment
 
   // Processing Details
-  dojClaimNumber          String?       // Official DOJ claim number
-  expectedCompletionDate  DateTime?     // Estimated completion based on analytics
-  estimatedPayoutDate     DateTime?     // Estimated payout date
-  daysInCurrentMilestone  Int           @default(0)
-  totalProcessingDays     Int           @default(0)
+  dojClaimNumber         String? // Official DOJ claim number
+  expectedCompletionDate DateTime? // Estimated completion based on analytics
+  estimatedPayoutDate    DateTime? // Estimated payout date
+  daysInCurrentMilestone Int       @default(0)
+  totalProcessingDays    Int       @default(0)
 
   // Medical Records Tracking
-  cancerRegistryChecked   Boolean       @default(false)
-  cancerRegistryFoundAt   DateTime?
-  medicalRecordsRequested Boolean       @default(false)
+  cancerRegistryChecked       Boolean   @default(false)
+  cancerRegistryFoundAt       DateTime?
+  medicalRecordsRequested     Boolean   @default(false)
   medicalRecordsReceivedByDOJ Boolean   @default(false)
 
   // Communication
-  lastDOJContactDate      DateTime?
-  lastDOJContactMethod    String?       // "phone", "email", "letter"
-  lastDOJContactNotes     String?       @db.Text
+  lastDOJContactDate   DateTime?
+  lastDOJContactMethod String? // "phone", "email", "letter"
+  lastDOJContactNotes  String?   @db.Text
 
   // Timeline Events
-  milestones              ClaimMilestoneEvent[]
+  milestones ClaimMilestoneEvent[]
 
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([currentMilestone])
   @@index([submittedToDOJAt])
@@ -1062,15 +1087,15 @@ model ClaimLifecycle {
 
 // Individual milestone events for timeline visualization
 model ClaimMilestoneEvent {
-  id                String          @id @default(cuid())
-  lifecycleId       String
-  lifecycle         ClaimLifecycle  @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
-  milestone         DOJMilestone
-  achievedAt        DateTime        @default(now())
-  daysToAchieve     Int?            // Days from previous milestone
-  notes             String?         @db.Text
-  isEstimated       Boolean         @default(false) // True for projected future milestones
-  notifiedClaimant  Boolean         @default(false) // Whether we notified customer
+  id               String         @id @default(cuid())
+  lifecycleId      String
+  lifecycle        ClaimLifecycle @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
+  milestone        DOJMilestone
+  achievedAt       DateTime       @default(now())
+  daysToAchieve    Int? // Days from previous milestone
+  notes            String?        @db.Text
+  isEstimated      Boolean        @default(false) // True for projected future milestones
+  notifiedClaimant Boolean        @default(false) // Whether we notified customer
 
   @@index([lifecycleId])
   @@index([milestone])
@@ -1079,51 +1104,51 @@ model ClaimMilestoneEvent {
 
 // Aggregate statistics for "Payout Pulse" - Historical claim data
 model ClaimStatistics {
-  id                        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Time Period
-  periodStart               DateTime
-  periodEnd                 DateTime
+  periodStart DateTime
+  periodEnd   DateTime
 
   // Volume Metrics
-  totalClaimsSubmitted      Int      @default(0)
-  totalClaimsApproved       Int      @default(0)
-  totalClaimsDenied         Int      @default(0)
-  totalClaimsInProgress     Int      @default(0)
+  totalClaimsSubmitted  Int @default(0)
+  totalClaimsApproved   Int @default(0)
+  totalClaimsDenied     Int @default(0)
+  totalClaimsInProgress Int @default(0)
 
   // Timing Metrics (in days)
-  avgTimeToReceipt          Float?   // DOJ receipt after mailing
-  avgTimeToInitialReview    Float?   // Completeness review
-  avgTimeToCancerRegistry   Float?   // Cancer registry lookup
-  avgTimeToEligibility      Float?   // Eligibility determination
-  avgTimeToApproval         Float?   // Total time to approval
-  avgTimeToPayment          Float?   // Approval to payment received
+  avgTimeToReceipt        Float? // DOJ receipt after mailing
+  avgTimeToInitialReview  Float? // Completeness review
+  avgTimeToCancerRegistry Float? // Cancer registry lookup
+  avgTimeToEligibility    Float? // Eligibility determination
+  avgTimeToApproval       Float? // Total time to approval
+  avgTimeToPayment        Float? // Approval to payment received
 
   // Success Rates
-  approvalRate              Float?   // % approved
-  completenessRate          Float?   // % complete on first submission
+  approvalRate     Float? // % approved
+  completenessRate Float? // % complete on first submission
 
   // By Claim Type
-  downwinderApprovals       Int      @default(0)
-  downwinderDenials         Int      @default(0)
-  downwinderAvgDays         Float?
+  downwinderApprovals Int    @default(0)
+  downwinderDenials   Int    @default(0)
+  downwinderAvgDays   Float?
 
   // By State
-  utahClaimsApproved        Int      @default(0)
-  idahoClaimsApproved       Int      @default(0)
-  newMexicoClaimsApproved   Int      @default(0)
-  arizonaClaimsApproved     Int      @default(0)
-  nevadaClaimsApproved      Int      @default(0)
+  utahClaimsApproved      Int @default(0)
+  idahoClaimsApproved     Int @default(0)
+  newMexicoClaimsApproved Int @default(0)
+  arizonaClaimsApproved   Int @default(0)
+  nevadaClaimsApproved    Int @default(0)
 
   // Cancer Type Success Rates
-  leukemiaApprovalRate      Float?
-  thyroidApprovalRate       Float?
-  breastApprovalRate        Float?
-  lungApprovalRate          Float?
+  leukemiaApprovalRate Float?
+  thyroidApprovalRate  Float?
+  breastApprovalRate   Float?
+  lungApprovalRate     Float?
 
   // Updated Tracking
-  lastUpdated               DateTime @default(now())
-  dataSource                String?  // "DOJ_PUBLIC_DATA", "PARTNER_FIRMS", "MANUAL_ENTRY"
+  lastUpdated DateTime @default(now())
+  dataSource  String? // "DOJ_PUBLIC_DATA", "PARTNER_FIRMS", "MANUAL_ENTRY"
 
   @@index([periodStart, periodEnd])
   @@index([lastUpdated])
@@ -1131,51 +1156,249 @@ model ClaimStatistics {
 
 // Queue position tracking - "Where am I in line?"
 model ClaimQueuePosition {
-  id                  String    @id @default(cuid())
-  claimantId          String    @unique
-  claimant            Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  claimantId String   @unique
+  claimant   Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
 
   // Position Metrics
-  estimatedPosition   Int?      // Estimated position in DOJ queue
-  totalInQueue        Int?      // Total claims ahead in queue
+  estimatedPosition Int? // Estimated position in DOJ queue
+  totalInQueue      Int? // Total claims ahead in queue
 
   // Cohort Tracking - Claims submitted in same time period
-  cohortId            String?   // Year-Month cohort (e.g., "2024-10")
-  cohortSize          Int?      // Total claims in cohort
-  cohortApproved      Int?      // How many in cohort have been approved
-  cohortDenied        Int?      // How many in cohort have been denied
+  cohortId       String? // Year-Month cohort (e.g., "2024-10")
+  cohortSize     Int? // Total claims in cohort
+  cohortApproved Int? // How many in cohort have been approved
+  cohortDenied   Int? // How many in cohort have been denied
 
   // Peer Comparison
-  percentFasterThan   Float?    // "Your claim is moving faster than X% of similar claims"
+  percentFasterThan Float? // "Your claim is moving faster than X% of similar claims"
 
-  updatedAt           DateTime  @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@index([cohortId])
 }
 
 // Customer notification preferences for lifecycle updates
 model LifecycleNotificationPreference {
-  id                          String   @id @default(cuid())
-  claimantId                  String   @unique
-  claimant                    Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  claimantId String   @unique
+  claimant   Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
 
   // Notification Channels
-  emailNotifications          Boolean  @default(true)
-  smsNotifications            Boolean  @default(false)
-  phoneNumber                 String?
+  emailNotifications Boolean @default(true)
+  smsNotifications   Boolean @default(false)
+  phoneNumber        String?
 
   // Notification Types
-  notifyOnMilestone           Boolean  @default(true)
-  notifyOnDocumentRequest     Boolean  @default(true)
-  notifyOnApproval            Boolean  @default(true)
-  notifyOnPayment             Boolean  @default(true)
-  weeklyProgressUpdate        Boolean  @default(true)
+  notifyOnMilestone       Boolean @default(true)
+  notifyOnDocumentRequest Boolean @default(true)
+  notifyOnApproval        Boolean @default(true)
+  notifyOnPayment         Boolean @default(true)
+  weeklyProgressUpdate    Boolean @default(true)
 
   // Frequency
-  maxNotificationsPerWeek     Int      @default(3)
+  maxNotificationsPerWeek Int @default(3)
 
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// AI VALIDATION SYSTEM
+// ============================================================================
+
+enum ValidationStatus {
+  PENDING // Not yet processed
+  PROCESSING // AI agents currently running
+  VERIFIED // All agents passed
+  NEEDS_REVIEW // Issues found that need staff review
+  STAFF_APPROVED // Staff reviewed and approved
+  REJECTED // Validation failed or staff rejected
+  ERROR // Processing error occurred
+}
+
+enum ClaimReviewStatus {
+  PENDING // Not yet reviewed by staff
+  IN_REVIEW // Staff currently reviewing
+  NEEDS_INFO // Requested more documents from claimant
+  READY // All checks passed, ready to approve
+  APPROVED // Staff approved for DOJ submission
+  REJECTED // Staff rejected claim
+  SUBMITTED_TO_DOJ // Sent to DOJ
+  DOJ_APPROVED // DOJ approved the claim
+  DOJ_DENIED // DOJ denied the claim
+}
+
+enum AgentExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+}
+
+enum StaffActionType {
+  VIEWED_CLAIM
+  STARTED_REVIEW
+  REQUESTED_DOCUMENTS
+  ADDED_NOTE
+  OVERRODE_AI
+  APPROVED_DOCUMENT
+  REJECTED_DOCUMENT
+  APPROVED_CLAIM
+  REJECTED_CLAIM
+  ASSIGNED_CLAIM
+  CONTACTED_CLAIMANT
+}
+
+// Store AI agent validation results for each document
+model DocumentValidation {
+  id String @id @default(cuid())
+
+  // Relations
+  uploadedFileId String       @unique
+  uploadedFile   UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+
+  // Agent Results (stored as JSON)
+  classifierResult Json? // From Classifier Agent
+  identityResult   Json? // From Identity Verification Agent
+  medicalResult    Json? // From Medical Compliance Agent
+  residenceResult  Json? // From Residence Proof Agent
+  employmentResult Json? // From Employment Verification Agent
+  extractedData    Json? // From Data Extraction Agent
+
+  // Overall Status
+  status            ValidationStatus @default(PENDING)
+  overallConfidence Float? // 0-1
+
+  // Issues and Suggestions
+  criticalIssues Json[] // Array of critical blocking issues
+  warnings       Json[] // Array of warnings that need review
+  suggestions    Json[] // Array of actionable suggestions
+
+  // Processing Metadata
+  processingStartedAt   DateTime?
+  processingCompletedAt DateTime?
+  processingTimeMs      Int?
+
+  // Staff Review
+  reviewedBy    String? // Staff user ID who reviewed
+  reviewedAt    DateTime?
+  staffOverride Json? // Staff override decision if any
+  staffNotes    String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([uploadedFileId])
+}
+
+// Store completeness orchestrator results at the claim level
+model ClaimReadiness {
+  id String @id @default(cuid())
+
+  // Relations
+  intakeSessionId String        @unique
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+
+  // Readiness Assessment
+  readinessScore       Float // 0-100
+  isReadyForSubmission Boolean @default(false)
+
+  // Completeness by Category
+  completeness Json // Structured data about what's complete vs missing
+
+  // Issues
+  criticalBlockers Json[] // Issues preventing submission
+  warnings         Json[] // Issues that should be reviewed
+
+  // Cross-Document Validation
+  nameConsistent      Boolean    @default(true)
+  datesConsistent     Boolean    @default(true)
+  claimTypeConfidence Float? // 0-1
+  detectedClaimType   ClaimType?
+
+  // Last Assessment
+  lastAssessedAt    DateTime @default(now())
+  assessmentVersion String   @default("1.0") // For tracking algorithm changes
+
+  // Staff Review
+  staffReviewStatus ClaimReviewStatus @default(PENDING)
+  reviewedBy        String? // Staff user ID
+  reviewedAt        DateTime?
+  staffDecision     Json? // Staff decision and reasoning
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([readinessScore])
+  @@index([isReadyForSubmission])
+  @@index([staffReviewStatus])
+}
+
+// Audit trail of all AI agent executions
+model AgentExecutionLog {
+  id String @id @default(cuid())
+
+  // Agent Info
+  agentName    String // e.g., "ClassifierAgent", "IdentityVerificationAgent"
+  agentVersion String // For tracking agent changes
+
+  // Relations
+  uploadedFileId String?
+  uploadedFile   UploadedFile? @relation(fields: [uploadedFileId], references: [id], onDelete: SetNull)
+
+  intakeSessionId String?
+  intakeSession   IntakeSession? @relation(fields: [intakeSessionId], references: [id], onDelete: SetNull)
+
+  // Execution Details
+  status AgentExecutionStatus
+  input  Json // Input parameters
+  output Json? // Agent output
+  error  String?              @db.Text // Error message if failed
+
+  // Timing
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  executionTimeMs Int?
+
+  // AI Model Info
+  modelUsed     String? // e.g., "gpt-4o"
+  tokensUsed    Int?
+  estimatedCost Float? // USD
+
+  @@index([agentName])
+  @@index([status])
+  @@index([uploadedFileId])
+  @@index([intakeSessionId])
+  @@index([startedAt])
+}
+
+// Audit trail of staff actions on claims
+model StaffAction {
+  id String @id @default(cuid())
+
+  // Staff Member
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Target
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+
+  // Action Details
+  actionType StaffActionType
+  actionData Json? // Additional data about the action
+  notes      String?         @db.Text
+
+  // Timestamp
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([intakeSessionId])
+  @@index([actionType])
+  @@index([createdAt])
 }
 
 // ============================================================================
@@ -1183,72 +1406,72 @@ model LifecycleNotificationPreference {
 // ============================================================================
 
 enum ServiceTier {
-  DIY_PREP    // $149.99 setup + $24.99/mo - Document preparation only
-  LEGAL_REP   // No upfront cost - Full legal representation via Heritage Law
+  DIY_PREP // $149.99 setup + $24.99/mo - Document preparation only
+  LEGAL_REP // No upfront cost - Full legal representation via Heritage Law
 }
 
 enum SubscriptionStatus {
-  ACTIVE      // Subscription is active and in good standing
-  PAST_DUE    // Payment failed, grace period
-  CANCELED    // User canceled subscription
-  PAUSED      // Temporarily paused (future feature)
+  ACTIVE // Subscription is active and in good standing
+  PAST_DUE // Payment failed, grace period
+  CANCELED // User canceled subscription
+  PAUSED // Temporarily paused (future feature)
 }
 
 enum PaymentType {
-  SETUP_FEE         // One-time $149.99 setup fee for DIY path
-  MONTHLY_FEE       // $24.99/mo subscription for DIY path
-  FIRM_SERVICE_FEE  // $1,000 paid by Heritage Law to RadiantClaims
+  SETUP_FEE // One-time $149.99 setup fee for DIY path
+  MONTHLY_FEE // $24.99/mo subscription for DIY path
+  FIRM_SERVICE_FEE // $1,000 paid by Heritage Law to RadiantClaims
 }
 
 enum PaymentStatus {
-  PENDING    // Payment initiated but not completed
-  COMPLETED  // Payment successful
-  FAILED     // Payment failed
-  REFUNDED   // Payment was refunded
+  PENDING // Payment initiated but not completed
+  COMPLETED // Payment successful
+  FAILED // Payment failed
+  REFUNDED // Payment was refunded
 }
 
 // Service subscription - tracks which tier user is on and payment status
 model ServiceSubscription {
-  id                String              @id @default(cuid())
-  userId            String              @unique
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  tier              ServiceTier         @default(DIY_PREP)
-  status            SubscriptionStatus  @default(ACTIVE)
+  tier   ServiceTier        @default(DIY_PREP)
+  status SubscriptionStatus @default(ACTIVE)
 
   // DIY Path Pricing ($149.99 + $24.99/mo)
-  setupFeePaid      Boolean             @default(false)
-  setupFeeAmount    Float?              // 149.99
-  setupFeePaidAt    DateTime?
+  setupFeePaid   Boolean   @default(false)
+  setupFeeAmount Float? // 149.99
+  setupFeePaidAt DateTime?
 
-  monthlyFeeAmount  Float?              // 24.99
-  billingCycleDay   Int?                // Day of month for billing (1-28)
-  nextBillingDate   DateTime?
-  lastBillingDate   DateTime?
+  monthlyFeeAmount Float? // 24.99
+  billingCycleDay  Int? // Day of month for billing (1-28)
+  nextBillingDate  DateTime?
+  lastBillingDate  DateTime?
 
   // Legal Path Tracking (referral to Heritage Law)
-  referredToFirmId  String?
-  referredToFirm    LawFirm?            @relation(fields: [referredToFirmId], references: [id])
-  referredAt        DateTime?
-  firmServiceFee    Float?              // 1000.00
-  firmServiceFeePaid Boolean            @default(false)
+  referredToFirmId     String?
+  referredToFirm       LawFirm?  @relation(fields: [referredToFirmId], references: [id])
+  referredAt           DateTime?
+  firmServiceFee       Float? // 1000.00
+  firmServiceFeePaid   Boolean   @default(false)
   firmServiceFeePaidAt DateTime?
 
   // Stripe Integration
-  stripeCustomerId      String?         @unique
-  stripeSubscriptionId  String?         @unique
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
 
   // Lifecycle
-  startedAt         DateTime            @default(now())
-  canceledAt        DateTime?
-  cancelReason      String?             @db.Text
+  startedAt    DateTime  @default(now())
+  canceledAt   DateTime?
+  cancelReason String?   @db.Text
 
   // Relations
-  payments          Payment[]
-  intakeSessions    IntakeSession[]
+  payments       Payment[]
+  intakeSessions IntakeSession[]
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([tier])
@@ -1259,32 +1482,32 @@ model ServiceSubscription {
 
 // Payment tracking - all payment events
 model Payment {
-  id                  String              @id @default(cuid())
-  subscriptionId      String
-  subscription        ServiceSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String              @id @default(cuid())
+  subscriptionId String
+  subscription   ServiceSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
-  paymentType         PaymentType
-  amount              Float               // Amount in USD
-  currency            String              @default("USD")
-  status              PaymentStatus       @default(PENDING)
+  paymentType PaymentType
+  amount      Float // Amount in USD
+  currency    String        @default("USD")
+  status      PaymentStatus @default(PENDING)
 
   // Stripe Integration
-  stripePaymentIntentId String?           @unique
+  stripePaymentIntentId String? @unique
   stripeChargeId        String?
   stripeInvoiceId       String?
 
   // Lifecycle
-  paidAt              DateTime?
-  failedAt            DateTime?
-  failureReason       String?             @db.Text
-  refundedAt          DateTime?
-  refundReason        String?             @db.Text
+  paidAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?   @db.Text
+  refundedAt    DateTime?
+  refundReason  String?   @db.Text
 
   // Metadata
-  metadata            String?             @db.Text // JSON for additional context
+  metadata String? @db.Text // JSON for additional context
 
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([subscriptionId])
   @@index([status])
