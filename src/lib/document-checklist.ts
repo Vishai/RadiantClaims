@@ -57,23 +57,24 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
   {
     id: "identity",
     title: "Identity Verification",
-    description: "Documents to verify your identity",
+    description:
+      "Government-issued photo ID showing your full legal name and date of birth",
     requirements: [
       {
         category: "IDENTITY",
         title: "Government-Issued Photo ID",
         description:
-          "Driver's license, passport, or state ID showing your full legal name and date of birth",
+          "Upload a clear photo or scan now. A certified or notarized copy will be required in your final mailing.",
         minRequired: 1,
         maxAllowed: 2,
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "A certified or notarized copy will be required in your final mailing. Upload a clear photo/scan now.",
+          "A certified or notarized copy will be required in your final mailing.",
         tips: [
           "Make sure your ID is current and not expired",
           "Ensure all text is clearly readable",
-          "Both front and back if applicable",
+          "Include both front and back if applicable",
           "You'll need to obtain a certified copy later for mailing",
         ],
         examples: [
@@ -88,62 +89,22 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     id: "residence",
     title: "Proof of Residence (1951-1962)",
     description:
-      "At least 2 documents showing you lived in an eligible county during the atmospheric testing period",
+      "Upload at least 2 different documents showing you lived in an eligible county during 1951-1962. Choose from the document types below.",
     requirements: [
       {
-        category: "PROOF_OF_RESIDENCE",
-        title: "Residence Documentation",
-        description:
-          "Documents showing your full name and address in an eligible county during 1951-1962. We require at least 2 different sources for verification.",
-        minRequired: 2,
-        maxAllowed: 10,
-        isRequired: true,
-        requiresOriginal: true,
-        timeframeNote:
-          "Documents must show residence during the qualifying period: 1951-1962",
-        originalNote:
-          "Original historical documents will be required in your final mailing. Upload clear photos/scans now.",
-        validationRules: {
-          mustShowNameAndAddress: true,
-          mustBeWithinDateRange: RECA_ATMOSPHERIC_PERIOD,
-        },
-        tips: [
-          "Upload at least 2 different types of proof for stronger verification",
-          "Documents should clearly show your full name and complete address",
-          "If you only have documents from slightly outside the period, upload them anyway with an explanation",
-          "Earlier documents are better - closer to the 1951-1962 timeframe",
-          "Original documents will be needed for final submission",
-          "We can help you obtain additional records if needed",
-        ],
-        examples: [
-          "Utility bills (electricity, gas, water, phone)",
-          "School records or report cards",
-          "Church membership records with address",
-          "Lease or rental agreements",
-          "Property tax bills or deeds",
-          "Pay stubs showing employer address",
-          "Insurance statements (auto, home, life)",
-          "Voter registration cards",
-          "Bank statements or loan documents",
-          "Military records showing home of record",
-        ],
-      },
-      {
         category: "UTILITY_BILL",
-        title: "Utility Bills (If Available)",
-        description: "Historical utility bills from the 1951-1962 period",
+        title: "Utility Bills",
+        description: "Gas, electric, water, or telephone bills",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        timeframeNote: "From 1951-1962 period preferred",
         originalNote:
-          "Original bills preferred if available. Upload photos/scans now.",
+          "Original bills will be required in your final mailing. Upload photos/scans now.",
         tips: [
-          "These are particularly strong evidence if you have them",
-          "Gas, electric, water, or telephone bills all qualify",
-          "Even partial bills or statements help",
-          "Original documents strengthen your claim",
+          "These are particularly strong evidence",
+          "Even partial bills or statements are helpful",
+          "Multiple bills from different years strengthen your claim",
         ],
         examples: [
           "Electric company bills",
@@ -154,21 +115,18 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       },
       {
         category: "SCHOOL_RECORDS",
-        title: "School Records (If Applicable)",
-        description:
-          "Report cards, enrollment records, or transcripts showing attendance during 1951-1962",
+        title: "School Records",
+        description: "Report cards, enrollment records, or transcripts",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        timeframeNote: "For claimants who attended school during 1951-1962",
         originalNote:
-          "Original or certified copies required. Upload scans now.",
+          "Original or certified copies will be required in your final mailing. Upload scans now.",
         tips: [
-          "Report cards showing your name and school address",
-          "Enrollment records or attendance certificates",
+          "Report cards showing your name and school address are ideal",
+          "Enrollment records or attendance certificates also qualify",
           "Graduation records or diplomas with dates",
-          "Original or certified copies needed for final mailing",
         ],
         examples: [
           "Report cards with dates",
@@ -178,29 +136,75 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         ],
       },
       {
-        category: "LDS_CHURCH_RECORDS",
-        title: "LDS Church Membership Records (If Applicable)",
+        category: "MORTGAGE_STATEMENT",
+        title: "Property & Mortgage Documents",
         description:
-          "For members of The Church of Jesus Christ of Latter-day Saints, you can request the church to provide membership records to the DOJ to help prove residence during 1951-1962",
+          "Mortgage statements, property deeds, rental agreements, or property tax bills",
+        minRequired: 0,
+        maxAllowed: 5,
+        isRequired: false,
+        requiresOriginal: true,
+        originalNote:
+          "Original documents will be required in your final mailing. Upload photos/scans now.",
+        tips: [
+          "These are strong evidence of residence",
+          "Property deeds with your name are particularly valuable",
+          "Rental agreements showing your address",
+        ],
+        examples: [
+          "Mortgage statements",
+          "Property deeds",
+          "Rental or lease agreements",
+          "Property tax bills",
+        ],
+      },
+      {
+        category: "LDS_CHURCH_RECORDS",
+        title: "LDS Church Records",
+        description:
+          "Request the church to send historical membership records directly to the DOJ",
         minRequired: 0,
         maxAllowed: 2,
         isRequired: false,
         requiresOriginal: true,
-        timeframeNote:
-          "For members who lived in the affected area during 1951-1962",
         originalNote:
-          "Complete the RECA Research Application form and mail it directly to the church. The church will send their report directly to the DOJ.",
+          "Complete the RECA Research Application form and mail it to the church. They will send records directly to the DOJ.",
         tips: [
-          "Download the LDS RECA Form below and fill it out completely",
-          "Mail the completed form to: RECA RESEARCH, Global Services Department, 3740 West Market Center Drive, Riverton, UT 84065",
-          "The church will check historical ward information and send a report directly to the DOJ",
-          "This service is free and can provide strong evidence of residence",
+          "Fill out the LDS RECA Form (available below) completely",
+          "Mail to: RECA RESEARCH, Global Services Department, 3740 West Market Center Drive, Riverton, UT 84065",
+          "The church will verify historical ward information for free",
+          "This can provide strong evidence of residence",
           "Upload a copy of your completed form here for your records",
-          "The church will NOT email records - they send directly to the DOJ",
+          "The church sends results directly to the DOJ, not to you",
         ],
         examples: [
           "Completed LDS RECA Research Application form",
           "Copy of church response (if received)",
+        ],
+      },
+      {
+        category: "PROOF_OF_RESIDENCE",
+        title: "Other Residence Documents",
+        description:
+          "Insurance statements, voter registration, bank statements, or any other documents showing your name and address",
+        minRequired: 0,
+        maxAllowed: 10,
+        isRequired: false,
+        requiresOriginal: true,
+        originalNote:
+          "Original documents will be required in your final mailing. Upload photos/scans now.",
+        tips: [
+          "Upload at least 2 different types of documents for stronger verification",
+          "Documents should clearly show your full name and complete address",
+          "If documents are from slightly outside the period, upload them anyway",
+        ],
+        examples: [
+          "Insurance statements (auto, home, life)",
+          "Voter registration cards",
+          "Bank statements or loan documents",
+          "Military records showing home of record",
+          "Church membership records",
+          "Any other document with your name and address",
         ],
       },
     ],
@@ -208,24 +212,24 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
   {
     id: "medical",
     title: "Medical Documentation",
-    description: "Records documenting your diagnosis and medical history",
+    description:
+      "Upload records documenting your cancer diagnosis and treatment history",
     requirements: [
       {
         category: "PATHOLOGY_REPORT",
         title: "Pathology Report",
         description:
-          "Official pathology report confirming your cancer diagnosis, including cancer type and date of diagnosis",
+          "Official report confirming your cancer diagnosis with cancer type and date",
         minRequired: 1,
         maxAllowed: 3,
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from medical facility required. Upload scans now, request certified copies later.",
+          "Certified copies from medical facility will be required in your final mailing. Upload scans now.",
         tips: [
           "Must include diagnosis date and cancer type",
           "Should be on official letterhead from the pathology lab",
           "Request from your oncologist or hospital if you don't have a copy",
-          "You'll need certified copies for final mailing",
         ],
         examples: [
           "Biopsy pathology report",
@@ -235,19 +239,19 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       },
       {
         category: "MEDICAL_RECORDS",
-        title: "Medical Records",
+        title: "Additional Medical Records",
         description:
-          "Supporting medical records related to your diagnosis and treatment",
+          "Supporting records from your oncologist, surgeon, or primary care physician",
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Certified copies required. Upload scans now.",
+        originalNote:
+          "Certified copies will be required in your final mailing. Upload scans now.",
         tips: [
-          "Include records from your oncologist, surgeon, or primary care physician",
           "Treatment summaries and progress notes are helpful",
           "Imaging reports (CT, PET, MRI) showing cancer",
-          "Certified copies needed for final submission",
+          "Doctor's letters confirming diagnosis",
         ],
         examples: [
           "Oncologist consultation notes",
@@ -260,17 +264,16 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         category: "DISCHARGE_SUMMARY",
         title: "Hospital Discharge Summaries",
         description:
-          "Summaries from hospitalizations related to your cancer treatment",
+          "Discharge summaries from surgery, chemotherapy admissions, or other hospitalizations",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from hospital required. Upload scans now.",
+          "Certified copies from hospital will be required in your final mailing. Upload scans now.",
         tips: [
-          "Include summaries from surgery, chemotherapy admissions, etc.",
           "Should mention cancer diagnosis and treatment provided",
-          "Certified copies needed for final mailing",
+          "Include all hospitalizations related to your cancer",
         ],
         examples: [
           "Post-surgery discharge summary",
@@ -281,13 +284,12 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       {
         category: "TREATMENT_RECORDS",
         title: "Treatment Records",
-        description: "Records of cancer treatments received",
+        description: "Chemotherapy, radiation therapy, or surgery records",
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: false,
         tips: [
-          "Chemotherapy records, radiation therapy logs, surgery notes",
           "Medication lists showing cancer treatments",
           "Copies are acceptable for these records",
         ],
@@ -301,27 +303,26 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
   },
   {
     id: "additional",
-    title: "Additional Supporting Documents",
-    description: "Other documents that may strengthen your claim",
+    title: "Additional Supporting Documents (1951-1962)",
+    description:
+      "Optional documents from the qualifying period that may strengthen your claim",
     requirements: [
       {
         category: "EMPLOYMENT_RECORDS",
-        title: "Employment Records (If Applicable)",
-        description:
-          "Records showing employment in the area during the qualifying period",
+        title: "Employment Records",
+        description: "Pay stubs, W-2 forms, or employment verification letters",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        timeframeNote: "From 1951-1962 period if available",
-        originalNote: "Original documents preferred. Upload scans now.",
+        originalNote:
+          "Original documents will be required in your final mailing. Upload scans now.",
         tips: [
-          "Pay stubs, W-2 forms, or employment verification letters",
           "Should show employer name, address, and your employment dates",
           "Original documents strengthen your claim",
         ],
         examples: [
-          "Pay stubs from 1951-1962",
+          "Pay stubs",
           "W-2 tax forms",
           "Employment verification letters",
           "Union membership cards",
@@ -329,17 +330,16 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       },
       {
         category: "TAX_RETURN",
-        title: "Tax Returns (If Available)",
-        description: "Historical tax returns showing residence address",
+        title: "Tax Returns",
+        description:
+          "Federal or state tax returns showing your residence address",
         minRequired: 0,
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        timeframeNote: "From 1951-1962 period if available",
         originalNote:
-          "Original or certified IRS copies required. Upload scans now.",
+          "Original or certified IRS copies will be required in your final mailing. Upload scans now.",
         tips: [
-          "Federal or state tax returns showing your address",
           "These are strong evidence if you have them",
           "Can request copies from IRS if needed",
         ],
@@ -347,8 +347,9 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
       },
       {
         category: "OTHER",
-        title: "Other Supporting Documents",
-        description: "Any other documents that support your claim",
+        title: "Other Documents",
+        description:
+          "Birth certificates, marriage certificates, military records, or other supporting documents",
         minRequired: 0,
         maxAllowed: 10,
         isRequired: false,
@@ -357,7 +358,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
           "Birth certificates showing birthplace in eligible area",
           "Marriage certificates with residence address",
           "Military service records showing home of record",
-          "Anything else that documents your presence during 1951-1962",
+          "Letters or correspondence with dated postmarks",
           "We'll advise if originals are needed",
         ],
         examples: [

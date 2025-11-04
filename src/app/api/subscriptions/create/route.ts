@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
+import { STRIPE_CONFIG } from "@/lib/stripe";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -44,8 +45,142 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingSubscription) {
+      if (tier === "DIY_PREP") {
+        // Record policy acceptance for audit/compliance even on re-attempt
+        const policyAcceptance = await db.policyAcceptance.create({
+          data: {
+            userId: session.user.id,
+            policyType: policyType || "TERMS_OF_SERVICE",
+            policyVersion: policyVersion || "1.0",
+            policyText: "DIY Terms Agreement",
+            ipAddress:
+              ipAddress || request.headers.get("x-forwarded-for") || "unknown",
+            userAgent: request.headers.get("user-agent") || undefined,
+          },
+        });
+
+        // If the DIY subscription is already active/paid, send them back to the portal
+        if (existingSubscription.setupFeePaid) {
+          await createAuditLog({
+            userId: session.user.id,
+            action: "POLICY_ACCEPTED",
+            resourceType: "ServiceSubscription",
+            resourceId: existingSubscription.id,
+            ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+            userAgent: request.headers.get("user-agent") || undefined,
+            metadata: {
+              tier: "DIY_PREP",
+              policyAcceptanceId: policyAcceptance.id,
+              note: "User re-accepted DIY terms with active subscription",
+            },
+          });
+
+          return NextResponse.json({
+            success: true,
+            subscription: existingSubscription,
+            redirectTo: "/portal",
+            message: "Subscription already active",
+          });
+        }
+
+        // Ensure we have a Stripe customer for this subscription
+        let stripeCustomerId = existingSubscription.stripeCustomerId;
+
+        if (!stripeCustomerId) {
+          const customer = await stripe.customers.create({
+            email: session.user.email || undefined,
+            name: session.user.name || undefined,
+            metadata: {
+              userId: session.user.id,
+              subscriptionId: existingSubscription.id,
+            },
+          });
+
+          await db.serviceSubscription.update({
+            where: { id: existingSubscription.id },
+            data: { stripeCustomerId: customer.id },
+          });
+
+          stripeCustomerId = customer.id;
+        }
+
+        // Create a fresh checkout session so the user can finish payment
+        const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
+        const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY.priceId;
+
+        if (!diySetupPriceId || !diyMonthlyPriceId) {
+          return NextResponse.json(
+            {
+              error:
+                "DIY checkout is temporarily unavailable. Please contact support.",
+              code: "DIY_PRICE_NOT_CONFIGURED",
+            },
+            { status: 503 }
+          );
+        }
+
+        const checkoutSession = await stripe.checkout.sessions.create({
+          customer: stripeCustomerId,
+          mode: "subscription",
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price: diySetupPriceId,
+              quantity: 1,
+            },
+            {
+              price: diyMonthlyPriceId,
+              quantity: 1,
+            },
+          ],
+          success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
+          cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
+          metadata: {
+            userId: session.user.id,
+            subscriptionId: existingSubscription.id,
+            policyAcceptanceId: policyAcceptance.id,
+            reusedSubscription: "true",
+          },
+        });
+
+        await createAuditLog({
+          userId: session.user.id,
+          action: "SUBSCRIPTION_CREATED",
+          resourceType: "ServiceSubscription",
+          resourceId: existingSubscription.id,
+          ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+          userAgent: request.headers.get("user-agent") || undefined,
+          metadata: {
+            tier: "DIY_PREP",
+            stripeCheckoutSessionId: checkoutSession.id,
+            policyAcceptanceId: policyAcceptance.id,
+            reusedSubscription: true,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          subscription: existingSubscription,
+          checkoutUrl: checkoutSession.url,
+          message:
+            "Existing subscription requires payment. Redirecting to checkout.",
+        });
+      }
+
+      if (tier === "LEGAL_REP" && existingSubscription.tier === "LEGAL_REP") {
+        return NextResponse.json({
+          success: true,
+          subscription: existingSubscription,
+          redirectTo: "/portal",
+          message: "Legal representation already active",
+        });
+      }
+
       return NextResponse.json(
-        { error: "Subscription already exists" },
+        {
+          error:
+            "A subscription already exists. Contact support if you need to change plans.",
+        },
         { status: 400 }
       );
     }
@@ -100,6 +235,20 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // For DIY: Create subscription and Stripe checkout session
+      const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
+      const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY.priceId;
+
+      if (!diySetupPriceId || !diyMonthlyPriceId) {
+        return NextResponse.json(
+          {
+            error:
+              "DIY checkout is temporarily unavailable. Please contact support.",
+            code: "DIY_PRICE_NOT_CONFIGURED",
+          },
+          { status: 503 }
+        );
+      }
+
       const subscription = await db.serviceSubscription.create({
         data: {
           userId: session.user.id,
@@ -133,14 +282,8 @@ export async function POST(request: NextRequest) {
         mode: "subscription",
         payment_method_types: ["card"],
         line_items: [
-          {
-            price: process.env.STRIPE_PRICE_ID_DIY_SETUP!,
-            quantity: 1,
-          },
-          {
-            price: process.env.STRIPE_PRICE_ID_DIY_MONTHLY!,
-            quantity: 1,
-          },
+          { price: diySetupPriceId, quantity: 1 },
+          { price: diyMonthlyPriceId, quantity: 1 },
         ],
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
@@ -174,6 +317,18 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("Error creating subscription:", error);
+
+    if (error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        {
+          error: "Payment setup failed. Please verify billing is configured.",
+          code: error.code ?? "STRIPE_ERROR",
+          details: error.message,
+        },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: "Failed to create subscription",

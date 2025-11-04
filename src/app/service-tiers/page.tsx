@@ -35,6 +35,8 @@ export default function ServiceTiersPage() {
   const [showLegalAgreement, setShowLegalAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
     // Check if user is authenticated
@@ -44,6 +46,8 @@ export default function ServiceTiersPage() {
       return;
     }
 
+    setErrorMessage(null);
+    setInfoMessage(null);
     setSelectedTier(tierId);
 
     // Show appropriate agreement dialog
@@ -70,6 +74,8 @@ export default function ServiceTiersPage() {
   }, [status]);
 
   const handleDIYAccept = async () => {
+    setErrorMessage(null);
+    setInfoMessage(null);
     setIsLoading(true);
     try {
       sessionStorage.setItem("selectedServiceTier", "DIY_PREP");
@@ -96,7 +102,26 @@ export default function ServiceTiersPage() {
           router.push("/login");
           return;
         }
+
+        if (data.code === "DIY_PRICE_NOT_CONFIGURED") {
+          setErrorMessage(
+            "DIY checkout is temporarily offline while we finish configuring billing. Please reach out to support and we'll get you set up."
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.error) {
+          setErrorMessage(data.error);
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(data.error || "Failed to create subscription");
+      }
+
+      if (data.message) {
+        setInfoMessage(data.message);
       }
 
       // Redirect to Stripe checkout for payment
@@ -108,7 +133,7 @@ export default function ServiceTiersPage() {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      setErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to continue. Please try again."
@@ -118,6 +143,8 @@ export default function ServiceTiersPage() {
   };
 
   const handleLegalAccept = async () => {
+    setErrorMessage(null);
+    setInfoMessage(null);
     setIsLoading(true);
     try {
       sessionStorage.setItem("selectedServiceTier", "LEGAL_REP");
@@ -144,14 +171,33 @@ export default function ServiceTiersPage() {
           router.push("/login");
           return;
         }
+
+        if (data.code === "DIY_PRICE_NOT_CONFIGURED") {
+          setErrorMessage(
+            "Legal path is available, but we're still finishing DIY billing setup. Please contact support if you need DIY access."
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.error) {
+          setErrorMessage(data.error);
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(data.error || "Failed to create subscription");
+      }
+
+      if (data.message) {
+        setInfoMessage(data.message);
       }
 
       // Redirect to portal dashboard (they can start from there)
       router.push("/portal");
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      setErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to continue. Please try again."
@@ -217,6 +263,18 @@ export default function ServiceTiersPage() {
             </div>
           </div>
         </div>
+
+        {infoMessage && (
+          <div className="mx-auto mb-6 max-w-3xl rounded-xl border border-sage-200 bg-sage-50 p-4 text-sm text-sage-800">
+            {infoMessage}
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mx-auto mb-6 max-w-3xl rounded-xl border border-terracotta-200 bg-terracotta-50 p-4 text-sm text-terracotta-700">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Comparison Cards */}
         <div className="mx-auto mb-12 grid max-w-6xl gap-8 md:grid-cols-2">

@@ -68,14 +68,28 @@ export function DocumentChecklistComponent({
 
   const getRequirementStatus = (
     req: DocumentRequirement
-  ): "complete" | "partial" | "missing" => {
+  ): "complete" | "partial" | "missing" | "optional" => {
     const uploaded = getUploadedCount(req.category);
+
+    // For optional items (minRequired = 0)
+    if (req.minRequired === 0) {
+      if (uploaded > 0) return "complete"; // Has uploads
+      return "optional"; // No uploads, but that's okay
+    }
+
+    // For required items
     if (uploaded >= req.minRequired) return "complete";
     if (uploaded > 0) return "partial";
     return "missing";
   };
 
   const getSectionProgress = (section: ChecklistSection) => {
+    // Special handling for residence section - based on total uploads
+    if (section.id === "residence") {
+      const uploadCount = getResidenceUploadCount();
+      return Math.min(Math.round((uploadCount / 2) * 100), 100);
+    }
+
     const requirements = section.requirements.filter((r) => r.isRequired);
     if (requirements.length === 0) return 100;
 
@@ -84,6 +98,21 @@ export function DocumentChecklistComponent({
     ).length;
 
     return Math.round((completed / requirements.length) * 100);
+  };
+
+  const getResidenceUploadCount = () => {
+    // Count all uploads across all residence-related categories
+    const residenceCategories: FileCategory[] = [
+      "PROOF_OF_RESIDENCE",
+      "UTILITY_BILL",
+      "SCHOOL_RECORDS",
+      "MORTGAGE_STATEMENT",
+      "LDS_CHURCH_RECORDS",
+    ];
+
+    return uploadedFiles.filter(
+      (f) => f.category && residenceCategories.includes(f.category)
+    ).length;
   };
 
   return (
@@ -114,6 +143,28 @@ export function DocumentChecklistComponent({
                 <p className="mt-1 text-sm text-sage-600">
                   {section.description}
                 </p>
+
+                {/* Special upload count for residence section */}
+                {section.id === "residence" && (
+                  <div className="mt-2">
+                    <span
+                      className={`text-sm font-medium ${
+                        getResidenceUploadCount() >= 2
+                          ? "text-emerald-700"
+                          : getResidenceUploadCount() > 0
+                            ? "text-amber-700"
+                            : "text-terracotta-600"
+                      }`}
+                    >
+                      {getResidenceUploadCount()} of 2 minimum uploaded
+                    </span>
+                    {getResidenceUploadCount() < 2 && (
+                      <span className="ml-2 text-sm text-terracotta-600">
+                        • {2 - getResidenceUploadCount()} more needed
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Progress bar */}
                 <div className="mt-3 flex items-center gap-3">
@@ -159,16 +210,13 @@ export function DocumentChecklistComponent({
                             <div className="mt-0.5">
                               {status === "complete" ? (
                                 <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                              ) : status === "partial" ? (
+                                <Circle className="h-6 w-6 text-amber-500" />
+                              ) : status === "missing" ? (
+                                <Circle className="h-6 w-6 text-terracotta-500" />
                               ) : (
-                                <Circle
-                                  className={`h-6 w-6 ${
-                                    status === "partial"
-                                      ? "text-amber-500"
-                                      : req.isRequired
-                                        ? "text-terracotta-500"
-                                        : "text-sage-300"
-                                  }`}
-                                />
+                                // status === "optional" - empty optional item
+                                <Circle className="h-6 w-6 text-sage-300" />
                               )}
                             </div>
 
