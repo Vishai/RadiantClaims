@@ -30,6 +30,7 @@ export interface ChecklistSection {
   id: string;
   title: string;
   description: string;
+  headerTip?: string; // Optional tooltip shown as info icon in section header
   requirements: DocumentRequirement[];
 }
 
@@ -58,24 +59,22 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     id: "identity",
     title: "Identity Verification",
     description:
-      "Government-issued photo ID showing your full legal name and date of birth",
+      "Upload 1 government-issued photo ID. A certified or notarized copy will be required in your final mailing.",
     requirements: [
       {
         category: "IDENTITY",
         title: "Government-Issued Photo ID",
-        description:
-          "Upload a clear photo or scan now. A certified or notarized copy will be required in your final mailing.",
+        description: "Driver's license, passport, or state ID card",
         minRequired: 1,
         maxAllowed: 2,
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "A certified or notarized copy will be required in your final mailing.",
+          "A certified or notarized copy will be required for final mailing.",
         tips: [
           "Make sure your ID is current and not expired",
           "Ensure all text is clearly readable",
           "Include both front and back if applicable",
-          "You'll need to obtain a certified copy later for mailing",
         ],
         examples: [
           "Driver's License (front & back)",
@@ -90,6 +89,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     title: "Proof of Residence (1951-1962)",
     description:
       "Upload at least 2 different documents showing you lived in an eligible county during 1951-1962. Choose from the document types below.",
+    headerTip:
+      "The Church of Jesus Christ of Latter-day Saints can research your residence history and send records directly to the DOJ — see the LDS Church Records section below for details.",
     requirements: [
       {
         category: "UTILITY_BILL",
@@ -99,8 +100,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote:
-          "Original bills will be required in your final mailing. Upload photos/scans now.",
+        originalNote: "Original bills will be required for final mailing.",
         tips: [
           "These are particularly strong evidence",
           "Even partial bills or statements are helpful",
@@ -122,7 +122,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Original or certified copies will be required in your final mailing. Upload scans now.",
+          "Original or certified copies will be required for final mailing.",
         tips: [
           "Report cards showing your name and school address are ideal",
           "Enrollment records or attendance certificates also qualify",
@@ -144,8 +144,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote:
-          "Original documents will be required in your final mailing. Upload photos/scans now.",
+        originalNote: "Original documents will be required for final mailing.",
         tips: [
           "These are strong evidence of residence",
           "Property deeds with your name are particularly valuable",
@@ -191,8 +190,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote:
-          "Original documents will be required in your final mailing. Upload photos/scans now.",
+        originalNote: "Original documents will be required for final mailing.",
         tips: [
           "Upload at least 2 different types of documents for stronger verification",
           "Documents should clearly show your full name and complete address",
@@ -213,7 +211,9 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     id: "medical",
     title: "Medical Documentation",
     description:
-      "Upload records documenting your cancer diagnosis and treatment history",
+      "Upload records documenting your cancer diagnosis and treatment history.",
+    headerTip:
+      "You may authorize the DOJ to request your medical records from the cancer registry during the application process. While we have limited information on this timeline, it is an available option.",
     requirements: [
       {
         category: "PATHOLOGY_REPORT",
@@ -225,7 +225,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from medical facility will be required in your final mailing. Upload scans now.",
+          "Certified copies from medical facility will be required for final mailing.",
         tips: [
           "Must include diagnosis date and cancer type",
           "Should be on official letterhead from the pathology lab",
@@ -246,8 +246,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote:
-          "Certified copies will be required in your final mailing. Upload scans now.",
+        originalNote: "Certified copies will be required for final mailing.",
         tips: [
           "Treatment summaries and progress notes are helpful",
           "Imaging reports (CT, PET, MRI) showing cancer",
@@ -270,7 +269,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from hospital will be required in your final mailing. Upload scans now.",
+          "Certified copies from hospital will be required for final mailing.",
         tips: [
           "Should mention cancer diagnosis and treatment provided",
           "Include all hospitalizations related to your cancer",
@@ -305,7 +304,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     id: "additional",
     title: "Additional Supporting Documents (1951-1962)",
     description:
-      "Optional documents from the qualifying period that may strengthen your claim",
+      "Documents that may be required based on your specific situation to verify relationships, name changes, or other connections. These help establish eligibility and strengthen your claim.",
     requirements: [
       {
         category: "EMPLOYMENT_RECORDS",
@@ -315,8 +314,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote:
-          "Original documents will be required in your final mailing. Upload scans now.",
+        originalNote: "Original documents will be required for final mailing.",
         tips: [
           "Should show employer name, address, and your employment dates",
           "Original documents strengthen your claim",
@@ -338,7 +336,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Original or certified IRS copies will be required in your final mailing. Upload scans now.",
+          "Original or certified IRS copies will be required for final mailing.",
         tips: [
           "These are strong evidence if you have them",
           "Can request copies from IRS if needed",

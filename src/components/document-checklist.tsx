@@ -90,8 +90,15 @@ export function DocumentChecklistComponent({
       return Math.min(Math.round((uploadCount / 2) * 100), 100);
     }
 
+    // Special handling for additional section - based on whether any uploads exist
+    if (section.id === "additional") {
+      const uploadInfo = getSectionUploadInfo(section);
+      // If there are any uploads, show some progress
+      return uploadInfo.uploaded > 0 ? 50 : 0;
+    }
+
     const requirements = section.requirements.filter((r) => r.isRequired);
-    if (requirements.length === 0) return 100;
+    if (requirements.length === 0) return 0; // Changed from 100 to 0
 
     const completed = requirements.filter(
       (req) => getUploadedCount(req.category) >= req.minRequired
@@ -113,6 +120,28 @@ export function DocumentChecklistComponent({
     return uploadedFiles.filter(
       (f) => f.category && residenceCategories.includes(f.category)
     ).length;
+  };
+
+  const getSectionUploadInfo = (section: ChecklistSection) => {
+    // Get all categories in this section
+    const categories = section.requirements.map((req) => req.category);
+
+    // Count uploads for this section
+    const uploaded = uploadedFiles.filter(
+      (f) => f.category && categories.includes(f.category)
+    ).length;
+
+    // Special handling for residence section - needs 2 minimum total
+    if (section.id === "residence") {
+      return { uploaded, required: 2 };
+    }
+
+    // Get required count (sum of minRequired for required items)
+    const required = section.requirements
+      .filter((req) => req.isRequired)
+      .reduce((sum, req) => sum + req.minRequired, 0);
+
+    return { uploaded, required };
   };
 
   return (
@@ -139,32 +168,63 @@ export function DocumentChecklistComponent({
                   {progress === 100 && (
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   )}
+                  {section.headerTip && (
+                    <div className="group relative">
+                      <Info className="h-5 w-5 cursor-help text-blue-500" />
+                      <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-72 -translate-x-1/2 rounded-lg border-2 border-blue-200 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg group-hover:block">
+                        <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l-2 border-t-2 border-blue-200 bg-blue-50"></div>
+                        {section.headerTip}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <p className="mt-1 text-sm text-sage-600">
                   {section.description}
                 </p>
 
-                {/* Special upload count for residence section */}
-                {section.id === "residence" && (
-                  <div className="mt-2">
-                    <span
-                      className={`text-sm font-medium ${
-                        getResidenceUploadCount() >= 2
-                          ? "text-emerald-700"
-                          : getResidenceUploadCount() > 0
-                            ? "text-amber-700"
-                            : "text-terracotta-600"
-                      }`}
-                    >
-                      {getResidenceUploadCount()} of 2 minimum uploaded
-                    </span>
-                    {getResidenceUploadCount() < 2 && (
-                      <span className="ml-2 text-sm text-terracotta-600">
-                        • {2 - getResidenceUploadCount()} more needed
+                {/* Upload count for all sections */}
+                {(() => {
+                  const uploadInfo = getSectionUploadInfo(section);
+
+                  // Special handling for additional section - show uploads but not as "required"
+                  if (section.id === "additional") {
+                    if (uploadInfo.uploaded === 0) return null;
+                    return (
+                      <div className="mt-2">
+                        <span className="text-sm font-medium text-sage-600">
+                          {uploadInfo.uploaded} document
+                          {uploadInfo.uploaded !== 1 ? "s" : ""} uploaded
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // Only show for sections with required documents
+                  if (uploadInfo.required === 0) return null;
+
+                  return (
+                    <div className="mt-2">
+                      <span
+                        className={`text-sm font-medium ${
+                          uploadInfo.uploaded >= uploadInfo.required
+                            ? "text-emerald-700"
+                            : uploadInfo.uploaded > 0
+                              ? "text-amber-700"
+                              : "text-terracotta-600"
+                        }`}
+                      >
+                        {uploadInfo.uploaded} of {uploadInfo.required} minimum
+                        uploaded
                       </span>
-                    )}
-                  </div>
-                )}
+                      {uploadInfo.uploaded < uploadInfo.required && (
+                        <span className="ml-2 text-sm text-terracotta-600">
+                          • {uploadInfo.required - uploadInfo.uploaded} more
+                          needed
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Progress bar */}
                 <div className="mt-3 flex items-center gap-3">
@@ -211,12 +271,12 @@ export function DocumentChecklistComponent({
                               {status === "complete" ? (
                                 <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                               ) : status === "partial" ? (
-                                <Circle className="h-6 w-6 text-amber-500" />
+                                <Circle className="h-6 w-6 text-sage-400" />
                               ) : status === "missing" ? (
-                                <Circle className="h-6 w-6 text-terracotta-500" />
+                                <Circle className="h-6 w-6 text-sage-400" />
                               ) : (
                                 // status === "optional" - empty optional item
-                                <Circle className="h-6 w-6 text-sage-300" />
+                                <Circle className="h-6 w-6 text-sage-400" />
                               )}
                             </div>
 

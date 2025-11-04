@@ -11,11 +11,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Heart, Upload, X, Save, Info, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Heart,
+  Upload,
+  X,
+  Save,
+  Info,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { DocumentChecklistComponent } from "@/components/document-checklist";
 import { MailInProcessBanner } from "@/components/mail-in-process-banner";
-import { DOCUMENT_CHECKLIST, calculateProgress } from "@/lib/document-checklist";
+import { DOCUMENT_CHECKLIST } from "@/lib/document-checklist";
 import {
   uploadFile,
   // deleteFile, // Currently unused but kept for future use
@@ -58,7 +66,9 @@ function Step2Content() {
   const [session, setSession] = useState<IntakeSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<FileCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<FileCategory | null>(
+    null
+  );
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -75,7 +85,9 @@ function Step2Content() {
 
       // User must be authenticated
       if (authStatus === "unauthenticated") {
-        router.push(`/login?callbackUrl=/intake/step2${token ? `?token=${token}` : claimantId ? `?claimantId=${claimantId}` : ""}`);
+        router.push(
+          `/login?callbackUrl=/intake/step2${token ? `?token=${token}` : claimantId ? `?claimantId=${claimantId}` : ""}`
+        );
         return;
       }
 
@@ -86,7 +98,9 @@ function Step2Content() {
 
           // AUTHORIZATION CHECK: Verify logged-in user owns this session
           if (existingSession.claimant?.email !== authSession?.user?.email) {
-            setError("Unauthorized: You don't have permission to access this session");
+            setError(
+              "Unauthorized: You don't have permission to access this session"
+            );
             setLoading(false);
             return;
           }
@@ -100,7 +114,9 @@ function Step2Content() {
 
           // AUTHORIZATION CHECK: Verify logged-in user owns this claimant
           if (newSession.claimant?.email !== authSession?.user?.email) {
-            setError("Unauthorized: You don't have permission to access this claimant");
+            setError(
+              "Unauthorized: You don't have permission to access this claimant"
+            );
             setLoading(false);
             return;
           }
@@ -209,7 +225,9 @@ function Step2Content() {
       // Auto-hide success message after 5 seconds
       setTimeout(() => setEmailSent(false), 5000);
     } catch (err) {
-      setEmailError(err instanceof Error ? err.message : "Failed to send email");
+      setEmailError(
+        err instanceof Error ? err.message : "Failed to send email"
+      );
     } finally {
       setIsSendingEmail(false);
     }
@@ -217,7 +235,7 @@ function Step2Content() {
 
   const handleContinue = () => {
     // TODO: Navigate to next step - consent page not yet created
-    const resumeToken = session?.resumeToken || '';
+    const resumeToken = session?.resumeToken || "";
     router.push(`/intake/consent?token=${resumeToken}` as any);
   };
 
@@ -235,8 +253,6 @@ function Step2Content() {
   if (!session) {
     return null;
   }
-
-  const progress = calculateProgress(session.uploadedFiles || []);
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -270,11 +286,11 @@ function Step2Content() {
             Step 2: Upload Your Documents
           </h1>
           <p className="text-lg text-sage-700">
-            Upload digital copies of your documents now. We'll validate them and guide you
-            on mailing originals later.
+            Upload digital copies of your documents now. We'll validate them and
+            guide you on mailing originals later.
             <br />
-            Don't worry if you don't have everything today — you can save and come back
-            anytime.
+            Don't worry if you don't have everything today — you can save and
+            come back anytime.
           </p>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
@@ -292,8 +308,9 @@ function Step2Content() {
                   Email sent successfully!
                 </h3>
                 <p className="text-sm text-green-800">
-                  We've sent a resume link to <strong>{session?.claimant?.email}</strong>.
-                  Check your inbox to continue your application later.
+                  We've sent a resume link to{" "}
+                  <strong>{session?.claimant?.email}</strong>. Check your inbox
+                  to continue your application later.
                 </p>
               </div>
             </div>
@@ -326,26 +343,144 @@ function Step2Content() {
           <CardHeader>
             <CardTitle className="text-sage-900">Your Progress</CardTitle>
             <CardDescription className="text-sage-600">
-              {progress.requiredMet} of {progress.requiredTotal} required documents
-              uploaded
+              {(session.uploadedFiles || []).length} total document
+              {(session.uploadedFiles || []).length !== 1 ? "s" : ""} uploaded
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-sage-700">
-                  Required Documents
-                </span>
-                <span className="text-2xl font-bold text-terracotta-600">
-                  {progress.percentComplete}%
-                </span>
-              </div>
-              <div className="h-4 overflow-hidden rounded-full bg-cream-200">
-                <div
-                  className="h-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 transition-all duration-500"
-                  style={{ width: `${progress.percentComplete}%` }}
-                />
-              </div>
+            <div className="space-y-4">
+              {/* Identity Document */}
+              {(() => {
+                const identityCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "IDENTITY"
+                ).length;
+                return (
+                  <div className="flex items-center justify-between rounded-xl bg-cream-50 p-4">
+                    <div className="flex items-center gap-3">
+                      {identityCount >= 1 ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                      )}
+                      <span className="text-sm font-medium text-sage-900">
+                        Government-Issued Photo ID
+                      </span>
+                    </div>
+                    <span
+                      className={`text-sm font-semibold ${identityCount >= 1 ? "text-emerald-700" : "text-terracotta-600"}`}
+                    >
+                      {identityCount} of 1
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Proof of Residence */}
+              {(() => {
+                const residenceCategories = [
+                  "PROOF_OF_RESIDENCE",
+                  "UTILITY_BILL",
+                  "SCHOOL_RECORDS",
+                  "MORTGAGE_STATEMENT",
+                  "LDS_CHURCH_RECORDS",
+                ];
+                const residenceCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category && residenceCategories.includes(f.category)
+                ).length;
+                return (
+                  <div className="flex items-center justify-between rounded-xl bg-cream-50 p-4">
+                    <div className="flex items-center gap-3">
+                      {residenceCount >= 2 ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                      )}
+                      <span className="text-sm font-medium text-sage-900">
+                        Proofs of Residence (1951-1962)
+                      </span>
+                    </div>
+                    <span
+                      className={`text-sm font-semibold ${residenceCount >= 2 ? "text-emerald-700" : "text-terracotta-600"}`}
+                    >
+                      {residenceCount} of 2
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Medical Documentation */}
+              {(() => {
+                const pathologyCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "PATHOLOGY_REPORT"
+                ).length;
+                return (
+                  <div className="flex items-center justify-between rounded-xl bg-cream-50 p-4">
+                    <div className="flex items-center gap-3">
+                      {pathologyCount >= 1 ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                      )}
+                      <span className="text-sm font-medium text-sage-900">
+                        Medical Document (proving illness)
+                      </span>
+                    </div>
+                    <span
+                      className={`text-sm font-semibold ${pathologyCount >= 1 ? "text-emerald-700" : "text-terracotta-600"}`}
+                    >
+                      {pathologyCount} of 1
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Overall Progress Bar */}
+              {(() => {
+                const identityCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "IDENTITY"
+                ).length;
+                const residenceCategories = [
+                  "PROOF_OF_RESIDENCE",
+                  "UTILITY_BILL",
+                  "SCHOOL_RECORDS",
+                  "MORTGAGE_STATEMENT",
+                  "LDS_CHURCH_RECORDS",
+                ];
+                const residenceCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category && residenceCategories.includes(f.category)
+                ).length;
+                const pathologyCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "PATHOLOGY_REPORT"
+                ).length;
+
+                const totalCompleted =
+                  (identityCount >= 1 ? 1 : 0) +
+                  (residenceCount >= 2 ? 1 : 0) +
+                  (pathologyCount >= 1 ? 1 : 0);
+                const totalRequired = 3;
+                const percentComplete = Math.round(
+                  (totalCompleted / totalRequired) * 100
+                );
+
+                return (
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-sage-700">
+                        Overall Progress
+                      </span>
+                      <span className="text-2xl font-bold text-terracotta-600">
+                        {percentComplete}%
+                      </span>
+                    </div>
+                    <div className="h-4 overflow-hidden rounded-full bg-cream-200">
+                      <div
+                        className="h-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 transition-all duration-500"
+                        style={{ width: `${percentComplete}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -359,10 +494,12 @@ function Step2Content() {
                 Your documents are safely saved
               </h3>
               <p className="text-sm text-amber-800">
-                We automatically save your progress as you upload. You can leave at any
-                time and return using the "Save for Later" link. Documents are securely
-                stored and attached to your profile. <strong>You don't need to complete
-                everything in one sitting.</strong>
+                We automatically save your progress as you upload. You can leave
+                at any time and return using the "Save for Later" link.
+                Documents are securely stored and attached to your profile.{" "}
+                <strong>
+                  You don't need to complete everything in one sitting.
+                </strong>
               </p>
             </div>
           </div>
@@ -468,7 +605,28 @@ function Step2Content() {
             </Button>
             <Button
               onClick={handleContinue}
-              disabled={progress.percentComplete < 100}
+              disabled={(() => {
+                const identityCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "IDENTITY"
+                ).length;
+                const residenceCategories = [
+                  "PROOF_OF_RESIDENCE",
+                  "UTILITY_BILL",
+                  "SCHOOL_RECORDS",
+                  "MORTGAGE_STATEMENT",
+                  "LDS_CHURCH_RECORDS",
+                ];
+                const residenceCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category && residenceCategories.includes(f.category)
+                ).length;
+                const pathologyCount = (session.uploadedFiles || []).filter(
+                  (f) => f.category === "PATHOLOGY_REPORT"
+                ).length;
+
+                return (
+                  identityCount < 1 || residenceCount < 2 || pathologyCount < 1
+                );
+              })()}
               className="flex-1 rounded-full bg-terracotta-500 px-8 hover:bg-terracotta-600 sm:flex-none"
             >
               Continue to Consent →
@@ -480,8 +638,8 @@ function Step2Content() {
         <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
           <p className="text-sm text-sage-700">
             <strong>Need help finding documents?</strong> We can assist you in
-            obtaining medical records, utility bills, and other required documents.
-            Just save your progress and contact our support team.
+            obtaining medical records, utility bills, and other required
+            documents. Just save your progress and contact our support team.
           </p>
         </div>
       </main>
