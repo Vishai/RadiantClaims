@@ -93,6 +93,14 @@ export function AccountCreationModal({
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Show more detailed message if registration is disabled
+        if (response.status === 503) {
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              "Registration is temporarily disabled"
+          );
+        }
         throw new Error(errorData.error || "Failed to create account");
       }
 

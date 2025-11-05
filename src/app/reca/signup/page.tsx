@@ -24,7 +24,9 @@ export default function RECASignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong" | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState<
+    "weak" | "medium" | "strong" | null
+  >(null);
 
   const validatePasswordStrength = (pwd: string) => {
     if (pwd.length === 0) {
@@ -83,6 +85,14 @@ export default function RECASignupPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Show more detailed message if registration is disabled
+        if (response.status === 503) {
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              "Registration is temporarily disabled"
+          );
+        }
         throw new Error(errorData.error || "Failed to create account");
       }
 
@@ -96,7 +106,9 @@ export default function RECASignupPage() {
       });
 
       if (signInResult?.error) {
-        setError("Account created but auto-login failed. Please login manually.");
+        setError(
+          "Account created but auto-login failed. Please login manually."
+        );
         setTimeout(() => {
           router.push("/login?callbackUrl=/reca/start");
         }, 3000);
@@ -130,7 +142,9 @@ export default function RECASignupPage() {
 
         <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-lg">
           <CardHeader>
-            <CardTitle className="text-sage-900">Sign Up for RECA Claim</CardTitle>
+            <CardTitle className="text-sage-900">
+              Sign Up for RECA Claim
+            </CardTitle>
             <CardDescription className="text-sage-600">
               Create an account to save your progress and track your claim
             </CardDescription>
@@ -138,7 +152,9 @@ export default function RECASignupPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sage-800">Email</Label>
+                <Label htmlFor="email" className="text-sage-800">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -151,7 +167,9 @@ export default function RECASignupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sage-800">Password</Label>
+                <Label htmlFor="password" className="text-sage-800">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -162,14 +180,14 @@ export default function RECASignupPage() {
                 />
                 {passwordStrength && (
                   <div className="flex items-center gap-2 text-xs">
-                    <div className="flex-1 h-1 bg-cream-200 rounded-full overflow-hidden">
+                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-cream-200">
                       <div
                         className={`h-full transition-all ${
                           passwordStrength === "weak"
                             ? "w-1/3 bg-red-500"
                             : passwordStrength === "medium"
-                            ? "w-2/3 bg-amber-500"
-                            : "w-full bg-emerald-500"
+                              ? "w-2/3 bg-amber-500"
+                              : "w-full bg-emerald-500"
                         }`}
                       />
                     </div>
@@ -178,21 +196,28 @@ export default function RECASignupPage() {
                         passwordStrength === "weak"
                           ? "text-red-600"
                           : passwordStrength === "medium"
-                          ? "text-amber-600"
-                          : "text-emerald-600"
+                            ? "text-amber-600"
+                            : "text-emerald-600"
                       }
                     >
-                      {passwordStrength === "weak" ? "Weak" : passwordStrength === "medium" ? "Medium" : "Strong"}
+                      {passwordStrength === "weak"
+                        ? "Weak"
+                        : passwordStrength === "medium"
+                          ? "Medium"
+                          : "Strong"}
                     </span>
                   </div>
                 )}
                 <p className="text-xs text-sage-600">
-                  Must be at least 12 characters with uppercase, lowercase, numbers, and special characters
+                  Must be at least 12 characters with uppercase, lowercase,
+                  numbers, and special characters
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sage-800">Confirm Password</Label>
+                <Label htmlFor="confirmPassword" className="text-sage-800">
+                  Confirm Password
+                </Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -204,23 +229,37 @@ export default function RECASignupPage() {
               </div>
 
               {error && (
-                <div className="rounded-2xl bg-terracotta-50 p-3 text-sm text-terracotta-800 border border-terracotta-200 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <div className="rounded-2xl bg-gradient-to-br from-sage-50 to-emerald-50 p-4 border-2 border-emerald-200">
+              <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-sage-50 to-emerald-50 p-4">
                 <div className="flex items-start gap-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
                   <div className="text-xs text-sage-700">
-                    <p className="font-semibold mb-2 text-sage-900">Benefits of creating an account:</p>
-                    <ul className="space-y-1.5 ml-4 list-disc">
+                    <p className="mb-2 font-semibold text-sage-900">
+                      Benefits of creating an account:
+                    </p>
+                    <ul className="ml-4 list-disc space-y-1.5">
                       <li>Auto-save your progress every 2 minutes</li>
                       <li>Resume from any device</li>
-                      <li><strong className="text-emerald-900">Payout Pulse:</strong> See your estimated payout date and queue position</li>
-                      <li><strong className="text-emerald-900">Claim Timeline:</strong> Track DOJ milestones in real-time</li>
-                      <li>Monitor medical records and cancer registry lookups</li>
+                      <li>
+                        <strong className="text-emerald-900">
+                          Payout Pulse:
+                        </strong>{" "}
+                        See your estimated payout date and queue position
+                      </li>
+                      <li>
+                        <strong className="text-emerald-900">
+                          Claim Timeline:
+                        </strong>{" "}
+                        Track DOJ milestones in real-time
+                      </li>
+                      <li>
+                        Monitor medical records and cancer registry lookups
+                      </li>
                       <li>Get notified of claim progress updates</li>
                       <li>Secure document storage</li>
                     </ul>
@@ -233,7 +272,9 @@ export default function RECASignupPage() {
                 className="w-full rounded-full bg-terracotta-500 hover:bg-terracotta-600"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating Account..." : "Create Account & Start Claim"}
+                {isLoading
+                  ? "Creating Account..."
+                  : "Create Account & Start Claim"}
               </Button>
             </form>
 
@@ -242,7 +283,7 @@ export default function RECASignupPage() {
                 Already have an account?{" "}
                 <Link
                   href="/login?callbackUrl=/reca/start"
-                  className="text-terracotta-600 hover:underline font-medium"
+                  className="font-medium text-terracotta-600 hover:underline"
                 >
                   Sign In
                 </Link>

@@ -729,10 +729,7 @@ export default function ServiceTiersPage() {
                   if (selectedTier) {
                     sessionStorage.setItem("pendingServiceTier", selectedTier);
                   }
-                  router.push({
-                    pathname: "/register",
-                    query: { callbackUrl: "/service-tiers" },
-                  } as any);
+                  router.push("/register?callbackUrl=/service-tiers");
                 }}
                 className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-semibold hover:bg-terracotta-600"
               >
@@ -748,10 +745,7 @@ export default function ServiceTiersPage() {
                         selectedTier
                       );
                     }
-                    router.push({
-                      pathname: "/login",
-                      query: { callbackUrl: "/service-tiers" },
-                    } as any);
+                    router.push("/login?callbackUrl=/service-tiers");
                   }}
                   className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
                 >

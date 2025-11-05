@@ -25,6 +25,7 @@ import {
   Upload,
   BookOpen,
   CreditCard,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -157,6 +158,16 @@ export default function CustomerPortal() {
             <span className="text-sm text-sage-600">
               {session?.user?.name || session?.user?.email}
             </span>
+            {session?.user?.role === "ADMIN" && (
+              <Button
+                variant="outline"
+                onClick={() => router.push("/admin/waitlist")}
+                className="gap-2 rounded-full border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              >
+                <Users className="h-4 w-4" />
+                Waitlist
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => router.push("/portal/subscription")}
