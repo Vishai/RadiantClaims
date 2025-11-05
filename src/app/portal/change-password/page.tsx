@@ -45,7 +45,6 @@ export default function ChangePasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
 
   const isRequired = searchParams.get("required") === "true";
 
@@ -85,8 +84,10 @@ export default function ChangePasswordPage() {
         throw new Error(result.error || "Failed to change password");
       }
 
+      // Store new password before resetting form
+      const newPasswordValue = data.newPassword;
+
       setSuccess(true);
-      setNewPassword(data.newPassword);
       form.reset();
 
       // Sign out and immediately sign back in with new password to get fresh JWT
@@ -97,7 +98,7 @@ export default function ChangePasswordPage() {
         // Auto-login with new password
         const signInResult = await signIn("credentials", {
           email: session?.user?.email,
-          password: data.newPassword,
+          password: newPasswordValue,
           redirect: false,
         });
 
