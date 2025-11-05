@@ -184,6 +184,38 @@ export async function canAccessDocument(
 }
 
 /**
+ * Check if user can access a specific intake session
+ * Inherits from claimant access permissions
+ */
+export async function canAccessSession(
+  userId: string,
+  sessionId: string
+): Promise<boolean> {
+  const session = await getServerAuthSession();
+  if (!session?.user) return false;
+
+  const user = session.user;
+
+  // Get the session and its associated claimant
+  const intakeSession = await db.intakeSession.findUnique({
+    where: { id: sessionId },
+    include: {
+      claimant: true,
+    },
+  });
+
+  if (!intakeSession?.claimant) return false;
+
+  // Admins and reviewers can access all sessions
+  if (user.role === "ADMIN" || user.role === "STAFF_REVIEWER" || user.role === "SENIOR_REVIEWER") {
+    return true;
+  }
+
+  // Check claimant access for other roles
+  return canAccessClaimant(userId, intakeSession.claimant.id);
+}
+
+/**
  * Get all claimants accessible by the current user
  * Enforces multi-tenant isolation
  */

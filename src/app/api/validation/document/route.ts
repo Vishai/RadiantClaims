@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validateDocument } from '@/lib/ai-agents/orchestration-service';
+import { getServerAuthSession } from '@/lib/auth';
+import { canAccessDocument } from '@/lib/auth/permissions';
 
 const validateDocumentSchema = z.object({
   uploadedFileId: z.string().min(1, 'uploadedFileId is required'),
@@ -15,8 +17,32 @@ const validateDocumentSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerAuthSession();
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { uploadedFileId } = validateDocumentSchema.parse(body);
+
+    // Check if user can access this document
+    const hasAccess = await canAccessDocument(session.user.id, uploadedFileId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Forbidden - You do not have access to this document',
+        },
+        { status: 403 }
+      );
+    }
 
     // Run validation
     const result = await validateDocument(uploadedFileId);

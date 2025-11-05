@@ -8,6 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getValidationStatus } from '@/lib/ai-agents/orchestration-service';
+import { getServerAuthSession } from '@/lib/auth';
+import { canAccessSession } from '@/lib/auth/permissions';
 
 type RouteContext = {
   params: Promise<{ sessionId: string }>;
@@ -18,6 +20,18 @@ export async function GET(
   context: RouteContext
 ) {
   try {
+    // Check authentication
+    const session = await getServerAuthSession();
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized',
+        },
+        { status: 401 }
+      );
+    }
+
     const { sessionId } = await context.params;
 
     if (!sessionId) {
@@ -27,6 +41,18 @@ export async function GET(
           error: 'Session ID is required',
         },
         { status: 400 }
+      );
+    }
+
+    // Check if user can access this session
+    const hasAccess = await canAccessSession(session.user.id, sessionId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Forbidden - You do not have access to this session',
+        },
+        { status: 403 }
       );
     }
 
