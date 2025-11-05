@@ -18,6 +18,7 @@ import {
   Shield,
   Image,
   RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -32,7 +33,8 @@ type FilterCategory =
   | "compliance"
   | "eligibility"
   | "quality"
-  | "consistency";
+  | "consistency"
+  | "authenticity";
 
 export function RisksTab({ data }: RisksTabProps) {
   const { risks } = data;
@@ -85,6 +87,7 @@ export function RisksTab({ data }: RisksTabProps) {
     eligibility: Shield,
     quality: Image,
     consistency: RefreshCw,
+    authenticity: ShieldAlert,
   };
 
   // Severity icons
@@ -215,7 +218,13 @@ export function RisksTab({ data }: RisksTabProps) {
             All ({risks.risks.length})
           </Button>
           {(
-            ["compliance", "eligibility", "quality", "consistency"] as const
+            [
+              "compliance",
+              "eligibility",
+              "quality",
+              "consistency",
+              "authenticity",
+            ] as const
           ).map((category) => {
             const count = risks.risks.filter(
               (r) => r.category === category

@@ -18,17 +18,27 @@ import {
   EmploymentVerificationAgent,
   DataExtractionAgent,
   CompletenessOrchestratorAgent,
-} from './agents';
-import { db } from '@/lib/db';
-import type { AgentExecutionContext } from './base-agent';
-import type { CompletenessResult } from './types/agent-results';
+} from "./agents";
+import { db } from "@/lib/db";
+import type { AgentExecutionContext } from "./base-agent";
+import type { CompletenessResult } from "./types/agent-results";
+
+/**
+ * Helper to format category names for display
+ */
+function formatCategoryName(category: string): string {
+  return category
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
 
 /**
  * Result type for document validation
  */
 export interface DocumentValidationResult {
   uploadedFileId: string;
-  status: 'SUCCESS' | 'FAILED';
+  status: "SUCCESS" | "FAILED";
   category?: string;
   error?: string;
 }
@@ -93,11 +103,11 @@ export async function validateDocument(
       where: { uploadedFileId },
       create: {
         uploadedFileId,
-        status: 'PROCESSING',
+        status: "PROCESSING",
         processingStartedAt: new Date(),
       },
       update: {
-        status: 'PROCESSING',
+        status: "PROCESSING",
         processingStartedAt: new Date(),
       },
     });
@@ -108,32 +118,89 @@ export async function validateDocument(
       intakeSessionId: file.intakeSessionId,
       documentUrl: file.fileKey,
       documentText: file.ocrText || undefined,
+      userSelectedCategory: file.category || undefined,
+      categoryLocked: file.categoryLocked || false,
       metadata: {},
     };
 
     // Step 1: Classify the document
     const classifierAgent = new ClassifierAgent();
     const classificationResult = await classifierAgent.execute(context);
-    const category = classificationResult.data.category;
+    const aiCategory = classificationResult.data.category;
+
+    // Step 1.5: Check for category mismatch
+    let finalStatus: "VERIFIED" | "NEEDS_REVIEW" = "VERIFIED";
+    const warnings: Array<{
+      code: string;
+      message: string;
+      severity: "WARNING" | "INFO";
+    }> = [];
+
+    if (
+      context.userSelectedCategory &&
+      context.userSelectedCategory !== aiCategory
+    ) {
+      const userCategoryFormatted = formatCategoryName(
+        context.userSelectedCategory
+      );
+      const aiCategoryFormatted = formatCategoryName(aiCategory);
+      const confidence = classificationResult.confidence;
+
+      if (context.categoryLocked) {
+        // User has locked the category - just warn, don't change status
+        warnings.push({
+          code: "CATEGORY_MISMATCH_LOCKED",
+          message: `Category locked as "${userCategoryFormatted}". AI detected this as "${aiCategoryFormatted}" with ${Math.round(confidence * 100)}% confidence, but respecting your selection.`,
+          severity: "INFO",
+        });
+        console.log(
+          `⚠️  Category mismatch (locked): User="${context.userSelectedCategory}", AI="${aiCategory}"`
+        );
+      } else if (confidence >= 0.75) {
+        // High confidence mismatch - flag for review
+        warnings.push({
+          code: "CATEGORY_MISMATCH_HIGH_CONFIDENCE",
+          message: `AI detected this as "${aiCategoryFormatted}" with ${Math.round(confidence * 100)}% confidence, but you selected "${userCategoryFormatted}". Please review the category.`,
+          severity: "WARNING",
+        });
+        finalStatus = "NEEDS_REVIEW";
+        console.log(
+          `⚠️  Category mismatch (high confidence): User="${context.userSelectedCategory}", AI="${aiCategory}" (${Math.round(confidence * 100)}%)`
+        );
+      } else {
+        // Low confidence mismatch - just inform
+        warnings.push({
+          code: "CATEGORY_MISMATCH_LOW_CONFIDENCE",
+          message: `AI suggested "${aiCategoryFormatted}" (${Math.round(confidence * 100)}% confidence), but you selected "${userCategoryFormatted}". Your selection has been kept.`,
+          severity: "INFO",
+        });
+        console.log(
+          `ℹ️  Category mismatch (low confidence): User="${context.userSelectedCategory}", AI="${aiCategory}" (${Math.round(confidence * 100)}%)`
+        );
+      }
+    }
+
+    // Use AI category for validation agent routing
+    const category = aiCategory;
 
     // Step 2: Run appropriate validation agent based on category
     const medicalCategories = [
-      'PATHOLOGY_REPORT',
-      'MEDICAL_RECORDS',
-      'DISCHARGE_SUMMARY',
-      'TUMOR_REGISTRY',
-      'TREATMENT_RECORDS',
+      "PATHOLOGY_REPORT",
+      "MEDICAL_RECORDS",
+      "DISCHARGE_SUMMARY",
+      "TUMOR_REGISTRY",
+      "TREATMENT_RECORDS",
     ];
 
     const residenceCategories = [
-      'PROOF_OF_RESIDENCE',
-      'UTILITY_BILL',
-      'MORTGAGE_STATEMENT',
-      'TAX_RETURN',
-      'SCHOOL_RECORDS',
+      "PROOF_OF_RESIDENCE",
+      "UTILITY_BILL",
+      "MORTGAGE_STATEMENT",
+      "TAX_RETURN",
+      "SCHOOL_RECORDS",
     ];
 
-    if (category === 'IDENTITY') {
+    if (category === "IDENTITY") {
       const identityAgent = new IdentityVerificationAgent();
       await identityAgent.execute(context);
     } else if (medicalCategories.includes(category)) {
@@ -142,24 +209,25 @@ export async function validateDocument(
     } else if (residenceCategories.includes(category)) {
       const residenceAgent = new ResidenceProofAgent();
       await residenceAgent.execute(context);
-    } else if (category === 'EMPLOYMENT_RECORDS') {
+    } else if (category === "EMPLOYMENT_RECORDS") {
       const employmentAgent = new EmploymentVerificationAgent();
       await employmentAgent.execute(context);
     }
     // For 'OTHER' category, we only classify but don't run validation
 
-    // Mark document validation as verified
+    // Mark document validation as complete with appropriate status
     await db.documentValidation.update({
       where: { uploadedFileId },
       data: {
-        status: 'VERIFIED',
+        status: finalStatus,
+        warnings: warnings.length > 0 ? warnings : [],
         processingCompletedAt: new Date(),
       },
     });
 
     return {
       uploadedFileId,
-      status: 'SUCCESS',
+      status: "SUCCESS",
       category,
     };
   } catch (error) {
@@ -168,20 +236,23 @@ export async function validateDocument(
       await db.documentValidation.update({
         where: { uploadedFileId },
         data: {
-          status: 'REJECTED',
+          status: "REJECTED",
           processingCompletedAt: new Date(),
         },
       });
     } catch (dbError) {
-      console.error('Failed to update DocumentValidation status:', dbError);
+      console.error("Failed to update DocumentValidation status:", dbError);
     }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Document validation failed for ${uploadedFileId}:`, errorMessage);
+    console.error(
+      `Document validation failed for ${uploadedFileId}:`,
+      errorMessage
+    );
 
     return {
       uploadedFileId,
-      status: 'FAILED',
+      status: "FAILED",
       error: errorMessage,
     };
   }
@@ -228,21 +299,28 @@ export async function validateSession(
   );
 
   // Process results
-  const validationResults: DocumentValidationResult[] = results.map((result) => {
-    if (result.status === 'fulfilled') {
-      return result.value;
-    } else {
-      // Extract uploadedFileId from error if possible
-      return {
-        uploadedFileId: 'unknown',
-        status: 'FAILED',
-        error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-      };
+  const validationResults: DocumentValidationResult[] = results.map(
+    (result) => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      } else {
+        // Extract uploadedFileId from error if possible
+        return {
+          uploadedFileId: "unknown",
+          status: "FAILED",
+          error:
+            result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason),
+        };
+      }
     }
-  });
+  );
 
-  const validated = validationResults.filter((r) => r.status === 'SUCCESS').length;
-  const failed = validationResults.filter((r) => r.status === 'FAILED').length;
+  const validated = validationResults.filter(
+    (r) => r.status === "SUCCESS"
+  ).length;
+  const failed = validationResults.filter((r) => r.status === "FAILED").length;
 
   return {
     totalDocuments: session.uploadedFiles.length,
@@ -267,7 +345,9 @@ export async function validateSession(
  * @returns Promise that resolves when data extraction is complete
  * @throws Error if session not found or data extraction fails
  */
-export async function extractSessionData(intakeSessionId: string): Promise<void> {
+export async function extractSessionData(
+  intakeSessionId: string
+): Promise<void> {
   // Fetch the session
   const session = await db.intakeSession.findUnique({
     where: { id: intakeSessionId },
@@ -291,7 +371,7 @@ export async function extractSessionData(intakeSessionId: string): Promise<void>
 
   const allValidated = session.uploadedFiles.every((file) =>
     validations.find(
-      (v) => v.uploadedFileId === file.id && v.status === 'VERIFIED'
+      (v) => v.uploadedFileId === file.id && v.status === "VERIFIED"
     )
   );
 
@@ -304,7 +384,7 @@ export async function extractSessionData(intakeSessionId: string): Promise<void>
   // Build context for data extraction (session-level, no specific document)
   const context: AgentExecutionContext = {
     intakeSessionId,
-    documentUrl: '', // Not used for session-level agents
+    documentUrl: "", // Not used for session-level agents
     metadata: {
       uploadedFileIds: session.uploadedFiles.map((f) => f.id),
     },
@@ -366,7 +446,7 @@ export async function checkSessionCompleteness(
   // Build context for completeness check (session-level)
   const context: AgentExecutionContext = {
     intakeSessionId,
-    documentUrl: '', // Not used for session-level agents
+    documentUrl: "", // Not used for session-level agents
     metadata: {
       uploadedFileIds: session.uploadedFiles.map((f) => f.id),
       recaFormData: session.recaFormData || {},
@@ -388,9 +468,12 @@ export async function checkSessionCompleteness(
       warnings: completenessResult.warnings as any,
       completeness: completenessResult.completeness as any,
       nameConsistent: completenessResult.crossDocumentValidation.nameConsistent,
-      datesConsistent: completenessResult.crossDocumentValidation.datesConsistent,
-      claimTypeConfidence: completenessResult.crossDocumentValidation.claimTypeConfidence,
-      detectedClaimType: completenessResult.crossDocumentValidation.detectedClaimType as any,
+      datesConsistent:
+        completenessResult.crossDocumentValidation.datesConsistent,
+      claimTypeConfidence:
+        completenessResult.crossDocumentValidation.claimTypeConfidence,
+      detectedClaimType: completenessResult.crossDocumentValidation
+        .detectedClaimType as any,
     },
     update: {
       readinessScore: completenessResult.readinessScore,
@@ -399,9 +482,12 @@ export async function checkSessionCompleteness(
       warnings: completenessResult.warnings as any,
       completeness: completenessResult.completeness as any,
       nameConsistent: completenessResult.crossDocumentValidation.nameConsistent,
-      datesConsistent: completenessResult.crossDocumentValidation.datesConsistent,
-      claimTypeConfidence: completenessResult.crossDocumentValidation.claimTypeConfidence,
-      detectedClaimType: completenessResult.crossDocumentValidation.detectedClaimType as any,
+      datesConsistent:
+        completenessResult.crossDocumentValidation.datesConsistent,
+      claimTypeConfidence:
+        completenessResult.crossDocumentValidation.claimTypeConfidence,
+      detectedClaimType: completenessResult.crossDocumentValidation
+        .detectedClaimType as any,
       lastAssessedAt: new Date(),
     },
   });
@@ -435,28 +521,32 @@ export async function runFullValidation(
   intakeSessionId: string
 ): Promise<FullValidationResult> {
   try {
-    console.log(`Starting full validation pipeline for session ${intakeSessionId}`);
+    console.log(
+      `Starting full validation pipeline for session ${intakeSessionId}`
+    );
 
     // Phase 1: Validate all documents in parallel
-    console.log('Phase 1: Validating documents...');
+    console.log("Phase 1: Validating documents...");
     const sessionValidation = await validateSession(intakeSessionId);
     console.log(
       `Phase 1 complete: ${sessionValidation.validated}/${sessionValidation.totalDocuments} documents validated`
     );
 
     // Phase 2: Extract data from all validated documents
-    console.log('Phase 2: Extracting session data...');
+    console.log("Phase 2: Extracting session data...");
     await extractSessionData(intakeSessionId);
-    console.log('Phase 2 complete: Data extraction successful');
+    console.log("Phase 2 complete: Data extraction successful");
 
     // Phase 3: Check claim completeness and readiness
-    console.log('Phase 3: Checking claim completeness...');
+    console.log("Phase 3: Checking claim completeness...");
     const completenessResult = await checkSessionCompleteness(intakeSessionId);
     console.log(
       `Phase 3 complete: Readiness score ${completenessResult.readinessScore}/100`
     );
 
-    console.log(`Full validation pipeline completed for session ${intakeSessionId}`);
+    console.log(
+      `Full validation pipeline completed for session ${intakeSessionId}`
+    );
 
     return {
       documentsValidated: sessionValidation.validated,
@@ -467,7 +557,10 @@ export async function runFullValidation(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Full validation pipeline failed for session ${intakeSessionId}:`, errorMessage);
+    console.error(
+      `Full validation pipeline failed for session ${intakeSessionId}:`,
+      errorMessage
+    );
 
     throw new Error(`Full validation failed: ${errorMessage}`);
   }
@@ -511,11 +604,15 @@ export async function getValidationStatus(intakeSessionId: string): Promise<{
     throw new Error(`IntakeSession ${intakeSessionId} not found`);
   }
 
-  const validations = session.uploadedFiles.map((f) => f.validation).filter(Boolean);
+  const validations = session.uploadedFiles
+    .map((f) => f.validation)
+    .filter(Boolean);
 
-  const completed = validations.filter((v) => v?.status === 'VERIFIED').length;
-  const processing = validations.filter((v) => v?.status === 'PROCESSING').length;
-  const failed = validations.filter((v) => v?.status === 'REJECTED').length;
+  const completed = validations.filter((v) => v?.status === "VERIFIED").length;
+  const processing = validations.filter(
+    (v) => v?.status === "PROCESSING"
+  ).length;
+  const failed = validations.filter((v) => v?.status === "REJECTED").length;
   const pending = session.uploadedFiles.length - validations.length;
 
   return {

@@ -19,6 +19,18 @@ const nextConfig = {
       },
     },
   }),
+  // Webpack configuration for server-side modules
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Externalize modules that have issues with Next.js bundling
+      config.externals = config.externals || [];
+      config.externals.push({
+        'pdf-parse': 'commonjs pdf-parse',
+        'canvas': 'commonjs canvas',
+      });
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

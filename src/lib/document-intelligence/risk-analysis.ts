@@ -14,13 +14,18 @@ interface QualityMetrics {
   recommendations?: string[];
 }
 
+interface RiskAnalysisOptions {
+  qualityMetrics?: QualityMetrics;
+  documentText?: string;
+}
+
 /**
  * Analyze risks that could cause claim denial
  */
 export async function analyzeRisks(
   entities: EntityExtractionResult,
   compliance: RECAComplianceResult,
-  qualityMetrics?: QualityMetrics
+  options: RiskAnalysisOptions = {}
 ): Promise<RiskAnalysisResult> {
   const risks: RiskFlag[] = [];
 
@@ -28,8 +33,8 @@ export async function analyzeRisks(
   risks.push(...analyzeComplianceRisks(compliance));
 
   // 2. Document quality risks
-  if (qualityMetrics) {
-    risks.push(...analyzeQualityRisks(qualityMetrics));
+  if (options.qualityMetrics) {
+    risks.push(...analyzeQualityRisks(options.qualityMetrics));
   }
 
   // 3. Eligibility risks
@@ -37,6 +42,11 @@ export async function analyzeRisks(
 
   // 4. Consistency risks
   risks.push(...analyzeConsistencyRisks(entities, compliance));
+
+  // 5. Content authenticity risks
+  if (options.documentText) {
+    risks.push(...analyzeContentRisks(options.documentText));
+  }
 
   // Sort by severity (high -> medium -> low)
   const sortedRisks = risks.sort((a, b) => {
@@ -341,6 +351,65 @@ function analyzeConsistencyRisks(
 }
 
 /**
+ * Detect disclaimer or demo language that could undermine document authenticity.
+ */
+function analyzeContentRisks(documentText: string): RiskFlag[] {
+  if (!documentText) return [];
+
+  const lowerText = documentText.toLowerCase();
+
+  const patterns: Array<{ regex: RegExp; label: string }> = [
+    { regex: /test document/, label: '"test document"' },
+    {
+      regex: /for (training|demo|demonstration)/,
+      label: '"for demonstration"',
+    },
+    { regex: /sample (document|report)/, label: '"sample document"' },
+    { regex: /not (?:an )?official/, label: '"not official"' },
+    { regex: /does not constitute/i, label: '"does not constitute"' },
+    { regex: /dummy data/, label: '"dummy data"' },
+  ];
+
+  const matchedSignals = patterns
+    .filter((pattern) => pattern.regex.test(lowerText))
+    .map((pattern) => pattern.label);
+
+  if (matchedSignals.length === 0) {
+    return [];
+  }
+
+  // Capture snippet around the first match to help reviewers.
+  const firstPattern = patterns.find((pattern) =>
+    pattern.regex.test(lowerText)
+  );
+
+  let snippet: string | undefined;
+  if (firstPattern) {
+    const match = lowerText.match(firstPattern.regex);
+    if (match?.index !== undefined) {
+      const start = Math.max(0, match.index - 60);
+      const end = Math.min(lowerText.length, match.index + 120);
+      snippet = documentText.slice(start, end).replace(/\s+/g, " ").trim();
+    }
+  }
+
+  return [
+    {
+      flag: "demo_or_test_language",
+      severity: "high",
+      category: "authenticity",
+      message:
+        "Document contains language suggesting it is a demo or test file",
+      actionRequired:
+        "Upload an authentic version of the record or provide confirmation that this is the official document",
+      details: snippet
+        ? `Detected phrases: ${matchedSignals.join(", ")}. Snippet: “${snippet}”`
+        : `Detected phrases: ${matchedSignals.join(", ")}`,
+    },
+  ];
+}
+
+/**
  * Calculate overall risk score (0-1)
  */
 function calculateOverallRiskScore(risks: RiskFlag[]): number {
@@ -397,6 +466,14 @@ function generateRecommendedActions(
   const dateRisks = risks.filter((r) => r.flag.includes("date"));
   if (dateRisks.length > 0) {
     actions.push("📅 Verify and correct date inconsistencies");
+  }
+
+  // Authenticity concerns
+  const authenticityRisks = risks.filter(
+    (r) => r.flag === "demo_or_test_language"
+  );
+  if (authenticityRisks.length > 0) {
+    actions.push("⚠️ Confirm the document is authentic or replace demo copies");
   }
 
   // Completeness

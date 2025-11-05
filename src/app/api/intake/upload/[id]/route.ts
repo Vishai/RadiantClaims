@@ -82,14 +82,20 @@ export async function PATCH(
         status: success ? "PROCESSING" : "FAILED",
         rejectionReason: error || null,
       },
+      include: {
+        validation: true,
+      },
     });
 
     // If successful, trigger AI validation
     if (success) {
       // Mark file as READY
-      await db.uploadedFile.update({
+      const readyFile = await db.uploadedFile.update({
         where: { id },
         data: { status: "READY", processedAt: new Date() },
+        include: {
+          validation: true,
+        },
       });
 
       // Trigger AI validation asynchronously (don't await - runs in background)
@@ -98,6 +104,11 @@ export async function PATCH(
         console.error(`Background validation failed for file ${id}:`, err);
         // Validation failure doesn't block the upload - file is still READY
         // Staff can review and manually validate if needed
+      });
+
+      return NextResponse.json({
+        success: true,
+        file: readyFile,
       });
     }
 

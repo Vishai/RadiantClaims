@@ -34,15 +34,24 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   const router = useRouter();
   const [showPDF, setShowPDF] = useState(true);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+  const [categoryUpdateError, setCategoryUpdateError] = useState<string | null>(
+    null
+  );
 
   // Fetch intelligence data
   const {
     data: intelligence,
     error,
     isLoading,
+    mutate,
   } = useSWR(`/api/documents/${document.id}/intelligence`, fetcher, {
     revalidateOnFocus: false,
   });
+
+  const aiSuggestedCategory =
+    intelligence?.aiCategorization?.suggestedCategory ?? null;
+  const aiCategoryConfidence = intelligence?.aiCategorization?.confidence ?? 0;
 
   const handleDownload = async () => {
     window.open(`/api/documents/${document.id}/download`, "_blank");
@@ -107,6 +116,45 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     };
 
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleCategoryDecision = async (
+    targetCategory: string,
+    source: "ai_accepted" | "user_confirmed"
+  ) => {
+    try {
+      setCategoryUpdateError(null);
+      setIsUpdatingCategory(true);
+
+      const response = await fetch(`/api/documents/${document.id}/category`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: targetCategory,
+          categoryLocked: true,
+          source,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(
+          payload?.error || "Failed to update the document category."
+        );
+      }
+
+      await mutate();
+      router.refresh();
+    } catch (updateError) {
+      console.error("Failed to update category:", updateError);
+      setCategoryUpdateError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Failed to update the document category."
+      );
+    } finally {
+      setIsUpdatingCategory(false);
+    }
   };
 
   const formatUserAction = (
@@ -229,6 +277,40 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
                   %)
                 </div>
               </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    handleCategoryDecision(
+                      qualification.categoryMismatch!.aiDetected,
+                      "ai_accepted"
+                    )
+                  }
+                  disabled={isUpdatingCategory}
+                >
+                  Accept AI Category
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  variant="outline"
+                  onClick={() =>
+                    handleCategoryDecision(
+                      qualification.categoryMismatch!.userSelected,
+                      "user_confirmed"
+                    )
+                  }
+                  disabled={isUpdatingCategory}
+                >
+                  Keep My Label
+                </Button>
+              </div>
+              {categoryUpdateError && (
+                <p className="mt-2 text-xs text-red-600">
+                  {categoryUpdateError}
+                </p>
+              )}
             </div>
           )}
 
@@ -298,21 +380,20 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
               </Badge>
             </div>
 
-            {intelligence?.aiCategorization && (
+            {aiSuggestedCategory && (
               <div className="flex items-center gap-1">
                 <span className="text-xs text-sage-600">AI Detected:</span>
                 <Badge
                   variant="outline"
                   className={`border-blue-300 bg-blue-50 text-blue-700 ${
-                    intelligence.aiCategorization.category !== document.category
+                    aiSuggestedCategory !== document.category
                       ? "ring-2 ring-yellow-400 ring-offset-1"
                       : ""
                   }`}
                 >
-                  {getCategoryLabel(intelligence.aiCategorization.category)}
+                  {getCategoryLabel(aiSuggestedCategory)}
                   <span className="ml-1 text-xs opacity-75">
-                    (
-                    {Math.round(intelligence.aiCategorization.confidence * 100)}
+                    ({Math.round(aiCategoryConfidence * 100)}
                     %)
                   </span>
                 </Badge>

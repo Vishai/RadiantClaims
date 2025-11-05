@@ -271,62 +271,50 @@ export default function CustomerPortal() {
 
                     {/* Actions */}
                     <div className="flex flex-wrap gap-3">
+                      {/* Claim Button */}
                       {claim.intakeSession &&
                         claim.intakeSession?.status !== "SUBMITTED" && (
-                          <>
-                            {/* RECA Form Button - Show if DOWNWINDER claim type */}
-                            {claim.claimType === "DOWNWINDER" && (
-                              <Button
-                                onClick={() =>
-                                  router.push(
-                                    claim.intakeSession?.recaWorkflowStage
-                                      ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || "part_1"}`
-                                      : `/reca/start?sessionId=${claim.intakeSession?.id}`
-                                  )
-                                }
-                                className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                              >
-                                <FileText className="h-4 w-4" />
-                                {claim.intakeSession?.recaWorkflowStage
-                                  ? "Continue RECA Form"
-                                  : "Fill RECA Form"}
-                              </Button>
-                            )}
-                            {/* Regular Continue Button - Show for non-DOWNWINDER or as secondary */}
-                            {claim.claimType !== "DOWNWINDER" && (
-                              <Button
-                                onClick={() =>
-                                  router.push(
-                                    `/intake/step2?token=${claim.intakeSession?.resumeToken || ""}`
-                                  )
-                                }
-                                className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                              >
-                                Continue Claim
-                              </Button>
-                            )}
-                          </>
+                          <Button
+                            onClick={() => {
+                              // DOWNWINDER claims go to RECA form
+                              if (claim.claimType === "DOWNWINDER") {
+                                router.push(
+                                  claim.intakeSession?.recaWorkflowStage
+                                    ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || "part_1"}`
+                                    : `/reca/start?sessionId=${claim.intakeSession?.id}`
+                                );
+                              } else {
+                                // Other claims continue intake flow
+                                router.push(
+                                  `/intake/step2?token=${claim.intakeSession?.resumeToken || ""}`
+                                );
+                              }
+                            }}
+                            className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Claim
+                          </Button>
                         )}
+
+                      {/* Documents Button */}
                       <Button
                         variant="outline"
                         onClick={() => router.push("/portal/documents")}
                         className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                       >
                         <Upload className="h-4 w-4" />
-                        Manage Documents
+                        Documents
                       </Button>
+
+                      {/* Resources Button */}
                       <Button
                         variant="outline"
                         onClick={() => {
-                          // Build context-aware URL for resource suggestions
                           const params = new URLSearchParams();
-                          if (claim.state) {
-                            params.append("state", claim.state);
-                          }
-                          if (claim.county) {
+                          if (claim.state) params.append("state", claim.state);
+                          if (claim.county)
                             params.append("county", claim.county);
-                          }
-                          // Suggest resources based on claim context
                           router.push(
                             `/resources${params.toString() ? `?${params.toString()}` : ""}` as unknown as Route
                           );
@@ -334,16 +322,7 @@ export default function CustomerPortal() {
                         className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                       >
                         <BookOpen className="h-4 w-4" />
-                        Find Documents
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          router.push(`/portal/claim/${claim.id}` as any)
-                        }
-                        className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                      >
-                        View Details
+                        Resources
                       </Button>
                     </div>
                   </div>

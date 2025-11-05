@@ -24,9 +24,10 @@ import { QualityTab } from "./intelligence/QualityTab";
 import { ComplianceTab } from "./intelligence/ComplianceTab";
 import { RisksTab } from "./intelligence/RisksTab";
 import { ProvenanceTab } from "./intelligence/ProvenanceTab";
+import { AIAssessmentTab } from "./intelligence/AIAssessmentTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { XCircle } from "lucide-react";
+import { XCircle, Brain } from "lucide-react";
 
 interface AIIntelligenceModalProps {
   documentId: string;
@@ -95,36 +96,53 @@ export function AIIntelligenceModal({
 
           {data && (
             <Tabs defaultValue="overview" className="flex h-full flex-col">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7 gap-1">
                 <TabsTrigger value="overview" className="text-xs sm:text-sm">
-                  <Sparkles className="mr-1 h-4 w-4" />
-                  Overview
+                  <Sparkles className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                  <span className="sm:hidden">Info</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ai-assessment"
+                  className="text-xs sm:text-sm"
+                >
+                  <Brain className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">AI Assessment</span>
+                  <span className="sm:hidden">AI</span>
                 </TabsTrigger>
                 <TabsTrigger value="entities" className="text-xs sm:text-sm">
-                  <User className="mr-1 h-4 w-4" />
-                  Entities
+                  <User className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Entities</span>
+                  <span className="sm:hidden">Data</span>
                 </TabsTrigger>
                 <TabsTrigger value="quality" className="text-xs sm:text-sm">
-                  <ImageIcon className="mr-1 h-4 w-4" />
-                  Quality
+                  <ImageIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Quality</span>
+                  <span className="sm:hidden">Qual</span>
                 </TabsTrigger>
                 <TabsTrigger value="compliance" className="text-xs sm:text-sm">
-                  <Shield className="mr-1 h-4 w-4" />
-                  Compliance
+                  <Shield className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Compliance</span>
+                  <span className="sm:hidden">Comp</span>
                 </TabsTrigger>
                 <TabsTrigger value="risks" className="text-xs sm:text-sm">
-                  <AlertTriangle className="mr-1 h-4 w-4" />
+                  <AlertTriangle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                   Risks
                 </TabsTrigger>
                 <TabsTrigger value="provenance" className="text-xs sm:text-sm">
-                  <FileText className="mr-1 h-4 w-4" />
-                  Provenance
+                  <FileText className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Provenance</span>
+                  <span className="sm:hidden">Prov</span>
                 </TabsTrigger>
               </TabsList>
 
               <div className="flex-1 overflow-y-auto px-1">
                 <TabsContent value="overview" className="mt-0">
                   <OverviewTab data={data} />
+                </TabsContent>
+
+                <TabsContent value="ai-assessment" className="mt-0">
+                  <AIAssessmentTab data={data} documentId={documentId} />
                 </TabsContent>
 
                 <TabsContent value="entities" className="mt-0">

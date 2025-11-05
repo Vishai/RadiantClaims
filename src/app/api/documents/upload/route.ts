@@ -327,17 +327,23 @@ async function processDocumentInBackground(
     let riskAnalysis;
     if (complianceResult) {
       try {
+        const riskOptions: Parameters<typeof analyzeRisks>[2] = {
+          documentText: ocrResult.text,
+        };
+
+        if (qualityMetrics) {
+          riskOptions.qualityMetrics = {
+            qualityScore: qualityMetrics.qualityScore,
+            isBlurry: qualityMetrics.isBlurry || false,
+            isLowContrast: qualityMetrics.isLowContrast || false,
+            recommendations: qualityMetrics.recommendations,
+          };
+        }
+
         riskAnalysis = await analyzeRisks(
           entities,
           complianceResult,
-          qualityMetrics
-            ? {
-                qualityScore: qualityMetrics.qualityScore,
-                isBlurry: qualityMetrics.isBlurry || false,
-                isLowContrast: qualityMetrics.isLowContrast || false,
-                recommendations: qualityMetrics.recommendations,
-              }
-            : undefined
+          riskOptions
         );
 
         console.log(

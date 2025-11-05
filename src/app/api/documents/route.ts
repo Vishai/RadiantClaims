@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get uploaded files for this session with AI intelligence data
+    // Get uploaded files for this session with AI intelligence data and validation
     const files = await db.uploadedFile.findMany({
       where: {
         intakeSessionId: sessionId,
@@ -43,6 +43,13 @@ export async function GET(req: NextRequest) {
           },
           orderBy: {
             confidence: "desc",
+          },
+        },
+        validation: {
+          select: {
+            status: true,
+            overallConfidence: true,
+            classifierResult: true,
           },
         },
       },
@@ -108,6 +115,31 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Parse validation data to extract category from classifierResult
+      let validationData = null;
+      if (file.validation) {
+        let category = null;
+
+        // Extract category from classifierResult JSON
+        if (file.validation.classifierResult) {
+          try {
+            const classifierResult =
+              typeof file.validation.classifierResult === "string"
+                ? JSON.parse(file.validation.classifierResult)
+                : file.validation.classifierResult;
+            category = classifierResult?.data?.category || null;
+          } catch (error) {
+            console.error("Failed to parse classifierResult:", error);
+          }
+        }
+
+        validationData = {
+          status: file.validation.status,
+          category,
+          confidence: file.validation.overallConfidence,
+        };
+      }
+
       return {
         id: file.id,
         category: file.category,
@@ -124,6 +156,7 @@ export async function GET(req: NextRequest) {
         aiIntelligence,
         qualification,
         otherDocumentAnalysis,
+        validation: validationData,
       };
     });
 

@@ -8,7 +8,8 @@ export type RiskCategory =
   | "compliance"
   | "eligibility"
   | "quality"
-  | "consistency";
+  | "consistency"
+  | "authenticity";
 
 export interface RiskFlag {
   flag: string; // Unique identifier for the risk type

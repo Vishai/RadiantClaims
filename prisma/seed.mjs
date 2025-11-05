@@ -6,21 +6,45 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Starting seed...");
 
-  // Create admin user
-  const hashedPassword = await bcrypt.hash("Passw0rd!", 10);
+  // Hash password for all users
+  const hashedPassword = await bcrypt.hash("Password123!", 10);
 
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@radiantclaims.dev" },
-    update: {},
-    create: {
-      email: "admin@radiantclaims.dev",
-      name: "Admin User",
-      password: hashedPassword,
-      role: "ADMIN",
-    },
-  });
+  // Create 15 users
+  const users = [
+    { email: "user1@radiantclaims.dev", name: "Alice Johnson", role: "CUSTOMER" },
+    { email: "user2@radiantclaims.dev", name: "Bob Smith", role: "CUSTOMER" },
+    { email: "user3@radiantclaims.dev", name: "Carol Williams", role: "CUSTOMER" },
+    { email: "user4@radiantclaims.dev", name: "David Brown", role: "CUSTOMER" },
+    { email: "user5@radiantclaims.dev", name: "Emma Davis", role: "CUSTOMER" },
+    { email: "user6@radiantclaims.dev", name: "Frank Miller", role: "CUSTOMER" },
+    { email: "user7@radiantclaims.dev", name: "Grace Wilson", role: "CUSTOMER" },
+    { email: "user8@radiantclaims.dev", name: "Henry Moore", role: "CUSTOMER" },
+    { email: "user9@radiantclaims.dev", name: "Ivy Taylor", role: "CUSTOMER" },
+    { email: "user10@radiantclaims.dev", name: "Jack Anderson", role: "CUSTOMER" },
+    { email: "user11@radiantclaims.dev", name: "Kelly Thomas", role: "CUSTOMER" },
+    { email: "user12@radiantclaims.dev", name: "Liam Jackson", role: "CUSTOMER" },
+    { email: "user13@radiantclaims.dev", name: "Mia White", role: "CUSTOMER" },
+    { email: "user14@radiantclaims.dev", name: "Noah Harris", role: "CUSTOMER" },
+    { email: "user15@radiantclaims.dev", name: "Olivia Martin", role: "CUSTOMER" },
+  ];
 
-  console.log("Created admin user:", admin.email);
+  console.log("Creating 15 users with password: Password123!");
+
+  for (const userData of users) {
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {},
+      create: {
+        email: userData.email,
+        name: userData.name,
+        password: hashedPassword,
+        role: userData.role,
+      },
+    });
+    console.log(`✓ Created user: ${user.email} (${user.name})`);
+  }
+
+  console.log("\nAll users created successfully!");
 
   // Create sample referral
   const referral = await prisma.referral.upsert({

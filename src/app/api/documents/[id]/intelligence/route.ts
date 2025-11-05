@@ -23,9 +23,25 @@ export interface IntelligenceResponse {
     suggestedCategory: string;
     confidence: number;
     reasoning: string;
+    alternatives?: Array<{ category: string; confidence: number }>;
   };
   qualification?: DocumentQualification;
   otherDocumentAnalysis?: OtherDocumentAnalysis | null;
+  categoryInsights?: {
+    userSelectedCategory?: string;
+    aiCategorization?: {
+      suggestedCategory: string;
+      confidence: number;
+      reasoning?: string;
+      alternatives?: Array<{ category: string; confidence: number }>;
+    };
+    heuristicReason?: string;
+    heuristicSignals?: string[];
+    finalCategory?: string;
+    autoCorrected?: boolean;
+    autoCorrectionSource?: string;
+    categoryLocked?: boolean;
+  };
   tags: Array<{ tag: string; confidence?: number }>;
   metadata: {
     processingTimeMs?: number;
@@ -110,6 +126,7 @@ export async function GET(
         metadata.documentQualification ||
         metadata.compliance?.documentQualification,
       otherDocumentAnalysis: metadata.otherDocumentAnalysis ?? null,
+      categoryInsights: metadata.categoryInsights,
       tags: file.tags.map((t) => ({
         tag: t.tag,
         confidence: t.confidence ?? undefined,

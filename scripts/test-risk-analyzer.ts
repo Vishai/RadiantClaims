@@ -71,11 +71,10 @@ async function main() {
   const startTime = Date.now();
 
   try {
-    const riskAnalysis = await analyzeRisks(
-      entities,
-      compliance,
-      qualityMetrics
-    );
+    const riskAnalysis = await analyzeRisks(entities, compliance, {
+      qualityMetrics: qualityMetrics || undefined,
+      documentText: ocrText,
+    });
 
     const duration = Date.now() - startTime;
 
@@ -109,12 +108,16 @@ async function main() {
             : risk.severity === "medium"
               ? "🟡"
               : "🟢";
-        const categoryEmoji = {
+        const categoryEmojiMap = {
           compliance: "📋",
           eligibility: "✅",
           quality: "📸",
           consistency: "🔄",
-        }[risk.category];
+          authenticity: "🛡️",
+        } as const;
+        const categoryEmoji =
+          categoryEmojiMap[risk.category as keyof typeof categoryEmojiMap] ??
+          "❓";
 
         console.log(
           `${idx + 1}. ${severityIcon} ${categoryEmoji} ${risk.message}`

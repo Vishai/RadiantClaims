@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Sparkles,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,7 +68,14 @@ interface DocumentCardProps {
   rejectionReason?: string | null;
   aiIntelligence?: AIIntelligence;
   validation?: {
-    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    status:
+      | "PENDING"
+      | "PROCESSING"
+      | "VERIFIED"
+      | "NEEDS_REVIEW"
+      | "STAFF_APPROVED"
+      | "REJECTED"
+      | "ERROR";
     category?: string;
     confidence?: number;
   } | null;
@@ -342,6 +350,15 @@ export function DocumentCard({
                 className="border-amber-300 bg-amber-50 text-amber-700"
               >
                 <Lock className="mr-1 h-3 w-3" /> Locked
+              </Badge>
+            )}
+            {qualification?.categoryMismatch && (
+              <Badge
+                variant="outline"
+                className="animate-pulse border-red-300 bg-red-50 text-red-700"
+              >
+                <AlertTriangle className="mr-1 h-3 w-3" />
+                Mismatch
               </Badge>
             )}
             {getStatusBadge(status)}

@@ -69,7 +69,9 @@ export async function uploadToR2(
     console.log(`✓ Uploaded file to R2: ${key} (${buffer.length} bytes)`);
   } catch (error) {
     console.error(`❌ Failed to upload to R2:`, error);
-    throw new Error(`R2 upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `R2 upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 
   // Construct the public URL
@@ -132,6 +134,30 @@ export async function getPresignedPutUrl(
 }
 
 /**
+ * Get a presigned URL for viewing/downloading a file
+ * @param key - The file key in R2
+ * @param expiresIn - URL expiration time in seconds (default: 1 hour)
+ */
+export async function getPresignedGetUrl(
+  key: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  const client = getS3Client();
+
+  if (!client || !env.R2_BUCKET) {
+    throw new Error("R2 is not configured. Check your environment variables.");
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: env.R2_BUCKET,
+    Key: key,
+  });
+
+  const url = await getSignedUrl(client, command, { expiresIn });
+  return url;
+}
+
+/**
  * Generate a unique file key for R2
  */
 export function generateFileKey(fileName: string): string {
@@ -185,10 +211,15 @@ export async function getObject(fileKeyOrUrl: string): Promise<Buffer | null> {
       chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
-    console.log(`✓ Downloaded file from R2: ${fileKeyOrUrl} (${buffer.length} bytes)`);
+    console.log(
+      `✓ Downloaded file from R2: ${fileKeyOrUrl} (${buffer.length} bytes)`
+    );
     return buffer;
   } catch (error) {
-    console.error(`❌ Failed to download file from R2 (key: ${fileKeyOrUrl}):`, error);
+    console.error(
+      `❌ Failed to download file from R2 (key: ${fileKeyOrUrl}):`,
+      error
+    );
     return null;
   }
 }

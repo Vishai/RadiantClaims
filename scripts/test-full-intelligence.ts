@@ -78,11 +78,10 @@ async function main() {
   // Step 3: Risk Analysis
   console.log(`⏳ Step 3: Analyzing risks...\n`);
 
-  const riskAnalysis = await analyzeRisks(
-    entities,
-    compliance,
-    metadata.qualityMetrics
-  );
+  const riskAnalysis = await analyzeRisks(entities, compliance, {
+    qualityMetrics: metadata.qualityMetrics,
+    documentText: document.ocrText,
+  });
 
   console.log(`✅ Risks analyzed:`);
   console.log(`   Total Risks: ${riskAnalysis.totalRisks}`);
