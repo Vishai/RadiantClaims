@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { AIIntelligenceModal } from "./AIIntelligenceModal";
 import type { DocumentQualificationSummary } from "./types";
 import { QUALIFICATION_COPY } from "./qualification-utils";
+import { DocumentStatusBadge } from "@/components/validation";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -45,6 +46,11 @@ interface DocumentListItemProps {
   uploadedAt: string;
   mimeType: string;
   aiIntelligence?: AIIntelligence;
+  validation?: {
+    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    category?: string;
+    confidence?: number;
+  } | null;
   qualification?: DocumentQualificationSummary | null;
   onView?: () => void;
   onDownload?: () => void;
@@ -63,6 +69,7 @@ export function DocumentListItem({
   uploadedAt,
   mimeType,
   aiIntelligence,
+  validation,
   qualification,
   onView,
   onDownload,
@@ -178,6 +185,19 @@ export function DocumentListItem({
           <span>{formatDate(uploadedAt)}</span>
         </div>
       </div>
+
+      {/* Validation Status Badge */}
+      {validation && (
+        <DocumentStatusBadge
+          status={validation.status}
+          category={validation.category}
+          confidence={validation.confidence}
+          showCategory={false}
+          showConfidence={validation.status === "VERIFIED"}
+          size="sm"
+          className="flex-shrink-0"
+        />
+      )}
 
       {/* AI Intelligence Badge - Minimal */}
       {aiIntelligence && status === "READY" && (

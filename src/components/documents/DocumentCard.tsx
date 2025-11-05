@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { AIIntelligenceModal } from "./AIIntelligenceModal";
 import type { DocumentQualificationSummary } from "./types";
 import { QUALIFICATION_COPY } from "./qualification-utils";
+import { DocumentStatusBadge } from "@/components/validation";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -65,6 +66,11 @@ interface DocumentCardProps {
   requiresOriginal?: boolean;
   rejectionReason?: string | null;
   aiIntelligence?: AIIntelligence;
+  validation?: {
+    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    category?: string;
+    confidence?: number;
+  } | null;
   onView?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
@@ -130,6 +136,7 @@ export function DocumentCard({
   thumbnailKey,
   rejectionReason,
   aiIntelligence,
+  validation,
   onView,
   onDownload,
   onDelete,
@@ -338,6 +345,16 @@ export function DocumentCard({
               </Badge>
             )}
             {getStatusBadge(status)}
+            {validation && (
+              <DocumentStatusBadge
+                status={validation.status}
+                category={validation.category}
+                confidence={validation.confidence}
+                showCategory={false}
+                showConfidence={validation.status === "VERIFIED"}
+                size="sm"
+              />
+            )}
             {aiIntelligence && status === "READY" && (
               <Badge
                 variant="outline"

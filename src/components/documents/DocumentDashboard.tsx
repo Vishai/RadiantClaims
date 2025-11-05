@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { DocumentCard } from "./DocumentCard";
 import { DocumentListItem } from "./DocumentListItem";
 import type { FileCategory } from "./DocumentCategorySelector";
-import { Loader2, FileX, Search, Grid, List } from "lucide-react";
+import { Loader2, FileX, Search, Grid, List, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ValidationProgress } from "@/components/validation";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,11 @@ interface UploadedFile {
   requiresOriginal?: boolean;
   rejectionReason?: string | null;
   aiIntelligence?: AIIntelligence | null;
+  validation?: {
+    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    category?: string;
+    confidence?: number;
+  } | null;
   qualification?: DocumentQualificationSummary | null;
   otherDocumentAnalysis?: SupportingDocumentInsight | null;
 }
@@ -69,6 +75,8 @@ export function DocumentDashboard({
     null
   );
   const [recategorizing, setRecategorizing] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [showValidationProgress, setShowValidationProgress] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     setLoading(true);
@@ -137,6 +145,43 @@ export function DocumentDashboard({
 
   const handleRecategorize = (file: UploadedFile) => {
     setCategorizingDoc(file);
+  };
+
+  const handleValidateAll = async () => {
+    setValidating(true);
+    setShowValidationProgress(true);
+
+    try {
+      const response = await fetch("/api/validation/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intakeSessionId: sessionId,
+          runFullPipeline: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to start validation");
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Refresh documents to show updated validation status
+        await loadDocuments();
+      }
+    } catch (error) {
+      console.error("Failed to validate documents:", error);
+      alert("Failed to start validation. Please try again.");
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleValidationComplete = () => {
+    setShowValidationProgress(false);
+    loadDocuments();
   };
 
   const handleCategoryConfirm = async ({
@@ -226,6 +271,32 @@ export function DocumentDashboard({
 
   return (
     <div className="space-y-6">
+      {/* Validate All Button & Progress */}
+      {documents.length > 0 && (
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            onClick={handleValidateAll}
+            disabled={validating}
+            variant="outline"
+            className="border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            {validating ? "Validating..." : "Validate All Documents"}
+          </Button>
+        </div>
+      )}
+
+      {/* Validation Progress */}
+      {showValidationProgress && (
+        <ValidationProgress
+          sessionId={sessionId}
+          autoRefresh={true}
+          refreshInterval={2000}
+          onComplete={handleValidationComplete}
+          showDetails={true}
+        />
+      )}
+
       {/* Filters & View Toggle */}
       {documents.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -325,6 +396,7 @@ export function DocumentDashboard({
               requiresOriginal={doc.requiresOriginal}
               rejectionReason={doc.rejectionReason}
               aiIntelligence={doc.aiIntelligence || undefined}
+              validation={doc.validation || undefined}
               qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
@@ -347,6 +419,7 @@ export function DocumentDashboard({
               uploadedAt={doc.uploadedAt}
               mimeType={doc.mimeType}
               aiIntelligence={doc.aiIntelligence || undefined}
+              validation={doc.validation || undefined}
               qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
