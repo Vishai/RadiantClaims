@@ -6,6 +6,18 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
+    // Allow access to change password page without redirect loop
+    if (path === "/portal/change-password") {
+      return NextResponse.next();
+    }
+
+    // Force password change if required
+    if (token?.passwordResetRequired === true) {
+      const url = new URL("/portal/change-password", req.url);
+      url.searchParams.set("required", "true");
+      return NextResponse.redirect(url);
+    }
+
     // For RECA form routes, check subscription status
     if (path.startsWith("/reca/form/")) {
       if (!token?.sub) {
