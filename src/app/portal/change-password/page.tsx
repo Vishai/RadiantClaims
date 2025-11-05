@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -39,12 +39,13 @@ const passwordSchema = z
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function ChangePasswordPage() {
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
   const isRequired = searchParams.get("required") === "true";
 
@@ -85,16 +86,34 @@ export default function ChangePasswordPage() {
       }
 
       setSuccess(true);
+      setNewPassword(data.newPassword);
       form.reset();
 
-      // Update session to clear passwordResetRequired flag
-      await update();
+      // Sign out and immediately sign back in with new password to get fresh JWT
+      // This ensures the passwordResetRequired flag is cleared from the token
+      setTimeout(async () => {
+        await signOut({ redirect: false });
 
-      // Redirect to portal after 3 seconds
-      setTimeout(() => {
-        router.push("/portal");
-        router.refresh();
-      }, 3000);
+        // Auto-login with new password
+        const signInResult = await signIn("credentials", {
+          email: session?.user?.email,
+          password: data.newPassword,
+          redirect: false,
+        });
+
+        if (signInResult?.ok) {
+          // Redirect based on role
+          const roleBasedPath =
+            session?.user?.role === "ATTORNEY"
+              ? "/attorney/dashboard"
+              : "/portal";
+          router.push(roleBasedPath);
+          router.refresh();
+        } else {
+          // If auto-login fails, redirect to login page
+          router.push("/login");
+        }
+      }, 2000);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to change password"
@@ -235,7 +254,7 @@ export default function ChangePasswordPage() {
                         Password Changed Successfully!
                       </h3>
                       <p className="mt-1 text-sm text-emerald-700">
-                        Redirecting to portal in 3 seconds...
+                        Signing you in with your new password...
                       </p>
                     </div>
                   </div>
