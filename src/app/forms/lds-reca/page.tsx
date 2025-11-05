@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Download, ArrowLeft, Printer, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
-export default function LDSRECAFormPage() {
+function LDSRECAFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const allowedReturnUrls = [
@@ -297,5 +297,19 @@ export default function LDSRECAFormPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LDSRECAFormPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-cream-50">
+          Loading...
+        </div>
+      }
+    >
+      <LDSRECAFormContent />
+    </Suspense>
   );
 }
