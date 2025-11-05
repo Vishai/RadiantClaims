@@ -28,7 +28,6 @@ interface WaitlistEntry {
 export default function AttorneyWaitlistPage() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [tierCounts, setTierCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -49,7 +48,7 @@ export default function AttorneyWaitlistPage() {
       const data = await response.json();
       setEntries(data.entries);
       setCounts(data.counts);
-      setTierCounts(data.tierCounts);
+      // tierCounts not needed for attorney-specific view
     } catch (error) {
       console.error("Error fetching waitlist:", error);
     } finally {
