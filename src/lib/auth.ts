@@ -33,7 +33,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await db.user.findUnique({
           where: {
-            email: credentials.email,
+            email: credentials.email.toLowerCase(), // Normalize email to lowercase
           },
           include: {
             firm: true, // Include firm data for attorneys
