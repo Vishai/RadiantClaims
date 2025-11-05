@@ -56,10 +56,14 @@ export async function POST(req: NextRequest) {
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
+    // Update password and clear password reset requirement
     await db.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        passwordResetRequired: false,
+        passwordChangedAt: new Date(),
+      },
     });
 
     return NextResponse.json({
