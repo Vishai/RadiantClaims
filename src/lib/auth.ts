@@ -71,6 +71,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           firmId: user.firmId,
+          passwordResetRequired: user.passwordResetRequired,
         };
       },
     }),
@@ -81,6 +82,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.firmId = user.firmId;
+        token.passwordResetRequired = user.passwordResetRequired;
 
         // Fetch firm slug if user has a firm
         if (user.firmId) {
@@ -99,6 +101,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role;
         session.user.firmId = token.firmId;
         session.user.firmSlug = token.firmSlug;
+        session.user.passwordResetRequired = token.passwordResetRequired;
       }
       return session;
     },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,11 +39,14 @@ const passwordSchema = z
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function ChangePasswordPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const isRequired = searchParams.get("required") === "true";
 
   const form = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -84,12 +87,18 @@ export default function ChangePasswordPage() {
       setSuccess(true);
       form.reset();
 
+      // Update session to clear passwordResetRequired flag
+      await update();
+
       // Redirect to portal after 3 seconds
       setTimeout(() => {
         router.push("/portal");
+        router.refresh();
       }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to change password");
+      setError(
+        err instanceof Error ? err.message : "Failed to change password"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -115,7 +124,9 @@ export default function ChangePasswordPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-500">
               <Heart className="h-5 w-5 text-white" fill="white" />
             </div>
-            <span className="text-2xl font-bold text-sage-800">RadiantClaims</span>
+            <span className="text-2xl font-bold text-sage-800">
+              RadiantClaims
+            </span>
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-sm text-sage-600">
@@ -144,6 +155,25 @@ export default function ChangePasswordPage() {
           </p>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
+
+        {isRequired && (
+          <div className="mb-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-500 text-white">
+                !
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900">
+                  Password Change Required
+                </h3>
+                <p className="mt-1 text-sm text-amber-800">
+                  For security reasons, you must change your password before
+                  accessing your account.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
           <CardHeader>
@@ -213,14 +243,16 @@ export default function ChangePasswordPage() {
               )}
 
               <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push("/portal")}
-                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                >
-                  Cancel
-                </Button>
+                {!isRequired && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push("/portal")}
+                    className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                  >
+                    Cancel
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   disabled={isSubmitting || success}
@@ -235,9 +267,9 @@ export default function ChangePasswordPage() {
 
         <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
           <p className="text-sm text-sage-700">
-            <strong>Security Tip:</strong> Use a strong, unique password that you
-            don't use on other websites. Consider using a password manager to keep
-            track of your passwords securely.
+            <strong>Security Tip:</strong> Use a strong, unique password that
+            you don't use on other websites. Consider using a password manager
+            to keep track of your passwords securely.
           </p>
         </div>
       </main>
