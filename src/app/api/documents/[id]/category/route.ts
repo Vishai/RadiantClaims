@@ -30,7 +30,7 @@ export async function PATCH(
       include: {
         intakeSession: {
           include: {
-            claim: true,
+            claimant: true,
           },
         },
       },
@@ -42,7 +42,7 @@ export async function PATCH(
 
     // Check authorization - user must own the file or be an admin
     const isAuthorized =
-      file.intakeSession?.claim?.userId === session.user.id ||
+      file.intakeSession?.claimant?.userId === session.user.id ||
       session.user.role === "ADMIN" ||
       session.user.role === "ATTORNEY";
 
