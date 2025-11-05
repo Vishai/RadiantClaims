@@ -289,3 +289,78 @@ export function generateSuggestedFilename(
     .toLowerCase()
     .replace(/[^a-z0-9._-]/g, "_");
 }
+
+/**
+ * Get validation status for a specific document
+ * Returns null if validation hasn't completed yet
+ */
+export async function getDocumentValidation(uploadedFileId: string): Promise<{
+  status: string;
+  category?: string;
+  confidence?: number;
+  issues?: any[];
+} | null> {
+  try {
+    const response = await fetch(`/api/intake/upload/${uploadedFileId}`);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Check if validation exists
+    if (!data.file?.validation) {
+      return null;
+    }
+
+    return {
+      status: data.file.validation.status,
+      category: data.file.validation.category,
+      confidence: data.file.validation.confidence,
+      issues: data.file.validation.issues,
+    };
+  } catch (error) {
+    console.error("Failed to get validation:", error);
+    return null;
+  }
+}
+
+/**
+ * Wait for document validation to complete
+ * Polls the API until validation is done or timeout is reached
+ */
+export async function waitForValidation(
+  uploadedFileId: string,
+  options?: {
+    maxAttempts?: number;
+    intervalMs?: number;
+    onProgress?: (attempt: number) => void;
+  }
+): Promise<{
+  status: string;
+  category?: string;
+  confidence?: number;
+  issues?: any[];
+} | null> {
+  const maxAttempts = options?.maxAttempts || 30; // 30 attempts = 30 seconds with 1s interval
+  const intervalMs = options?.intervalMs || 1000; // 1 second
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    options?.onProgress?.(attempt);
+
+    const validation = await getDocumentValidation(uploadedFileId);
+
+    if (validation && validation.status !== 'PROCESSING') {
+      return validation;
+    }
+
+    // Wait before next attempt
+    if (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+  }
+
+  // Timeout - validation still processing
+  return null;
+}

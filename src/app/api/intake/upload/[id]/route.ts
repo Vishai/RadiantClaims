@@ -1,11 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { validateDocument } from "@/lib/ai-agents/orchestration-service";
 
 const confirmUploadSchema = z.object({
   success: z.boolean(),
   error: z.string().optional(),
 });
+
+/**
+ * GET /api/intake/upload/:id
+ * Get uploaded file details including validation status
+ */
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+
+    // Find the uploaded file with validation
+    const file = await db.uploadedFile.findUnique({
+      where: { id },
+      include: {
+        validation: true,
+        intakeSession: true,
+      },
+    });
+
+    if (!file) {
+      return NextResponse.json(
+        { error: "Uploaded file not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      file,
+    });
+  } catch (error) {
+    console.error("File retrieval error:", error);
+    return NextResponse.json(
+      { error: "Failed to retrieve file" },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * PATCH /api/intake/upload/:id
@@ -14,10 +55,10 @@ const confirmUploadSchema = z.object({
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     const body = await req.json();
     const { success, error } = confirmUploadSchema.parse(body);
 
@@ -43,14 +84,20 @@ export async function PATCH(
       },
     });
 
-    // If successful, trigger background processing (OCR, validation, etc.)
-    // TODO: Add background job here to process file (OCR extraction, thumbnail generation)
+    // If successful, trigger AI validation
     if (success) {
-      // For now, just mark as READY immediately
-      // Later: trigger background job and keep status as PROCESSING
+      // Mark file as READY
       await db.uploadedFile.update({
         where: { id },
         data: { status: "READY", processedAt: new Date() },
+      });
+
+      // Trigger AI validation asynchronously (don't await - runs in background)
+      // This validates the document and stores results in DocumentValidation table
+      validateDocument(id).catch((err) => {
+        console.error(`Background validation failed for file ${id}:`, err);
+        // Validation failure doesn't block the upload - file is still READY
+        // Staff can review and manually validate if needed
       });
     }
 
@@ -79,10 +126,10 @@ export async function PATCH(
  */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
 
     // Find the uploaded file
     const file = await db.uploadedFile.findUnique({
