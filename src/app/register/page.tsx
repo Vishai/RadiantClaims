@@ -29,6 +29,8 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const callbackUrlParam = searchParams.get("callbackUrl");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +67,15 @@ function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Failed to create account");
+        // Show more detailed message if registration is disabled
+        if (response.status === 503) {
+          setError(
+            data.message || data.error || "Registration is temporarily disabled"
+          );
+          setShowWaitlist(true); // Show waitlist form option
+        } else {
+          setError(data.error || "Failed to create account");
+        }
         return;
       }
 
@@ -99,6 +109,38 @@ function RegisterForm() {
     }
   };
 
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          name: name || undefined,
+          source: "register_page",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to join waitlist");
+        return;
+      }
+
+      setWaitlistSuccess(true);
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      console.error("Waitlist error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginHref =
     callbackUrlParam && callbackUrlParam.startsWith("/")
       ? {
@@ -124,88 +166,187 @@ function RegisterForm() {
 
         <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-lg">
           <CardHeader>
-            <CardTitle className="text-sage-900">Create Account</CardTitle>
+            <CardTitle className="text-sage-900">
+              {waitlistSuccess
+                ? "You're on the List!"
+                : showWaitlist
+                  ? "Join Our Waitlist"
+                  : "Create Account"}
+            </CardTitle>
             <CardDescription className="text-sage-600">
-              Enter your details to get started
+              {waitlistSuccess
+                ? "We'll notify you when registration opens"
+                : showWaitlist
+                  ? "Be the first to know when we're ready"
+                  : "Enter your details to get started"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sage-800">
-                  Full Name (Optional)
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sage-800">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sage-800">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Minimum 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sage-800">
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
-                  {error}
+            {waitlistSuccess ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-emerald-50 p-4 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                    <Heart
+                      className="h-6 w-6 text-emerald-600"
+                      fill="currentColor"
+                    />
+                  </div>
+                  <p className="mb-2 text-lg font-semibold text-emerald-900">
+                    Thank you for your interest!
+                  </p>
+                  <p className="text-sm text-emerald-700">
+                    We've saved your information and will email you at{" "}
+                    <strong>{email}</strong> as soon as registration opens.
+                  </p>
                 </div>
-              )}
+                <Link
+                  href="/"
+                  className="block w-full rounded-full bg-terracotta-500 py-2 text-center text-white transition-colors hover:bg-terracotta-600"
+                >
+                  Back to Home
+                </Link>
+              </div>
+            ) : showWaitlist ? (
+              <form onSubmit={handleWaitlistSubmit} className="space-y-4">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  <p className="font-semibold">
+                    Registration is temporarily closed
+                  </p>
+                  <p className="mt-1">
+                    Join our waitlist and we'll notify you the moment we're
+                    accepting new users.
+                  </p>
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating account..." : "Create Account"}
-              </Button>
-            </form>
+                <div className="space-y-2">
+                  <Label htmlFor="waitlist-name" className="text-sage-800">
+                    Full Name (Optional)
+                  </Label>
+                  <Input
+                    id="waitlist-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="waitlist-email" className="text-sage-800">
+                    Email
+                  </Label>
+                  <Input
+                    id="waitlist-email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Joining..." : "Join Waitlist"}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWaitlist(false)}
+                  className="w-full text-sm text-sage-600 hover:text-terracotta-600"
+                >
+                  ← Back to registration form
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sage-800">
+                    Full Name (Optional)
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sage-800">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sage-800">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sage-800">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            )}
 
             <div className="mt-6 space-y-4 border-t border-cream-200 pt-6 text-center">
               <p className="text-sm text-sage-600">

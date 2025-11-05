@@ -5,6 +5,19 @@ import { createAuditLog } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if registration is enabled
+    const registrationEnabled = process.env.REGISTRATION_ENABLED !== "false";
+    if (!registrationEnabled) {
+      return NextResponse.json(
+        {
+          error: "Registration is temporarily disabled",
+          message:
+            "We're currently not accepting new registrations while we finalize our terms of service and workflows. Please check back soon!",
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { email, password, name } = body;
 

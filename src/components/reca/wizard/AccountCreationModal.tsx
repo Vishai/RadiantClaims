@@ -32,7 +32,9 @@ export function AccountCreationModal({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong" | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState<
+    "weak" | "medium" | "strong" | null
+  >(null);
 
   const validatePasswordStrength = (pwd: string) => {
     if (pwd.length === 0) {
@@ -91,6 +93,14 @@ export function AccountCreationModal({
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Show more detailed message if registration is disabled
+        if (response.status === 503) {
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              "Registration is temporarily disabled"
+          );
+        }
         throw new Error(errorData.error || "Failed to create account");
       }
 
@@ -102,7 +112,9 @@ export function AccountCreationModal({
       });
 
       if (signInResult?.error) {
-        setError("Account created but auto-login failed. Please refresh and login.");
+        setError(
+          "Account created but auto-login failed. Please refresh and login."
+        );
         setIsLoading(false);
         return;
       }
@@ -128,20 +140,25 @@ export function AccountCreationModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-terracotta-100">
               <Save className="h-5 w-5 text-terracotta-600" />
             </div>
-            <DialogTitle className="text-sage-900">Save Your Progress</DialogTitle>
+            <DialogTitle className="text-sage-900">
+              Save Your Progress
+            </DialogTitle>
           </div>
           <DialogDescription className="text-sage-600">
-            Create an account to save your progress across devices and track your claim status
+            Create an account to save your progress across devices and track
+            your claim status
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sage-800">Email</Label>
+            <Label htmlFor="email" className="text-sage-800">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -154,7 +171,9 @@ export function AccountCreationModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sage-800">Password</Label>
+            <Label htmlFor="password" className="text-sage-800">
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -165,14 +184,14 @@ export function AccountCreationModal({
             />
             {passwordStrength && (
               <div className="flex items-center gap-2 text-xs">
-                <div className="flex-1 h-1 bg-cream-200 rounded-full overflow-hidden">
+                <div className="h-1 flex-1 overflow-hidden rounded-full bg-cream-200">
                   <div
                     className={`h-full transition-all ${
                       passwordStrength === "weak"
                         ? "w-1/3 bg-red-500"
                         : passwordStrength === "medium"
-                        ? "w-2/3 bg-amber-500"
-                        : "w-full bg-emerald-500"
+                          ? "w-2/3 bg-amber-500"
+                          : "w-full bg-emerald-500"
                     }`}
                   />
                 </div>
@@ -181,21 +200,28 @@ export function AccountCreationModal({
                     passwordStrength === "weak"
                       ? "text-red-600"
                       : passwordStrength === "medium"
-                      ? "text-amber-600"
-                      : "text-emerald-600"
+                        ? "text-amber-600"
+                        : "text-emerald-600"
                   }
                 >
-                  {passwordStrength === "weak" ? "Weak" : passwordStrength === "medium" ? "Medium" : "Strong"}
+                  {passwordStrength === "weak"
+                    ? "Weak"
+                    : passwordStrength === "medium"
+                      ? "Medium"
+                      : "Strong"}
                 </span>
               </div>
             )}
             <p className="text-xs text-sage-600">
-              At least 12 characters with uppercase, lowercase, numbers, and special characters
+              At least 12 characters with uppercase, lowercase, numbers, and
+              special characters
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword" className="text-sage-800">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="text-sage-800">
+              Confirm Password
+            </Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -207,20 +233,30 @@ export function AccountCreationModal({
           </div>
 
           {error && (
-            <div className="rounded-2xl bg-terracotta-50 p-3 text-sm text-terracotta-800 border border-terracotta-200 flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="rounded-2xl bg-gradient-to-br from-sage-50 to-emerald-50 p-4 border-2 border-emerald-200">
+          <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-sage-50 to-emerald-50 p-4">
             <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
               <div className="text-xs text-sage-700">
-                <p className="font-semibold mb-2 text-sage-900">What you'll unlock:</p>
-                <ul className="space-y-1 ml-4 list-disc">
-                  <li><strong className="text-emerald-900">Payout Pulse:</strong> Estimated payout date</li>
-                  <li><strong className="text-emerald-900">Timeline Tracking:</strong> See where your claim is</li>
+                <p className="mb-2 font-semibold text-sage-900">
+                  What you'll unlock:
+                </p>
+                <ul className="ml-4 list-disc space-y-1">
+                  <li>
+                    <strong className="text-emerald-900">Payout Pulse:</strong>{" "}
+                    Estimated payout date
+                  </li>
+                  <li>
+                    <strong className="text-emerald-900">
+                      Timeline Tracking:
+                    </strong>{" "}
+                    See where your claim is
+                  </li>
                   <li>Queue position & progress updates</li>
                   <li>Auto-save across all devices</li>
                 </ul>

@@ -1514,3 +1514,62 @@ model Payment {
   @@index([paymentType])
   @@index([paidAt])
 }
+
+// ============================================================================
+// REGISTRATION WAITLIST - Lead Collection During Registration Lockdown
+// ============================================================================
+
+enum WaitlistStatus {
+  PENDING // Waiting to be converted to account
+  CONTACTED // We've reached out to them
+  CONVERTED // Successfully converted to user account
+  DECLINED // They declined when contacted
+  INVALID // Invalid email or spam
+}
+
+model RegistrationWaitlist {
+  id String @id @default(cuid())
+
+  // Lead Information
+  email           String      @unique
+  name            String?
+  phone           String? // Optional phone number
+  claimType       ClaimType? // Optional - what type of claim they're interested in
+  interestedTier  ServiceTier? // DIY_PREP or LEGAL_REP - which path they're interested in
+  firmPreference  String? // If LEGAL_REP, which firm they want to work with
+
+  // Source Tracking
+  source       String? // "register_page", "reca_signup", "intake_page", "service_tiers"
+  referralCode String? // If they came through a referral
+  utmSource    String? // Marketing attribution
+  utmMedium    String?
+  utmCampaign  String?
+
+  // Engagement Data
+  status         WaitlistStatus @default(PENDING)
+  notes          String?        @db.Text // Staff notes
+  submittedCount Int            @default(1) // How many times they tried to register
+  lastSubmitIp   String?
+
+  // Communication Tracking
+  notificationSent   Boolean   @default(false)
+  notificationSentAt DateTime?
+  contactedAt        DateTime?
+  contactedBy        String? // Staff member who reached out
+
+  // Conversion
+  convertedToUserId String?   @unique // Link to created User
+  convertedAt       DateTime?
+  convertedBy       String? // Staff member who created account
+
+  // Metadata
+  metadata  Json? // Additional flexible data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@index([claimType])
+  @@index([interestedTier])
+}
