@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { DocumentQualification } from "@/lib/document-intelligence/schemas/compliance-schema";
 import { QUALIFICATION_COPY } from "./qualification-utils";
+import { useSession } from "next-auth/react";
 
 interface DocumentDetailViewProps {
   document: any;
@@ -38,6 +39,7 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   const [categoryUpdateError, setCategoryUpdateError] = useState<string | null>(
     null
   );
+  const { data: session } = useSession();
 
   // Fetch intelligence data
   const {
@@ -514,7 +516,12 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
                     </TabsContent>
 
                     <TabsContent value="risks">
-                      <RisksTab data={intelligence} />
+                      <RisksTab
+                        data={intelligence}
+                        documentId={document.id}
+                        userRole={session?.user?.role}
+                        onRefresh={mutate}
+                      />
                     </TabsContent>
 
                     <TabsContent value="provenance">
