@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -33,14 +33,16 @@ export default function WaitlistAdminPage() {
   const [filter, setFilter] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<string | null>(null);
 
-  const fetchWaitlist = async () => {
+  const fetchWaitlist = useCallback(async () => {
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
       if (filter) params.append("status", filter);
       if (tierFilter) params.append("tier", tierFilter);
 
-      const url = `/api/admin/waitlist${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `/api/admin/waitlist${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
 
       const response = await fetch(url);
 
@@ -57,11 +59,11 @@ export default function WaitlistAdminPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter, tierFilter]);
 
   useEffect(() => {
-    fetchWaitlist();
-  }, [filter, tierFilter]);
+    void fetchWaitlist();
+  }, [fetchWaitlist]);
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -76,7 +78,7 @@ export default function WaitlistAdminPage() {
       }
 
       // Refresh the list
-      fetchWaitlist();
+      await fetchWaitlist();
     } catch (error) {
       console.error("Error updating status:", error);
     }

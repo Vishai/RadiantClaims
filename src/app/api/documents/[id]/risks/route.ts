@@ -34,8 +34,8 @@ const RISK_SUCCESS_MESSAGES: Partial<
     reviewer: "Evidence links updated.",
   },
   REQUEST_WAIVER: {
-    claimant: "Waiver request sent to reviewers.",
-    reviewer: "Waiver granted for this risk.",
+    claimant: "Dismissal request sent to reviewers.",
+    reviewer: "Risk dismissed for this document.",
   },
   EXCLUDE_DOCUMENT: {
     claimant: "Document exclusion request recorded.",
@@ -304,7 +304,7 @@ export async function PATCH(
       const date = new Date(waiverExpiration);
       if (Number.isNaN(date.getTime())) {
         return NextResponse.json(
-          { error: "Invalid waiver expiration date." },
+          { error: "Invalid dismissal expiration date." },
           { status: 400 }
         );
       }
