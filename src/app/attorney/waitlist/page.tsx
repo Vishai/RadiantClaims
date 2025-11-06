@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -31,7 +31,7 @@ export default function AttorneyWaitlistPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
 
-  const fetchWaitlist = async () => {
+  const fetchWaitlist = useCallback(async () => {
     try {
       setIsLoading(true);
       // Filter for LEGAL_REP tier only (attorney path)
@@ -54,11 +54,11 @@ export default function AttorneyWaitlistPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter]);
 
   useEffect(() => {
-    fetchWaitlist();
-  }, [filter]);
+    void fetchWaitlist();
+  }, [fetchWaitlist]);
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -73,7 +73,7 @@ export default function AttorneyWaitlistPage() {
       }
 
       // Refresh the list
-      fetchWaitlist();
+      await fetchWaitlist();
     } catch (error) {
       console.error("Error updating status:", error);
     }

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { intakeSessionId } = await req.json();
+    const { intakeSessionId, promoCode } = await req.json();
 
     if (!intakeSessionId) {
       return NextResponse.json(
@@ -57,6 +57,64 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate promo code if provided
+    let promoCodeRecord = null;
+    let discounts: string[] = [];
+    if (promoCode) {
+      promoCodeRecord = await prisma.promoCode.findUnique({
+        where: { code: promoCode },
+      });
+
+      if (!promoCodeRecord) {
+        return NextResponse.json(
+          { error: "Invalid promo code" },
+          { status: 400 }
+        );
+      }
+
+      if (!promoCodeRecord.isActive) {
+        return NextResponse.json(
+          { error: "This promo code is no longer active" },
+          { status: 400 }
+        );
+      }
+
+      if (promoCodeRecord.expiresAt && promoCodeRecord.expiresAt < new Date()) {
+        return NextResponse.json(
+          { error: "This promo code has expired" },
+          { status: 400 }
+        );
+      }
+
+      if (
+        promoCodeRecord.maxUses &&
+        promoCodeRecord.currentUses >= promoCodeRecord.maxUses
+      ) {
+        return NextResponse.json(
+          { error: "This promo code has reached its usage limit" },
+          { status: 400 }
+        );
+      }
+
+      // Check path restrictions
+      if (
+        promoCodeRecord.allowedTiers.length > 0 &&
+        !promoCodeRecord.allowedTiers.includes("DIY_PREP")
+      ) {
+        return NextResponse.json(
+          {
+            error: "This promo code is not valid for the DIY path",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Add Stripe coupon if available
+      if (promoCodeRecord.stripeCouponId) {
+        discounts.push(promoCodeRecord.stripeCouponId);
+      }
+    }
+
     // Get or create Stripe customer
     const customer = await stripe.customers.create({
       email: session.user.email!,
@@ -67,6 +125,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Create or update subscription record
+    const isPilot = promoCodeRecord?.type === "PILOT_ACCOUNT";
+    const pilotExpiresAt = isPilot
+      ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+      : null;
+
     const subscription = await prisma.serviceSubscription.upsert({
       where: { userId: session.user.id },
       create: {
@@ -77,9 +140,21 @@ export async function POST(req: NextRequest) {
         setupFeeAmount: 149.99,
         monthlyFeeAmount: 24.99,
         stripeCustomerId: customer.id,
+        promoCodeId: promoCodeRecord?.id,
+        isPilotAccount: isPilot,
+        pilotExpiresAt,
+        stripeCouponId: promoCodeRecord?.stripeCouponId,
+        discountPercent: promoCodeRecord?.percentOff,
+        discountAmount: promoCodeRecord?.amountOff,
       },
       update: {
         stripeCustomerId: customer.id,
+        promoCodeId: promoCodeRecord?.id,
+        isPilotAccount: isPilot,
+        pilotExpiresAt,
+        stripeCouponId: promoCodeRecord?.stripeCouponId,
+        discountPercent: promoCodeRecord?.percentOff,
+        discountAmount: promoCodeRecord?.amountOff,
       },
     });
 
@@ -107,8 +182,13 @@ export async function POST(req: NextRequest) {
         subscriptionId: subscription.id,
         intakeSessionId,
         paymentType: "SETUP_FEE",
+        promoCode: promoCode || "",
       },
-      allow_promotion_codes: true,
+      // Apply Stripe coupon if available from promo code
+      ...(discounts.length > 0 && {
+        discounts: discounts.map((coupon) => ({ coupon })),
+      }),
+      allow_promotion_codes: true, // Still allow Stripe's native promo codes
       billing_address_collection: "required",
       customer_update: {
         address: "auto",
@@ -128,6 +208,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Increment promo code usage
+    if (promoCodeRecord) {
+      await prisma.promoCode.update({
+        where: { id: promoCodeRecord.id },
+        data: {
+          currentUses: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
     // Create audit log
     await prisma.auditLog.create({
       data: {
@@ -140,6 +232,8 @@ export async function POST(req: NextRequest) {
         metadata: JSON.stringify({
           tier: "DIY_PREP",
           checkoutSessionId: checkoutSession.id,
+          promoCode: promoCode || null,
+          isPilotAccount: isPilot,
         }),
       },
     });

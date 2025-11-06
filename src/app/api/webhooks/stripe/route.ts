@@ -157,19 +157,43 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
   });
 
-  // Automatically create monthly subscription after setup fee
+  // Automatically create monthly subscription after setup fee, starting 31 days from now
   try {
     const subscription = await prisma.serviceSubscription.findUnique({
       where: { id: subscriptionId },
+      include: { promoCode: true },
     });
 
     if (subscription?.stripeCustomerId && !subscription.stripeSubscriptionId) {
+      // Check if this is a pilot account or has setup fee waived
+      // If setup fee was waived, they likely already have a subscription created
+      if (subscription.setupFeeWaived || subscription.isPilotAccount) {
+        console.log(
+          `ℹ️  Skipping auto-subscription creation for pilot/waived account ${subscriptionId}`
+        );
+        return;
+      }
+
+      // Calculate the billing anchor date (31 days from now)
+      const billingAnchorDate = new Date();
+      billingAnchorDate.setDate(billingAnchorDate.getDate() + 31);
+      const billingAnchorTimestamp = Math.floor(
+        billingAnchorDate.getTime() / 1000
+      );
+
+      // Check if there's a Stripe coupon to apply
+      const couponId = subscription.stripeCouponId || undefined;
+
       const stripeSubscription = await stripe.subscriptions.create({
         customer: subscription.stripeCustomerId,
         items: [{ price: STRIPE_CONFIG.DIY_MONTHLY.priceId }],
+        billing_cycle_anchor: billingAnchorTimestamp,
+        proration_behavior: "none",
+        ...(couponId && { coupon: couponId }),
         metadata: {
           userId,
           subscriptionId,
+          promoCode: subscription.promoCode?.code || "",
         },
       });
 
@@ -181,11 +205,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           stripeSubscriptionId: stripeSubscription.id,
           billingCycleDay: nextBillingDate?.getDate() ?? null,
           nextBillingDate,
-          lastBillingDate: new Date(),
+          lastBillingDate: null, // No billing has occurred yet for the monthly subscription
         },
       });
 
-      console.log(`✅ Monthly subscription created: ${stripeSubscription.id}`);
+      console.log(
+        `✅ Monthly subscription created: ${stripeSubscription.id} (billing starts ${billingAnchorDate.toISOString()})`
+      );
     }
   } catch (error) {
     console.error("Error creating monthly subscription:", error);
@@ -207,6 +233,29 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log(
     `💰 Invoice payment succeeded for subscription ${subscriptionId}`
   );
+
+  // Check if this is a pilot account that has expired
+  const subscription = await prisma.serviceSubscription.findUnique({
+    where: { id: subscriptionId },
+  });
+
+  if (
+    subscription?.isPilotAccount &&
+    subscription.pilotExpiresAt &&
+    subscription.pilotExpiresAt < new Date()
+  ) {
+    console.log(
+      `⚠️  Pilot account ${subscriptionId} has expired. Converting to regular billing.`
+    );
+    // Update to non-pilot status
+    await prisma.serviceSubscription.update({
+      where: { id: subscriptionId },
+      data: {
+        isPilotAccount: false,
+        pilotExpiresAt: null,
+      },
+    });
+  }
 
   // Create payment record
   await prisma.payment.create({
