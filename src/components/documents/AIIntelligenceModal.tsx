@@ -28,6 +28,7 @@ import { AIAssessmentTab } from "./intelligence/AIAssessmentTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { XCircle, Brain } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 interface AIIntelligenceModalProps {
   documentId: string;
@@ -42,7 +43,9 @@ export function AIIntelligenceModal({
   isOpen,
   onClose,
 }: AIIntelligenceModalProps) {
-  const { data, error, isLoading } = useSWR<IntelligenceResponse>(
+  const { data: session } = useSession();
+
+  const { data, error, isLoading, mutate } = useSWR<IntelligenceResponse>(
     isOpen ? `/api/documents/${documentId}/intelligence` : null,
     fetcher,
     {
@@ -158,7 +161,12 @@ export function AIIntelligenceModal({
                 </TabsContent>
 
                 <TabsContent value="risks" className="mt-0">
-                  <RisksTab data={data} />
+                  <RisksTab
+                    data={data}
+                    documentId={documentId}
+                    userRole={session?.user?.role}
+                    onRefresh={mutate}
+                  />
                 </TabsContent>
 
                 <TabsContent value="provenance" className="mt-0">

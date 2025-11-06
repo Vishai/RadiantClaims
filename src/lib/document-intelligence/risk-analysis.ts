@@ -5,7 +5,15 @@
 
 import { EntityExtractionResult } from "./schemas/entity-schema";
 import { RECAComplianceResult } from "./schemas/compliance-schema";
-import { RiskFlag, RiskAnalysisResult } from "./schemas/risk-schema";
+import {
+  RiskFlag,
+  RiskAnalysisResult,
+  RiskFixability,
+  RiskBlockingLevel,
+  RiskDisposition,
+  RiskAction,
+  DocumentContributionStatus,
+} from "./schemas/risk-schema";
 
 interface QualityMetrics {
   qualityScore: number;
@@ -17,6 +25,116 @@ interface QualityMetrics {
 interface RiskAnalysisOptions {
   qualityMetrics?: QualityMetrics;
   documentText?: string;
+}
+
+type RiskSeverity = RiskFlag["severity"];
+
+const CLOSED_DISPOSITIONS: RiskDisposition[] = [
+  "RESOLVED",
+  "WAIVED",
+  "BLOCKING_EXCLUDED",
+];
+
+export function isRiskClosed(disposition?: RiskDisposition): boolean {
+  return disposition ? CLOSED_DISPOSITIONS.includes(disposition) : false;
+}
+
+function defaultBlockingLevel(severity: RiskSeverity): RiskBlockingLevel {
+  return severity === "high" ? "BLOCKING" : "ADVISORY";
+}
+
+function defaultActionsFor(
+  blockingLevel: RiskBlockingLevel,
+  fixableBy: RiskFixability
+): RiskAction[] {
+  const actions = new Set<RiskAction>();
+
+  if (fixableBy === "CLAIMANT" || fixableBy === "REVIEWER") {
+    actions.add("RESOLVE");
+    actions.add("LINK_EVIDENCE");
+  }
+
+  if (fixableBy === "CLAIMANT") {
+    actions.add("REQUEST_WAIVER");
+  }
+
+  if (fixableBy === "REVIEWER") {
+    actions.add("REQUEST_WAIVER");
+    actions.add("EXCLUDE_DOCUMENT");
+  }
+
+  if (fixableBy === "SYSTEM") {
+    actions.add("RESOLVE");
+  }
+
+  if (blockingLevel === "ADVISORY") {
+    actions.add("ACKNOWLEDGE");
+  }
+
+  return Array.from(actions);
+}
+
+function createRisk(
+  input: RiskFlag & {
+    blockingLevel?: RiskBlockingLevel;
+    disposition?: RiskDisposition;
+    fixableBy?: RiskFixability;
+    availableActions?: RiskAction[];
+    nextActionBy?: RiskFixability;
+  }
+): RiskFlag {
+  const blockingLevel =
+    input.blockingLevel ?? defaultBlockingLevel(input.severity);
+  const fixableBy = input.fixableBy ?? "CLAIMANT";
+  const disposition = input.disposition ?? "OPEN";
+  const availableActions =
+    input.availableActions ?? defaultActionsFor(blockingLevel, fixableBy);
+  const nowIso = new Date().toISOString();
+
+  const nextActionBy =
+    input.nextActionBy ??
+    (isRiskClosed(disposition)
+      ? undefined
+      : disposition === "PENDING_REVIEW"
+        ? "REVIEWER"
+        : fixableBy);
+
+  return {
+    ...input,
+    blockingLevel,
+    fixableBy,
+    disposition,
+    availableActions,
+    nextActionBy,
+    history: input.history ?? [
+      {
+        disposition,
+        actorRole: "SYSTEM_AUTO",
+        timestamp: nowIso,
+      },
+    ],
+    lastUpdatedAt: input.lastUpdatedAt ?? nowIso,
+  };
+}
+
+export function determineContributionStatus(
+  risks: RiskFlag[]
+): DocumentContributionStatus {
+  if (risks.some((risk) => risk.disposition === "BLOCKING_EXCLUDED")) {
+    return "excluded";
+  }
+
+  const hasBlockingOpen = risks.some(
+    (risk) =>
+      (risk.blockingLevel ?? defaultBlockingLevel(risk.severity)) ===
+        "BLOCKING" && !isRiskClosed(risk.disposition)
+  );
+
+  if (hasBlockingOpen) {
+    return "provisional";
+  }
+
+  return "counts";
 }
 
 /**
@@ -67,6 +185,8 @@ export async function analyzeRisks(
   // Generate recommended actions
   const recommendedActions = generateRecommendedActions(risks, compliance);
 
+  const lifecycleSummary = summarizeRiskLifecycle(sortedRisks);
+
   return {
     totalRisks: risks.length,
     highSeverityCount,
@@ -75,6 +195,49 @@ export async function analyzeRisks(
     risks: sortedRisks,
     overallRiskScore,
     recommendedActions,
+    ...lifecycleSummary,
+  };
+}
+
+export function summarizeRiskLifecycle(risks: RiskFlag[]) {
+  const blockingRiskCount = risks.filter(
+    (risk) =>
+      (risk.blockingLevel ?? defaultBlockingLevel(risk.severity)) === "BLOCKING"
+  ).length;
+  const advisoryRiskCount = Math.max(risks.length - blockingRiskCount, 0);
+
+  const pendingReviewCount = risks.filter(
+    (risk) => risk.disposition === "PENDING_REVIEW"
+  ).length;
+
+  const awaitingClaimantCount = risks.filter(
+    (risk) =>
+      !isRiskClosed(risk.disposition) &&
+      (risk.nextActionBy ?? risk.fixableBy ?? "CLAIMANT") === "CLAIMANT"
+  ).length;
+
+  const awaitingSystemCount = risks.filter(
+    (risk) =>
+      !isRiskClosed(risk.disposition) &&
+      (risk.nextActionBy ?? risk.fixableBy ?? "CLAIMANT") === "SYSTEM"
+  ).length;
+
+  const acknowledgedCount = risks.filter(
+    (risk) =>
+      (risk.blockingLevel ?? defaultBlockingLevel(risk.severity)) ===
+        "ADVISORY" && Boolean(risk.acknowledgedAt)
+  ).length;
+
+  const documentContributionStatus = determineContributionStatus(risks);
+
+  return {
+    blockingRiskCount,
+    advisoryRiskCount,
+    pendingReviewCount,
+    awaitingClaimantCount,
+    awaitingSystemCount,
+    acknowledgedCount,
+    documentContributionStatus,
   };
 }
 
@@ -90,36 +253,47 @@ function analyzeComplianceRisks(compliance: RECAComplianceResult): RiskFlag[] {
   );
 
   if (highPriorityMissing.length > 0) {
-    risks.push({
-      flag: "missing_critical_documents",
-      severity: "high",
-      category: "compliance",
-      message: `${highPriorityMissing.length} critical document${highPriorityMissing.length > 1 ? "s" : ""} missing`,
-      actionRequired: `Upload the following: ${highPriorityMissing.map((r) => r.item).join(", ")}`,
-      details: `These documents are required for claim submission and approval`,
-    });
+    risks.push(
+      createRisk({
+        flag: "missing_critical_documents",
+        severity: "high",
+        category: "compliance",
+        message: `${highPriorityMissing.length} critical document${highPriorityMissing.length > 1 ? "s" : ""} missing`,
+        actionRequired: `Upload the following: ${highPriorityMissing.map((r) => r.item).join(", ")}`,
+        details: `These documents are required for claim submission and approval`,
+        fixableBy: "CLAIMANT",
+      })
+    );
   }
 
   // Low completeness
   if (compliance.checklistCoverage < 0.5) {
-    risks.push({
-      flag: "incomplete_claim",
-      severity: "high",
-      category: "compliance",
-      message: `Claim is only ${(compliance.checklistCoverage * 100).toFixed(0)}% complete`,
-      actionRequired:
-        "Upload additional required documents to meet minimum requirements",
-      details: `Claims below 50% complete are typically rejected`,
-    });
+    risks.push(
+      createRisk({
+        flag: "incomplete_claim",
+        severity: "high",
+        category: "compliance",
+        message: `Claim is only ${(compliance.checklistCoverage * 100).toFixed(0)}% complete`,
+        actionRequired:
+          "Upload additional required documents to meet minimum requirements",
+        details: `Claims below 50% complete are typically rejected`,
+        fixableBy: "CLAIMANT",
+      })
+    );
   } else if (compliance.checklistCoverage < 0.8) {
-    risks.push({
-      flag: "partially_complete_claim",
-      severity: "medium",
-      category: "compliance",
-      message: `Claim is ${(compliance.checklistCoverage * 100).toFixed(0)}% complete`,
-      actionRequired: "Upload remaining documents to improve approval chances",
-      details: `Claims 80%+ complete have significantly higher approval rates`,
-    });
+    risks.push(
+      createRisk({
+        flag: "partially_complete_claim",
+        severity: "medium",
+        category: "compliance",
+        message: `Claim is ${(compliance.checklistCoverage * 100).toFixed(0)}% complete`,
+        actionRequired:
+          "Upload remaining documents to improve approval chances",
+        details: `Claims 80%+ complete have significantly higher approval rates`,
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   // Jurisdiction issues (for downwinders)
@@ -127,17 +301,21 @@ function analyzeComplianceRisks(compliance: RECAComplianceResult): RiskFlag[] {
     compliance.claimTypeSuspected === "downwinder" &&
     !compliance.jurisdictionMatch.inCoveredCounties
   ) {
-    risks.push({
-      flag: "jurisdiction_mismatch",
-      severity: "high",
-      category: "eligibility",
-      message: "Residence not in covered county",
-      actionRequired:
-        "Verify residence was in affected area during exposure period, or provide additional proof",
-      details:
-        compliance.jurisdictionMatch.issues?.join(". ") ||
-        "Downwinder claims require residence in affected counties",
-    });
+    risks.push(
+      createRisk({
+        flag: "jurisdiction_mismatch",
+        severity: "high",
+        category: "eligibility",
+        message: "Residence not in covered county",
+        actionRequired:
+          "Verify residence was in affected area during exposure period, or provide additional proof",
+        details:
+          compliance.jurisdictionMatch.issues?.join(". ") ||
+          "Downwinder claims require residence in affected counties",
+        fixableBy: "REVIEWER",
+        disposition: "PENDING_REVIEW",
+      })
+    );
   }
 
   // Disease not covered
@@ -145,16 +323,20 @@ function analyzeComplianceRisks(compliance: RECAComplianceResult): RiskFlag[] {
     compliance.diseaseMatch?.diagnosisFound &&
     !compliance.diseaseMatch.isCoveredDisease
   ) {
-    risks.push({
-      flag: "non_covered_disease",
-      severity: "high",
-      category: "eligibility",
-      message: `Diagnosis "${compliance.diseaseMatch.diagnosisName}" may not be covered by RECA`,
-      actionRequired:
-        "Verify diagnosis against list of covered diseases, or obtain additional medical documentation",
-      details:
-        "RECA covers specific diseases. Non-covered diseases will result in claim denial.",
-    });
+    risks.push(
+      createRisk({
+        flag: "non_covered_disease",
+        severity: "high",
+        category: "eligibility",
+        message: `Diagnosis "${compliance.diseaseMatch.diagnosisName}" may not be covered by RECA`,
+        actionRequired:
+          "Verify diagnosis against list of covered diseases, or obtain additional medical documentation",
+        details:
+          "RECA covers specific diseases. Non-covered diseases will result in claim denial.",
+        fixableBy: "REVIEWER",
+        disposition: "PENDING_REVIEW",
+      })
+    );
   }
 
   return risks;
@@ -168,50 +350,66 @@ function analyzeQualityRisks(qualityMetrics: QualityMetrics): RiskFlag[] {
 
   // Poor overall quality
   if (qualityMetrics.qualityScore < 0.6) {
-    risks.push({
-      flag: "poor_document_quality",
-      severity: "high",
-      category: "quality",
-      message: "Document quality is poor, may affect OCR accuracy",
-      actionRequired:
-        "Re-scan documents at higher quality (300+ DPI, clear lighting)",
-      details: `Quality score: ${(qualityMetrics.qualityScore * 100).toFixed(0)}%. Poor quality can cause misread information and claim delays.`,
-    });
+    risks.push(
+      createRisk({
+        flag: "poor_document_quality",
+        severity: "high",
+        category: "quality",
+        message: "Document quality is poor, may affect OCR accuracy",
+        actionRequired:
+          "Re-scan documents at higher quality (300+ DPI, clear lighting)",
+        details: `Quality score: ${(qualityMetrics.qualityScore * 100).toFixed(0)}%. Poor quality can cause misread information and claim delays.`,
+        fixableBy: "CLAIMANT",
+      })
+    );
   } else if (qualityMetrics.qualityScore < 0.8) {
-    risks.push({
-      flag: "acceptable_document_quality",
-      severity: "medium",
-      category: "quality",
-      message: "Document quality could be improved",
-      actionRequired: "Consider re-scanning for better clarity",
-      details: `Quality score: ${(qualityMetrics.qualityScore * 100).toFixed(0)}%`,
-    });
+    risks.push(
+      createRisk({
+        flag: "acceptable_document_quality",
+        severity: "medium",
+        category: "quality",
+        message: "Document quality could be improved",
+        actionRequired: "Consider re-scanning for better clarity",
+        details: `Quality score: ${(qualityMetrics.qualityScore * 100).toFixed(0)}%`,
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   // Blurry documents
   if (qualityMetrics.isBlurry) {
-    risks.push({
-      flag: "blurry_document",
-      severity: "medium",
-      category: "quality",
-      message: "Document appears blurry",
-      actionRequired: "Re-scan document with camera held steady and in focus",
-      details:
-        "Blurry text may be misread or considered illegible by reviewers",
-    });
+    risks.push(
+      createRisk({
+        flag: "blurry_document",
+        severity: "medium",
+        category: "quality",
+        message: "Document appears blurry",
+        actionRequired: "Re-scan document with camera held steady and in focus",
+        details:
+          "Blurry text may be misread or considered illegible by reviewers",
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   // Low contrast
   if (qualityMetrics.isLowContrast) {
-    risks.push({
-      flag: "low_contrast_document",
-      severity: "medium",
-      category: "quality",
-      message: "Document has low contrast",
-      actionRequired: "Re-scan with better lighting or adjust scanner settings",
-      details:
-        "Low contrast makes text harder to read and increases OCR errors",
-    });
+    risks.push(
+      createRisk({
+        flag: "low_contrast_document",
+        severity: "medium",
+        category: "quality",
+        message: "Document has low contrast",
+        actionRequired:
+          "Re-scan with better lighting or adjust scanner settings",
+        details:
+          "Low contrast makes text harder to read and increases OCR errors",
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   return risks;
@@ -232,15 +430,18 @@ function analyzeEligibilityRisks(
   );
 
   for (const issue of criticalDateIssues) {
-    risks.push({
-      flag: "date_inconsistency",
-      severity: "high",
-      category: "eligibility",
-      message: issue.issue,
-      actionRequired:
-        "Review and correct dates in documents. Ensure all dates are accurate.",
-      details: issue.details,
-    });
+    risks.push(
+      createRisk({
+        flag: "date_inconsistency",
+        severity: "high",
+        category: "eligibility",
+        message: issue.issue,
+        actionRequired:
+          "Review and correct dates in documents. Ensure all dates are accurate.",
+        details: issue.details,
+        fixableBy: "CLAIMANT",
+      })
+    );
   }
 
   // Medium severity date sanity issues
@@ -249,39 +450,51 @@ function analyzeEligibilityRisks(
   );
 
   for (const issue of mediumDateIssues) {
-    risks.push({
-      flag: "date_warning",
-      severity: "medium",
-      category: "eligibility",
-      message: issue.issue,
-      actionRequired: "Verify dates are correct",
-      details: issue.details,
-    });
+    risks.push(
+      createRisk({
+        flag: "date_warning",
+        severity: "medium",
+        category: "eligibility",
+        message: issue.issue,
+        actionRequired: "Verify dates are correct",
+        details: issue.details,
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   // No diagnosis found
   if (!compliance.diseaseMatch?.diagnosisFound) {
-    risks.push({
-      flag: "no_diagnosis",
-      severity: "high",
-      category: "eligibility",
-      message: "No medical diagnosis found in documents",
-      actionRequired: "Upload medical records documenting your diagnosis",
-      details: "RECA claims require documented diagnosis of a covered disease",
-    });
+    risks.push(
+      createRisk({
+        flag: "no_diagnosis",
+        severity: "high",
+        category: "eligibility",
+        message: "No medical diagnosis found in documents",
+        actionRequired: "Upload medical records documenting your diagnosis",
+        details:
+          "RECA claims require documented diagnosis of a covered disease",
+        fixableBy: "CLAIMANT",
+      })
+    );
   }
 
   // Low claim type confidence
   if (compliance.claimTypeConfidence < 0.5) {
-    risks.push({
-      flag: "unclear_claim_type",
-      severity: "medium",
-      category: "eligibility",
-      message: "Unable to clearly determine claim type",
-      actionRequired:
-        "Provide additional documentation to clarify whether this is a downwinder, onsite, or uranium worker claim",
-      details: `Claim type detection confidence: ${(compliance.claimTypeConfidence * 100).toFixed(0)}%`,
-    });
+    risks.push(
+      createRisk({
+        flag: "unclear_claim_type",
+        severity: "medium",
+        category: "eligibility",
+        message: "Unable to clearly determine claim type",
+        actionRequired:
+          "Provide additional documentation to clarify whether this is a downwinder, onsite, or uranium worker claim",
+        details: `Claim type detection confidence: ${(compliance.claimTypeConfidence * 100).toFixed(0)}%`,
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   return risks;
@@ -302,29 +515,36 @@ function analyzeConsistencyRisks(
   );
 
   for (const issue of nameIssues) {
-    risks.push({
-      flag: "name_inconsistency",
-      severity: issue.severity === "high" ? "high" : "medium",
-      category: "consistency",
-      message: issue.issue,
-      actionRequired:
-        "Verify all names are correct and consistent across documents. Provide explanation if name changed.",
-      details: issue.details,
-    });
+    risks.push(
+      createRisk({
+        flag: "name_inconsistency",
+        severity: issue.severity === "high" ? "high" : "medium",
+        category: "consistency",
+        message: issue.issue,
+        actionRequired:
+          "Verify all names are correct and consistent across documents. Provide explanation if name changed.",
+        details: issue.details,
+        fixableBy: "CLAIMANT",
+        blockingLevel: issue.severity === "high" ? "BLOCKING" : "ADVISORY",
+      })
+    );
   }
 
   // Missing claimant identification
   const claimants = entities.persons.filter((p) => p.role === "claimant");
   if (claimants.length === 0) {
-    risks.push({
-      flag: "no_claimant_identified",
-      severity: "high",
-      category: "consistency",
-      message: "Unable to identify claimant name in documents",
-      actionRequired:
-        "Ensure claimant name is clearly visible in identity documents",
-      details: "All claims must clearly identify the claimant",
-    });
+    risks.push(
+      createRisk({
+        flag: "no_claimant_identified",
+        severity: "high",
+        category: "consistency",
+        message: "Unable to identify claimant name in documents",
+        actionRequired:
+          "Ensure claimant name is clearly visible in identity documents",
+        details: "All claims must clearly identify the claimant",
+        fixableBy: "CLAIMANT",
+      })
+    );
   }
 
   // Very few entities extracted (might indicate poor OCR or missing info)
@@ -336,15 +556,19 @@ function analyzeConsistencyRisks(
     entities.employment.length;
 
   if (totalEntities < 3) {
-    risks.push({
-      flag: "insufficient_information",
-      severity: "medium",
-      category: "consistency",
-      message: "Very little information could be extracted from documents",
-      actionRequired:
-        "Verify documents are complete and legible. Upload additional supporting documents.",
-      details: `Only ${totalEntities} entities found. This may indicate poor document quality or missing information.`,
-    });
+    risks.push(
+      createRisk({
+        flag: "insufficient_information",
+        severity: "medium",
+        category: "consistency",
+        message: "Very little information could be extracted from documents",
+        actionRequired:
+          "Verify documents are complete and legible. Upload additional supporting documents.",
+        details: `Only ${totalEntities} entities found. This may indicate poor document quality or missing information.`,
+        fixableBy: "CLAIMANT",
+        blockingLevel: "ADVISORY",
+      })
+    );
   }
 
   return risks;
@@ -394,7 +618,7 @@ function analyzeContentRisks(documentText: string): RiskFlag[] {
   }
 
   return [
-    {
+    createRisk({
       flag: "demo_or_test_language",
       severity: "high",
       category: "authenticity",
@@ -405,7 +629,9 @@ function analyzeContentRisks(documentText: string): RiskFlag[] {
       details: snippet
         ? `Detected phrases: ${matchedSignals.join(", ")}. Snippet: “${snippet}”`
         : `Detected phrases: ${matchedSignals.join(", ")}`,
-    },
+      fixableBy: "REVIEWER",
+      disposition: "PENDING_REVIEW",
+    }),
   ];
 }
 
