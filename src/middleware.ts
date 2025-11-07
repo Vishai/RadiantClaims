@@ -18,6 +18,14 @@ export default withAuth(
       return NextResponse.redirect(url);
     }
 
+    // Admin routes - require ADMIN role
+    if (path.startsWith("/admin")) {
+      if (token?.role !== "ADMIN") {
+        const url = new URL("/portal", req.url);
+        return NextResponse.redirect(url);
+      }
+    }
+
     // For RECA form routes, check subscription status
     if (path.startsWith("/reca/form/")) {
       if (!token?.sub) {
@@ -50,5 +58,6 @@ export const config = {
     "/portal/:path*",
     "/attorney/:path*", // Protect attorney portal routes
     "/reca/form/:path*", // Protect RECA form pages (require auth + subscription)
+    "/admin/:path*", // Protect admin routes (require ADMIN role)
   ],
 };
