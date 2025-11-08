@@ -52,10 +52,6 @@ export function MultiSelect({
     onChange(selected.filter((item) => item !== value));
   };
 
-  const selectedLabels = selected
-    .map((value) => options.find((opt) => opt.value === value)?.label)
-    .filter(Boolean);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

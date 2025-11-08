@@ -51,6 +51,17 @@ const DEFAULT_SETTINGS: NotificationSetting[] = EVENT_ORDER.map((event) => ({
   recipientEmails: [],
 }));
 
+const DEFAULT_SETTING_MAP: Record<
+  LawFirmNotificationEvent,
+  NotificationSetting
+> = DEFAULT_SETTINGS.reduce(
+  (acc, setting) => {
+    acc[setting.event] = setting;
+    return acc;
+  },
+  {} as Record<LawFirmNotificationEvent, NotificationSetting>
+);
+
 export default function AttorneyNotificationSettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -116,11 +127,7 @@ export default function AttorneyNotificationSettingsPage() {
   }, [session, status]);
 
   const settingsMap = useMemo(() => {
-    const map: Record<LawFirmNotificationEvent, NotificationSetting> = {
-      NEW_CLIENT_ASSIGNED: DEFAULT_SETTINGS[0],
-      PACKET_UPDATED: DEFAULT_SETTINGS[1],
-      PACKET_READY: DEFAULT_SETTINGS[2],
-    };
+    const map = { ...DEFAULT_SETTING_MAP };
     for (const setting of settings) {
       map[setting.event] = setting;
     }

@@ -9,6 +9,12 @@ const EVENT_ORDER = [
   LawFirmNotificationEvent.PACKET_READY,
 ] as const;
 
+type IncomingNotificationSetting = {
+  event?: string;
+  notifyPrimaryContact?: boolean;
+  recipientEmails?: string[] | null;
+};
+
 function requireAttorneySession(
   session: Awaited<ReturnType<typeof getServerAuthSession>>
 ) {
@@ -89,7 +95,11 @@ export async function PUT(req: NextRequest) {
     const firmId = user.firmId!;
 
     const body = await req.json();
-    const incoming = Array.isArray(body?.settings) ? body.settings : [];
+    const incoming: IncomingNotificationSetting[] = Array.isArray(
+      body?.settings
+    )
+      ? (body.settings as IncomingNotificationSetting[])
+      : [];
 
     const payload = incoming
       .filter((item) =>

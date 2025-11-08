@@ -322,11 +322,8 @@ export default function AIReviewPage() {
                         <div className="text-sm">
                           {validation.uploadedFile.intakeSession.claimant
                             ? `${validation.uploadedFile.intakeSession.claimant.firstName} ${validation.uploadedFile.intakeSession.claimant.lastName}`
-                            : validation.uploadedFile.intakeSession.claimant
-                                ?.user?.name ||
-                              validation.uploadedFile.intakeSession
-                                .serviceSubscription?.user?.name ||
-                              "—"}
+                            : validation.uploadedFile.intakeSession
+                                .serviceSubscription?.user?.name || "—"}
                         </div>
                         <div className="text-xs text-gray-500">
                           {validation.uploadedFile.intakeSession.claimant
@@ -334,7 +331,8 @@ export default function AIReviewPage() {
                             validation.uploadedFile.intakeSession.claimant?.user
                               ?.email ||
                             validation.uploadedFile.intakeSession
-                              .serviceSubscription?.user?.email}
+                              .serviceSubscription?.user?.email ||
+                            "—"}
                         </div>
                       </td>
                       <td className="py-3 text-sm">

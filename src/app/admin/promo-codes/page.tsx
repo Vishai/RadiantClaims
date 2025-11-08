@@ -48,6 +48,9 @@ interface PromoCode {
   currentUses: number;
   expiresAt: string | null;
   isActive: boolean;
+  accessOverrideEnabled: boolean;
+  accessSeatsTotal: number | null;
+  accessSeatsUsed: number;
   stripeCouponId: string | null;
   notes: string | null;
   campaignName: string | null;
@@ -90,6 +93,8 @@ interface CreatePromoCodeForm {
   durationInMonths: string;
   allowedTiers: string[];
   maxUses: string;
+  accessOverrideEnabled: boolean;
+  accessSeatsTotal: string;
   expiresInDays: string;
   createStripeCoupon: boolean;
   notes: string;
@@ -123,6 +128,8 @@ export default function PromoCodesAdminPage() {
     durationInMonths: "",
     allowedTiers: ["DIY_PREP"], // Default to DIY only
     maxUses: "1",
+    accessOverrideEnabled: false,
+    accessSeatsTotal: "",
     expiresInDays: "365",
     createStripeCoupon: true,
     notes: "",
@@ -210,6 +217,13 @@ export default function PromoCodesAdminPage() {
           ).toISOString()
         : null;
 
+      if (form.accessOverrideEnabled && form.accessSeatsTotal) {
+        const seats = parseInt(form.accessSeatsTotal, 10);
+        if (Number.isNaN(seats) || seats <= 0) {
+          throw new Error("Access seat limit must be a positive number");
+        }
+      }
+
       const response = await fetch("/api/admin/promo-codes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,6 +243,10 @@ export default function PromoCodesAdminPage() {
               : null,
           allowedTiers: form.allowedTiers,
           maxUses: form.maxUses ? parseInt(form.maxUses) : null,
+          accessOverrideEnabled: form.accessOverrideEnabled,
+          accessSeatsTotal: form.accessSeatsTotal
+            ? parseInt(form.accessSeatsTotal, 10)
+            : null,
           expiresAt,
           createStripeCoupon: form.createStripeCoupon,
           notes: form.notes || null,
@@ -259,6 +277,8 @@ export default function PromoCodesAdminPage() {
         durationInMonths: "",
         allowedTiers: ["DIY_PREP"],
         maxUses: "1",
+        accessOverrideEnabled: false,
+        accessSeatsTotal: "",
         expiresInDays: "365",
         createStripeCoupon: true,
         notes: "",
@@ -293,6 +313,14 @@ export default function PromoCodesAdminPage() {
     setIsUpdating(true);
 
     try {
+      if (
+        editingPromoCode.accessOverrideEnabled &&
+        editingPromoCode.accessSeatsTotal !== null &&
+        editingPromoCode.accessSeatsTotal <= 0
+      ) {
+        throw new Error("Access seat limit must be greater than 0");
+      }
+
       const updates: any = {
         id: editingPromoCode.id,
         description: editingPromoCode.description,
@@ -300,6 +328,11 @@ export default function PromoCodesAdminPage() {
         expiresAt: editingPromoCode.expiresAt,
         notes: editingPromoCode.notes,
         campaignName: editingPromoCode.campaignName,
+        accessOverrideEnabled: editingPromoCode.accessOverrideEnabled,
+        accessSeatsTotal:
+          editingPromoCode.accessSeatsTotal !== undefined
+            ? editingPromoCode.accessSeatsTotal
+            : undefined,
       };
 
       // Include tiers if this is a tiered promo code
@@ -768,6 +801,47 @@ export default function PromoCodesAdminPage() {
                   />
                 </div>
 
+                {/* Access Override */}
+                <div className="space-y-3 rounded-2xl border border-sage-200 bg-sage-50/40 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>Soft-Open Access Override</Label>
+                      <p className="text-sm text-sage-600">
+                        Allow this code to bypass the registration freeze. Great
+                        for limited-seat beta invites.
+                      </p>
+                    </div>
+                    <Switch
+                      id="accessOverrideEnabled"
+                      checked={form.accessOverrideEnabled}
+                      onCheckedChange={(checked) =>
+                        setForm({ ...form, accessOverrideEnabled: checked })
+                      }
+                    />
+                  </div>
+                  {form.accessOverrideEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="accessSeatsTotal">
+                        Seat Limit (blank = unlimited)
+                      </Label>
+                      <Input
+                        id="accessSeatsTotal"
+                        type="number"
+                        min="1"
+                        placeholder="25"
+                        value={form.accessSeatsTotal}
+                        onChange={(e) =>
+                          setForm({ ...form, accessSeatsTotal: e.target.value })
+                        }
+                      />
+                      <p className="text-sm text-sage-600">
+                        Each seat equals one account that can register while
+                        registrations are closed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Expires In Days */}
                 <div className="space-y-2">
                   <Label htmlFor="expiresInDays">
@@ -922,11 +996,13 @@ export default function PromoCodesAdminPage() {
                 </thead>
                 <tbody>
                   {promoCodes.map((promoCode) => {
+                    const expiresAtDate = promoCode.expiresAt
+                      ? new Date(promoCode.expiresAt)
+                      : null;
                     const isExpired =
-                      promoCode.expiresAt &&
-                      new Date(promoCode.expiresAt) < new Date();
+                      !!expiresAtDate && expiresAtDate < new Date();
                     const isMaxedOut =
-                      promoCode.maxUses &&
+                      typeof promoCode.maxUses === "number" &&
                       promoCode.currentUses >= promoCode.maxUses;
 
                     return (
@@ -955,6 +1031,16 @@ export default function PromoCodesAdminPage() {
                               )}
                             </button>
                           </div>
+                          {promoCode.accessOverrideEnabled && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <Badge className="bg-emerald-100 text-emerald-700">
+                                Access Seats: {promoCode.accessSeatsUsed}
+                                {promoCode.accessSeatsTotal
+                                  ? ` / ${promoCode.accessSeatsTotal}`
+                                  : " / ∞"}
+                              </Badge>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3">
                           <Badge className={getTypeColor(promoCode.type)}>
@@ -1116,6 +1202,54 @@ export default function PromoCodesAdminPage() {
                       })
                     }
                   />
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-sage-200 bg-sage-50/40 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>Soft-Open Access Override</Label>
+                      <p className="text-sm text-sage-600">
+                        {editingPromoCode.accessSeatsTotal
+                          ? `Currently ${editingPromoCode.accessSeatsUsed}/${editingPromoCode.accessSeatsTotal} seats used`
+                          : `${editingPromoCode.accessSeatsUsed} seats used`}
+                      </p>
+                    </div>
+                    <Switch
+                      id="edit-accessOverrideEnabled"
+                      checked={editingPromoCode.accessOverrideEnabled}
+                      onCheckedChange={(checked) =>
+                        setEditingPromoCode({
+                          ...editingPromoCode,
+                          accessOverrideEnabled: checked,
+                        })
+                      }
+                    />
+                  </div>
+                  {editingPromoCode.accessOverrideEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-accessSeatsTotal">
+                        Seat Limit (blank = unlimited)
+                      </Label>
+                      <Input
+                        id="edit-accessSeatsTotal"
+                        type="number"
+                        min="1"
+                        value={
+                          editingPromoCode.accessSeatsTotal !== null
+                            ? editingPromoCode.accessSeatsTotal
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setEditingPromoCode({
+                            ...editingPromoCode,
+                            accessSeatsTotal: e.target.value
+                              ? parseInt(e.target.value)
+                              : null,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Tiers */}

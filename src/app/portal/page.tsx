@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export const dynamic = "force-dynamic";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 
 interface Claimant {
   id: string;
@@ -44,28 +45,65 @@ interface Claimant {
     currentStep: string;
     status: string;
     uploadedFiles: any[];
-    packetSubmission: any | null;
+    packetSubmission: PacketSubmissionMeta | null;
     recaWorkflowStage?: number | null;
     recaWorkflowSection?: string | null;
     recaCompletionPercent?: number | null;
   } | null;
 }
 
+type PacketStatus =
+  | "NOT_READY"
+  | "PROCESSING"
+  | "READY_FOR_DOJ"
+  | "OUTDATED"
+  | "UNKNOWN";
+
+interface PacketSubmissionMeta {
+  status?: string | null;
+  warnings?: unknown;
+  generatedAt?: string | null;
+  readyAt?: string | null;
+  generations?: Array<{
+    version: number;
+    generatedAt: string;
+    status: string;
+    generatedBy?: string | null;
+  }>;
+}
+
+const mapPacketStatus = (status?: string | null): PacketStatus => {
+  switch (status) {
+    case "READY_FOR_DOJ":
+    case "READY":
+      return "READY_FOR_DOJ";
+    case "PROCESSING":
+    case "BUILDING":
+      return "PROCESSING";
+    case "NOT_READY":
+    case "PENDING":
+      return "NOT_READY";
+    case "OUTDATED":
+    case "STALE":
+      return "OUTDATED";
+    default:
+      return "UNKNOWN";
+  }
+};
+
 export default function CustomerPortal() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [claims, setClaims] = useState<Claimant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [packetActions, setPacketActions] = useState<
+    Record<string, "downloading" | "regenerating" | null>
+  >({});
+  const [packetActionError, setPacketActionError] = useState<string | null>(
+    null
+  );
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login?callbackUrl=/portal");
-    } else if (status === "authenticated") {
-      loadClaims();
-    }
-  }, [status, router]);
-
-  const loadClaims = async () => {
+  const loadClaims = useCallback(async () => {
     try {
       const response = await fetch("/api/portal/claims");
       if (response.ok) {
@@ -76,6 +114,82 @@ export default function CustomerPortal() {
       console.error("Failed to load claims:", error);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login?callbackUrl=/portal");
+    } else if (status === "authenticated") {
+      loadClaims();
+    }
+  }, [status, router, loadClaims]);
+
+  const getFilenameFromDisposition = (disposition?: string | null) => {
+    if (!disposition) return "radiantclaims-packet.zip";
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (match?.[1]) {
+      return decodeURIComponent(match[1]).replace(/["]/g, "");
+    }
+    return "radiantclaims-packet.zip";
+  };
+
+  const setPacketAction = (
+    sessionId: string,
+    action: "downloading" | "regenerating" | null
+  ) => {
+    setPacketActions((prev) => ({ ...prev, [sessionId]: action }));
+  };
+
+  const handleRegeneratePacket = async (sessionId: string) => {
+    setPacketActionError(null);
+    setPacketAction(sessionId, "regenerating");
+    try {
+      const response = await fetch(`/api/reca/packet/${sessionId}`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to regenerate packet");
+      }
+      await loadClaims();
+    } catch (error) {
+      setPacketActionError(
+        error instanceof Error ? error.message : "Failed to regenerate packet"
+      );
+    } finally {
+      setPacketAction(sessionId, null);
+    }
+  };
+
+  const handleDownloadPacket = async (sessionId: string) => {
+    setPacketActionError(null);
+    setPacketAction(sessionId, "downloading");
+    try {
+      const response = await fetch(`/api/reca/packet/${sessionId}`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to download packet");
+      }
+      const blob = await response.blob();
+      const filename = getFilenameFromDisposition(
+        response.headers.get("Content-Disposition")
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      await loadClaims();
+    } catch (error) {
+      setPacketActionError(
+        error instanceof Error ? error.message : "Failed to download packet"
+      );
+    } finally {
+      setPacketAction(sessionId, null);
     }
   };
 
@@ -226,120 +340,164 @@ export default function CustomerPortal() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {claims.map((claim) => (
-              <Card
-                key={claim.id}
-                className="overflow-hidden rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-sage-900">
-                        {claim.firstName} {claim.lastName}
-                      </CardTitle>
-                      <CardDescription className="text-sage-600">
-                        Started on{" "}
-                        {new Date(claim.createdAt).toLocaleDateString()}
-                      </CardDescription>
-                    </div>
-                    {claim.intakeSession &&
-                      getStatusBadge(claim.intakeSession.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Progress Info */}
-                    {claim.intakeSession && (
-                      <div className="rounded-2xl bg-cream-50 p-4">
-                        <div className="mb-2 flex items-center justify-between text-sm">
-                          <span className="font-medium text-sage-700">
-                            Current Step
-                          </span>
-                          <span className="text-sage-900">
-                            {claim.intakeSession.currentStep.replace(/_/g, " ")}
-                          </span>
-                        </div>
-                        <div className="mb-2 flex items-center justify-between text-sm">
-                          <span className="font-medium text-sage-700">
-                            Documents Uploaded
-                          </span>
-                          <span className="text-sage-900">
-                            {claim.intakeSession.uploadedFiles.length}
-                          </span>
-                        </div>
-                        {claim.intakeSession.packetSubmission && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-sage-700">
-                              Packet Status
-                            </span>
-                            <span className="text-sage-900">
-                              {claim.intakeSession.packetSubmission.status}
-                            </span>
-                          </div>
-                        )}
+            {packetActionError && (
+              <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                {packetActionError}
+              </div>
+            )}
+            {claims.map((claim) => {
+              const intakeSession = claim.intakeSession;
+              const packetSubmission = intakeSession?.packetSubmission;
+              const derivedPacketStatus = mapPacketStatus(
+                packetSubmission?.status
+              );
+              const packetWarnings = Array.isArray(packetSubmission?.warnings)
+                ? (packetSubmission?.warnings as string[])
+                : [];
+              const packetLastGeneratedAt =
+                packetSubmission?.generatedAt ?? null;
+              const packetReadyAt = packetSubmission?.readyAt ?? null;
+              const packetHistory =
+                packetSubmission?.generations?.map((generation) => ({
+                  version: generation.version,
+                  generatedAt: generation.generatedAt,
+                  status: mapPacketStatus(generation.status),
+                  generatedBy: generation.generatedBy,
+                })) ?? [];
+              const currentAction = intakeSession
+                ? packetActions[intakeSession.id]
+                : null;
+
+              return (
+                <Card
+                  key={claim.id}
+                  className="overflow-hidden rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-sage-900">
+                          {claim.firstName} {claim.lastName}
+                        </CardTitle>
+                        <CardDescription className="text-sage-600">
+                          Started on{" "}
+                          {new Date(claim.createdAt).toLocaleDateString()}
+                        </CardDescription>
                       </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap gap-3">
-                      {/* Claim Button */}
                       {claim.intakeSession &&
-                        claim.intakeSession?.status !== "SUBMITTED" && (
-                          <Button
-                            onClick={() => {
-                              // DOWNWINDER claims go to RECA form
-                              if (claim.claimType === "DOWNWINDER") {
-                                router.push(
-                                  claim.intakeSession?.recaWorkflowStage
-                                    ? `/reca/form/${claim.intakeSession.id}?section=${claim.intakeSession.recaWorkflowSection || "part_1"}`
-                                    : `/reca/start?sessionId=${claim.intakeSession?.id}`
-                                );
-                              } else {
-                                // Other claims continue intake flow
-                                router.push(
-                                  `/intake/step2?token=${claim.intakeSession?.resumeToken || ""}`
-                                );
-                              }
-                            }}
-                            className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                          >
-                            <FileText className="h-4 w-4" />
-                            Claim
-                          </Button>
-                        )}
-
-                      {/* Documents Button */}
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/portal/documents")}
-                        className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Documents
-                      </Button>
-
-                      {/* Resources Button */}
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const params = new URLSearchParams();
-                          if (claim.state) params.append("state", claim.state);
-                          if (claim.county)
-                            params.append("county", claim.county);
-                          router.push(
-                            `/resources${params.toString() ? `?${params.toString()}` : ""}` as unknown as Route
-                          );
-                        }}
-                        className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        Resources
-                      </Button>
+                        getStatusBadge(claim.intakeSession.status)}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Progress Info */}
+                      {intakeSession && (
+                        <>
+                          <div className="rounded-2xl bg-cream-50 p-4">
+                            <div className="mb-2 flex items-center justify-between text-sm">
+                              <span className="font-medium text-sage-700">
+                                Current Step
+                              </span>
+                              <span className="text-sage-900">
+                                {intakeSession.currentStep.replace(/_/g, " ")}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium text-sage-700">
+                                Documents Uploaded
+                              </span>
+                              <span className="text-sage-900">
+                                {intakeSession.uploadedFiles.length}
+                              </span>
+                            </div>
+                          </div>
+                          {intakeSession && (
+                            <PacketDeliveryCard
+                              status={derivedPacketStatus}
+                              warnings={packetWarnings}
+                              lastGeneratedAt={packetLastGeneratedAt}
+                              readyAt={packetReadyAt}
+                              history={packetHistory}
+                              downloadDisabled={
+                                derivedPacketStatus !== "READY_FOR_DOJ"
+                              }
+                              onDownload={
+                                derivedPacketStatus === "READY_FOR_DOJ"
+                                  ? () => handleDownloadPacket(intakeSession.id)
+                                  : undefined
+                              }
+                              onRegenerate={() =>
+                                handleRegeneratePacket(intakeSession.id)
+                              }
+                              isDownloading={currentAction === "downloading"}
+                              isRegenerating={currentAction === "regenerating"}
+                            />
+                          )}
+                        </>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex flex-wrap gap-3">
+                        {/* Claim Button */}
+                        {intakeSession &&
+                          intakeSession.status !== "SUBMITTED" && (
+                            <Button
+                              onClick={() => {
+                                // DOWNWINDER claims go to RECA form
+                                if (claim.claimType === "DOWNWINDER") {
+                                  router.push(
+                                    intakeSession.recaWorkflowStage
+                                      ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
+                                      : `/reca/start?sessionId=${intakeSession.id}`
+                                  );
+                                } else {
+                                  // Other claims continue intake flow
+                                  router.push(
+                                    `/intake/step2?token=${intakeSession.resumeToken || ""}`
+                                  );
+                                }
+                              }}
+                              className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Claim
+                            </Button>
+                          )}
+
+                        {/* Documents Button */}
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push("/portal/documents")}
+                          className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Documents
+                        </Button>
+
+                        {/* Resources Button */}
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const params = new URLSearchParams();
+                            if (claim.state)
+                              params.append("state", claim.state);
+                            if (claim.county)
+                              params.append("county", claim.county);
+                            router.push(
+                              `/resources${params.toString() ? `?${params.toString()}` : ""}` as unknown as Route
+                            );
+                          }}
+                          className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          Resources
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {/* Add New Claim */}
             <Button

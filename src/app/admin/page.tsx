@@ -13,7 +13,6 @@ import {
   Users,
   FileText,
   DollarSign,
-  TrendingUp,
   CheckCircle2,
   Clock,
   AlertTriangle,

@@ -396,8 +396,10 @@ model ConsentRecord {
 }
 
 enum PacketStatus {
+  PENDING
   GENERATING
   READY
+  OUTDATED
   DELIVERED
   FAILED
   PRINTED // Digital copies printed for review
@@ -415,6 +417,7 @@ model PacketSubmission {
   fileCount             Int           @default(0)
   totalSizeBytes        Int           @default(0)
   generatedAt           DateTime?
+  readyAt               DateTime?
   deliveredAt           DateTime?
   deliveredTo           String? // Attorney email
   printedAt             DateTime? // When digital copies were printed
@@ -423,11 +426,38 @@ model PacketSubmission {
   trackingNumber        String? // If prepaid envelope has tracking
   prepaidEnvelopeIssued Boolean       @default(false)
   errorMessage          String?       @db.Text
+  archiveKey            String?
+  archiveFileName       String?
+  archiveSizeBytes      Int           @default(0)
+  archiveChecksum       String?
+  version               Int           @default(0)
+  warnings              Json?
+  lastDownloadedAt      DateTime?
+  downloadCount         Int           @default(0)
+  generations           PacketGeneration[]
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
   @@index([status])
   @@index([generatedAt])
+}
+
+model PacketGeneration {
+  id                String       @id @default(cuid())
+  packetSubmissionId String
+  packetSubmission  PacketSubmission @relation(fields: [packetSubmissionId], references: [id], onDelete: Cascade)
+  version           Int
+  status            PacketStatus  @default(GENERATING)
+  archiveKey        String?
+  archiveSizeBytes  Int?
+  warnings          Json?
+  generatedBy       String?
+  generatedAt       DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+
+  @@index([packetSubmissionId])
+  @@index([version])
+  @@index([status])
 }
 
 // Jurisdiction-specific document requirements
@@ -1562,6 +1592,10 @@ model PromoCode {
   currentUses         Int                @default(0)
   expiresAt           DateTime?          // Code expiration date
   isActive            Boolean            @default(true)
+  // Access override (soft-open registration)
+  accessOverrideEnabled Boolean          @default(false)
+  accessSeatsTotal    Int?
+  accessSeatsUsed     Int                @default(0)
   // Stripe integration
   stripeCouponId      String?            @unique // Link to Stripe coupon
   // Archive support
@@ -1578,6 +1612,7 @@ model PromoCode {
   subscriptions       ServiceSubscription[]
   tiers               PromoCodeTier[]    // Discount tiers
   usageHistory        PromoCodeUsage[]   // Detailed usage tracking
+  accessGrants        PromoCodeAccessGrant[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -1598,12 +1633,26 @@ model PromoCodeTier {
   percentOff      Int?        // 0-100
   amountOff       Float?      // Dollar amount
   description     String?     // e.g., "Early bird discount"
+  stripeCouponId  String?     @unique // Cached Stripe coupon for this tier
   usages          PromoCodeUsage[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([promoCodeId])
   @@index([promoCodeId, tierOrder])
+}
+
+model PromoCodeAccessGrant {
+  id            String    @id @default(cuid())
+  promoCodeId   String
+  promoCode     PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  email         String
+  userId        String?
+  grantedAt     DateTime  @default(now())
+
+  @@unique([promoCodeId, email])
+  @@index([promoCodeId])
+  @@index([email])
 }
 
 model PromoCodeUsage {

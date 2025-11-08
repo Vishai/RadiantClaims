@@ -98,6 +98,41 @@ The feature has been tested and verified to work correctly:
 
 **Registration is currently BLOCKED** (`.env` has `REGISTRATION_ENABLED=false`)
 
+## Soft-Open Access Codes (Invite-Only Seats)
+
+Sometimes you want to keep the platform closed to the public while letting a small set of invited testers register. You can do this with **access codes** layered over `REGISTRATION_ENABLED=false`.
+
+### How It Works
+
+1. Keep `REGISTRATION_ENABLED=false` so the default response remains 503.
+2. Generate an access or discount code (re-use the existing `PromoCode` model via `/admin/promo-codes`). Recommended settings:
+   - `code`: e.g., `BETA-2025-01`
+   - `type`: `ACCESS_CODE` (new enum) or flag on the promo row
+   - `maxUses`: number of seats you are comfortable onboarding
+   - Optional `discountAmount` / `discountPercent` if the code should also apply pricing changes.
+3. Email the invite along with instructions (“Enter this code on the registration page to unlock access”).
+4. When a prospective user submits the code:
+   - The frontend calls a new `/api/access/validate` endpoint (or extends `/api/promo/validate`)
+   - Backend checks the promo row is active, not expired, and seats remain.
+   - If valid, store `session.accessOverride=true` (cookie or JWT claim) and return success.
+   - The registration form includes the access token in the next `/api/auth/register` call, allowing it to bypass the global block.
+5. Each successful registration increments `currentUses`. Once `maxUses` is reached, the code automatically rejects new attempts.
+
+### Frontend UX
+
+- **Register page**: Show an “Have an access code?” accordion with an input. If `REGISTRATION_ENABLED=false`, highlight that a code is required.
+- **Service tiers / tier checkout**: Add an access-code modal so invitees who land deeper in the flow can unlock registration before payment.
+- **Error states**: Distinguish between “Registrations closed” and “Code invalid or seats exhausted” so invitees know whether to request a new code.
+- **API hooks**: `/api/access/validate` lets the UI confirm a code before someone starts the flow, and `/api/auth/register` now accepts an `accessCode` field to bypass the gate and log the seat usage automatically.
+
+### Admin Workflow
+
+- Create codes under `/admin/promo-codes` (add fields for `isAccessCode`, `maxSeats`, `currentSeats`).
+- Track usage in the same dashboard to know how many invites have converted.
+- Deactivate codes once a cohort is full or the platform opens broadly.
+
+This soft-open path lets marketing email specific users a controlled number of seats while the wider public still sees the waitlist/closed message.
+
 ## Lead Collection (Waitlist)
 
 ### How It Works

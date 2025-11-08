@@ -6,6 +6,15 @@ The **Payout Pulse** system provides RadiantClaims customers with unprecedented 
 
 ---
 
+## Membership Availability & Data Inputs
+
+- **Active membership required** – Payout Pulse projections are visible only while a customer’s DIY subscription is active. If a user cancels or lapses, the dashboard hides payout estimates and prompts them to reactivate. This keeps the feature positioned as an ongoing value driver.
+- **Snapshot sources** – Each projection references three data sets:
+  1. **Submission timeline data** (claim creation date, DOJ submission date, time-in-stage metrics from `ClaimLifecycle`)
+  2. **Document profile score** (which required categories were verified/locked at the time of filing, plus optional releases like LDS or cancer registry authorizations; these increase confidence, not speed)
+  3. **Anonymized payout confirmations** (admin-entered “payout verified” events from other clients in the same cohort)
+- **Confidence vs. speed** – Optional authorizations (LDS records, cancer registry releases, provider HIPAA forms) reduce the risk that DOJ rejects the packet for missing evidence, but we do **not** assume they shorten timelines. When we reference them in UI copy, we frame them as “higher certainty DOJ can find your records” and note that outside agencies may add processing time.
+
 ## Core Features
 
 ### 1. **Claim Lifecycle Tracking**
@@ -60,7 +69,7 @@ One of the most valuable features for claimants is visibility into:
   - When records are received by DOJ
   - Typical timeframes for this step
 
-This addresses a major pain point: **claimants wondering if DOJ has their medical records yet**.
+This addresses a major pain point: **claimants wondering if DOJ has their medical records yet**. When optional releases (e.g., LDS residential records, state cancer registry authorizations) are on file we annotate the timeline with “document locate confidence” badges rather than implying faster processing.
 
 ---
 

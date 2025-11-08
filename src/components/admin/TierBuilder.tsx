@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +58,7 @@ export function TierBuilder({ tiers, onChange }: TierBuilderProps) {
     onChange(updatedTiers);
   };
 
-  const calculateUsageRange = (tier: Tier, index: number) => {
+  const calculateUsageRange = (tier: Tier) => {
     const start = tier.startAfterUses + 1;
     if (!tier.maxUsesInTier) return `Use ${start}+`;
     const end = tier.startAfterUses + tier.maxUsesInTier;
@@ -101,7 +100,7 @@ export function TierBuilder({ tiers, onChange }: TierBuilderProps) {
                       Tier {tier.tierOrder}
                     </CardTitle>
                     <span className="text-sm text-gray-500">
-                      ({calculateUsageRange(tier, index)})
+                      ({calculateUsageRange(tier)})
                     </span>
                   </div>
                   {tiers.length > 1 && (
@@ -194,9 +193,9 @@ export function TierBuilder({ tiers, onChange }: TierBuilderProps) {
         <div className="space-y-2 rounded-lg bg-gray-50 p-4">
           <p className="text-sm font-medium">Tier Summary:</p>
           <ul className="space-y-1 text-sm text-gray-600">
-            {tiers.map((tier, index) => (
+            {tiers.map((tier) => (
               <li key={tier.id}>
-                • {calculateUsageRange(tier, index)}: {tier.percentOff}% off
+                • {calculateUsageRange(tier)}: {tier.percentOff}% off
                 {tier.description && ` - ${tier.description}`}
               </li>
             ))}

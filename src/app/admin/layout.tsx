@@ -128,7 +128,7 @@ export default function AdminLayout({
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  href={item.href as any}
                   className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-sage-800 text-white"
@@ -149,7 +149,7 @@ export default function AdminLayout({
             <div className="mb-4 space-y-2">
               <p className="text-xs font-medium text-sage-400">Quick Access</p>
               <Link
-                href="/portal"
+                href={"/portal" as any}
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-sage-300 hover:bg-sage-800 hover:text-white"
                 onClick={() => setSidebarOpen(false)}
               >
@@ -157,7 +157,7 @@ export default function AdminLayout({
                 View as Customer
               </Link>
               <Link
-                href="/reca/form"
+                href={"/reca/form" as any}
                 target="_blank"
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-sage-300 hover:bg-sage-800 hover:text-white"
               >

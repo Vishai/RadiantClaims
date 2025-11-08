@@ -16,7 +16,7 @@ We've updated the account creation messaging across the application to prominent
 
 • Auto-save your progress every 2 minutes
 • Resume from any device
-• Payout Pulse: See your estimated payout date and queue position
+• Payout Pulse: See your estimated payout date and queue position (active DIY membership required)
 • Claim Timeline: Track DOJ milestones in real-time
 • Monitor medical records and cancer registry lookups
 • Get notified of claim progress updates
@@ -38,7 +38,7 @@ We've updated the account creation messaging across the application to prominent
 Create Account
 Unlock powerful tracking tools and save your progress
 
-✓ Payout Pulse - Track payout timeline
+✓ Payout Pulse - Track payout timeline (requires active membership)
 ✓ Real-time DOJ milestone updates
 ✓ Queue position & cohort stats
 ✓ Auto-save across all devices
@@ -58,7 +58,7 @@ Unlock powerful tracking tools and save your progress
 ```
 ✅ What you'll unlock:
 
-• Payout Pulse: Estimated payout date
+• Payout Pulse: Estimated payout date (active DIY membership benefit)
 • Timeline Tracking: See where your claim is
 • Queue position & progress updates
 • Auto-save across all devices
@@ -82,6 +82,7 @@ Unlock powerful tracking tools and save your progress
 4. Real-time milestone updates
 5. Medical records tracking
 6. Progress notifications
+7. Membership-gated insight (Payout Pulse remains visible only while subscription is active)
 
 ### Tertiary Benefits (Technical)
 7. Auto-save functionality
@@ -126,6 +127,7 @@ User clicks, arrives at `/reca/start`
 └─────────────────────────────────────┘
 ```
 **Decision Point:** User sees Payout Pulse benefits BEFORE creating account
+> *Payout Pulse remains available only while the DIY membership stays active.*
 
 ### Touchpoint 3: Guest User Auto-Save
 If user chooses "Continue as Guest":
@@ -144,6 +146,7 @@ After first auto-save (2 minutes):
 └─────────────────────────────────────┘
 ```
 **Conversion Point:** Remind guest users what they're missing
+> Canceling later will pause Payout Pulse forecasts until the membership is reactivated.
 
 ### Touchpoint 4: Signup Page
 User clicks "Create Account":
@@ -197,6 +200,16 @@ Full benefits list with 7 items, including:
 ❌ "Register to check claim status"
 ```
 **Message:** Functional, boring, expected
+
+---
+
+## Retention Messaging Hooks
+
+- **Subscription page banner:** “Stay subscribed to keep Payout Pulse and Claim Timeline tracking unlocked. We pause payout forecasts while your membership is inactive.”
+- **Cancellation modal copy:** “Ending your DIY membership immediately hides Payout Pulse estimates and DOJ timeline alerts. Reactivate anytime to restore them.”
+- **Empty-state component:** When a lapsed user visits the portal, replace the widget with “Reactivate membership to see your payout forecast again.”
+
+These reminders reinforce that the unique forecasting value is contingent on an active subscription, giving customers a concrete reason to keep their profile open until payout hits their account.
 
 ### RadiantClaims (Feature-Rich)
 ```

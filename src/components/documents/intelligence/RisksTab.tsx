@@ -95,7 +95,7 @@ export function RisksTab({
       return false;
     }
 
-    const { risk, index } = item;
+    const { index } = item;
     if (index === undefined || index === null) {
       setActionStatus({
         type: "error",

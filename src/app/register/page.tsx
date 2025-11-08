@@ -27,6 +27,13 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [accessCodeStatus, setAccessCodeStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >("idle");
+  const [accessCodeMessage, setAccessCodeMessage] = useState<string | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
@@ -61,6 +68,7 @@ function RegisterForm() {
           name,
           email,
           password,
+          accessCode: accessCode ? accessCode.trim() : undefined,
         }),
       });
 
@@ -73,6 +81,11 @@ function RegisterForm() {
             data.message || data.error || "Registration is temporarily disabled"
           );
           setShowWaitlist(true); // Show waitlist form option
+          if (!accessCode) {
+            setAccessCodeMessage(
+              "Have an invite? Enter your access code to unlock registration."
+            );
+          }
         } else {
           setError(data.error || "Failed to create account");
         }
@@ -99,6 +112,9 @@ function RegisterForm() {
         callbackUrlParam && callbackUrlParam.startsWith("/")
           ? (callbackUrlParam as Route)
           : DEFAULT_REDIRECT_ROUTE;
+      setAccessCode("");
+      setAccessCodeStatus("idle");
+      setAccessCodeMessage(null);
       router.push(safeCallbackUrl);
       router.refresh();
     } catch (err) {
@@ -148,6 +164,50 @@ function RegisterForm() {
           query: { callbackUrl: callbackUrlParam },
         }
       : LOGIN_ROUTE;
+
+  const handleValidateAccessCode = async () => {
+    if (!accessCode) {
+      setAccessCodeMessage("Enter an invite code to validate access.");
+      setAccessCodeStatus("invalid");
+      return;
+    }
+
+    setAccessCodeStatus("checking");
+    setAccessCodeMessage(null);
+
+    try {
+      const response = await fetch("/api/access/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: accessCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAccessCodeStatus("invalid");
+        setAccessCodeMessage(data.error || "Unable to validate code.");
+        return;
+      }
+
+      setAccessCodeStatus("valid");
+      setAccessCodeMessage(
+        data.seatsTotal
+          ? `${data.seatsRemaining}/${data.seatsTotal} seats remaining`
+          : "Seats available"
+      );
+    } catch (err) {
+      console.error("Access code validation error:", err);
+      setAccessCodeStatus("invalid");
+      setAccessCodeMessage("Unable to validate code. Please try again.");
+    }
+  };
+
+  const handleAccessCodeChange = (value: string) => {
+    setAccessCode(value);
+    setAccessCodeStatus("idle");
+    setAccessCodeMessage(null);
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-50 via-peach-50 to-cream-100">
@@ -216,6 +276,10 @@ function RegisterForm() {
                     Join our waitlist and we'll notify you the moment we're
                     accepting new users.
                   </p>
+                  <p className="mt-1 text-amber-700">
+                    Have an invite? Enter your access code on the registration
+                    form to unlock early access.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -271,6 +335,49 @@ function RegisterForm() {
               </form>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2 rounded-2xl border border-cream-200 bg-cream-50 p-4">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="accessCode" className="text-sage-800">
+                      Access Code (optional)
+                    </Label>
+                    <p className="text-xs text-sage-600">
+                      Have an invite from RadiantClaims? Enter it to bypass the
+                      registration freeze.
+                    </p>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id="accessCode"
+                      type="text"
+                      placeholder="BETA-2025-01"
+                      value={accessCode}
+                      onChange={(e) => handleAccessCodeChange(e.target.value)}
+                      className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleValidateAccessCode}
+                      disabled={!accessCode || accessCodeStatus === "checking"}
+                    >
+                      {accessCodeStatus === "checking"
+                        ? "Validating..."
+                        : "Validate Code"}
+                    </Button>
+                  </div>
+                  {accessCodeMessage && (
+                    <p
+                      className={`text-sm ${
+                        accessCodeStatus === "valid"
+                          ? "text-emerald-600"
+                          : "text-amber-700"
+                      }`}
+                    >
+                      {accessCodeMessage}
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sage-800">
                     Full Name (Optional)

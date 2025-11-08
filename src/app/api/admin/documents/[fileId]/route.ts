@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getPresignedGetUrl } from "@/lib/r2";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
   try {

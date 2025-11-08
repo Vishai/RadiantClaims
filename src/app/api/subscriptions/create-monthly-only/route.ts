@@ -10,12 +10,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type Stripe from "stripe";
 import { authOptions } from "@/lib/auth";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import {
   applyTieredDiscount,
   recordPromoCodeUsage,
+  type TieredDiscountResult,
 } from "@/lib/promo-code-utils";
 
 export async function POST(req: NextRequest) {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Validate promo code if provided
     let promoCodeRecord = null;
-    let tieredDiscountResult = null;
+    let tieredDiscountResult: TieredDiscountResult | null = null;
     if (promoCode) {
       promoCodeRecord = await prisma.promoCode.findUnique({
         where: { code: promoCode },
@@ -126,6 +128,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const tieredStripeCouponId = tieredDiscountResult?.stripeCouponId || null;
+    const appliedStripeCouponId =
+      tieredStripeCouponId || promoCodeRecord?.stripeCouponId || null;
+    const appliedDiscountPercent =
+      tieredDiscountResult?.discountType === "PERCENT"
+        ? (tieredDiscountResult?.tier?.percentOff ?? null)
+        : (promoCodeRecord?.percentOff ?? null);
+    const appliedDiscountAmount =
+      tieredDiscountResult?.discountType === "AMOUNT"
+        ? (tieredDiscountResult?.tier?.amountOff ??
+          tieredDiscountResult?.discountApplied ??
+          null)
+        : (promoCodeRecord?.amountOff ?? null);
+
     // Create or update subscription record
     const isPilot = promoCodeRecord?.type === "PILOT_ACCOUNT";
     const pilotExpiresAt = isPilot
@@ -147,7 +163,9 @@ export async function POST(req: NextRequest) {
         promoCodeId: promoCodeRecord?.id,
         isPilotAccount: isPilot,
         pilotExpiresAt,
-        stripeCouponId: promoCodeRecord?.stripeCouponId,
+        stripeCouponId: appliedStripeCouponId,
+        discountPercent: appliedDiscountPercent,
+        discountAmount: appliedDiscountAmount,
       },
       update: {
         stripeCustomerId: customer.id,
@@ -155,35 +173,41 @@ export async function POST(req: NextRequest) {
         promoCodeId: promoCodeRecord?.id,
         isPilotAccount: isPilot,
         pilotExpiresAt,
+        stripeCouponId: appliedStripeCouponId,
+        discountPercent: appliedDiscountPercent,
+        discountAmount: appliedDiscountAmount,
       },
     });
 
     // Create Stripe subscription starting immediately
-    const stripeSubscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [
-        {
-          price: STRIPE_CONFIG.DIY_MONTHLY.priceId,
+    const stripeSubscription: Stripe.Subscription =
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: STRIPE_CONFIG.DIY_MONTHLY.priceId,
+          },
+        ],
+        metadata: {
+          userId: session.user.id,
+          subscriptionId: subscription.id,
+          promoCode: promoCode || "",
+          wavedSetupFee: "true",
         },
-      ],
-      metadata: {
-        userId: session.user.id,
-        subscriptionId: subscription.id,
-        promoCode: promoCode || "",
-        wavedSetupFee: "true",
-      },
-      // Apply tiered discount coupon if available, or standard coupon for pilot accounts
-      ...(tieredDiscountResult?.stripeCouponId
-        ? { coupon: tieredDiscountResult.stripeCouponId }
-        : isPilot && promoCodeRecord?.stripeCouponId
-          ? { coupon: promoCodeRecord.stripeCouponId }
-          : {}),
-    });
+        // Apply tiered discount coupon if available, or standard coupon for pilot accounts
+        ...(tieredDiscountResult?.stripeCouponId
+          ? { coupon: tieredDiscountResult.stripeCouponId }
+          : isPilot && promoCodeRecord?.stripeCouponId
+            ? { coupon: promoCodeRecord.stripeCouponId }
+            : {}),
+      });
 
-    // Calculate next billing date
-    const nextBillingDate = new Date(
-      (stripeSubscription.current_period_end || 0) * 1000
-    );
+    // Calculate next billing date (Stripe types omit current_period_end, so cast)
+    const currentPeriodEnd =
+      typeof (stripeSubscription as any).current_period_end === "number"
+        ? (stripeSubscription as any).current_period_end
+        : 0;
+    const nextBillingDate = new Date(currentPeriodEnd * 1000);
     const billingCycleDay = nextBillingDate.getDate();
 
     // Update subscription with Stripe details

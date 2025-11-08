@@ -133,7 +133,7 @@ export default function AttorneyLayout({
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  href={item.href as any}
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                     active
@@ -151,7 +151,7 @@ export default function AttorneyLayout({
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href="/resources"
+                    href={"/resources" as any}
                     className="flex items-center gap-2 hover:text-white"
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -161,7 +161,7 @@ export default function AttorneyLayout({
                 </li>
                 <li>
                   <Link
-                    href="/portal/documents"
+                    href={"/portal/documents" as any}
                     className="flex items-center gap-2 hover:text-white"
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -179,7 +179,7 @@ export default function AttorneyLayout({
             </p>
             <div className="mt-2 space-y-2 text-sm">
               <Link
-                href="/portal"
+                href={"/portal" as any}
                 className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-white/10"
                 onClick={() => setSidebarOpen(false)}
               >
@@ -187,7 +187,7 @@ export default function AttorneyLayout({
                 View Customer Portal
               </Link>
               <Link
-                href="/reca/start"
+                href={"/reca/start" as any}
                 className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-white/10"
                 onClick={() => setSidebarOpen(false)}
               >

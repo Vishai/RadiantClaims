@@ -12,13 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -202,16 +195,18 @@ export default function ClaimsAdminPage() {
     }
 
     // Apply date range filter
-    if (dateRange?.from) {
+    const from = dateRange?.from;
+    if (from) {
+      const to = dateRange?.to;
       filtered = filtered.filter((session) => {
         const sessionDate = parseISO(session.createdAt);
-        if (dateRange.to) {
+        if (to) {
           return isWithinInterval(sessionDate, {
-            start: dateRange.from,
-            end: dateRange.to,
+            start: from,
+            end: to,
           });
         }
-        return sessionDate >= dateRange.from;
+        return sessionDate >= from;
       });
     }
 
@@ -476,14 +471,13 @@ export default function ClaimsAdminPage() {
                           <div className="font-medium">
                             {session.claimant
                               ? `${session.claimant.firstName} ${session.claimant.lastName}`
-                              : session.claimant?.user?.name ||
-                                session.serviceSubscription?.user?.name ||
-                                "—"}
+                              : session.serviceSubscription?.user?.name || "—"}
                           </div>
                           <div className="text-sm text-gray-500">
                             {session.claimant?.email ||
                               session.claimant?.user?.email ||
-                              session.serviceSubscription?.user?.email}
+                              session.serviceSubscription?.user?.email ||
+                              "—"}
                           </div>
                         </div>
                       </td>
@@ -583,8 +577,7 @@ export default function ClaimsAdminPage() {
                       <p className="text-base">
                         {selectedSession.claimant
                           ? `${selectedSession.claimant.firstName} ${selectedSession.claimant.lastName}`
-                          : selectedSession.claimant?.user?.name ||
-                            selectedSession.serviceSubscription?.user?.name ||
+                          : selectedSession.serviceSubscription?.user?.name ||
                             "—"}
                       </p>
                     </div>
@@ -593,7 +586,8 @@ export default function ClaimsAdminPage() {
                       <p className="text-base">
                         {selectedSession.claimant?.email ||
                           selectedSession.claimant?.user?.email ||
-                          selectedSession.serviceSubscription?.user?.email}
+                          selectedSession.serviceSubscription?.user?.email ||
+                          "—"}
                       </p>
                     </div>
                     <div>

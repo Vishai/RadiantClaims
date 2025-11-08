@@ -4,6 +4,7 @@ import type {
   RiskDisposition,
   RiskFlag,
   RiskFixability,
+  RiskSeverity,
 } from "@/lib/document-intelligence/schemas";
 import type { UserRole } from "@prisma/client";
 
@@ -98,7 +99,7 @@ export type FilterCategory =
   | "consistency"
   | "authenticity";
 
-export const severityOrder: Record<string, number> = {
+export const severityOrder: Record<RiskSeverity, number> = {
   high: 0,
   medium: 1,
   low: 2,

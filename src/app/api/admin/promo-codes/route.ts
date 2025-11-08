@@ -181,6 +181,8 @@ export async function POST(req: NextRequest) {
       campaignName,
       useTieredDiscounts,
       tiers, // Array of tier objects
+      accessOverrideEnabled,
+      accessSeatsTotal,
     } = await req.json();
 
     // Validate required fields
@@ -271,6 +273,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (accessOverrideEnabled && accessSeatsTotal !== null) {
+      if (accessSeatsTotal === undefined || accessSeatsTotal <= 0) {
+        return NextResponse.json(
+          { error: "Access seat limit must be greater than 0" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create promo code in database with optional tiers
     const promoCode = await prisma.promoCode.create({
       data: {
@@ -290,6 +301,8 @@ export async function POST(req: NextRequest) {
         notes,
         campaignName,
         useTieredDiscounts: useTieredDiscounts || false,
+        accessOverrideEnabled: Boolean(accessOverrideEnabled),
+        accessSeatsTotal: accessSeatsTotal ?? null,
         // Create tiers if provided
         ...(useTieredDiscounts && tiers && tiers.length > 0
           ? {
@@ -376,11 +389,25 @@ export async function PATCH(req: NextRequest) {
       campaignName,
       description,
       tiers,
+      accessOverrideEnabled,
+      accessSeatsTotal,
     } = await req.json();
 
     if (!id) {
       return NextResponse.json(
         { error: "Promo code ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      accessOverrideEnabled &&
+      accessSeatsTotal !== null &&
+      accessSeatsTotal !== undefined &&
+      accessSeatsTotal <= 0
+    ) {
+      return NextResponse.json(
+        { error: "Access seat limit must be greater than 0" },
         { status: 400 }
       );
     }
@@ -398,6 +425,10 @@ export async function PATCH(req: NextRequest) {
       notes: notes !== undefined ? notes : undefined,
       campaignName: campaignName !== undefined ? campaignName : undefined,
       description: description !== undefined ? description : undefined,
+      accessOverrideEnabled:
+        accessOverrideEnabled !== undefined ? accessOverrideEnabled : undefined,
+      accessSeatsTotal:
+        accessSeatsTotal !== undefined ? accessSeatsTotal : undefined,
     };
 
     // Handle tier updates if provided

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         where: {
           reviewStatus: "COMPLETED",
           aiAccuracyScore: { not: null },
-          completedAt: {
+          reviewCompletedAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
           },
         },
@@ -202,7 +202,7 @@ export async function GET() {
         },
         where: {
           aiAccuracyScore: { not: null },
-          completedAt: {
+          reviewCompletedAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           },
         },
@@ -231,8 +231,8 @@ export async function GET() {
     const reviewCompletionRate =
       sampledReviews > 0 ? completedReviews / sampledReviews : 0;
 
-    const avgAccuracyScore = averageAccuracy._avg.aiAccuracyScore;
-    const recentAvgAccuracyScore = recentAccuracy._avg.aiAccuracyScore;
+    const avgAccuracyScore = averageAccuracy._avg?.aiAccuracyScore;
+    const recentAvgAccuracyScore = recentAccuracy._avg?.aiAccuracyScore;
 
     // Determine if we should auto-sample based on recent accuracy
     const shouldAutoSample =

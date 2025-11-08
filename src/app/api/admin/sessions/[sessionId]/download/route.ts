@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getObject } from "@/lib/r2";
 import JSZip from "jszip";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
@@ -58,13 +59,17 @@ ${intakeSession.uploadedFiles
     // Add each file to the ZIP
     for (const file of intakeSession.uploadedFiles) {
       try {
-        // Fetch file from storage
-        const fileResponse = await fetch(file.fileUrl);
-        if (fileResponse.ok) {
-          const fileBuffer = await fileResponse.arrayBuffer();
-          const folder = file.category ? `${file.category}/` : "";
-          zip.file(`${folder}${file.originalFilename}`, fileBuffer);
+        if (!file.fileKey) {
+          console.warn(`File ${file.id} missing storage key, skipping`);
+          continue;
         }
+        const fileBuffer = await getObject(file.fileKey);
+        if (!fileBuffer) {
+          console.warn(`Unable to load file ${file.id} from storage`);
+          continue;
+        }
+        const folder = file.category ? `${file.category}/` : "";
+        zip.file(`${folder}${file.originalFilename || file.id}`, fileBuffer);
       } catch (error) {
         console.error(`Failed to add file ${file.originalFilename}:`, error);
       }
@@ -72,6 +77,10 @@ ${intakeSession.uploadedFiles
 
     // Generate ZIP
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    const zipBytes = zipBuffer.buffer.slice(
+      zipBuffer.byteOffset,
+      zipBuffer.byteOffset + zipBuffer.byteLength
+    ) as ArrayBuffer;
 
     // Create filename
     const claimantName = intakeSession.claimant
@@ -80,10 +89,11 @@ ${intakeSession.uploadedFiles
     const filename = `${claimantName}_Claim_Packet_${new Date().toISOString().split("T")[0]}.zip`;
 
     // Return ZIP file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipBytes, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": zipBuffer.length.toString(),
       },
     });
   } catch (error) {

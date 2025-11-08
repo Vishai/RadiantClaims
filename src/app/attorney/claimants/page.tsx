@@ -11,7 +11,7 @@ import {
 } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,8 @@ const WORKFLOW_BUCKETS: {
   },
 ];
 
+const DEFAULT_WORKFLOW_BUCKET = WORKFLOW_BUCKETS[0]?.value ?? "ready";
+
 const WORKFLOW_LABELS: Record<ClaimantWorkflowStatus, string> = {
   INTAKE: "Intake In Progress",
   DOCUMENTS_PENDING: "Documents Pending",
@@ -129,7 +131,7 @@ export default function AttorneyClaimantsWorkflowPage() {
   const router = useRouter();
 
   const [claimants, setClaimants] = useState<Claimant[]>([]);
-  const [activeTab, setActiveTab] = useState(WORKFLOW_BUCKETS[0].value);
+  const [activeTab, setActiveTab] = useState(DEFAULT_WORKFLOW_BUCKET);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

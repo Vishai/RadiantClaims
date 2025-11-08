@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import {
   applyTieredDiscount,
   recordPromoCodeUsage,
+  type TieredDiscountResult,
 } from "@/lib/promo-code-utils";
 
 export async function POST(req: NextRequest) {
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     // Validate promo code if provided
     let promoCodeRecord = null;
     let discounts: string[] = [];
-    let tieredDiscountResult = null;
+    let tieredDiscountResult: TieredDiscountResult | null = null;
     if (promoCode) {
       promoCodeRecord = await prisma.promoCode.findUnique({
         where: { code: promoCode },
@@ -140,6 +141,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const tieredStripeCouponId = tieredDiscountResult?.stripeCouponId || null;
+    const appliedStripeCouponId =
+      tieredStripeCouponId || promoCodeRecord?.stripeCouponId || null;
+    const appliedDiscountPercent =
+      tieredDiscountResult?.discountType === "PERCENT"
+        ? (tieredDiscountResult?.tier?.percentOff ?? null)
+        : (promoCodeRecord?.percentOff ?? null);
+    const appliedDiscountAmount =
+      tieredDiscountResult?.discountType === "AMOUNT"
+        ? (tieredDiscountResult?.tier?.amountOff ??
+          tieredDiscountResult?.discountApplied ??
+          null)
+        : (promoCodeRecord?.amountOff ?? null);
+
     // Create or update subscription record
     const isPilot = promoCodeRecord?.type === "PILOT_ACCOUNT";
     const pilotExpiresAt = isPilot
@@ -159,18 +174,18 @@ export async function POST(req: NextRequest) {
         promoCodeId: promoCodeRecord?.id,
         isPilotAccount: isPilot,
         pilotExpiresAt,
-        stripeCouponId: promoCodeRecord?.stripeCouponId,
-        discountPercent: promoCodeRecord?.percentOff,
-        discountAmount: promoCodeRecord?.amountOff,
+        stripeCouponId: appliedStripeCouponId,
+        discountPercent: appliedDiscountPercent,
+        discountAmount: appliedDiscountAmount,
       },
       update: {
         stripeCustomerId: customer.id,
         promoCodeId: promoCodeRecord?.id,
         isPilotAccount: isPilot,
         pilotExpiresAt,
-        stripeCouponId: promoCodeRecord?.stripeCouponId,
-        discountPercent: promoCodeRecord?.percentOff,
-        discountAmount: promoCodeRecord?.amountOff,
+        stripeCouponId: appliedStripeCouponId,
+        discountPercent: appliedDiscountPercent,
+        discountAmount: appliedDiscountAmount,
       },
     });
 

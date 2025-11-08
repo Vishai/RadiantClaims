@@ -19,7 +19,7 @@ import type {
   RiskFlag,
   RiskFixability,
 } from "@/lib/document-intelligence/schemas";
-import { actionLabels, actorLabels, resolveBlockingLevel } from "./helpers";
+import { actorLabels, resolveBlockingLevel } from "./helpers";
 
 interface RiskActionDialogProps {
   open: boolean;

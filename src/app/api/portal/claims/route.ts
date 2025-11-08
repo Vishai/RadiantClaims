@@ -45,7 +45,14 @@ export async function GET(_req: NextRequest) {
                 uploadedAt: true,
               },
             },
-            packetSubmission: true,
+            packetSubmission: {
+              include: {
+                generations: {
+                  orderBy: { version: "desc" },
+                  take: 5,
+                },
+              },
+            },
             // RECA workflow fields
             recaWorkflowStage: true,
             recaWorkflowSection: true,

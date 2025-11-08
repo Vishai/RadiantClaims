@@ -5,21 +5,81 @@ import { createAuditLog } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if registration is enabled
+    const body = await request.json();
+    const { email, password, name, accessCode } = body;
+    const normalizedAccessCode =
+      typeof accessCode === "string" ? accessCode.trim().toUpperCase() : null;
+
+    // Check if registration is enabled or if we have an override code
     const registrationEnabled = process.env.REGISTRATION_ENABLED !== "false";
+    let accessOverridePromo: {
+      id: string;
+      code: string;
+      accessSeatsTotal: number | null;
+      accessSeatsUsed: number;
+      expiresAt: Date | null;
+    } | null = null;
+
     if (!registrationEnabled) {
-      return NextResponse.json(
-        {
-          error: "Registration is temporarily disabled",
-          message:
-            "We're currently not accepting new registrations while we finalize our terms of service and workflows. Please check back soon!",
-        },
-        { status: 503 }
-      );
+      if (!normalizedAccessCode) {
+        return NextResponse.json(
+          {
+            error: "Registration is temporarily disabled",
+            message:
+              "We're currently not accepting new registrations while we finalize our workflows. Use your invite code or check back soon.",
+          },
+          { status: 503 }
+        );
+      }
     }
 
-    const body = await request.json();
-    const { email, password, name } = body;
+    if (normalizedAccessCode) {
+      const promo = await db.promoCode.findFirst({
+        where: {
+          code: normalizedAccessCode,
+          accessOverrideEnabled: true,
+          isActive: true,
+          isArchived: false,
+        },
+        select: {
+          id: true,
+          code: true,
+          accessSeatsTotal: true,
+          accessSeatsUsed: true,
+          expiresAt: true,
+        },
+      });
+
+      if (!promo) {
+        return NextResponse.json(
+          {
+            error: "Invalid access code",
+            message:
+              "That invite code could not be found or has been disabled. Please contact support for a new code.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (promo.expiresAt && promo.expiresAt < new Date()) {
+        return NextResponse.json(
+          { error: "This access code has expired" },
+          { status: 410 }
+        );
+      }
+
+      if (
+        promo.accessSeatsTotal !== null &&
+        promo.accessSeatsUsed >= promo.accessSeatsTotal
+      ) {
+        return NextResponse.json(
+          { error: "This access code has reached its seat limit" },
+          { status: 409 }
+        );
+      }
+
+      accessOverridePromo = promo;
+    }
 
     // Validate inputs
     if (!email || !password) {
@@ -61,14 +121,33 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await db.user.create({
-      data: {
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        name: name || null,
-        role: "CUSTOMER", // Default role for new signups
-      },
+    // Create user (and record access grant if applicable)
+    const user = await db.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          name: name || null,
+          role: "CUSTOMER", // Default role for new signups
+        },
+      });
+
+      if (accessOverridePromo) {
+        await tx.promoCode.update({
+          where: { id: accessOverridePromo.id },
+          data: {
+            accessSeatsUsed: { increment: 1 },
+            accessGrants: {
+              create: {
+                email: email.toLowerCase(),
+                userId: createdUser.id,
+              },
+            },
+          },
+        });
+      }
+
+      return createdUser;
     });
 
     // Create audit log
@@ -82,6 +161,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         email: user.email,
         registrationMethod: "credentials",
+        accessCodeUsed: accessOverridePromo?.code ?? null,
       },
     });
 
