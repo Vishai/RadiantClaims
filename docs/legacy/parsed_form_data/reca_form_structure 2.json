@@ -1,0 +1,1201 @@
+{
+  "form_metadata": {
+    "form_name": "RECA Downwinder Claim Form",
+    "agency": "U.S. Department of Justice - Civil Division",
+    "omb_approval": "1105-0052",
+    "revision_date": "July 2025",
+    "filing_methods": {
+      "electronic": "www.justice.gov/civil/reca",
+      "mail": {
+        "address_line_1": "Radiation Exposure Compensation Program",
+        "address_line_2": "U.S. Department of Justice",
+        "address_line_3": "P.O. Box 146",
+        "address_line_4": "Ben Franklin Station",
+        "address_line_5": "Washington, DC 20044-0146"
+      },
+      "phone": "1-800-729-7327"
+    },
+    "claimant_categories": [
+      "uranium workers",
+      "downwinders",
+      "onsite participants",
+      "individuals affected by Manhattan Project Waste"
+    ],
+    "max_payments_per_individual": 1
+  },
+  "form_parts": {
+    "part_1": {
+      "title": "YOU, the person filling out this form",
+      "description": "Information about the person completing and submitting this claim form",
+      "always_required": true,
+      "fields": {
+        "first_name": {
+          "type": "text",
+          "max_length": 12,
+          "required": true,
+          "label": "First Name"
+        },
+        "middle_name": {
+          "type": "text",
+          "max_length": 12,
+          "required": false,
+          "label": "Middle Name"
+        },
+        "last_name": {
+          "type": "text",
+          "max_length": 20,
+          "required": true,
+          "label": "Last Name"
+        },
+        "former_names": {
+          "type": "text",
+          "max_length": 20,
+          "required": false,
+          "label": "Former Names or Maiden Name, if applicable"
+        },
+        "ssn": {
+          "type": "ssn",
+          "format": "XXX-XX-XXXX",
+          "required": true,
+          "label": "Social Security Number"
+        },
+        "dob": {
+          "type": "date",
+          "format": "mm/dd/yyyy",
+          "required": true,
+          "label": "Date of Birth"
+        },
+        "mailing_address": {
+          "type": "text",
+          "max_length": 60,
+          "required": true,
+          "label": "Mailing Address"
+        },
+        "city": {
+          "type": "text",
+          "max_length": 20,
+          "required": true,
+          "label": "City"
+        },
+        "state": {
+          "type": "select",
+          "required": true,
+          "label": "State",
+          "options": "US_STATES"
+        },
+        "zip_code": {
+          "type": "text",
+          "max_length": 5,
+          "required": true,
+          "label": "Zip Code"
+        },
+        "phone_day": {
+          "type": "phone",
+          "format": "XXX-XXX-XXXX",
+          "required": false,
+          "label": "Phone Number (day)"
+        },
+        "phone_evening": {
+          "type": "phone",
+          "format": "XXX-XXX-XXXX",
+          "required": false,
+          "label": "Phone Number (evening)"
+        },
+        "email": {
+          "type": "email",
+          "max_length": 30,
+          "required": false,
+          "label": "E-mail Address"
+        },
+        "residence_address": {
+          "type": "text",
+          "max_length": 60,
+          "required": false,
+          "label": "Residence Address (if different from mailing)"
+        },
+        "tribal_affiliation": {
+          "type": "text",
+          "max_length": 30,
+          "required": false,
+          "label": "Tribe",
+          "description": "If you are a member of an Indian Tribe and want the RECA Program to request tribal enrollment information"
+        },
+        "tribal_census_number": {
+          "type": "text",
+          "max_length": 20,
+          "required": false,
+          "label": "Census Number",
+          "conditional": "tribal_affiliation is not empty"
+        },
+        "tribal_assistance": {
+          "type": "multi_checkbox",
+          "options": [
+            "Navajo Uranium Workers' Program",
+            "Other (specify)",
+            "NO"
+          ],
+          "label": "Have you received assistance from tribal organizations?"
+        }
+      },
+      "required_documents": {
+        "note": "These documents are required only if filing by mail (not electronic)",
+        "list": []
+      }
+    },
+    "part_2": {
+      "title": "THE CLAIMANT, the person who became ill with a compensable disease",
+      "description": "Fill out ONLY if filing on behalf of someone else who became ill. Skip if YOU are the person who became ill.",
+      "conditional": "relationship !== 'Self'",
+      "fields": {
+        "first_name": {
+          "type": "text",
+          "max_length": 12,
+          "required": true,
+          "label": "First Name"
+        },
+        "middle_name": {
+          "type": "text",
+          "max_length": 12,
+          "required": false,
+          "label": "Middle Name"
+        },
+        "last_name": {
+          "type": "text",
+          "max_length": 20,
+          "required": true,
+          "label": "Last Name"
+        },
+        "former_names": {
+          "type": "text",
+          "max_length": 20,
+          "required": false,
+          "label": "Former Names or Maiden Name, if applicable"
+        },
+        "ssn": {
+          "type": "ssn",
+          "format": "XXX-XX-XXXX",
+          "required": true,
+          "label": "Social Security Number"
+        },
+        "dob": {
+          "type": "date",
+          "format": "mm/dd/yyyy",
+          "required": true,
+          "label": "Date of Birth"
+        },
+        "dod": {
+          "type": "date",
+          "format": "mm/dd/yyyy",
+          "required": false,
+          "label": "Date of Death"
+        }
+      }
+    },
+    "part_3": {
+      "title": "RELATIONSHIP TO THE PERSON WHO BECAME ILL",
+      "description": "Select your relationship to determine which sections you must complete",
+      "always_required": true,
+      "fields": {
+        "relationship": {
+          "type": "radio",
+          "required": true,
+          "options": [
+            {
+              "value": "Self",
+              "next_part": "part_4",
+              "skip_parts": ["part_5", "part_6", "part_7"]
+            },
+            {
+              "value": "Spouse",
+              "next_part": "part_5",
+              "skip_parts": ["part_4", "part_6", "part_7"]
+            },
+            {
+              "value": "Child",
+              "next_part": "part_6",
+              "skip_parts": ["part_4", "part_5", "part_7"]
+            },
+            {
+              "value": "Parent",
+              "next_part": "part_7",
+              "skip_parts": ["part_4", "part_5", "part_6"]
+            },
+            {
+              "value": "Grandchild",
+              "next_part": "part_7",
+              "skip_parts": ["part_4", "part_5", "part_6"]
+            },
+            {
+              "value": "Grandparent",
+              "next_part": "part_7",
+              "skip_parts": ["part_4", "part_5", "part_6"]
+            }
+          ],
+          "label": "Your relationship to the person who became ill"
+        }
+      },
+      "conditional_logic": {
+        "note": "This selection determines which subsequent parts (4-7) must be completed"
+      }
+    },
+    "part_4": {
+      "title": "SELF-FILERS",
+      "description": "For individuals who became ill and are filing for themselves",
+      "conditional": "relationship === 'Self'",
+      "fields": {},
+      "required_documents": {
+        "note": "Unless filing electronically, provide certified or original copies",
+        "documents": [
+          {
+            "id": "self_birth_cert",
+            "name": "Birth certificate: yours",
+            "required": true
+          },
+          {
+            "id": "self_marriage_certs",
+            "name": "Marriage certificate(s): documenting all changes of name",
+            "required": false,
+            "conditional": "name_changed === true"
+          }
+        ]
+      },
+      "next_part": "part_8"
+    },
+    "part_5": {
+      "title": "SURVIVING SPOUSE",
+      "description": "For individuals married to the person who became ill for at least one year prior to death",
+      "conditional": "relationship === 'Spouse'",
+      "fields": {
+        "claimant_deceased": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Is the person identified in Part 2 deceased?",
+          "validation": "If NO, you are not eligible to file this claim"
+        },
+        "married_one_year": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Were you married to the claimant for at least one year immediately prior to death?",
+          "validation": "If NO, you are not eligible to file this claim"
+        },
+        "claimant_previous_marriages": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Was the person who became ill married to anyone else BEFORE marrying you?"
+        },
+        "claimant_previous_spouses": {
+          "type": "repeating_group",
+          "conditional": "claimant_previous_marriages === 'YES'",
+          "fields": {
+            "spouse_name": {
+              "type": "text",
+              "label": "Name of previous spouse"
+            },
+            "marriage_start": {
+              "type": "date",
+              "label": "Marriage began"
+            },
+            "marriage_end": {
+              "type": "date",
+              "label": "Marriage ended"
+            }
+          }
+        },
+        "filer_other_marriages": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Have you ever been married to anyone else other than the person who became ill?"
+        },
+        "filer_other_spouses": {
+          "type": "repeating_group",
+          "conditional": "filer_other_marriages === 'YES'",
+          "fields": {
+            "spouse_name": {
+              "type": "text",
+              "label": "Name of spouse"
+            },
+            "marriage_start": {
+              "type": "date",
+              "label": "Marriage began"
+            },
+            "marriage_end": {
+              "type": "date",
+              "label": "Marriage ended"
+            }
+          }
+        }
+      },
+      "required_documents": {
+        "note": "Unless filing electronically, provide certified or original copies",
+        "documents": [
+          {
+            "id": "claimant_birth_cert",
+            "name": "Birth certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_death_cert",
+            "name": "Death certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "marriage_cert",
+            "name": "Marriage certificate documenting your marriage to the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_prev_marriage_certs",
+            "name": "Marriage certificate(s) documenting previous marriages of the person who became ill",
+            "required": false,
+            "conditional": "claimant_previous_marriages === 'YES'"
+          },
+          {
+            "id": "claimant_prev_divorce_death",
+            "name": "Divorce decree(s) or death certificate(s) documenting end of previous marriages",
+            "required": false,
+            "conditional": "claimant_previous_marriages === 'YES'"
+          },
+          {
+            "id": "filer_birth_cert",
+            "name": "Birth certificate: yours",
+            "required": true
+          },
+          {
+            "id": "filer_other_marriage_certs",
+            "name": "Marriage certificate(s) documenting all your other marriages",
+            "required": false,
+            "conditional": "filer_other_marriages === 'YES'"
+          },
+          {
+            "id": "filer_divorce_death",
+            "name": "Divorce decree(s) or death certificate(s) documenting end of your other marriages",
+            "required": false,
+            "conditional": "filer_other_marriages === 'YES'"
+          }
+        ]
+      },
+      "next_part": "part_8"
+    },
+    "part_6": {
+      "title": "SURVIVING CHILD",
+      "description": "For natural, adopted, or stepchild of the person who became ill",
+      "conditional": "relationship === 'Child'",
+      "fields": {
+        "claimant_deceased": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Is the person identified in Part 2 deceased?",
+          "validation": "If NO, you are not eligible to file this claim"
+        },
+        "claimant_ever_married": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Was the person who became ill ever married?"
+        },
+        "claimant_spouses": {
+          "type": "repeating_group",
+          "conditional": "claimant_ever_married === 'YES'",
+          "fields": {
+            "spouse_name": { "type": "text", "label": "Name of spouse" },
+            "marriage_start": { "type": "date", "label": "Marriage began" },
+            "marriage_end": { "type": "date", "label": "Marriage ended" }
+          }
+        },
+        "child_type": {
+          "type": "radio",
+          "required": true,
+          "options": ["NATURAL", "ADOPTED CHILD", "STEP-CHILD"],
+          "label": "Are you a natural child, adopted child, or step-child of the decedent?"
+        },
+        "other_children_exist": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Did the decedent have any other natural, adopted, or step-children?"
+        },
+        "other_children": {
+          "type": "repeating_group",
+          "conditional": "other_children_exist === 'YES'",
+          "max_items": 3,
+          "expandable": true,
+          "fields": {
+            "name": { "type": "text", "label": "Name" },
+            "date_place_birth": {
+              "type": "text",
+              "label": "Date and place of birth"
+            },
+            "date_place_death": {
+              "type": "text",
+              "label": "Date and place of death (if applicable)"
+            },
+            "current_address": {
+              "type": "text",
+              "label": "Current address (if applicable)"
+            },
+            "phone_number": {
+              "type": "phone",
+              "label": "Phone number (if applicable)"
+            }
+          }
+        }
+      },
+      "required_documents": {
+        "note": "Unless filing electronically, provide certified or original copies",
+        "documents": [
+          {
+            "id": "claimant_birth_cert",
+            "name": "Birth certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_death_cert",
+            "name": "Death certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_marriage_certs",
+            "name": "Marriage certificate(s) of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_divorce_death",
+            "name": "Divorce decree(s) or death certificate(s) documenting all marriages have ended",
+            "required": true
+          },
+          {
+            "id": "filer_birth_adoption",
+            "name": "Birth certificate or papers of adoption: yours",
+            "required": true
+          },
+          {
+            "id": "filer_name_change_certs",
+            "name": "Marriage certificate(s) documenting all name changes",
+            "required": false,
+            "conditional": "name_changed === true"
+          },
+          {
+            "id": "stepchild_proof",
+            "name": "Proof that spouse was your natural parent and parent-child relationship records",
+            "required": false,
+            "conditional": "child_type === 'STEP-CHILD'"
+          },
+          {
+            "id": "sibling_death_certs",
+            "name": "Death certificates of any siblings that have passed away",
+            "required": false
+          },
+          {
+            "id": "all_siblings_birth_certs",
+            "name": "Birth certificate for each eligible surviving beneficiary",
+            "required": true,
+            "note": "For ALL other eligible surviving children"
+          },
+          {
+            "id": "all_siblings_marriage_certs",
+            "name": "Marriage certificate(s) for each eligible surviving beneficiary",
+            "required": false,
+            "note": "Where name changes occurred"
+          },
+          {
+            "id": "expedite_signatures",
+            "name": "Attached Signatures of Eligible Surviving Beneficiaries form",
+            "required": false,
+            "note": "Optional to expedite claim"
+          }
+        ]
+      },
+      "next_part": "part_8"
+    },
+    "part_7": {
+      "title": "PARENTS, GRANDCHILDREN or GRANDPARENTS",
+      "description": "RECA staff will contact you for additional assistance in establishing relationship",
+      "conditional": "relationship === 'Parent' || relationship === 'Grandchild' || relationship === 'Grandparent'",
+      "fields": {
+        "relationship_type": {
+          "type": "radio",
+          "required": true,
+          "options": ["PARENT", "GRANDCHILD", "GRANDPARENT"],
+          "label": "Your relationship to the person who became ill"
+        }
+      },
+      "required_documents": {
+        "note": "Submit these documents now; staff will request additional documents as needed",
+        "documents": [
+          {
+            "id": "claimant_birth_cert",
+            "name": "Birth certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_death_cert",
+            "name": "Death certificate of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_marriage_certs",
+            "name": "Marriage certificate(s) of the person who became ill",
+            "required": true
+          },
+          {
+            "id": "claimant_divorce_death",
+            "name": "Divorce decree(s) or death certificate(s) documenting all marriages have ended",
+            "required": true
+          },
+          {
+            "id": "deceased_children_certs",
+            "name": "Death certificate(s) of any deceased children of the person who became ill",
+            "required": false
+          },
+          {
+            "id": "filer_birth_adoption",
+            "name": "Birth certificate or papers of adoption: yours",
+            "required": true
+          },
+          {
+            "id": "filer_name_change_certs",
+            "name": "Marriage certificate(s) documenting all name changes",
+            "required": false
+          }
+        ]
+      },
+      "next_part": "part_8"
+    },
+    "part_8": {
+      "title": "EXPOSURE",
+      "description": "Physical presence requirements in designated affected areas",
+      "always_required": true,
+      "eligibility_criteria": {
+        "note": "Must meet ONE of the following presence requirements",
+        "options": [
+          {
+            "id": "option_1a",
+            "description": "Designated affected area for at least one year",
+            "time_period": "January 21, 1951 to November 6, 1962",
+            "duration": "at least one year"
+          },
+          {
+            "id": "option_1b",
+            "description": "Designated affected area for entire period",
+            "time_period": "June 30, 1962 to July 31, 1962",
+            "duration": "entire period"
+          },
+          {
+            "id": "option_2",
+            "description": "State of New Mexico for at least one year",
+            "time_period": "September 24, 1944 to November 6, 1962",
+            "duration": "at least one year"
+          }
+        ]
+      },
+      "fields": {
+        "exposure_option": {
+          "type": "checkbox_multi",
+          "required": true,
+          "label": "Select all time periods when claimant was physically present",
+          "options": [
+            {
+              "id": "option_1a",
+              "label": "Designated affected area - at least one year (Jan 21, 1951 - Nov 6, 1962)"
+            },
+            {
+              "id": "option_1b",
+              "label": "Designated affected area - entire period (Jun 30, 1962 - Jul 31, 1962)"
+            },
+            {
+              "id": "option_2",
+              "label": "State of New Mexico - at least one year (Sep 24, 1944 - Nov 6, 1962)"
+            }
+          ]
+        },
+        "affected_areas": {
+          "type": "repeating_group",
+          "description": "List all locations where claimant was physically present during eligible time periods",
+          "expandable": true,
+          "fields": {
+            "state": {
+              "type": "select",
+              "options": ["Idaho", "New Mexico", "Utah"],
+              "label": "State"
+            },
+            "town_city": {
+              "type": "text",
+              "label": "Town or City"
+            },
+            "time_period": {
+              "type": "text",
+              "label": "Time Period (dates of presence)",
+              "placeholder": "e.g., January 1952 - December 1955"
+            }
+          }
+        },
+        "arizona_counties": {
+          "type": "repeating_group",
+          "description": "Arizona locations (must specify county)",
+          "expandable": true,
+          "fields": {
+            "county": {
+              "type": "select",
+              "options": [
+                "Coconino",
+                "Yavapai",
+                "Navajo",
+                "Apache",
+                "Gila",
+                "Mohave"
+              ],
+              "label": "County"
+            },
+            "town_city": {
+              "type": "text",
+              "label": "Town or City"
+            },
+            "time_period": {
+              "type": "text",
+              "label": "Time Period"
+            }
+          }
+        },
+        "nevada_counties": {
+          "type": "repeating_group",
+          "description": "Nevada locations (must specify county)",
+          "expandable": true,
+          "fields": {
+            "county": {
+              "type": "select",
+              "options": [
+                "White Pine",
+                "Nye",
+                "Lander",
+                "Lincoln",
+                "Eureka",
+                "Clark (townships 13-16, ranges 63-71)"
+              ],
+              "label": "County"
+            },
+            "town_city": {
+              "type": "text",
+              "label": "Town or City"
+            },
+            "time_period": {
+              "type": "text",
+              "label": "Time Period"
+            }
+          }
+        }
+      },
+      "validation": {
+        "rule": "Must provide at least one location with time period that meets eligibility criteria",
+        "error_message": "If not physically present in any listed areas for required time period, you are not eligible for compensation"
+      }
+    },
+    "part_9": {
+      "title": "PROOF OF PRESENCE IN AN AFFECTED AREA",
+      "description": "Documentation methods to establish physical presence in affected areas",
+      "always_required": true,
+      "acceptable_documents": {
+        "note": "Documents must show name of person who became ill (or immediate family member in same household), residence/employment in affected area, and specific date",
+        "types": [
+          "Tax Records",
+          "School Records",
+          "Employment Records",
+          "Birth and Marriage Records",
+          "Personal Letters or Envelopes",
+          "Church/Religious Records",
+          "Voting Records",
+          "Personal Diaries"
+        ],
+        "certification_requirements": {
+          "electronic_filing": "Photocopies acceptable",
+          "mail_filing": "Must be certified or original",
+          "certification_methods": [
+            "Certified photocopies stamped with institutional seal (raised, colored, or signed)",
+            "Cover letter on letterhead from record source stating 'true and accurate copy'"
+          ]
+        }
+      },
+      "fields": {
+        "lds_church_assistance": {
+          "type": "checkbox",
+          "label": "I have contacted the Church of Jesus Christ of Latter-day Saints and requested information regarding my claim",
+          "note": "Call (801) 240-3500 or write to: Member and Statistical Records Division, 17th Floor, 50 East North Temple Street, Salt Lake City, UT 84150"
+        }
+      },
+      "required_documents": {
+        "note": "Upload/attach documents showing presence in affected area during eligible time periods"
+      }
+    },
+    "part_10": {
+      "title": "COMPENSABLE DISEASES",
+      "description": "Select the disease(s) the claimant developed (only diseases listed are eligible for compensation)",
+      "always_required": true,
+      "fields": {
+        "disease": {
+          "type": "checkbox_multi",
+          "required": true,
+          "label": "Check all diseases that apply (if unsure, you may check multiple)",
+          "options": [
+            {
+              "id": "leukemia",
+              "label": "Leukemia (other than chronic lymphocytic leukemia)"
+            },
+            { "id": "multiple_myeloma", "label": "Multiple Myeloma" },
+            {
+              "id": "lymphomas",
+              "label": "Lymphomas (other than Hodgkin's disease)"
+            },
+            { "id": "thyroid", "label": "Primary cancer of the thyroid" },
+            {
+              "id": "breast",
+              "label": "Primary cancer of the male or female breast"
+            },
+            { "id": "esophagus", "label": "Primary cancer of the esophagus" },
+            { "id": "stomach", "label": "Primary cancer of the stomach" },
+            { "id": "pharynx", "label": "Primary cancer of the pharynx" },
+            {
+              "id": "small_intestine",
+              "label": "Primary cancer of the small intestine"
+            },
+            { "id": "pancreas", "label": "Primary cancer of the pancreas" },
+            { "id": "bile_ducts", "label": "Primary cancer of the bile ducts" },
+            {
+              "id": "gall_bladder",
+              "label": "Primary cancer of the gall bladder"
+            },
+            {
+              "id": "salivary_gland",
+              "label": "Primary cancer of the salivary gland"
+            },
+            {
+              "id": "urinary_bladder",
+              "label": "Primary cancer of the urinary bladder"
+            },
+            { "id": "brain", "label": "Primary cancer of the brain" },
+            { "id": "colon", "label": "Primary cancer of the colon" },
+            { "id": "ovary", "label": "Primary cancer of the ovary" },
+            {
+              "id": "liver",
+              "label": "Primary cancer of the liver (except if cirrhosis or hepatitis B is indicated)"
+            },
+            { "id": "lung", "label": "Primary cancer of the lung" }
+          ]
+        }
+      }
+    },
+    "part_11": {
+      "title": "PROOF OF DISEASE",
+      "description": "Medical documentation required to establish diagnosis of compensable disease",
+      "always_required": true,
+      "acceptable_documents": [
+        "Pathology report of tissue biopsy or surgical resection",
+        "Operative report",
+        "Hospital discharge summary report",
+        "Physician summary report",
+        "Death certificate (dated and signed by physician)",
+        "Autopsy report"
+      ],
+      "fields": {
+        "medical_records_submitted": {
+          "type": "checkbox",
+          "required": true,
+          "label": "I HAVE SUBMITTED CERTIFIED MEDICAL RECORDS SHOWING A DIAGNOSIS OF A COMPENSABLE CANCER"
+        },
+        "cancer_registry_authorization": {
+          "type": "checkbox",
+          "label": "I WANT THE RECA PROGRAM TO CONTACT A STATE CANCER REGISTRY",
+          "note": "Must also complete Authorization to Release Medical Information form"
+        },
+        "resep_assistance": {
+          "type": "radio",
+          "options": ["YES", "NO"],
+          "label": "Have you received assistance from a Radiation Exposure Screening and Education Program (RESEP) clinic?"
+        },
+        "resep_clinic_name": {
+          "type": "text",
+          "conditional": "resep_assistance === 'YES'",
+          "label": "Specify clinic name or location"
+        }
+      },
+      "required_documents": {
+        "note": "See Medical Records Attachment (pages 18-24) for specific documents accepted for each disease"
+      }
+    },
+    "part_12": {
+      "title": "PREVIOUS PAYMENTS OF MONEY",
+      "description": "Disclosure of any previous payments related to this illness",
+      "always_required": true,
+      "fields": {
+        "received_payment": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Have you or anyone else received payment pursuant to final award or settlement based on this illness?",
+          "note": "Check YES if already received RECA award for this claimant, even for different illness"
+        },
+        "payment_details": {
+          "type": "textarea",
+          "conditional": "received_payment === 'YES'",
+          "required": true,
+          "label": "Identify date, amount, and person/organization for EACH payment received and explain circumstances"
+        },
+        "eeoicpa_claim": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Have you or anyone else filed a claim under the Department of Labor's Energy Employees Occupational Illness Compensation Program Act (EEOICPA)?"
+        }
+      }
+    },
+    "part_13": {
+      "title": "ATTORNEY REPRESENTATION",
+      "description": "Optional attorney representation (not required to file claim)",
+      "always_required": true,
+      "fields": {
+        "has_attorney": {
+          "type": "radio",
+          "required": true,
+          "options": ["YES", "NO"],
+          "label": "Have you hired an attorney to represent you for filing this claim?",
+          "note": "Attorney fees limited to 2% for initial claims, 10% for resubmissions or pre-2000 contracts"
+        },
+        "attorney_first_name": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Attorney First Name"
+        },
+        "attorney_last_name": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Attorney Last Name"
+        },
+        "attorney_firm": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Firm"
+        },
+        "attorney_address": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Mailing Address"
+        },
+        "attorney_city": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "City"
+        },
+        "attorney_state": {
+          "type": "select",
+          "conditional": "has_attorney === 'YES'",
+          "label": "State"
+        },
+        "attorney_zip": {
+          "type": "text",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Zip Code"
+        },
+        "attorney_phone": {
+          "type": "phone",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Phone Number"
+        },
+        "attorney_fax": {
+          "type": "phone",
+          "conditional": "has_attorney === 'YES'",
+          "label": "Fax Number"
+        },
+        "attorney_email": {
+          "type": "email",
+          "conditional": "has_attorney === 'YES'",
+          "label": "E-mail Address"
+        }
+      },
+      "note": "If attorney hired, RECA will communicate only with attorney on all matters"
+    },
+    "part_14": {
+      "title": "ATTORNEY ACKNOWLEDGMENT",
+      "description": "Attorney must sign acknowledging fee limitations (only if attorney hired)",
+      "conditional": "has_attorney === 'YES'",
+      "fields": {
+        "fee_type": {
+          "type": "radio",
+          "required": true,
+          "options": [
+            {
+              "value": "initial_2_percent",
+              "label": "2% for filing of an initial claim"
+            },
+            {
+              "value": "resubmission_10_percent",
+              "label": "10% for contract made before July 10, 2000 or resubmission of denied claim"
+            }
+          ]
+        },
+        "attorney_signature": {
+          "type": "signature",
+          "required": true,
+          "label": "Signature of Attorney"
+        },
+        "attorney_signature_date": {
+          "type": "date",
+          "required": true,
+          "label": "Date"
+        }
+      }
+    },
+    "part_15": {
+      "title": "COURT APPOINTED LEGAL GUARDIANS",
+      "description": "Only for court-appointed guardians (power of attorney is NOT legal guardianship)",
+      "conditional": "has_legal_guardian === true",
+      "fields": {
+        "guardian_first_name": { "type": "text", "label": "First Name" },
+        "guardian_middle_name": { "type": "text", "label": "Middle Name" },
+        "guardian_last_name": { "type": "text", "label": "Last Name" },
+        "guardian_address": { "type": "text", "label": "Mailing Address" },
+        "guardian_city": { "type": "text", "label": "City" },
+        "guardian_state": { "type": "select", "label": "State" },
+        "guardian_zip": { "type": "text", "label": "Zip Code" },
+        "guardian_phone_day": {
+          "type": "phone",
+          "label": "Phone Number (day)"
+        },
+        "guardian_phone_evening": {
+          "type": "phone",
+          "label": "Phone Number (evening)"
+        },
+        "guardian_email": { "type": "email", "label": "E-mail Address" }
+      },
+      "required_documents": {
+        "documents": [
+          {
+            "id": "guardianship_papers",
+            "name": "Certified or original court documentation showing power of guardianship",
+            "required": true
+          }
+        ]
+      }
+    },
+    "part_16": {
+      "title": "SIGNATURE",
+      "description": "Required signature with penalty of perjury declaration",
+      "always_required": true,
+      "fields": {
+        "signature": {
+          "type": "signature",
+          "required": true,
+          "label": "Signature of person identified in Part 1 or Legal Guardian identified in Part 15"
+        },
+        "signature_date": {
+          "type": "date",
+          "required": true,
+          "label": "Date"
+        },
+        "authorization_acknowledgment": {
+          "type": "checkbox",
+          "required": true,
+          "checked": true,
+          "readonly": true,
+          "label": "I authorize DOJ to share information with Dept of Labor and authorize any physician/hospital/agency to furnish information to DOJ for RECA determination"
+        }
+      },
+      "legal_warnings": {
+        "civil_penalty": "Forfeit $10,000 plus treble damages (31 U.S.C. § 3729)",
+        "criminal_penalty": "Fine and imprisonment up to 5 years (18 U.S.C. §§ 287, 1001)"
+      }
+    }
+  },
+  "supporting_forms": {
+    "medical_information_release": {
+      "form_name": "Authorization to Release Medical and Other Information from a State Cancer Registry",
+      "page": 14,
+      "required_for": "part_11 when cancer_registry_authorization === true",
+      "fields": {
+        "state_of_residence": {
+          "type": "text",
+          "required": true,
+          "label": "State of residence at time of diagnosis"
+        },
+        "patient_name": {
+          "type": "text",
+          "required": true,
+          "label": "Name of individual whose records are to be released"
+        },
+        "patient_ssn": {
+          "type": "ssn",
+          "required": true,
+          "label": "Social Security number"
+        },
+        "patient_dob": {
+          "type": "date",
+          "required": true,
+          "label": "Birth date"
+        },
+        "patient_dod": {
+          "type": "date",
+          "required": false,
+          "label": "Date of death (if applicable)"
+        },
+        "requestor_name": {
+          "type": "text",
+          "required": false,
+          "label": "Name of individual requesting release (if different)"
+        },
+        "requestor_relationship": {
+          "type": "text",
+          "required": false,
+          "label": "Relationship to individual"
+        },
+        "signature": { "type": "signature", "required": true },
+        "signature_date": { "type": "date", "required": true }
+      }
+    },
+    "certification_of_identity": {
+      "form_name": "Certification of Identity and Privacy Act Release",
+      "page": 15,
+      "required_for": "all claims",
+      "sections": {
+        "section_1": {
+          "title": "Certification of Identity",
+          "fields": {
+            "full_name": { "type": "text", "required": true },
+            "citizenship_status": {
+              "type": "select",
+              "required": true,
+              "options": ["US Citizen", "Lawful Permanent Resident"],
+              "note": "Non-citizens processed under FOIA"
+            },
+            "ssn": {
+              "type": "ssn",
+              "required": false,
+              "note": "Voluntary but helps locate records"
+            },
+            "current_address": { "type": "text", "required": true },
+            "dob": { "type": "date", "required": true },
+            "place_of_birth": { "type": "text", "required": true },
+            "signature": { "type": "signature", "required": true },
+            "signature_date": { "type": "date", "required": true }
+          }
+        },
+        "section_2": {
+          "title": "Authorization to Release Information to Another Person (OPTIONAL)",
+          "fields": {
+            "authorized_person_name": { "type": "text", "required": false },
+            "relationship_to_requester": { "type": "text", "required": false },
+            "phone_number": { "type": "phone", "required": false },
+            "current_address": { "type": "text", "required": false },
+            "signature": { "type": "signature", "required": false },
+            "signature_date": { "type": "date", "required": false }
+          }
+        }
+      }
+    },
+    "tribal_records_release": {
+      "form_name": "Release of Tribal Vital Records",
+      "page": 16,
+      "required_for": "part_1 when tribal_affiliation is provided",
+      "fields": {
+        "tribal_office": {
+          "type": "radio",
+          "required": true,
+          "options": [
+            "Navajo Nation Office of Vital Records",
+            "Hopi Tribe Enrollment Department",
+            "San Carlos Apache Tribal Enrollment Office",
+            "Other (specify)"
+          ]
+        },
+        "other_tribal_office": {
+          "type": "text",
+          "conditional": "tribal_office === 'Other'"
+        },
+        "claimant_name": { "type": "text", "required": true },
+        "tribal_organization_name": {
+          "type": "text",
+          "required": true,
+          "label": "Name of tribal organization"
+        },
+        "signature": {
+          "type": "signature",
+          "required": true,
+          "note": "Signature, thumbprint or mark"
+        },
+        "signature_date": { "type": "date", "required": true }
+      }
+    },
+    "surviving_beneficiaries_signatures": {
+      "form_name": "Attached Signatures of Eligible Surviving Beneficiaries",
+      "page": 17,
+      "required_for": "part_6 (surviving children) - OPTIONAL to expedite",
+      "note": "Complete ONLY if filing as surviving child. Speeds processing but not mandatory.",
+      "repeating_group": {
+        "max_items": 4,
+        "expandable": true,
+        "fields": {
+          "beneficiary_name": {
+            "type": "text",
+            "required": true,
+            "label": "Name of Eligible Surviving Beneficiary"
+          },
+          "beneficiary_ssn": { "type": "ssn", "required": true },
+          "signature_date": { "type": "date", "required": true },
+          "signature": { "type": "signature", "required": true },
+          "attorney_name": {
+            "type": "text",
+            "required": false,
+            "label": "If represented by attorney"
+          },
+          "attorney_phone": { "type": "phone", "required": false }
+        }
+      }
+    }
+  },
+  "medical_records_attachment": {
+    "description": "Detailed requirements for proof of each compensable disease",
+    "pages": "18-24",
+    "diseases": {
+      "leukemia": {
+        "name": "Leukemia (other than chronic lymphocytic leukemia)",
+        "accepted_records": [
+          "Bone marrow biopsy or aspirate report",
+          "Peripheral white blood cell differential count report",
+          "Autopsy report",
+          "Hospital discharge summary",
+          "Physician summary",
+          "History and physical report",
+          "Death certificate (signed by physician at time of death)"
+        ]
+      },
+      "multiple_myeloma": {
+        "name": "Multiple Myeloma",
+        "accepted_records": [
+          "Pathology report of tissue biopsy",
+          "Autopsy report",
+          "Report of serum electrophoresis",
+          "Physician summary report",
+          "Hospital discharge summary report",
+          "Hematology summary or consultation report",
+          "Medical oncology summary or consultation report",
+          "X-ray report",
+          "Death certificate (signed by physician at time of death)"
+        ]
+      },
+      "lymphomas": {
+        "name": "Lymphomas (other than Hodgkin's disease)",
+        "accepted_records": [
+          "Pathology report of tissue biopsy",
+          "Autopsy report",
+          "Physician summary report",
+          "Hospital discharge summary report",
+          "Hematology consultation or summary report",
+          "Medical oncology consultation or summary report",
+          "Death certificate (signed by physician at time of death)"
+        ]
+      }
+    },
+    "note": "Full detailed list for all 19 diseases available in original form pages 18-24. Each disease has specific accepted medical records."
+  }
+}

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccessibleClaimants, requirePermission } from "@/lib/auth/permissions";
+import {
+  getAccessibleClaimants,
+  requirePermission,
+} from "@/lib/auth/permissions";
 import { logClaimantAccess, getClientIp, getUserAgent } from "@/lib/audit";
 import { ClaimantWorkflowStatus } from "@prisma/client";
 
@@ -69,6 +72,27 @@ export async function GET(req: NextRequest) {
     const responseData = paginatedClaimants.map((claimant) => {
       const assignment = (claimant as any).firmAssignments?.[0];
       const intakeSession = claimant.intakeSession;
+      const subscription = intakeSession?.serviceSubscription as any;
+      const promoCode = subscription?.promoCode;
+
+      const complimentaryReason = (() => {
+        if (!subscription) return null;
+        if (subscription.setupFeeWaived) return "Setup fee waived";
+        if (subscription.isPilotAccount) return "Pilot / courtesy account";
+        if (subscription.discountPercent === 100)
+          return "100% discount applied";
+        if (
+          subscription.discountAmount &&
+          subscription.setupFeeAmount &&
+          subscription.discountAmount >= subscription.setupFeeAmount
+        ) {
+          return "Discount covered full setup fee";
+        }
+        if (promoCode?.code) {
+          return `Promo: ${promoCode.code}`;
+        }
+        return null;
+      })();
 
       return {
         id: claimant.id,
@@ -86,6 +110,25 @@ export async function GET(req: NextRequest) {
         hasCompletedIntake: intakeSession?.status === "SUBMITTED",
         claimType: intakeSession?.claimType,
         isPremiumService: intakeSession?.isPremiumService || false,
+        subscription: subscription
+          ? {
+              tier: subscription.tier,
+              status: subscription.status,
+              setupFeePaid: subscription.setupFeePaid,
+              setupFeePaidAt: subscription.setupFeePaidAt,
+              setupFeeWaived: subscription.setupFeeWaived,
+              setupFeeAmount: subscription.setupFeeAmount,
+              monthlyFeeAmount: subscription.monthlyFeeAmount,
+              discountPercent: subscription.discountPercent,
+              discountAmount: subscription.discountAmount,
+              isPilotAccount: subscription.isPilotAccount,
+              promoCode: promoCode?.code || null,
+              promoName: promoCode?.name || null,
+              promoCampaign: promoCode?.campaignName || null,
+              complimentaryReason,
+              isComplimentary: Boolean(complimentaryReason),
+            }
+          : null,
       };
     });
 

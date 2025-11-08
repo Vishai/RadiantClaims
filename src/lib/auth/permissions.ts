@@ -207,7 +207,11 @@ export async function canAccessSession(
   if (!intakeSession?.claimant) return false;
 
   // Admins and reviewers can access all sessions
-  if (user.role === "ADMIN" || user.role === "STAFF_REVIEWER" || user.role === "SENIOR_REVIEWER") {
+  if (
+    user.role === "ADMIN" ||
+    user.role === "STAFF_REVIEWER" ||
+    user.role === "SENIOR_REVIEWER"
+  ) {
     return true;
   }
 
@@ -232,6 +236,11 @@ export async function getAccessibleClaimants() {
         intakeSession: {
           include: {
             uploadedFiles: true,
+            serviceSubscription: {
+              include: {
+                promoCode: true,
+              },
+            },
           },
         },
         firmAssignments: {
@@ -256,6 +265,11 @@ export async function getAccessibleClaimants() {
         intakeSession: {
           include: {
             uploadedFiles: true,
+            serviceSubscription: {
+              include: {
+                promoCode: true,
+              },
+            },
           },
         },
       },
@@ -279,6 +293,11 @@ export async function getAccessibleClaimants() {
         intakeSession: {
           include: {
             uploadedFiles: true,
+            serviceSubscription: {
+              include: {
+                promoCode: true,
+              },
+            },
           },
         },
         firmAssignments: {
@@ -310,9 +329,7 @@ export async function requireRole(allowedRoles: UserRole[]) {
   }
 
   if (!allowedRoles.includes(session.user.role)) {
-    throw new Error(
-      `Forbidden - Requires role: ${allowedRoles.join(" or ")}`
-    );
+    throw new Error(`Forbidden - Requires role: ${allowedRoles.join(" or ")}`);
   }
 
   return { user: session.user };

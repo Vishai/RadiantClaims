@@ -630,6 +630,7 @@ model LawFirm {
   claimantAssignments   ClaimantAssignment[]
   policyAcceptances     PolicyAcceptance[]
   referredSubscriptions ServiceSubscription[] // Subscriptions referred to this firm
+  notificationSettings  LawFirmNotificationSetting[]
   serviceAgreementUrl   String? // Signed service provider agreement
   serviceAgreementDate  DateTime?
   createdAt             DateTime              @default(now())
@@ -656,6 +657,26 @@ enum ClaimantWorkflowStatus {
   APPROVED // DOJ approved
   REJECTED // DOJ rejected
   WITHDRAWN // Claim withdrawn
+}
+
+enum LawFirmNotificationEvent {
+  NEW_CLIENT_ASSIGNED
+  PACKET_UPDATED
+  PACKET_READY
+}
+
+model LawFirmNotificationSetting {
+  id                   String                    @id @default(cuid())
+  firmId               String
+  firm                 LawFirm                   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  event                LawFirmNotificationEvent
+  recipientEmails      String[]                  @default([])
+  notifyPrimaryContact Boolean                   @default(true)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  @@unique([firmId, event])
+  @@index([firmId])
 }
 
 // Link claimants to law firms

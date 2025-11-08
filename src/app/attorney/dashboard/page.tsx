@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
+import {
+  ClaimantWorkflowStatus,
+  ClaimType,
+  ServiceTier,
+  SubscriptionStatus,
+} from "@prisma/client";
 import { ClaimantDetailModal } from "@/components/attorney/claimant-detail-modal";
 import { WorkflowStatusBadge } from "@/components/attorney/workflow-status-badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +57,15 @@ interface Claimant {
   hasCompletedIntake: boolean;
   claimType?: ClaimType | null;
   isPremiumService: boolean;
+  subscription: {
+    tier: ServiceTier;
+    status: SubscriptionStatus;
+    setupFeePaid: boolean;
+    setupFeeWaived: boolean;
+    isComplimentary: boolean;
+    complimentaryReason?: string | null;
+    promoCode?: string | null;
+  } | null;
 }
 
 interface ApiResponse {
