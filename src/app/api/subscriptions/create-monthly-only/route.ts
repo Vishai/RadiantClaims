@@ -13,6 +13,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import {
+  applyTieredDiscount,
+  recordPromoCodeUsage,
+} from "@/lib/promo-code-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     // Validate promo code if provided
     let promoCodeRecord = null;
+    let tieredDiscountResult = null;
     if (promoCode) {
       promoCodeRecord = await prisma.promoCode.findUnique({
         where: { code: promoCode },
@@ -102,6 +107,14 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+
+      // Apply tiered discount if enabled
+      if (promoCodeRecord.useTieredDiscounts) {
+        tieredDiscountResult = await applyTieredDiscount(
+          promoCodeRecord.id,
+          24.99 // Monthly fee amount
+        );
+      }
     }
 
     // Get or create Stripe customer
@@ -159,16 +172,17 @@ export async function POST(req: NextRequest) {
         promoCode: promoCode || "",
         wavedSetupFee: "true",
       },
-      // For pilot accounts, optionally add a coupon for 100% off
-      ...(isPilot &&
-        promoCodeRecord?.stripeCouponId && {
-          coupon: promoCodeRecord.stripeCouponId,
-        }),
+      // Apply tiered discount coupon if available, or standard coupon for pilot accounts
+      ...(tieredDiscountResult?.stripeCouponId
+        ? { coupon: tieredDiscountResult.stripeCouponId }
+        : isPilot && promoCodeRecord?.stripeCouponId
+          ? { coupon: promoCodeRecord.stripeCouponId }
+          : {}),
     });
 
     // Calculate next billing date
     const nextBillingDate = new Date(
-      stripeSubscription.current_period_end * 1000
+      (stripeSubscription.current_period_end || 0) * 1000
     );
     const billingCycleDay = nextBillingDate.getDate();
 
@@ -183,7 +197,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Increment promo code usage
+    // Increment promo code usage and record detailed usage
     if (promoCodeRecord) {
       await prisma.promoCode.update({
         where: { id: promoCodeRecord.id },
@@ -192,6 +206,18 @@ export async function POST(req: NextRequest) {
             increment: 1,
           },
         },
+      });
+
+      // Record detailed usage tracking
+      await recordPromoCodeUsage({
+        promoCodeId: promoCodeRecord.id,
+        tierId: tieredDiscountResult?.tier?.id || null,
+        subscriptionId: subscription.id,
+        userId: session.user.id,
+        discountApplied: tieredDiscountResult?.discountApplied || 0,
+        discountType: tieredDiscountResult?.discountType || "NONE",
+        ipAddress: req.headers.get("x-forwarded-for") || undefined,
+        userAgent: req.headers.get("user-agent") || undefined,
       });
     }
 

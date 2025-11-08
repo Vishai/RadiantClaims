@@ -42,7 +42,7 @@ function LoginForm() {
     // Role-based routing
     switch (session.user.role) {
       case "ADMIN":
-        return "/dashboard";
+        return "/admin";
       case "ATTORNEY":
       case "FIRM_ADMIN":
         return "/attorney/dashboard";

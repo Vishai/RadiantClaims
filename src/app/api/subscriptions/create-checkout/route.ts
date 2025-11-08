@@ -11,6 +11,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import {
+  applyTieredDiscount,
+  recordPromoCodeUsage,
+} from "@/lib/promo-code-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +64,7 @@ export async function POST(req: NextRequest) {
     // Validate promo code if provided
     let promoCodeRecord = null;
     let discounts: string[] = [];
+    let tieredDiscountResult = null;
     if (promoCode) {
       promoCodeRecord = await prisma.promoCode.findUnique({
         where: { code: promoCode },
@@ -109,9 +114,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Add Stripe coupon if available
-      if (promoCodeRecord.stripeCouponId) {
-        discounts.push(promoCodeRecord.stripeCouponId);
+      // Apply tiered discount if enabled, otherwise use standard discount
+      if (promoCodeRecord.useTieredDiscounts) {
+        tieredDiscountResult = await applyTieredDiscount(
+          promoCodeRecord.id,
+          149.99 // Setup fee amount
+        );
+        if (tieredDiscountResult.stripeCouponId) {
+          discounts.push(tieredDiscountResult.stripeCouponId);
+        }
+      } else {
+        // Add standard Stripe coupon if available
+        if (promoCodeRecord.stripeCouponId) {
+          discounts.push(promoCodeRecord.stripeCouponId);
+        }
       }
     }
 
@@ -208,7 +224,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Increment promo code usage
+    // Increment promo code usage and record detailed usage
     if (promoCodeRecord) {
       await prisma.promoCode.update({
         where: { id: promoCodeRecord.id },
@@ -217,6 +233,18 @@ export async function POST(req: NextRequest) {
             increment: 1,
           },
         },
+      });
+
+      // Record detailed usage tracking
+      await recordPromoCodeUsage({
+        promoCodeId: promoCodeRecord.id,
+        tierId: tieredDiscountResult?.tier?.id || null,
+        subscriptionId: subscription.id,
+        userId: session.user.id,
+        discountApplied: tieredDiscountResult?.discountApplied || 0,
+        discountType: tieredDiscountResult?.discountType || "NONE",
+        ipAddress: req.headers.get("x-forwarded-for") || undefined,
+        userAgent: req.headers.get("user-agent") || undefined,
       });
     }
 

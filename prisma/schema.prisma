@@ -77,6 +77,8 @@ model User {
   notifications         Notification[]
   serviceSubscription   ServiceSubscription? // Link to subscription
   staffActions          StaffAction[] // NEW: AI validation staff actions
+  aiReviewQAs           AIReviewQA[] // AI assessment reviews performed by this user
+  promoCodeUsages       PromoCodeUsage[] // Promo codes used by this user
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
 
@@ -530,6 +532,11 @@ enum AuditAction {
   REFUND_PROCESSED
   FIRM_SERVICE_FEE_PAID
   PDF_DOWNLOADED
+  // Promo Code Actions
+  PROMO_CODE_CREATED
+  PROMO_CODE_UPDATED
+  PROMO_CODE_ARCHIVED
+  PROMO_CODE_UNARCHIVED
 }
 
 enum AuditSeverity {
@@ -1237,6 +1244,13 @@ enum AgentExecutionStatus {
   TIMEOUT
 }
 
+enum AIReviewQAStatus {
+  PENDING // Not yet reviewed
+  IN_REVIEW // Admin is currently reviewing
+  COMPLETED // Review completed
+  SKIPPED // Skipped this review
+}
+
 enum StaffActionType {
   VIEWED_CLAIM
   STARTED_REVIEW
@@ -1329,6 +1343,9 @@ model ClaimReadiness {
   reviewedAt        DateTime?
   staffDecision     Json? // Staff decision and reasoning
 
+  // AI Quality Assurance Reviews
+  aiReviewQA AIReviewQA?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1401,6 +1418,65 @@ model StaffAction {
   @@index([createdAt])
 }
 
+// AI Review Quality Assurance - Track admin reviews of AI assessments
+model AIReviewQA {
+  id String @id @default(cuid())
+
+  // What is being reviewed
+  claimReadinessId String         @unique
+  claimReadiness   ClaimReadiness @relation(fields: [claimReadinessId], references: [id], onDelete: Cascade)
+
+  // Review Sampling
+  sampledForReview Boolean   @default(false) // Randomly selected for QA review
+  sampledAt        DateTime? // When it was selected for review
+
+  // Reviewer
+  reviewerId String?
+  reviewer   User?   @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  // Review Status
+  reviewStatus AIReviewQAStatus @default(PENDING)
+
+  // Review Results - How accurate was the AI?
+  aiAccuracyScore     Float? // 0-100: How accurate was the AI's assessment overall
+  readinessScoreMatch Boolean? // Did reviewer agree with AI's readiness score?
+  correctReadiness    Float? // What should the readiness score actually be (if different)
+
+  // Specific Assessment Accuracy
+  completenessAccurate      Boolean? // Was AI's completeness assessment accurate?
+  criticalBlockersAccurate  Boolean? // Were critical blockers correctly identified?
+  warningsAccurate          Boolean? // Were warnings correctly identified?
+  nameConsistencyAccurate   Boolean? // Was name consistency check accurate?
+  datesConsistencyAccurate  Boolean? // Was dates consistency check accurate?
+  claimTypeAccurate         Boolean? // Was claim type detection accurate?
+
+  // Detailed Feedback
+  reviewerNotes      String? @db.Text // General notes about the review
+  aiStrengths        String? @db.Text // What did the AI do well?
+  aiWeaknesses       String? @db.Text // What did the AI miss or get wrong?
+  improvementSuggestions String? @db.Text // Suggestions for improving AI prompts/logic
+
+  // False Positives/Negatives
+  falsePositives Json[] @default([]) // Issues AI flagged that weren't real
+  falseNegatives Json[] @default([]) // Issues AI missed
+
+  // Corrected Assessment
+  correctedAssessment Json? // If needed, the corrected assessment data
+
+  // Timestamps
+  reviewStartedAt  DateTime?
+  reviewCompletedAt DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([claimReadinessId])
+  @@index([reviewStatus])
+  @@index([sampledForReview])
+  @@index([reviewerId])
+  @@index([aiAccuracyScore])
+  @@index([createdAt])
+}
+
 // ============================================================================
 // SERVICE TIERS & PAYMENT SYSTEM
 // ============================================================================
@@ -1467,17 +1543,67 @@ model PromoCode {
   isActive            Boolean            @default(true)
   // Stripe integration
   stripeCouponId      String?            @unique // Link to Stripe coupon
+  // Archive support
+  isArchived          Boolean            @default(false)
+  archivedAt          DateTime?
+  archivedBy          String?
+  // Campaign support
+  campaignName        String?            // Group related promo codes
+  useTieredDiscounts  Boolean            @default(false) // Enable tiered discount system
   // Metadata
   createdBy           String?            // Admin user ID who created this
   notes               String?            @db.Text // Internal notes
   // Relations
   subscriptions       ServiceSubscription[]
+  tiers               PromoCodeTier[]    // Discount tiers
+  usageHistory        PromoCodeUsage[]   // Detailed usage tracking
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
+  @@index([isArchived])
+  @@index([campaignName])
+}
+
+model PromoCodeTier {
+  id              String      @id @default(cuid())
+  promoCodeId     String
+  promoCode       PromoCode   @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  tierOrder       Int         // 1, 2, 3... (order of tiers)
+  startAfterUses  Int         @default(0) // Tier starts after X uses (0 for first tier)
+  maxUsesInTier   Int?        // Max uses in this tier (null = unlimited)
+  percentOff      Int?        // 0-100
+  amountOff       Float?      // Dollar amount
+  description     String?     // e.g., "Early bird discount"
+  usages          PromoCodeUsage[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([promoCodeId])
+  @@index([promoCodeId, tierOrder])
+}
+
+model PromoCodeUsage {
+  id                    String             @id @default(cuid())
+  promoCodeId           String
+  promoCode             PromoCode          @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  tierId                String?
+  tier                  PromoCodeTier?     @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  serviceSubscriptionId String
+  serviceSubscription   ServiceSubscription @relation(fields: [serviceSubscriptionId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discountApplied       Float              // Actual discount amount applied
+  discountType          String             // "PERCENT" or "AMOUNT"
+  usedAt                DateTime           @default(now())
+  ipAddress             String?
+  userAgent             String?
+
+  @@index([promoCodeId])
+  @@index([userId])
+  @@index([usedAt])
 }
 
 model ServiceSubscription {
@@ -1526,8 +1652,9 @@ model ServiceSubscription {
   cancelReason String?   @db.Text
 
   // Relations
-  payments       Payment[]
-  intakeSessions IntakeSession[]
+  payments         Payment[]
+  intakeSessions   IntakeSession[]
+  promoCodeUsages  PromoCodeUsage[] // Detailed promo code usage tracking
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

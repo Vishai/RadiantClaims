@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
 /**
- * GET - List all promo codes (admin only)
+ * GET - List all promo codes with analytics (admin only)
  */
 export async function GET(req: NextRequest) {
   try {
@@ -37,7 +37,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Get filter parameters
+    const { searchParams } = new URL(req.url);
+    const showArchived = searchParams.get("showArchived") === "true";
+    const campaignName = searchParams.get("campaign");
+
+    // Build where clause
+    const whereClause: any = {};
+    if (!showArchived) {
+      whereClause.isArchived = false;
+    }
+    if (campaignName) {
+      whereClause.campaignName = campaignName;
+    }
+
     const promoCodes = await prisma.promoCode.findMany({
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       include: {
         subscriptions: {
@@ -45,12 +60,78 @@ export async function GET(req: NextRequest) {
             id: true,
             userId: true,
             createdAt: true,
+            status: true,
           },
+        },
+        tiers: {
+          orderBy: { tierOrder: "asc" },
+          include: {
+            usages: {
+              select: {
+                id: true,
+                usedAt: true,
+              },
+            },
+          },
+        },
+        usageHistory: {
+          select: {
+            id: true,
+            userId: true,
+            usedAt: true,
+            discountApplied: true,
+            tier: {
+              select: {
+                id: true,
+                tierOrder: true,
+                description: true,
+              },
+            },
+            serviceSubscription: {
+              select: {
+                status: true,
+              },
+            },
+          },
+          orderBy: { usedAt: "desc" },
         },
       },
     });
 
-    return NextResponse.json({ promoCodes });
+    // Calculate analytics for each promo code
+    const promoCodesWithAnalytics = promoCodes.map((promo) => {
+      const activeSubscriptions = promo.subscriptions.filter(
+        (sub) => sub.status === "ACTIVE"
+      ).length;
+      const retention =
+        promo.subscriptions.length > 0
+          ? (activeSubscriptions / promo.subscriptions.length) * 100
+          : 0;
+
+      const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentUsages = promo.usageHistory.filter(
+        (usage) => new Date(usage.usedAt) >= last30Days
+      ).length;
+
+      return {
+        ...promo,
+        analytics: {
+          activeSubscriptions,
+          retentionRate: retention,
+          recentUsages30Days: recentUsages,
+          totalUsages: promo.usageHistory.length,
+          avgDiscountApplied:
+            promo.usageHistory.length > 0
+              ? promo.usageHistory.reduce(
+                  (sum, u) => sum + u.discountApplied,
+                  0
+                ) / promo.usageHistory.length
+              : 0,
+        },
+      };
+    });
+
+    return NextResponse.json({ promoCodes: promoCodesWithAnalytics });
   } catch (error) {
     console.error("Error fetching promo codes:", error);
     return NextResponse.json(
@@ -97,6 +178,9 @@ export async function POST(req: NextRequest) {
       expiresAt,
       createStripeCoupon,
       notes,
+      campaignName,
+      useTieredDiscounts,
+      tiers, // Array of tier objects
     } = await req.json();
 
     // Validate required fields
@@ -187,7 +271,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create promo code in database
+    // Create promo code in database with optional tiers
     const promoCode = await prisma.promoCode.create({
       data: {
         code,
@@ -204,6 +288,26 @@ export async function POST(req: NextRequest) {
         stripeCouponId,
         createdBy: session.user.id,
         notes,
+        campaignName,
+        useTieredDiscounts: useTieredDiscounts || false,
+        // Create tiers if provided
+        ...(useTieredDiscounts && tiers && tiers.length > 0
+          ? {
+              tiers: {
+                create: tiers.map((tier: any, index: number) => ({
+                  tierOrder: index + 1,
+                  startAfterUses: tier.startAfterUses || 0,
+                  maxUsesInTier: tier.maxUsesInTier,
+                  percentOff: tier.percentOff,
+                  amountOff: tier.amountOff,
+                  description: tier.description,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        tiers: true,
       },
     });
 
@@ -263,7 +367,16 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const { id, isActive, maxUses, expiresAt, notes } = await req.json();
+    const {
+      id,
+      isActive,
+      maxUses,
+      expiresAt,
+      notes,
+      campaignName,
+      description,
+      tiers,
+    } = await req.json();
 
     if (!id) {
       return NextResponse.json(
@@ -272,18 +385,41 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // If tiers are provided, delete existing tiers and create new ones
+    const updateData: any = {
+      isActive: isActive !== undefined ? isActive : undefined,
+      maxUses: maxUses !== undefined ? maxUses : undefined,
+      expiresAt:
+        expiresAt !== undefined
+          ? expiresAt
+            ? new Date(expiresAt)
+            : null
+          : undefined,
+      notes: notes !== undefined ? notes : undefined,
+      campaignName: campaignName !== undefined ? campaignName : undefined,
+      description: description !== undefined ? description : undefined,
+    };
+
+    // Handle tier updates if provided
+    if (tiers !== undefined) {
+      updateData.tiers = {
+        deleteMany: {}, // Delete all existing tiers
+        create: tiers.map((tier: any, index: number) => ({
+          tierOrder: index + 1,
+          startAfterUses: tier.startAfterUses || 0,
+          maxUsesInTier: tier.maxUsesInTier,
+          percentOff: tier.percentOff,
+          amountOff: tier.amountOff,
+          description: tier.description,
+        })),
+      };
+    }
+
     const promoCode = await prisma.promoCode.update({
       where: { id },
-      data: {
-        isActive: isActive !== undefined ? isActive : undefined,
-        maxUses: maxUses !== undefined ? maxUses : undefined,
-        expiresAt:
-          expiresAt !== undefined
-            ? expiresAt
-              ? new Date(expiresAt)
-              : null
-            : undefined,
-        notes: notes !== undefined ? notes : undefined,
+      data: updateData,
+      include: {
+        tiers: true,
       },
     });
 
@@ -298,7 +434,15 @@ export async function PATCH(req: NextRequest) {
         userAgent: req.headers.get("user-agent") || undefined,
         metadata: JSON.stringify({
           code: promoCode.code,
-          updates: { isActive, maxUses, expiresAt, notes },
+          updates: {
+            isActive,
+            maxUses,
+            expiresAt,
+            notes,
+            campaignName,
+            description,
+            tiersUpdated: tiers !== undefined,
+          },
         }),
       },
     });

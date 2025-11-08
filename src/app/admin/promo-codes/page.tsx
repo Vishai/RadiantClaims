@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Copy, Check } from "lucide-react";
+import { TierBuilder } from "@/components/admin/TierBuilder";
 
 interface PromoCode {
   id: string;
@@ -49,12 +50,33 @@ interface PromoCode {
   isActive: boolean;
   stripeCouponId: string | null;
   notes: string | null;
+  campaignName: string | null;
+  useTieredDiscounts: boolean;
   createdAt: string;
   subscriptions: Array<{
     id: string;
     userId: string;
     createdAt: string;
   }>;
+  tiers?: Array<{
+    id: string;
+    tierOrder: number;
+    startAfterUses: number;
+    maxUsesInTier: number | null;
+    percentOff: number | null;
+    amountOff: number | null;
+    description: string | null;
+  }>;
+}
+
+interface Tier {
+  id: string;
+  tierOrder: number;
+  startAfterUses: number;
+  maxUsesInTier: number | null;
+  percentOff: number | null;
+  amountOff: number | null;
+  description: string;
 }
 
 interface CreatePromoCodeForm {
@@ -71,6 +93,9 @@ interface CreatePromoCodeForm {
   expiresInDays: string;
   createStripeCoupon: boolean;
   notes: string;
+  campaignName: string;
+  useTieredDiscounts: boolean;
+  tiers: Tier[];
 }
 
 export default function PromoCodesAdminPage() {
@@ -78,6 +103,11 @@ export default function PromoCodesAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPromoCode, setEditingPromoCode] = useState<PromoCode | null>(
+    null
+  );
+  const [isUpdating, setIsUpdating] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -96,6 +126,9 @@ export default function PromoCodesAdminPage() {
     expiresInDays: "365",
     createStripeCoupon: true,
     notes: "",
+    campaignName: "",
+    useTieredDiscounts: false,
+    tiers: [],
   });
 
   const fetchPromoCodes = async () => {
@@ -133,20 +166,34 @@ export default function PromoCodesAdminPage() {
         throw new Error("Code is required");
       }
 
-      if (
-        form.type === "PERCENT_OFF" &&
-        (!form.percentOff ||
-          parseInt(form.percentOff) < 1 ||
-          parseInt(form.percentOff) > 100)
-      ) {
-        throw new Error("Percent off must be between 1 and 100");
-      }
+      // Validate tiered discounts
+      if (form.useTieredDiscounts) {
+        if (form.tiers.length === 0) {
+          throw new Error("At least one tier is required for tiered discounts");
+        }
+        // Validate each tier has a discount value
+        for (const tier of form.tiers) {
+          if (!tier.percentOff && !tier.amountOff) {
+            throw new Error("Each tier must have a discount value");
+          }
+        }
+      } else {
+        // Standard validation for non-tiered discounts
+        if (
+          form.type === "PERCENT_OFF" &&
+          (!form.percentOff ||
+            parseInt(form.percentOff) < 1 ||
+            parseInt(form.percentOff) > 100)
+        ) {
+          throw new Error("Percent off must be between 1 and 100");
+        }
 
-      if (
-        form.type === "AMOUNT_OFF" &&
-        (!form.amountOff || parseFloat(form.amountOff) <= 0)
-      ) {
-        throw new Error("Amount off must be greater than 0");
+        if (
+          form.type === "AMOUNT_OFF" &&
+          (!form.amountOff || parseFloat(form.amountOff) <= 0)
+        ) {
+          throw new Error("Amount off must be greater than 0");
+        }
       }
 
       if (
@@ -185,6 +232,9 @@ export default function PromoCodesAdminPage() {
           expiresAt,
           createStripeCoupon: form.createStripeCoupon,
           notes: form.notes || null,
+          campaignName: form.campaignName || null,
+          useTieredDiscounts: form.useTieredDiscounts,
+          tiers: form.useTieredDiscounts ? form.tiers : [],
         }),
       });
 
@@ -212,6 +262,9 @@ export default function PromoCodesAdminPage() {
         expiresInDays: "365",
         createStripeCoupon: true,
         notes: "",
+        campaignName: "",
+        useTieredDiscounts: false,
+        tiers: [],
       });
 
       // Refresh list
@@ -223,6 +276,67 @@ export default function PromoCodesAdminPage() {
       setError(error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleEditPromoCode = (promoCode: PromoCode) => {
+    setEditingPromoCode(promoCode);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdatePromoCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPromoCode) return;
+
+    setError(null);
+    setSuccess(null);
+    setIsUpdating(true);
+
+    try {
+      const updates: any = {
+        id: editingPromoCode.id,
+        description: editingPromoCode.description,
+        maxUses: editingPromoCode.maxUses,
+        expiresAt: editingPromoCode.expiresAt,
+        notes: editingPromoCode.notes,
+        campaignName: editingPromoCode.campaignName,
+      };
+
+      // Include tiers if this is a tiered promo code
+      if (editingPromoCode.useTieredDiscounts && editingPromoCode.tiers) {
+        updates.tiers = editingPromoCode.tiers.map((tier) => ({
+          startAfterUses: tier.startAfterUses,
+          maxUsesInTier: tier.maxUsesInTier,
+          percentOff: tier.percentOff,
+          amountOff: tier.amountOff,
+          description: tier.description,
+        }));
+      }
+
+      const response = await fetch("/api/admin/promo-codes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update promo code");
+      }
+
+      setSuccess(`Promo code "${editingPromoCode.code}" updated successfully!`);
+      setIsEditDialogOpen(false);
+      setEditingPromoCode(null);
+
+      // Refresh list
+      fetchPromoCodes();
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -389,7 +503,7 @@ export default function PromoCodesAdminPage() {
                 </div>
 
                 {/* Conditional fields based on type */}
-                {form.type === "PERCENT_OFF" && (
+                {form.type === "PERCENT_OFF" && !form.useTieredDiscounts && (
                   <div className="space-y-2">
                     <Label htmlFor="percentOff">
                       Percent Off (1-100){" "}
@@ -410,7 +524,7 @@ export default function PromoCodesAdminPage() {
                   </div>
                 )}
 
-                {form.type === "AMOUNT_OFF" && (
+                {form.type === "AMOUNT_OFF" && !form.useTieredDiscounts && (
                   <div className="space-y-2">
                     <Label htmlFor="amountOff">
                       Amount Off ($) <span className="text-red-500">*</span>
@@ -429,6 +543,16 @@ export default function PromoCodesAdminPage() {
                     />
                   </div>
                 )}
+
+                {/* Tiered Discount Builder */}
+                {form.useTieredDiscounts &&
+                  (form.type === "PERCENT_OFF" ||
+                    form.type === "AMOUNT_OFF") && (
+                    <TierBuilder
+                      tiers={form.tiers}
+                      onChange={(tiers) => setForm({ ...form, tiers })}
+                    />
+                  )}
 
                 {form.type === "FREE_TRIAL" && (
                   <div className="space-y-2">
@@ -461,6 +585,44 @@ export default function PromoCodesAdminPage() {
                     }
                   />
                 </div>
+
+                {/* Campaign Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="campaignName">Campaign Name (Optional)</Label>
+                  <Input
+                    id="campaignName"
+                    placeholder="e.g., Black Friday 2025"
+                    value={form.campaignName}
+                    onChange={(e) =>
+                      setForm({ ...form, campaignName: e.target.value })
+                    }
+                  />
+                  <p className="text-sm text-gray-500">
+                    Group related promo codes under a campaign
+                  </p>
+                </div>
+
+                {/* Tiered Discounts Toggle */}
+                {(form.type === "PERCENT_OFF" ||
+                  form.type === "AMOUNT_OFF") && (
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="useTieredDiscounts"
+                        checked={form.useTieredDiscounts}
+                        onCheckedChange={(checked) =>
+                          setForm({ ...form, useTieredDiscounts: checked })
+                        }
+                      />
+                      <Label htmlFor="useTieredDiscounts">
+                        Use Tiered Discounts
+                      </Label>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Apply different discount amounts based on usage count
+                    </p>
+                  </div>
+                )}
 
                 {/* Duration / Term */}
                 {(form.type === "PERCENT_OFF" ||
@@ -768,14 +930,21 @@ export default function PromoCodesAdminPage() {
                       promoCode.currentUses >= promoCode.maxUses;
 
                     return (
-                      <tr key={promoCode.id} className="border-b last:border-0">
+                      <tr
+                        key={promoCode.id}
+                        className="cursor-pointer border-b transition-colors last:border-0 hover:bg-gray-50"
+                        onClick={() => handleEditPromoCode(promoCode)}
+                      >
                         <td className="py-3">
                           <div className="flex items-center gap-2">
                             <code className="rounded bg-gray-100 px-2 py-1 font-mono text-sm">
                               {promoCode.code}
                             </code>
                             <button
-                              onClick={() => copyToClipboard(promoCode.code)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(promoCode.code);
+                              }}
                               className="text-gray-400 hover:text-gray-600"
                               title="Copy code"
                             >
@@ -872,6 +1041,7 @@ export default function PromoCodesAdminPage() {
                             onCheckedChange={(checked) =>
                               togglePromoCodeStatus(promoCode.id, checked)
                             }
+                            onClick={(e) => e.stopPropagation()}
                             disabled={isExpired || isMaxedOut}
                           />
                         </td>
@@ -884,6 +1054,140 @@ export default function PromoCodesAdminPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Promo Code Dialog */}
+      {editingPromoCode && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+            <form onSubmit={handleUpdatePromoCode}>
+              <DialogHeader>
+                <DialogTitle>
+                  Edit Promo Code: {editingPromoCode.code}
+                </DialogTitle>
+                <DialogDescription>
+                  Update promo code settings and tiers
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                {/* Campaign Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-campaignName">Campaign Name</Label>
+                  <Input
+                    id="edit-campaignName"
+                    value={editingPromoCode.campaignName || ""}
+                    onChange={(e) =>
+                      setEditingPromoCode({
+                        ...editingPromoCode,
+                        campaignName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Input
+                    id="edit-description"
+                    value={editingPromoCode.description || ""}
+                    onChange={(e) =>
+                      setEditingPromoCode({
+                        ...editingPromoCode,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Max Uses */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-maxUses">Max Uses</Label>
+                  <Input
+                    id="edit-maxUses"
+                    type="number"
+                    value={editingPromoCode.maxUses || ""}
+                    onChange={(e) =>
+                      setEditingPromoCode({
+                        ...editingPromoCode,
+                        maxUses: e.target.value
+                          ? parseInt(e.target.value)
+                          : null,
+                      })
+                    }
+                  />
+                </div>
+
+                {/* Tiers */}
+                {editingPromoCode.useTieredDiscounts && (
+                  <TierBuilder
+                    tiers={
+                      editingPromoCode.tiers?.map((t) => ({
+                        id: t.id,
+                        tierOrder: t.tierOrder,
+                        startAfterUses: t.startAfterUses,
+                        maxUsesInTier: t.maxUsesInTier,
+                        percentOff: t.percentOff,
+                        amountOff: t.amountOff,
+                        description: t.description || "",
+                      })) || []
+                    }
+                    onChange={(tiers) =>
+                      setEditingPromoCode({
+                        ...editingPromoCode,
+                        tiers: tiers.map((t) => ({
+                          id: t.id,
+                          tierOrder: t.tierOrder,
+                          startAfterUses: t.startAfterUses,
+                          maxUsesInTier: t.maxUsesInTier,
+                          percentOff: t.percentOff,
+                          amountOff: t.amountOff,
+                          description: t.description,
+                        })),
+                      })
+                    }
+                  />
+                )}
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-notes">Internal Notes</Label>
+                  <Textarea
+                    id="edit-notes"
+                    value={editingPromoCode.notes || ""}
+                    onChange={(e) =>
+                      setEditingPromoCode({
+                        ...editingPromoCode,
+                        notes: e.target.value,
+                      })
+                    }
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {error && isEditDialogOpen && (
+                <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+                  {error}
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating ? "Updating..." : "Update Promo Code"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

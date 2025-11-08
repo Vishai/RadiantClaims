@@ -12,6 +12,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const isAttorneyRole = (role?: string | null) =>
+  role === "ATTORNEY" || role === "FIRM_ADMIN";
+
 export default function AttorneySettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -19,7 +22,7 @@ export default function AttorneySettingsPage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
-    } else if (session?.user?.role !== "ATTORNEY") {
+    } else if (session?.user?.role && !isAttorneyRole(session.user.role)) {
       router.push("/portal");
     }
   }, [session, status, router]);
@@ -34,9 +37,12 @@ export default function AttorneySettingsPage() {
     );
   }
 
-  if (!session || session.user?.role !== "ATTORNEY") {
+  if (!session || !session.user?.role || !isAttorneyRole(session.user.role)) {
     return null;
   }
+
+  const roleDisplay =
+    session.user.role === "FIRM_ADMIN" ? "Firm Admin" : "Attorney";
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -68,7 +74,7 @@ export default function AttorneySettingsPage() {
               <label className="text-sm font-medium text-gray-700">Role</label>
               <p className="mt-1 text-gray-900">
                 <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-                  Attorney
+                  {roleDisplay}
                 </span>
               </p>
             </div>
