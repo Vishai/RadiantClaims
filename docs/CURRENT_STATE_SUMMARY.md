@@ -1,8 +1,10 @@
 # RadiantClaims - Current State Summary
 
-**Date**: October 31, 2025
-**Branch**: `service-tiers`
-**Status**: Phase 1 Complete ✅ | Phase 2 Ready to Start 🎯
+> **⚠️ DEPRECATED:** This file is outdated. For current status, see `/PROJECT_STATUS.md`
+
+**Original Date**: October 31, 2025
+**Branch**: `service-tiers` (now: `admin-dashboard`)
+**Status**: OUTDATED - See `/PROJECT_STATUS.md` for current state
 
 ---
 

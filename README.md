@@ -1,6 +1,20 @@
 # RadiantClaims
 
-A modern, full-stack RECA claims intake system built with Next.js 14, TypeScript, and PostgreSQL.
+A modern, full-stack RECA claims preparation platform built with Next.js 14, TypeScript, and PostgreSQL.
+
+## 📚 Documentation
+
+**New developers start here:**
+1. **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Current state & features (READ THIS FIRST!)
+2. **[TODO.md](./TODO.md)** - What to work on next
+3. **[DOCS_INDEX.md](./DOCS_INDEX.md)** - Complete documentation guide
+4. **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** - Setup instructions
+
+**Quick Links:**
+- [PDF Form Progress](./docs/PROJECT_PROGRESS_TRACKER.md)
+- [Test Credentials](./TEST_CREDENTIALS.md)
+- [Email Setup](./EMAIL_INTEGRATION.md)
+- [Operations Guide](./docs/OPERATIONS_GUIDE.md)
 
 ## Tech Stack
 
@@ -15,12 +29,34 @@ A modern, full-stack RECA claims intake system built with Next.js 14, TypeScript
 
 ## Features
 
-- **Public Intake Flow**: Multi-step form for claimant information and document uploads
-- **Admin Dashboard**: Protected portal to view and manage claimants
-- **Document Management**: Upload and track claimant documents (with R2/S3 integration)
-- **Referral System**: Track and validate referral codes
-- **Type-safe Environment**: Environment variables validated with Zod
-- **Developer Experience**: Pre-commit hooks, formatting, linting, and strict TypeScript
+### Core Platform (100% Complete)
+- ✅ Multi-step intake flow with save/resume
+- ✅ Document upload system (Cloudflare R2)
+- ✅ Customer, Admin, and Attorney portals
+- ✅ NextAuth authentication with role-based access
+- ✅ Email system (Resend integration)
+
+### AI-Powered Intelligence (95% Complete)
+- ✅ OCR with pdfjs-dist + Tesseract
+- ✅ AI document categorization (GPT-4o-mini)
+- ✅ Entity extraction & compliance checking
+- ✅ 7 specialized validation agents
+- ✅ Intelligence modal with 7 tabs
+- ⏳ Real-world testing needed
+
+### PDF Form Filling (35% Complete)
+- ✅ Form filler architecture
+- ✅ Parts 1-3 mapped
+- ⏳ Parts 8, 10, 16 needed for beta (3 hrs)
+- ⏳ Remaining parts for full coverage (6-7 hrs)
+
+### Resource Finder (100% Complete)
+- ✅ Search for vital records offices
+- ✅ 5 covered states (UT, NV, AZ, ID, NM)
+- ✅ Filterable by county/document type
+
+**Current Status:** 85-90% complete, 6-8 hours from beta launch
+**See:** [PROJECT_STATUS.md](./PROJECT_STATUS.md) for details
 
 ## Getting Started
 
