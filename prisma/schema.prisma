@@ -51,36 +51,37 @@ enum UserRole {
 }
 
 model User {
-  id                    String               @id @default(cuid())
-  name                  String?
-  email                 String?              @unique
-  emailVerified         DateTime?
-  password              String?
-  image                 String?
-  role                  UserRole             @default(CUSTOMER)
-  firmId                String? // Link to law firm for attorneys
-  firm                  LawFirm?             @relation(fields: [firmId], references: [id], onDelete: SetNull)
-  accounts              Account[]
-  sessions              Session[]
-  claimants             Claimant[] // Customer users can have multiple claims
-  auditLogs             AuditLog[]
-  mfaEnabled            Boolean              @default(false)
-  mfaConfig             MFAConfig?
-  rememberMeTokens      RememberMeToken[]
-  passwordChangedAt     DateTime?
-  passwordResetRequired Boolean              @default(false)
-  passwordResetToken    String?              @unique
-  passwordResetExpires  DateTime?
-  policyAcceptances     PolicyAcceptance[]
-  comments              ClaimantComment[]
-  reviewActions         ReviewAction[]
-  notifications         Notification[]
-  serviceSubscription   ServiceSubscription? // Link to subscription
-  staffActions          StaffAction[] // NEW: AI validation staff actions
-  aiReviewQAs           AIReviewQA[] // AI assessment reviews performed by this user
-  promoCodeUsages       PromoCodeUsage[] // Promo codes used by this user
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  id                          String                      @id @default(cuid())
+  name                        String?
+  email                       String?                     @unique
+  emailVerified               DateTime?
+  password                    String?
+  image                       String?
+  role                        UserRole                    @default(CUSTOMER)
+  firmId                      String? // Link to law firm for attorneys
+  firm                        LawFirm?                    @relation(fields: [firmId], references: [id], onDelete: SetNull)
+  accounts                    Account[]
+  sessions                    Session[]
+  claimants                   Claimant[] // Customer users can have multiple claims
+  auditLogs                   AuditLog[]
+  mfaEnabled                  Boolean                     @default(false)
+  mfaConfig                   MFAConfig?
+  rememberMeTokens            RememberMeToken[]
+  passwordChangedAt           DateTime?
+  passwordResetRequired       Boolean                     @default(false)
+  passwordResetToken          String?                     @unique
+  passwordResetExpires        DateTime?
+  policyAcceptances           PolicyAcceptance[]
+  comments                    ClaimantComment[]
+  reviewActions               ReviewAction[]
+  notifications               Notification[]
+  serviceSubscription         ServiceSubscription? // Link to subscription
+  staffActions                StaffAction[] // NEW: AI validation staff actions
+  aiReviewQAs                 AIReviewQA[] // AI assessment reviews performed by this user
+  promoCodeUsages             PromoCodeUsage[] // Promo codes used by this user
+  documentAssistancesAssigned DocumentRequestAssistance[] @relation("DocumentAssistanceAssignedStaff") // Claimants receiving staff assistance
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
 
   @@index([email])
   @@index([role])
@@ -132,6 +133,10 @@ model Claimant {
   comments                ClaimantComment[] // Comments from attorneys/staff
   reviewActions           ReviewAction[] // Review history
   notifications           Notification[] // Related notifications
+  attorneyActivities      AttorneyActivityLog[]
+  followUps               ClaimantFollowUp[]
+  documentAssistances     DocumentRequestAssistance[]
+  followUpPriority        FollowUpPriorityQueue?
   // NEW FIELDS FOR RECA DOCUMENTATION
   claimType               ClaimType?
   relationshipToClaimant  RelationshipType?
@@ -250,9 +255,13 @@ model IntakeSession {
   serviceSubscription   ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id])
 
   // NEW: AI Validation Relations
-  claimReadiness ClaimReadiness?
-  agentLogs      AgentExecutionLog[]
-  staffActions   StaffAction[]
+  claimReadiness          ClaimReadiness?
+  agentLogs               AgentExecutionLog[]
+  staffActions            StaffAction[]
+  attorneyActivityLogs    AttorneyActivityLog[]
+  followUps               ClaimantFollowUp[]
+  documentAssistances     DocumentRequestAssistance[]
+  AttorneyNotificationLog AttorneyNotificationLog[]
 
   @@index([resumeToken])
   @@index([claimantId])
@@ -409,51 +418,51 @@ enum PacketStatus {
 
 // Final packet assembly tracking
 model PacketSubmission {
-  id                    String        @id @default(cuid())
-  intakeSessionId       String        @unique
-  intakeSession         IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  id                    String             @id @default(cuid())
+  intakeSessionId       String             @unique
+  intakeSession         IntakeSession      @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
   packetFileKey         String? // R2 key for final PDF
-  status                PacketStatus  @default(GENERATING)
-  fileCount             Int           @default(0)
-  totalSizeBytes        Int           @default(0)
+  status                PacketStatus       @default(GENERATING)
+  fileCount             Int                @default(0)
+  totalSizeBytes        Int                @default(0)
   generatedAt           DateTime?
   readyAt               DateTime?
   deliveredAt           DateTime?
   deliveredTo           String? // Attorney email
   printedAt             DateTime? // When digital copies were printed
   printedBy             String? // Staff who printed
-  mailingInstructions   String?       @db.Text // Custom instructions for claimant
+  mailingInstructions   String?            @db.Text // Custom instructions for claimant
   trackingNumber        String? // If prepaid envelope has tracking
-  prepaidEnvelopeIssued Boolean       @default(false)
-  errorMessage          String?       @db.Text
+  prepaidEnvelopeIssued Boolean            @default(false)
+  errorMessage          String?            @db.Text
   archiveKey            String?
   archiveFileName       String?
-  archiveSizeBytes      Int           @default(0)
+  archiveSizeBytes      Int                @default(0)
   archiveChecksum       String?
-  version               Int           @default(0)
+  version               Int                @default(0)
   warnings              Json?
   lastDownloadedAt      DateTime?
-  downloadCount         Int           @default(0)
+  downloadCount         Int                @default(0)
   generations           PacketGeneration[]
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   @@index([status])
   @@index([generatedAt])
 }
 
 model PacketGeneration {
-  id                String       @id @default(cuid())
+  id                 String           @id @default(cuid())
   packetSubmissionId String
-  packetSubmission  PacketSubmission @relation(fields: [packetSubmissionId], references: [id], onDelete: Cascade)
-  version           Int
-  status            PacketStatus  @default(GENERATING)
-  archiveKey        String?
-  archiveSizeBytes  Int?
-  warnings          Json?
-  generatedBy       String?
-  generatedAt       DateTime      @default(now())
-  createdAt         DateTime      @default(now())
+  packetSubmission   PacketSubmission @relation(fields: [packetSubmissionId], references: [id], onDelete: Cascade)
+  version            Int
+  status             PacketStatus     @default(GENERATING)
+  archiveKey         String?
+  archiveSizeBytes   Int?
+  warnings           Json?
+  generatedBy        String?
+  generatedAt        DateTime         @default(now())
+  createdAt          DateTime         @default(now())
 
   @@index([packetSubmissionId])
   @@index([version])
@@ -489,6 +498,13 @@ enum EmailType {
   READY_TO_MAIL
   MARKETING
   UPDATES
+  ATTORNEY_NEW_CLIENT
+  ATTORNEY_ACTIVITY_SUMMARY
+  ATTORNEY_PACKET_READY
+  CLIENT_DOCUMENT_FOLLOW_UP
+  CLIENT_PROGRESS_MILESTONE
+  CLIENT_REENGAGEMENT
+  CLIENT_DOCUMENT_ASSISTANCE
 }
 
 model EmailPreference {
@@ -643,28 +659,31 @@ enum FirmStatus {
 
 // Law firm multi-tenancy
 model LawFirm {
-  id                    String                @id @default(cuid())
-  name                  String
-  slug                  String                @unique // URL-safe identifier
-  address               String?
-  city                  String?
-  state                 String?
-  postalCode            String?
-  phone                 String?
-  email                 String?               @unique
-  status                FirmStatus            @default(ACTIVE)
-  licenseNumber         String? // Bar association number
-  primaryContactName    String?
-  primaryContactEmail   String?
-  users                 User[] // Attorney users at this firm
-  claimantAssignments   ClaimantAssignment[]
-  policyAcceptances     PolicyAcceptance[]
-  referredSubscriptions ServiceSubscription[] // Subscriptions referred to this firm
-  notificationSettings  LawFirmNotificationSetting[]
-  serviceAgreementUrl   String? // Signed service provider agreement
-  serviceAgreementDate  DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id                       String                       @id @default(cuid())
+  name                     String
+  slug                     String                       @unique // URL-safe identifier
+  address                  String?
+  city                     String?
+  state                    String?
+  postalCode               String?
+  phone                    String?
+  email                    String?                      @unique
+  status                   FirmStatus                   @default(ACTIVE)
+  licenseNumber            String? // Bar association number
+  primaryContactName       String?
+  primaryContactEmail      String?
+  users                    User[] // Attorney users at this firm
+  claimantAssignments      ClaimantAssignment[]
+  policyAcceptances        PolicyAcceptance[]
+  referredSubscriptions    ServiceSubscription[] // Subscriptions referred to this firm
+  notificationSettings     LawFirmNotificationSetting[]
+  notificationSchedule     LawFirmNotificationSchedule?
+  serviceAgreementUrl      String? // Signed service provider agreement
+  serviceAgreementDate     DateTime?
+  attorneyActivityLogs     AttorneyActivityLog[]
+  attorneyNotificationLogs AttorneyNotificationLog[]
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
 
   @@index([slug])
   @@index([status])
@@ -696,17 +715,109 @@ enum LawFirmNotificationEvent {
 }
 
 model LawFirmNotificationSetting {
-  id                   String                    @id @default(cuid())
+  id                   String                   @id @default(cuid())
   firmId               String
-  firm                 LawFirm                   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  firm                 LawFirm                  @relation(fields: [firmId], references: [id], onDelete: Cascade)
   event                LawFirmNotificationEvent
-  recipientEmails      String[]                  @default([])
-  notifyPrimaryContact Boolean                   @default(true)
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
+  recipientEmails      String[]                 @default([])
+  notifyPrimaryContact Boolean                  @default(true)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@unique([firmId, event])
   @@index([firmId])
+}
+
+// Detailed notification scheduling/preferences for firms
+model LawFirmNotificationSchedule {
+  id     String  @id @default(cuid())
+  firmId String  @unique
+  firm   LawFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  summaryEmailEnabled Boolean  @default(true)
+  summaryEmailTimes   String[] @default(["06:00", "14:00"]) // HH:MM format
+  timezone            String   @default("America/Denver")
+
+  immediateNewClient   Boolean @default(true)
+  immediatePacketReady Boolean @default(true)
+
+  minimumActivities    Int     @default(1)
+  suppressIfNoActivity Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+}
+
+enum AttorneyActivityType {
+  NEW_CLIENT_SIGNUP
+  DOCUMENT_UPLOADED
+  PACKET_GENERATED
+  PACKET_DOWNLOADED
+  CLAIMANT_RESPONDED
+  MILESTONE_REACHED
+  DOCUMENT_VALIDATED
+  CONTACT_INFO_UPDATED
+  FOLLOW_UP_COMPLETED
+  SIGNIFICANT_PROGRESS
+}
+
+model AttorneyActivityLog {
+  id         String         @id @default(cuid())
+  firmId     String
+  firm       LawFirm        @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  sessionId  String?
+  session    IntakeSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  claimantId String?
+  claimant   Claimant?      @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  activityType AttorneyActivityType
+  title        String
+  description  String?
+  metadata     Json?
+
+  createdAt         DateTime                 @default(now())
+  includedInSummary Boolean                  @default(false)
+  summaryEmailId    String?
+  summaryEmail      AttorneyNotificationLog? @relation("ActivitySummaryNotification", fields: [summaryEmailId], references: [id])
+
+  @@index([firmId, createdAt])
+  @@index([sessionId])
+  @@index([activityType])
+}
+
+enum AttorneyNotificationType {
+  IMMEDIATE_NEW_CLIENT
+  IMMEDIATE_PACKET_READY
+  SCHEDULED_SUMMARY
+}
+
+model AttorneyNotificationLog {
+  id     String  @id @default(cuid())
+  firmId String
+  firm   LawFirm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  notificationType AttorneyNotificationType
+  recipients       String[]                 @default([])
+  subject          String
+
+  sessionId   String?
+  session     IntakeSession? @relation(fields: [sessionId], references: [id])
+  activityIds String[]       @default([])
+
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  bouncedAt   DateTime?
+
+  suppressedReason String?
+
+  summaryActivities AttorneyActivityLog[] @relation("ActivitySummaryNotification")
+
+  @@index([firmId, sentAt])
+  @@index([notificationType])
 }
 
 // Link claimants to law firms
@@ -852,6 +963,120 @@ model Notification {
   @@index([status])
   @@index([type])
   @@index([createdAt])
+}
+
+enum FollowUpType {
+  WELCOME_CHECKLIST
+  DOCUMENT_SPECIFIC
+  PROGRESS_MILESTONE
+  RE_ENGAGEMENT
+  GENERAL_CHECK_IN
+}
+
+enum FollowUpPhase {
+  ACTIVE_SUPPORT
+  MAINTENANCE
+  PAUSED
+}
+
+enum FollowUpResponseType {
+  CONTACTED_OFFICE
+  NEED_HELP
+  ALREADY_HAVE
+  CANT_OBTAIN
+  WORKING_ON_IT
+  QUESTIONS
+}
+
+model ClaimantFollowUp {
+  id               String                @id @default(cuid())
+  claimantId       String
+  claimant         Claimant              @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  sessionId        String
+  session          IntakeSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  followUpType     FollowUpType
+  documentType     String?
+  phase            FollowUpPhase         @default(ACTIVE_SUPPORT)
+  scheduledFor     DateTime
+  sentAt           DateTime?
+  responseType     FollowUpResponseType?
+  respondedAt      DateTime?
+  responseMetadata Json?
+  nextFollowUpId   String?
+  completed        Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([claimantId, scheduledFor])
+  @@index([sessionId])
+  @@index([followUpType])
+}
+
+enum DocumentAssistanceLevel {
+  RESOURCE_PROVISION
+  GUIDED_SUPPORT
+  DIRECT_ASSISTANCE
+}
+
+enum StaffAssistanceStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model DocumentRequestAssistance {
+  id                       String                  @id @default(cuid())
+  claimantId               String
+  claimant                 Claimant                @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  sessionId                String
+  session                  IntakeSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  documentType             String
+  assistanceLevel          DocumentAssistanceLevel @default(RESOURCE_PROVISION)
+  providerName             String?
+  providerContact          Json?
+  estimatedCost            String?
+  estimatedTime            String?
+  formTemplateUrl          String?
+  formPrefilledData        Json?
+  staffAssistanceRequested Boolean                 @default(false)
+  assignedStaffId          String?
+  assignedStaff            User?                   @relation("DocumentAssistanceAssignedStaff", fields: [assignedStaffId], references: [id])
+  staffStatus              StaffAssistanceStatus?
+  viewedResources          Boolean                 @default(false)
+  downloadedForm           Boolean                 @default(false)
+  requestedHelp            Boolean                 @default(false)
+  confirmedSubmission      Boolean                 @default(false)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  @@index([claimantId])
+  @@index([sessionId])
+  @@index([documentType])
+}
+
+model FollowUpPriorityQueue {
+  id                   String   @id @default(cuid())
+  claimantId           String   @unique
+  claimant             Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  priorityScore        Int      @default(50)
+  recentActivity       Boolean  @default(false)
+  highCompletionRate   Boolean  @default(false)
+  respondedToLastEmail Boolean  @default(false)
+  uploadedRecently     Boolean  @default(false)
+  nearingCompletion    Boolean  @default(false)
+  unresponsiveCount    Int      @default(0)
+  bouncedEmail         Boolean  @default(false)
+  requestedPause       Boolean  @default(false)
+  daysInactive         Int      @default(0)
+  missingCriticalDocs  Boolean  @default(false)
+  attorneyWaiting      Boolean  @default(false)
+  nextFollowUpAt       DateTime
+  updatedAt            DateTime @updatedAt
+
+  @@index([priorityScore, nextFollowUpAt])
+  @@index([nextFollowUpAt])
 }
 
 // ============================================================================
@@ -1494,17 +1719,17 @@ model AIReviewQA {
   correctReadiness    Float? // What should the readiness score actually be (if different)
 
   // Specific Assessment Accuracy
-  completenessAccurate      Boolean? // Was AI's completeness assessment accurate?
-  criticalBlockersAccurate  Boolean? // Were critical blockers correctly identified?
-  warningsAccurate          Boolean? // Were warnings correctly identified?
-  nameConsistencyAccurate   Boolean? // Was name consistency check accurate?
-  datesConsistencyAccurate  Boolean? // Was dates consistency check accurate?
-  claimTypeAccurate         Boolean? // Was claim type detection accurate?
+  completenessAccurate     Boolean? // Was AI's completeness assessment accurate?
+  criticalBlockersAccurate Boolean? // Were critical blockers correctly identified?
+  warningsAccurate         Boolean? // Were warnings correctly identified?
+  nameConsistencyAccurate  Boolean? // Was name consistency check accurate?
+  datesConsistencyAccurate Boolean? // Was dates consistency check accurate?
+  claimTypeAccurate        Boolean? // Was claim type detection accurate?
 
   // Detailed Feedback
-  reviewerNotes      String? @db.Text // General notes about the review
-  aiStrengths        String? @db.Text // What did the AI do well?
-  aiWeaknesses       String? @db.Text // What did the AI miss or get wrong?
+  reviewerNotes          String? @db.Text // General notes about the review
+  aiStrengths            String? @db.Text // What did the AI do well?
+  aiWeaknesses           String? @db.Text // What did the AI miss or get wrong?
   improvementSuggestions String? @db.Text // Suggestions for improving AI prompts/logic
 
   // False Positives/Negatives
@@ -1515,10 +1740,10 @@ model AIReviewQA {
   correctedAssessment Json? // If needed, the corrected assessment data
 
   // Timestamps
-  reviewStartedAt  DateTime?
+  reviewStartedAt   DateTime?
   reviewCompletedAt DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([claimReadinessId])
   @@index([reviewStatus])
@@ -1560,61 +1785,61 @@ enum PaymentStatus {
 // Service subscription - tracks which tier user is on and payment status
 // Promo codes for discounts and pilot accounts
 enum PromoCodeType {
-  PERCENT_OFF    // Percentage discount (e.g., 50% off)
-  AMOUNT_OFF     // Fixed amount discount (e.g., $50 off)
-  FREE_TRIAL     // Free trial period (days)
-  PILOT_ACCOUNT  // Full pilot account (free usage)
-  WAIVE_SETUP    // Waive setup fee only
+  PERCENT_OFF // Percentage discount (e.g., 50% off)
+  AMOUNT_OFF // Fixed amount discount (e.g., $50 off)
+  FREE_TRIAL // Free trial period (days)
+  PILOT_ACCOUNT // Full pilot account (free usage)
+  WAIVE_SETUP // Waive setup fee only
 }
 
 enum PromoCodeDuration {
-  ONCE       // Apply discount once (first payment only)
-  REPEATING  // Apply for a specified number of months
-  FOREVER    // Apply forever (lifetime discount)
+  ONCE // Apply discount once (first payment only)
+  REPEATING // Apply for a specified number of months
+  FOREVER // Apply forever (lifetime discount)
 }
 
 model PromoCode {
-  id                  String             @id @default(cuid())
-  code                String             @unique // Human-readable code (e.g., "PILOT2025")
-  type                PromoCodeType
-  description         String?            @db.Text
+  id                    String                 @id @default(cuid())
+  code                  String                 @unique // Human-readable code (e.g., "PILOT2025")
+  type                  PromoCodeType
+  description           String?                @db.Text
   // Discount values
-  percentOff          Int?               // 0-100
-  amountOff           Float?             // Dollar amount
-  freeTrialDays       Int?               // Number of days
+  percentOff            Int? // 0-100
+  amountOff             Float? // Dollar amount
+  freeTrialDays         Int? // Number of days
   // Duration / Term
-  duration            PromoCodeDuration  @default(ONCE)
-  durationInMonths    Int?               // For REPEATING duration, how many months
+  duration              PromoCodeDuration      @default(ONCE)
+  durationInMonths      Int? // For REPEATING duration, how many months
   // Path restrictions
-  allowedTiers        String[]           @default([]) // e.g., ["DIY_PREP"] - empty = all allowed
+  allowedTiers          String[]               @default([]) // e.g., ["DIY_PREP"] - empty = all allowed
   // Usage limits
-  maxUses             Int?               // Max number of redemptions (null = unlimited)
-  currentUses         Int                @default(0)
-  expiresAt           DateTime?          // Code expiration date
-  isActive            Boolean            @default(true)
+  maxUses               Int? // Max number of redemptions (null = unlimited)
+  currentUses           Int                    @default(0)
+  expiresAt             DateTime? // Code expiration date
+  isActive              Boolean                @default(true)
   // Access override (soft-open registration)
-  accessOverrideEnabled Boolean          @default(false)
-  accessSeatsTotal    Int?
-  accessSeatsUsed     Int                @default(0)
+  accessOverrideEnabled Boolean                @default(false)
+  accessSeatsTotal      Int?
+  accessSeatsUsed       Int                    @default(0)
   // Stripe integration
-  stripeCouponId      String?            @unique // Link to Stripe coupon
+  stripeCouponId        String?                @unique // Link to Stripe coupon
   // Archive support
-  isArchived          Boolean            @default(false)
-  archivedAt          DateTime?
-  archivedBy          String?
+  isArchived            Boolean                @default(false)
+  archivedAt            DateTime?
+  archivedBy            String?
   // Campaign support
-  campaignName        String?            // Group related promo codes
-  useTieredDiscounts  Boolean            @default(false) // Enable tiered discount system
+  campaignName          String? // Group related promo codes
+  useTieredDiscounts    Boolean                @default(false) // Enable tiered discount system
   // Metadata
-  createdBy           String?            // Admin user ID who created this
-  notes               String?            @db.Text // Internal notes
+  createdBy             String? // Admin user ID who created this
+  notes                 String?                @db.Text // Internal notes
   // Relations
-  subscriptions       ServiceSubscription[]
-  tiers               PromoCodeTier[]    // Discount tiers
-  usageHistory        PromoCodeUsage[]   // Detailed usage tracking
-  accessGrants        PromoCodeAccessGrant[]
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  subscriptions         ServiceSubscription[]
+  tiers                 PromoCodeTier[] // Discount tiers
+  usageHistory          PromoCodeUsage[] // Detailed usage tracking
+  accessGrants          PromoCodeAccessGrant[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([code])
   @@index([isActive])
@@ -1624,31 +1849,31 @@ model PromoCode {
 }
 
 model PromoCodeTier {
-  id              String      @id @default(cuid())
-  promoCodeId     String
-  promoCode       PromoCode   @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
-  tierOrder       Int         // 1, 2, 3... (order of tiers)
-  startAfterUses  Int         @default(0) // Tier starts after X uses (0 for first tier)
-  maxUsesInTier   Int?        // Max uses in this tier (null = unlimited)
-  percentOff      Int?        // 0-100
-  amountOff       Float?      // Dollar amount
-  description     String?     // e.g., "Early bird discount"
-  stripeCouponId  String?     @unique // Cached Stripe coupon for this tier
-  usages          PromoCodeUsage[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String           @id @default(cuid())
+  promoCodeId    String
+  promoCode      PromoCode        @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  tierOrder      Int // 1, 2, 3... (order of tiers)
+  startAfterUses Int              @default(0) // Tier starts after X uses (0 for first tier)
+  maxUsesInTier  Int? // Max uses in this tier (null = unlimited)
+  percentOff     Int? // 0-100
+  amountOff      Float? // Dollar amount
+  description    String? // e.g., "Early bird discount"
+  stripeCouponId String?          @unique // Cached Stripe coupon for this tier
+  usages         PromoCodeUsage[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([promoCodeId])
   @@index([promoCodeId, tierOrder])
 }
 
 model PromoCodeAccessGrant {
-  id            String    @id @default(cuid())
-  promoCodeId   String
-  promoCode     PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
-  email         String
-  userId        String?
-  grantedAt     DateTime  @default(now())
+  id          String    @id @default(cuid())
+  promoCodeId String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  email       String
+  userId      String?
+  grantedAt   DateTime  @default(now())
 
   @@unique([promoCodeId, email])
   @@index([promoCodeId])
@@ -1656,18 +1881,18 @@ model PromoCodeAccessGrant {
 }
 
 model PromoCodeUsage {
-  id                    String             @id @default(cuid())
+  id                    String              @id @default(cuid())
   promoCodeId           String
-  promoCode             PromoCode          @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  promoCode             PromoCode           @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
   tierId                String?
-  tier                  PromoCodeTier?     @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  tier                  PromoCodeTier?      @relation(fields: [tierId], references: [id], onDelete: SetNull)
   serviceSubscriptionId String
   serviceSubscription   ServiceSubscription @relation(fields: [serviceSubscriptionId], references: [id], onDelete: Cascade)
   userId                String
-  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  discountApplied       Float              // Actual discount amount applied
-  discountType          String             // "PERCENT" or "AMOUNT"
-  usedAt                DateTime           @default(now())
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discountApplied       Float // Actual discount amount applied
+  discountType          String // "PERCENT" or "AMOUNT"
+  usedAt                DateTime            @default(now())
   ipAddress             String?
   userAgent             String?
 
@@ -1695,14 +1920,14 @@ model ServiceSubscription {
   lastBillingDate  DateTime?
 
   // Promo Code / Pilot Account Support
-  promoCodeId          String?
-  promoCode            PromoCode?     @relation(fields: [promoCodeId], references: [id])
-  setupFeeWaived       Boolean        @default(false) // If true, no setup fee required
-  discountPercent      Int?           // Discount percentage applied (0-100)
-  discountAmount       Float?         // Fixed discount amount applied
-  isPilotAccount       Boolean        @default(false) // Special pilot/demo account
-  pilotExpiresAt       DateTime?      // Pilot account expiration date
-  stripeCouponId       String?        // Stripe coupon ID if applied
+  promoCodeId     String?
+  promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id])
+  setupFeeWaived  Boolean    @default(false) // If true, no setup fee required
+  discountPercent Int? // Discount percentage applied (0-100)
+  discountAmount  Float? // Fixed discount amount applied
+  isPilotAccount  Boolean    @default(false) // Special pilot/demo account
+  pilotExpiresAt  DateTime? // Pilot account expiration date
+  stripeCouponId  String? // Stripe coupon ID if applied
 
   // Legal Path Tracking (referral to Heritage Law)
   referredToFirmId     String?
@@ -1722,9 +1947,9 @@ model ServiceSubscription {
   cancelReason String?   @db.Text
 
   // Relations
-  payments         Payment[]
-  intakeSessions   IntakeSession[]
-  promoCodeUsages  PromoCodeUsage[] // Detailed promo code usage tracking
+  payments        Payment[]
+  intakeSessions  IntakeSession[]
+  promoCodeUsages PromoCodeUsage[] // Detailed promo code usage tracking
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1789,12 +2014,12 @@ model RegistrationWaitlist {
   id String @id @default(cuid())
 
   // Lead Information
-  email           String      @unique
-  name            String?
-  phone           String? // Optional phone number
-  claimType       ClaimType? // Optional - what type of claim they're interested in
-  interestedTier  ServiceTier? // DIY_PREP or LEGAL_REP - which path they're interested in
-  firmPreference  String? // If LEGAL_REP, which firm they want to work with
+  email          String       @unique
+  name           String?
+  phone          String? // Optional phone number
+  claimType      ClaimType? // Optional - what type of claim they're interested in
+  interestedTier ServiceTier? // DIY_PREP or LEGAL_REP - which path they're interested in
+  firmPreference String? // If LEGAL_REP, which firm they want to work with
 
   // Source Tracking
   source       String? // "register_page", "reca_signup", "intake_page", "service_tiers"

@@ -15,7 +15,7 @@
     "db:generate": "prisma generate",
     "db:push": "npm run db:check && prisma db push",
     "db:migrate": "npm run db:check && prisma migrate dev",
-    "db:seed": "npm run db:check && node prisma/seed.mjs",
+    "db:seed": "npm run db:check && npx tsx prisma/seed.ts",
     "db:studio": "npm run db:check && prisma studio",
     "db:reset": "npm run db:check && prisma migrate reset",
     "test:ocr": "npx tsx scripts/test-ocr-tiers.ts",
