@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -121,22 +121,7 @@ export default function ClaimsAdminPage() {
     { label: "Legal Rep", value: "LEGAL_REP" },
   ];
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  useEffect(() => {
-    filterSessions();
-  }, [
-    sessions,
-    searchTerm,
-    statusFilters,
-    claimTypeFilters,
-    serviceTierFilters,
-    dateRange,
-  ]);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/admin/claims");
@@ -152,9 +137,9 @@ export default function ClaimsAdminPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterSessions = () => {
+  const filterSessions = useCallback(() => {
     let filtered = [...sessions];
 
     // Apply search filter
@@ -211,7 +196,22 @@ export default function ClaimsAdminPage() {
     }
 
     setFilteredSessions(filtered);
-  };
+  }, [
+    sessions,
+    searchTerm,
+    statusFilters,
+    claimTypeFilters,
+    serviceTierFilters,
+    dateRange,
+  ]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  useEffect(() => {
+    filterSessions();
+  }, [filterSessions]);
 
   const clearAllFilters = () => {
     setSearchTerm("");

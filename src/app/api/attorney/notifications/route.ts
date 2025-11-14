@@ -3,6 +3,8 @@ import { LawFirmNotificationEvent } from "@prisma/client";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 const EVENT_ORDER = [
   LawFirmNotificationEvent.NEW_CLIENT_ASSIGNED,
   LawFirmNotificationEvent.PACKET_UPDATED,

@@ -11,6 +11,8 @@ import { generateRECAPDF } from "@/lib/reca/pdf-generator";
 import { fillOfficialRECAPDF } from "@/lib/reca/pdf-form-filler";
 import * as path from "path";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { sessionId: string } }

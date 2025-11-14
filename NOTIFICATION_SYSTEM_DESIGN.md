@@ -1186,9 +1186,459 @@ Measure:
 
 ---
 
-## Next Steps
+## Admin Dashboard Integration
 
-1. **Stakeholder Review** (1-2 days)
+### Overview
+
+The admin dashboard already exists at `/admin` and includes:
+- ✅ User statistics
+- ✅ Claims/intake metrics
+- ✅ AI review stats
+- ✅ Subscription/revenue tracking
+- ✅ Recent activity feed (last 10 audit logs)
+
+### Required Enhancements
+
+To support the notification system, the admin dashboard needs to display the same activity types that trigger attorney notifications and client follow-ups.
+
+---
+
+### 1. Enhanced Activity Feed
+
+**Current State:**
+- Shows last 10 `AuditLog` entries
+- Generic action names
+- Basic user attribution
+
+**Required Updates:**
+
+#### Add New Activity Types
+Extend the activity feed to show notification-relevant events:
+
+```typescript
+// src/app/api/admin/dashboard/route.ts
+
+const notificationActivity = await prisma.$queryRaw`
+  SELECT
+    'NEW_CLIENT' as type,
+    s.id,
+    c."firstName" || ' ' || c."lastName" as claimant_name,
+    s."createdAt" as timestamp,
+    ss.tier
+  FROM "IntakeSession" s
+  JOIN "Claimant" c ON c.id = s."claimantId"
+  LEFT JOIN "ServiceSubscription" ss ON ss."intakeSessionId" = s.id
+  WHERE s."createdAt" >= ${weekAgo}
+  ORDER BY s."createdAt" DESC
+  LIMIT 20
+`
+
+const packetActivity = await prisma.packetSubmission.findMany({
+  where: {
+    status: 'READY',
+    readyAt: { gte: weekAgo }
+  },
+  include: {
+    intakeSession: {
+      include: { claimant: true }
+    }
+  },
+  orderBy: { readyAt: 'desc' },
+  take: 20
+})
+
+const documentActivity = await prisma.uploadedFile.findMany({
+  where: {
+    uploadedAt: { gte: weekAgo }
+  },
+  include: {
+    intakeSession: {
+      include: { claimant: true }
+    }
+  },
+  orderBy: { uploadedAt: 'desc' },
+  take: 20
+})
+
+// Merge and sort all activities by timestamp
+const allActivity = [
+  ...notificationActivity.map(a => ({
+    id: a.id,
+    type: 'NEW_CLIENT',
+    message: `New client: ${a.claimant_name} (${a.tier || 'No subscription'})`,
+    timestamp: a.timestamp,
+    priority: 'high'
+  })),
+  ...packetActivity.map(p => ({
+    id: p.id,
+    type: 'PACKET_READY',
+    message: `Packet ready: ${p.intakeSession.claimant.firstName} ${p.intakeSession.claimant.lastName}`,
+    timestamp: p.readyAt,
+    priority: 'high'
+  })),
+  ...documentActivity.map(d => ({
+    id: d.id,
+    type: 'DOCUMENT_UPLOADED',
+    message: `Document uploaded by ${d.intakeSession.claimant.firstName}: ${d.category}`,
+    timestamp: d.uploadedAt,
+    priority: 'medium'
+  })),
+  ...formattedActivity.map(a => ({ ...a, priority: 'low' }))
+]
+  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  .slice(0, 50) // Show last 50 activities
+```
+
+#### Activity Type Icons & Colors
+
+```typescript
+// src/app/admin/page.tsx
+
+const activityIcons = {
+  NEW_CLIENT: { icon: UserPlus, color: 'text-green-600', bg: 'bg-green-100' },
+  PACKET_READY: { icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-100' },
+  DOCUMENT_UPLOADED: { icon: Upload, color: 'text-purple-600', bg: 'bg-purple-100' },
+  CLAIMANT_RESPONDED: { icon: MessageSquare, color: 'text-orange-600', bg: 'bg-orange-100' },
+  MILESTONE_REACHED: { icon: Trophy, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+  // ... other types
+}
+```
+
+---
+
+### 2. Activity Filtering & Search
+
+Add filter controls above the activity feed:
+
+```typescript
+// New UI component
+<div className="flex gap-4 mb-4">
+  <Select value={activityFilter} onValueChange={setActivityFilter}>
+    <SelectTrigger className="w-48">
+      <SelectValue placeholder="All Activity" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Activity</SelectItem>
+      <SelectItem value="NEW_CLIENT">New Clients</SelectItem>
+      <SelectItem value="PACKET_READY">Packets Ready</SelectItem>
+      <SelectItem value="DOCUMENT_UPLOADED">Documents</SelectItem>
+      <SelectItem value="CLAIMANT_RESPONDED">Responses</SelectItem>
+    </SelectContent>
+  </Select>
+
+  <Select value={timeRange} onValueChange={setTimeRange}>
+    <SelectTrigger className="w-48">
+      <SelectValue placeholder="Last 24 Hours" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1h">Last Hour</SelectItem>
+      <SelectItem value="24h">Last 24 Hours</SelectItem>
+      <SelectItem value="7d">Last 7 Days</SelectItem>
+      <SelectItem value="30d">Last 30 Days</SelectItem>
+    </SelectContent>
+  </Select>
+
+  <Input
+    placeholder="Search claimant..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    className="w-64"
+  />
+</div>
+```
+
+---
+
+### 3. Real-Time Updates (Optional)
+
+For truly live monitoring, add real-time updates:
+
+```typescript
+// Option 1: Polling (Simple)
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchDashboardStats()
+  }, 30000) // Refresh every 30 seconds
+
+  return () => clearInterval(interval)
+}, [])
+
+// Option 2: WebSockets (Advanced - Future)
+// Use Pusher, Ably, or custom WebSocket server
+// Subscribe to activity events and update UI instantly
+```
+
+---
+
+### 4. Enhanced Metrics Cards
+
+Add notification-specific metrics to the dashboard:
+
+```typescript
+// New metrics to track
+interface NotificationMetrics {
+  attorneyNotifications: {
+    sentToday: number
+    openRate: number // % of emails opened
+    clickRate: number // % clicked through
+  }
+  clientFollowUps: {
+    sentToday: number
+    responseRate: number
+    pendingResponses: number
+  }
+  systemHealth: {
+    emailDeliveryRate: number
+    bounceRate: number
+    queueDepth: number // Pending notifications
+  }
+}
+```
+
+Add these as new stat cards:
+
+```tsx
+<Card>
+  <CardContent className="flex items-center p-6">
+    <div className="rounded-full bg-indigo-100 p-3">
+      <Mail className="h-6 w-6 text-indigo-600" />
+    </div>
+    <div className="ml-4">
+      <p className="text-sm font-medium text-gray-600">
+        Notifications Today
+      </p>
+      <p className="text-2xl font-bold text-gray-900">
+        {stats.attorneyNotifications.sentToday + stats.clientFollowUps.sentToday}
+      </p>
+      <p className="text-xs text-gray-500">
+        {stats.attorneyNotifications.openRate.toFixed(0)}% open rate
+      </p>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+### 5. Client Follow-Up Monitor
+
+Add a dedicated section for monitoring follow-up campaigns:
+
+```tsx
+{/* Client Follow-Up Status */}
+<Card className="mt-6">
+  <CardHeader>
+    <CardTitle>Client Follow-Up Pipeline</CardTitle>
+    <CardDescription>Active follow-up campaigns</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-4">
+      {/* Phase 1: Active Support */}
+      <div>
+        <div className="flex justify-between mb-2">
+          <span className="text-sm font-medium">Active Support (Days 1-14)</span>
+          <span className="text-sm text-gray-600">{stats.followUps.activeSupport} claimants</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-green-600 h-2 rounded-full"
+            style={{ width: `${(stats.followUps.activeSupport / stats.claims.inProgress) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Phase 2: Maintenance */}
+      <div>
+        <div className="flex justify-between mb-2">
+          <span className="text-sm font-medium">Maintenance (Days 15-60)</span>
+          <span className="text-sm text-gray-600">{stats.followUps.maintenance} claimants</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full"
+            style={{ width: `${(stats.followUps.maintenance / stats.claims.inProgress) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Pending Responses */}
+      <div className="pt-4 border-t">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium">Pending Responses</span>
+          <Badge variant="outline">{stats.followUps.pendingResponses}</Badge>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Claimants who haven't responded to last follow-up
+        </p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+### 6. Attorney Portal Activity Monitor
+
+Show what attorneys are seeing/doing:
+
+```tsx
+{/* Attorney Portal Activity */}
+<Card className="mt-6">
+  <CardHeader>
+    <CardTitle>Attorney Portal Activity</CardTitle>
+    <CardDescription>What attorneys are seeing today</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+        <div>
+          <p className="text-sm font-medium">Summary Emails Sent</p>
+          <p className="text-xs text-gray-500">Morning & afternoon digests</p>
+        </div>
+        <Badge>{stats.attorneyActivity.summariesSent}</Badge>
+      </div>
+
+      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+        <div>
+          <p className="text-sm font-medium">New Client Alerts</p>
+          <p className="text-xs text-gray-500">Immediate notifications</p>
+        </div>
+        <Badge>{stats.attorneyActivity.newClientAlerts}</Badge>
+      </div>
+
+      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+        <div>
+          <p className="text-sm font-medium">Packet Ready Notifications</p>
+          <p className="text-xs text-gray-500">Ready for attorney review</p>
+        </div>
+        <Badge>{stats.attorneyActivity.packetReadyAlerts}</Badge>
+      </div>
+
+      <div className="flex justify-between items-center p-3 bg-blue-50 rounded border border-blue-200">
+        <div>
+          <p className="text-sm font-medium text-blue-900">Avg. Response Time</p>
+          <p className="text-xs text-blue-600">Time to review after notification</p>
+        </div>
+        <Badge variant="outline">{stats.attorneyActivity.avgResponseTime}</Badge>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+### 7. Database Schema Updates
+
+The admin dashboard will read from these new tables (defined in the notification system design):
+
+```prisma
+// Already in notification design:
+- AttorneyActivityLog
+- AttorneyNotificationLog
+- ClaimantFollowUp
+- FollowUpPriorityQueue
+```
+
+No additional schema changes needed for admin - just query these tables.
+
+---
+
+### Implementation Checklist for Admin Dashboard
+
+```typescript
+// Phase 1: Enhanced Activity Feed
+[ ] Update /api/admin/dashboard to include notification activities
+[ ] Add activity type filtering
+[ ] Add time range filtering
+[ ] Add search functionality
+[ ] Add activity icons and colors
+[ ] Increase activity list from 10 to 50 items
+
+// Phase 2: Notification Metrics
+[ ] Add attorneyNotifications stats to dashboard API
+[ ] Add clientFollowUps stats to dashboard API
+[ ] Add systemHealth metrics
+[ ] Create new metric cards in UI
+
+// Phase 3: Follow-Up Monitoring
+[ ] Add follow-up pipeline visualization
+[ ] Show claimants by phase
+[ ] Display pending responses count
+[ ] Add response rate tracking
+
+// Phase 4: Attorney Portal Monitor
+[ ] Track attorney email sends
+[ ] Track attorney engagement metrics
+[ ] Display average response time
+[ ] Show attorney portal usage stats
+
+// Phase 5: Real-Time Updates (Optional)
+[ ] Add 30-second polling
+[ ] Add manual refresh button
+[ ] Consider WebSocket implementation for future
+```
+
+---
+
+### API Response Schema Update
+
+```typescript
+// Updated response from /api/admin/dashboard
+
+interface AdminDashboardStats {
+  // Existing stats...
+  users: { ... }
+  claims: { ... }
+  aiReview: { ... }
+  subscriptions: { ... }
+  waitlist: { ... }
+  promoCodes: { ... }
+  recentActivity: [ ... ]
+
+  // NEW: Notification system stats
+  attorneyNotifications: {
+    sentToday: number
+    sentThisWeek: number
+    openRate: number // 0-100
+    clickRate: number // 0-100
+    summariesSent: number
+    newClientAlerts: number
+    packetReadyAlerts: number
+  }
+
+  clientFollowUps: {
+    sentToday: number
+    sentThisWeek: number
+    responseRate: number // 0-100
+    pendingResponses: number
+    activeSupport: number // Claimants in phase 1
+    maintenance: number // Claimants in phase 2
+    paused: number // Claimants who paused follow-ups
+  }
+
+  attorneyActivity: {
+    summariesSent: number
+    newClientAlerts: number
+    packetReadyAlerts: number
+    avgResponseTime: string // e.g., "4.2 hours"
+    packetsReviewed: number
+    packetsDownloaded: number
+  }
+
+  systemHealth: {
+    emailDeliveryRate: number // 0-100
+    bounceRate: number // 0-100
+    queueDepth: number // Pending notifications
+    failedDeliveries: number
+  }
+}
+```
+
+---
+
+## Next Steps
    - Present this design to Brandon and attorney partner
    - Gather feedback and iterate
    - Finalize requirements

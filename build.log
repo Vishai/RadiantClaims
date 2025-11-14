@@ -1,0 +1,357 @@
+
+> radiant-claims@0.1.0 prebuild /Users/brandonarmstrong/Documents/Github/RadiantClaims
+> prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client in 224ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
+
+
+> radiant-claims@0.1.0 build /Users/brandonarmstrong/Documents/Github/RadiantClaims
+> next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env.local, .env
+  - Experiments (use with caution):
+    · typedRoutes
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./src/app/admin/ai-review/page.tsx
+98:6  Warning: React Hook useEffect has a missing dependency: 'filterValidations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/admin/claims/page.tsx
+130:6  Warning: React Hook useEffect has a missing dependency: 'filterSessions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/admin/users/page.tsx
+64:6  Warning: React Hook useEffect has a missing dependency: 'filterUsers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/admin/DocumentViewer.tsx
+59:6  Warning: React Hook useEffect has a missing dependency: 'fetchFile'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+192:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/83) ...
+Error fetching AI review queue: n [Error]: Dynamic server usage: Route /api/admin/ai-review-queue couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/ai-review-queue/route.js:1:1304)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/admin/ai-review-queue couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching AI validations: n [Error]: Dynamic server usage: Route /api/admin/ai-review couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at u (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/ai-review/route.js:1:1304)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/admin/ai-review couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching claims: n [Error]: Dynamic server usage: Route /api/admin/claims couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at _ (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/claims/route.js:1:1303)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/admin/claims couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching dashboard stats: n [Error]: Dynamic server usage: Route /api/admin/dashboard couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at _ (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/dashboard/route.js:1:1304)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/admin/dashboard couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching users: n [Error]: Dynamic server usage: Route /api/admin/users couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at _ (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/users/route.js:1:1304)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/admin/users couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[Attorney API] Failed to fetch claimants: n [Error]: Dynamic server usage: Route /api/attorney/claimants couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/ai-review-queue/route.js:1:4559)
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/attorney/claimants/[id]/documents/route.js:1:8824)
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/attorney/claimants/route.js:1:1286)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518) {
+  description: "Route /api/attorney/claimants couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[LawFirmNotifications] GET failed n [Error]: Dynamic server usage: Route /api/attorney/notifications couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/admin/ai-review-queue/route.js:1:4559)
+    at _ (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/attorney/notifications/route.js:1:1887)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093) {
+  description: "Route /api/attorney/notifications couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (20/83) 
+Error fetching RECA form: TypeError: Cannot destructure property 'formType' of 'r' as it is undefined.
+    at T (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/forms/[formType] 2/route.js:1:607)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:122:103
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+prisma:error 
+Invalid `prisma.rECAForm.findMany()` invocation:
+
+
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+Error fetching RECA forms: PrismaClientInitializationError: 
+Invalid `prisma.rECAForm.findMany()` invocation:
+
+
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async S (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/forms/route.js:1:578)
+    at async /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36258
+    at async eR.execute (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:26874)
+    at async eR.handle (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37512)
+    at async exportAppRoute (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/export/routes/app-route.js:77:26)
+    at async exportPageImpl (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/export/worker.js:175:20) {
+  clientVersion: '5.22.0',
+  errorCode: undefined
+}
+Error searching resources: q [Error]: Dynamic server usage: Route /api/resources/search couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at W (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:21106)
+    at Object.get (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:28459)
+    at p (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/resources/search/route.js:1:604)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:122:103 {
+  description: "Route /api/resources/search couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching payment history: n [Error]: Dynamic server usage: Route /api/subscriptions/payment-history couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at _ (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/subscriptions/payment-history/route.js:1:1301)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/subscriptions/payment-history couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching subscription status: n [Error]: Dynamic server usage: Route /api/subscriptions/status couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/9357.js:1:37250)
+    at d (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/webhooks/stripe/route.js:1:8791)
+    at s (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/chunks/350.js:30:20508)
+    at E (/Users/brandonarmstrong/Documents/Github/RadiantClaims/.next/server/app/api/subscriptions/status/route.js:1:1301)
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36264
+    at /Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/Users/brandonarmstrong/Documents/Github/RadiantClaims/node_modules/.pnpm/next@14.2.5_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854) {
+  description: "Route /api/subscriptions/status couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (41/83) 
+   Generating static pages (62/83) 
+ ✓ Generating static pages (83/83)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                      Size     First Load JS
+┌ ○ /                                            194 B          94.3 kB
+├ ○ /_not-found                                  880 B          88.2 kB
+├ ○ /admin                                       4.06 kB         105 kB
+├ ○ /admin/ai-review                             4.72 kB         134 kB
+├ ○ /admin/claims                                30.1 kB         161 kB
+├ ○ /admin/promo-codes                           9.64 kB         135 kB
+├ ○ /admin/settings                              4.44 kB         108 kB
+├ ○ /admin/users                                 5.61 kB         131 kB
+├ ○ /admin/waitlist                              4.22 kB        98.3 kB
+├ ƒ /api/access/validate                         0 B                0 B
+├ ƒ /api/admin/ai-review                         0 B                0 B
+├ ƒ /api/admin/ai-review-queue                   0 B                0 B
+├ ƒ /api/admin/ai-review-queue/[reviewId]        0 B                0 B
+├ ƒ /api/admin/ai-review-queue/sample            0 B                0 B
+├ ƒ /api/admin/ai-review/review                  0 B                0 B
+├ ƒ /api/admin/claims                            0 B                0 B
+├ ƒ /api/admin/dashboard                         0 B                0 B
+├ ƒ /api/admin/documents/[fileId]                0 B                0 B
+├ ƒ /api/admin/promo-codes                       0 B                0 B
+├ ƒ /api/admin/sessions/[sessionId]/documents    0 B                0 B
+├ ƒ /api/admin/sessions/[sessionId]/download     0 B                0 B
+├ ƒ /api/admin/users                             0 B                0 B
+├ ƒ /api/admin/users/reset-password              0 B                0 B
+├ ƒ /api/admin/users/update-role                 0 B                0 B
+├ ƒ /api/admin/waitlist                          0 B                0 B
+├ ƒ /api/attorney/claimants                      0 B                0 B
+├ ƒ /api/attorney/claimants/[id]/documents       0 B                0 B
+├ ƒ /api/attorney/documents/[id]/download        0 B                0 B
+├ ƒ /api/attorney/notifications                  0 B                0 B
+├ ƒ /api/auth/[...nextauth]                      0 B                0 B
+├ ƒ /api/auth/register                           0 B                0 B
+├ ƒ /api/auth/signup                             0 B                0 B
+├ ƒ /api/claimants                               0 B                0 B
+├ ƒ /api/claimants/[id]                          0 B                0 B
+├ ƒ /api/documents                               0 B                0 B
+├ ƒ /api/documents/[id]                          0 B                0 B
+├ ƒ /api/documents/[id]/categorize               0 B                0 B
+├ ƒ /api/documents/[id]/category                 0 B                0 B
+├ ƒ /api/documents/[id]/download                 0 B                0 B
+├ ƒ /api/documents/[id]/intelligence             0 B                0 B
+├ ƒ /api/documents/[id]/risks                    0 B                0 B
+├ ƒ /api/documents/[id]/thumbnail                0 B                0 B
+├ ƒ /api/documents/[id]/view                     0 B                0 B
+├ ƒ /api/documents/process/[fileId]              0 B                0 B
+├ ƒ /api/documents/upload                        0 B                0 B
+├ ƒ /api/eligibility-check                       0 B                0 B
+├ ƒ /api/email/send-resume-link                  0 B                0 B
+├ ƒ /api/email/unsubscribe                       0 B                0 B
+├ ƒ /api/forms                                   0 B                0 B
+├ ƒ /api/forms/[formType]                        0 B                0 B
+├ ƒ /api/forms/[formType] 2                      0 B                0 B
+├ ƒ /api/forms/download 2/[formType]             0 B                0 B
+├ ƒ /api/forms/download/[formType]               0 B                0 B
+├ ƒ /api/intake/response                         0 B                0 B
+├ ƒ /api/intake/session                          0 B                0 B
+├ ƒ /api/intake/session/[id]                     0 B                0 B
+├ ƒ /api/intake/upload                           0 B                0 B
+├ ƒ /api/intake/upload/[id]                      0 B                0 B
+├ ƒ /api/portal/change-password                  0 B                0 B
+├ ƒ /api/portal/claims                           0 B                0 B
+├ ƒ /api/reca/packet/[sessionId]                 0 B                0 B
+├ ƒ /api/reca/pdf/[sessionId]                    0 B                0 B
+├ ƒ /api/reca/workflow/[sessionId]               0 B                0 B
+├ ƒ /api/reca/workflow/[sessionId]/link-account  0 B                0 B
+├ ƒ /api/reca/workflow/[sessionId]/upload-file   0 B                0 B
+├ ƒ /api/reca/workflow/[sessionId]/validate      0 B                0 B
+├ ƒ /api/reca/workflow/create                    0 B                0 B
+├ ƒ /api/referrals/check                         0 B                0 B
+├ ƒ /api/resources/search                        0 B                0 B
+├ ƒ /api/subscriptions/cancel                    0 B                0 B
+├ ƒ /api/subscriptions/create                    0 B                0 B
+├ ƒ /api/subscriptions/create-checkout           0 B                0 B
+├ ƒ /api/subscriptions/create-monthly            0 B                0 B
+├ ƒ /api/subscriptions/create-monthly-only       0 B                0 B
+├ ƒ /api/subscriptions/payment-history           0 B                0 B
+├ ƒ /api/subscriptions/refund                    0 B                0 B
+├ ƒ /api/subscriptions/status                    0 B                0 B
+├ ƒ /api/subscriptions/upgrade-to-legal          0 B                0 B
+├ ƒ /api/upload                                  0 B                0 B
+├ ƒ /api/validation/document                     0 B                0 B
+├ ƒ /api/validation/session                      0 B                0 B
+├ ƒ /api/validation/status/[sessionId]           0 B                0 B
+├ ƒ /api/waitlist                                0 B                0 B
+├ ƒ /api/webhooks/stripe                         0 B                0 B
+├ ○ /attorney                                    153 B          87.5 kB
+├ ○ /attorney/claimants                          8.53 kB         127 kB
+├ ƒ /attorney/claimants/[id]                     7.85 kB         116 kB
+├ ○ /attorney/dashboard                          8.43 kB         148 kB
+├ ○ /attorney/settings                           29.3 kB         133 kB
+├ ○ /attorney/waitlist                           4.21 kB        98.3 kB
+├ ƒ /dashboard                                   194 B          94.3 kB
+├ ƒ /dashboard/claimants/[id]                    194 B          94.3 kB
+├ ○ /eligibility                                 1.47 kB         124 kB
+├ ○ /eligibility-check                           9.14 kB         133 kB
+├ ○ /eligibility-check/result                    5.79 kB         107 kB
+├ ○ /forms/lds-reca                              5.72 kB         107 kB
+├ ○ /how-it-works                                194 B          94.3 kB
+├ ○ /intake                                      5.84 kB         168 kB
+├ ○ /intake/step2                                13.3 kB         124 kB
+├ ○ /intake/upload                               4.13 kB         127 kB
+├ ○ /login                                       4.8 kB          116 kB
+├ ƒ /portal                                      8.65 kB         119 kB
+├ ƒ /portal/change-password                      5.01 kB         168 kB
+├ ƒ /portal/documents                            25.5 kB         199 kB
+├ ƒ /portal/documents/[id]                       3.92 kB         163 kB
+├ ƒ /portal/subscription                         6.93 kB         137 kB
+├ ƒ /reca/form/[sessionId]                       35.3 kB         210 kB
+├ ƒ /reca/review/[sessionId]                     6.28 kB         110 kB
+├ ○ /reca/signup                                 5.71 kB         116 kB
+├ ○ /reca/start                                  6.55 kB         117 kB
+├ ƒ /reca/supporting/[sessionId]                 9.81 kB         181 kB
+├ ○ /referral-program                            194 B          94.3 kB
+├ ○ /register                                    6.03 kB         117 kB
+├ ○ /resources                                   7.01 kB         136 kB
+├ ○ /resources/forms                             6 kB            120 kB
+├ ○ /resources/forms 2                           6 kB            120 kB
+├ ○ /service-tiers                               11 kB           141 kB
+└ ƒ /unsubscribe/success                         1.23 kB        95.4 kB
++ First Load JS shared by all                    87.3 kB
+  ├ chunks/6842-0afd00f6a7b6688c.js              31.7 kB
+  ├ chunks/94c12b52-972f6a677463234a.js          53.6 kB
+  └ other shared chunks (total)                  1.97 kB
+
+
+ƒ Middleware                                     50.2 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

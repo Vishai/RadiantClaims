@@ -10,6 +10,8 @@ import {
 } from "@/lib/reca/types";
 import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Pre-populate Part 1 (Filer Information) from Claimant intake data
  * This ensures users don't have to re-enter information they already provided during intake

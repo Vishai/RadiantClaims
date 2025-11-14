@@ -10,6 +10,8 @@ import {
   RECAWorkflowSection,
 } from "@/lib/reca/types";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/reca/workflow/[sessionId]/validate
  * Validate a specific section of the RECA form

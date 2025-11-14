@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getObject } from "@/lib/r2";
 import JSZip from "jszip";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { sessionId: string } }

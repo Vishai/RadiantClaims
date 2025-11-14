@@ -5,26 +5,34 @@ import { getPresignedPutUrl, generateFileKey } from "@/lib/r2";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const uploadRequestSchema = z.object({
   intakeSessionId: z.string(),
   fileName: z.string().min(1).max(255),
   contentType: z.string(),
-  sizeBytes: z.number().int().positive().max(50 * 1024 * 1024), // 50MB max
-  category: z.enum([
-    "IDENTITY",
-    "PROOF_OF_RESIDENCE",
-    "PATHOLOGY_REPORT",
-    "MEDICAL_RECORDS",
-    "DISCHARGE_SUMMARY",
-    "TUMOR_REGISTRY",
-    "TREATMENT_RECORDS",
-    "UTILITY_BILL",
-    "MORTGAGE_STATEMENT",
-    "TAX_RETURN",
-    "SCHOOL_RECORDS",
-    "EMPLOYMENT_RECORDS",
-    "OTHER",
-  ]).optional(),
+  sizeBytes: z
+    .number()
+    .int()
+    .positive()
+    .max(50 * 1024 * 1024), // 50MB max
+  category: z
+    .enum([
+      "IDENTITY",
+      "PROOF_OF_RESIDENCE",
+      "PATHOLOGY_REPORT",
+      "MEDICAL_RECORDS",
+      "DISCHARGE_SUMMARY",
+      "TUMOR_REGISTRY",
+      "TREATMENT_RECORDS",
+      "UTILITY_BILL",
+      "MORTGAGE_STATEMENT",
+      "TAX_RETURN",
+      "SCHOOL_RECORDS",
+      "EMPLOYMENT_RECORDS",
+      "OTHER",
+    ])
+    .optional(),
 });
 
 /**
@@ -66,7 +74,10 @@ export async function POST(req: NextRequest) {
     // AUTHORIZATION CHECK: User must own this session
     if (session.claimant?.email !== authSession.user.email) {
       return NextResponse.json(
-        { error: "Forbidden - You don't have permission to upload to this session" },
+        {
+          error:
+            "Forbidden - You don't have permission to upload to this session",
+        },
         { status: 403 }
       );
     }

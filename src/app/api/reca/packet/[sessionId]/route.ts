@@ -6,6 +6,8 @@ import { generatePacketArchive } from "@/lib/reca/packet-generator";
 import { getObject } from "@/lib/r2";
 import type { PacketStatus } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 async function getIntakeSession(sessionId: string) {
   return db.intakeSession.findUnique({
     where: { id: sessionId },

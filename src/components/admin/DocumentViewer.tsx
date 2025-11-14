@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -52,13 +53,7 @@ export function DocumentViewer({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && fileId) {
-      fetchFile();
-    }
-  }, [isOpen, fileId]);
-
-  const fetchFile = async () => {
+  const fetchFile = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -76,7 +71,13 @@ export function DocumentViewer({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fileId]);
+
+  useEffect(() => {
+    if (isOpen && fileId) {
+      fetchFile();
+    }
+  }, [isOpen, fileId, fetchFile]);
 
   const downloadFile = () => {
     if (file?.signedUrl) {
@@ -189,10 +190,14 @@ export function DocumentViewer({
                   </div>
                 ) : isImage ? (
                   <div className="flex items-center justify-center bg-gray-50 p-4">
-                    <img
+                    <Image
                       src={file.signedUrl}
                       alt={file.originalFilename}
                       className="max-h-[600px] rounded-lg"
+                      width={800}
+                      height={600}
+                      style={{ objectFit: "contain" }}
+                      unoptimized
                     />
                   </div>
                 ) : (

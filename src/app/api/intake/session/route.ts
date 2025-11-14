@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { randomBytes } from "crypto";
 
+export const dynamic = "force-dynamic";
+
 const createSessionSchema = z.object({
   claimantId: z.string().optional(),
   claimType: z
@@ -89,7 +91,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle unique constraint violation (race condition)
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002' && claimantId) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002" &&
+      claimantId
+    ) {
       // Session was created by another concurrent request, fetch and return it
       const existingSession = await db.intakeSession.findUnique({
         where: { claimantId },
@@ -156,10 +164,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     if (session.expiresAt < new Date()) {
@@ -172,7 +177,9 @@ export async function GET(req: NextRequest) {
     // AUTHORIZATION CHECK: User must own this session
     if (session.claimant?.email !== authSession.user.email) {
       return NextResponse.json(
-        { error: "Forbidden - You don't have permission to access this session" },
+        {
+          error: "Forbidden - You don't have permission to access this session",
+        },
         { status: 403 }
       );
     }

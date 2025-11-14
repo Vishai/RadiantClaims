@@ -16,6 +16,8 @@ import {
 } from "@/lib/document-intelligence/ai-categorization";
 import { createAuditLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+
 export const maxDuration = 60; // Allow up to 60 seconds for processing
 
 export async function POST(

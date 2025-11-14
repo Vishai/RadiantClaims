@@ -4,6 +4,8 @@ import { RECAFormType } from "@prisma/client";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/env.mjs";
 
+export const dynamic = "force-dynamic";
+
 // Initialize S3 client for R2
 let s3Client: S3Client | null = null;
 
@@ -39,7 +41,9 @@ export async function GET(
     const { formType } = params;
 
     // Convert URL param to enum value
-    const formTypeEnum = formType.toUpperCase().replace(/-/g, "_") as RECAFormType;
+    const formTypeEnum = formType
+      .toUpperCase()
+      .replace(/-/g, "_") as RECAFormType;
 
     // Validate form type
     if (!Object.values(RECAFormType).includes(formTypeEnum)) {

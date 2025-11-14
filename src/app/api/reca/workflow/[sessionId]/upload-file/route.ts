@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const uploadFileSchema = z.object({
   fileKey: z.string(),
   fileName: z.string(),

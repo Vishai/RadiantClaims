@@ -6,6 +6,8 @@ import {
 import { logClaimantAccess, getClientIp, getUserAgent } from "@/lib/audit";
 import { ClaimantWorkflowStatus } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/attorney/claimants
  * Fetch claimants accessible to the current attorney

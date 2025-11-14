@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -89,15 +89,7 @@ export default function AIReviewPage() {
   const [viewingFileId, setViewingFileId] = useState<string | null>(null);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
 
-  useEffect(() => {
-    fetchValidations();
-  }, []);
-
-  useEffect(() => {
-    filterValidations();
-  }, [validations, statusFilter]);
-
-  const fetchValidations = async () => {
+  const fetchValidations = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch("/api/admin/ai-review");
@@ -113,9 +105,9 @@ export default function AIReviewPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterValidations = () => {
+  const filterValidations = useCallback(() => {
     let filtered = [...validations];
 
     if (statusFilter !== "all") {
@@ -123,7 +115,15 @@ export default function AIReviewPage() {
     }
 
     setFilteredValidations(filtered);
-  };
+  }, [validations, statusFilter]);
+
+  useEffect(() => {
+    fetchValidations();
+  }, [fetchValidations]);
+
+  useEffect(() => {
+    filterValidations();
+  }, [filterValidations]);
 
   const viewValidation = (validation: DocumentValidation) => {
     setSelectedValidation(validation);

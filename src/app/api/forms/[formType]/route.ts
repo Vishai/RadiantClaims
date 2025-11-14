@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { RECAFormType } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/forms/[formType]
  * Returns specific form metadata and download URL
@@ -15,7 +17,9 @@ export async function GET(
     const { formType } = params;
 
     // Convert URL param to enum value
-    const formTypeEnum = formType.toUpperCase().replace(/-/g, "_") as RECAFormType;
+    const formTypeEnum = formType
+      .toUpperCase()
+      .replace(/-/g, "_") as RECAFormType;
 
     // Validate form type
     if (!Object.values(RECAFormType).includes(formTypeEnum)) {
