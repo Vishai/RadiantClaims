@@ -1,5 +1,17 @@
 # Test User Credentials
 
+## 📋 Quick Reference
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Claimant** | claimant@test.com | TestPassword123! |
+| **Admin** | admin@radiantclaims.com | admin123 |
+| **Attorney** | attorney@heritagelaw.com | attorney123 |
+| **Staff Reviewer** | reviewer@radiantclaims.com | reviewer123 |
+| Customer (legacy) | customer@test.com | customer123 |
+
+---
+
 ## 🧪 Test Claimant Account (CUSTOMER)
 
 Use this account to test the **claimant portal** and **document upload system**.
@@ -25,18 +37,66 @@ Password: TestPassword123!
 
 ---
 
-## 👨‍💼 Admin Account
+## 👨‍💼 Admin Accounts
 
-Use this account to access the **admin portal** (if applicable).
+### Primary Admin
+```
+Email:    admin@radiantclaims.com
+Password: admin123
+```
+
+### Alternative Admin
+```
+Email:    admin@local.dev
+Password: admin123
+```
+*(Note: Try this if the primary doesn't work)*
+
+**What you can test:**
+- ✅ Login at: http://localhost:3000/login
+- ✅ Admin dashboard and routes
+- ✅ View all claims and users
+- ✅ Packet review and approval
+
+---
+
+## ⚖️ Attorney Accounts
+
+### Primary Attorney
+```
+Email:    attorney@heritagelaw.com
+Password: attorney123
+```
+
+**Law Firm:** Heritage Law Offices
+**What you can test:**
+- ✅ Login at: http://localhost:3000/login
+- ✅ Attorney portal dashboard
+- ✅ View assigned claims
+- ✅ Download claim packets
+- ✅ Review and approve packets
+
+### Alternative Attorney
+```
+Email:    attorney@local.dev
+Password: attorney123
+```
+*(Note: Try this if the primary doesn't work)*
+
+---
+
+## 📋 Staff Reviewer Account
 
 ```
-Email:    admin@radiantclaims.dev
-Password: Passw0rd!
+Email:    reviewer@radiantclaims.com
+Password: reviewer123
 ```
 
 **What you can test:**
 - ✅ Login at: http://localhost:3000/login
-- ✅ Admin routes (if any)
+- ✅ Staff reviewer dashboard
+- ✅ Document review queue
+- ✅ Validation status updates
 
 ---
 
@@ -46,7 +106,7 @@ There's also an older test customer account:
 
 ```
 Email:    customer@test.com
-Password: TestPassword123!
+Password: customer123
 ```
 
 This user has a PANCREATIC_CANCER claim type (non-RECA).

@@ -5,12 +5,15 @@ A modern, full-stack RECA claims preparation platform built with Next.js 14, Typ
 ## 📚 Documentation
 
 **New developers start here:**
-1. **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Current state & features (READ THIS FIRST!)
-2. **[TODO.md](./TODO.md)** - What to work on next
-3. **[DOCS_INDEX.md](./DOCS_INDEX.md)** - Complete documentation guide
-4. **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** - Setup instructions
+1. **[QUICK_START.md](./QUICK_START.md)** - Get up and running quickly ⚡
+2. **[DATABASE_SAFETY_GUIDE.md](./DATABASE_SAFETY_GUIDE.md)** - 🔒 Protect production data
+3. **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Current state & features
+4. **[TODO.md](./TODO.md)** - What to work on next
+5. **[DOCS_INDEX.md](./DOCS_INDEX.md)** - Complete documentation guide
 
-**Quick Links:**
+**Essential Guides:**
+- 🔒 **[Database Safety Guide](./DATABASE_SAFETY_GUIDE.md)** - Never touch production accidentally
+- ⚡ **[Quick Start](./QUICK_START.md)** - Fast setup guide
 - [PDF Form Progress](./docs/PROJECT_PROGRESS_TRACKER.md)
 - [Test Credentials](./TEST_CREDENTIALS.md)
 - [Email Setup](./EMAIL_INTEGRATION.md)
@@ -102,13 +105,26 @@ cp .env.example .env
 
 ### Database Setup
 
-4. **Generate Prisma client**
+4. **Configure local development database**
+
+Create `.env.local` for your local development database:
+
+```bash
+# .env.local - automatically loaded in development
+DATABASE_URL="postgresql://yourusername@localhost:5432/radiantclaims_dev"
+```
+
+This ensures you **always use your local dev database** and never accidentally touch production.
+
+**🔒 Database Safety:** See [DATABASE_SAFETY_GUIDE.md](./DATABASE_SAFETY_GUIDE.md) for complete protection details.
+
+5. **Generate Prisma client**
 
 ```bash
 pnpm db:generate
 ```
 
-5. **Run database migrations**
+6. **Run database migrations**
 
 ```bash
 pnpm db:migrate
@@ -120,7 +136,7 @@ Or for quick development (pushes schema without migrations):
 pnpm db:push
 ```
 
-6. **Seed the database**
+7. **Seed the database**
 
 This creates an admin user, sample referral, and demo claimant:
 
@@ -136,7 +152,7 @@ pnpm db:seed
 
 ### Development
 
-7. **Start the development server**
+8. **Start the development server**
 
 ```bash
 pnpm dev
@@ -146,17 +162,49 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ### Available Scripts
 
+#### Development & Build
 - `pnpm dev` - Start development server
 - `pnpm build` - Build for production
 - `pnpm start` - Start production server
 - `pnpm lint` - Run ESLint
 - `pnpm format` - Format code with Prettier
 - `pnpm typecheck` - Run TypeScript compiler check
+
+#### Database Commands (Protected)
+- `pnpm db:check` - ✅ Verify which database you're connected to
 - `pnpm db:generate` - Generate Prisma client
-- `pnpm db:push` - Push schema to database (no migrations)
-- `pnpm db:migrate` - Create and run migrations
-- `pnpm db:seed` - Seed database with sample data
-- `pnpm db:studio` - Open Prisma Studio
+- `pnpm db:push` - Push schema to database (includes safety check)
+- `pnpm db:migrate` - Create and run migrations (includes safety check)
+- `pnpm db:seed` - Seed database with sample data (includes safety check)
+- `pnpm db:studio` - Open Prisma Studio (includes safety check)
+- `pnpm db:reset` - Reset database - ⚠️ destructive (includes safety check)
+
+**All database commands automatically verify you're on development before running!**
+
+### 🔒 Database Safety Features
+
+**Never accidentally touch production data!** All database commands include automatic safety checks:
+
+```bash
+# Before any database operation:
+pnpm db:check  # Shows which database you're connected to
+
+# All these commands check environment first:
+pnpm db:push      # ✅ Blocked if on production
+pnpm db:migrate   # ✅ Blocked if on production
+pnpm db:studio    # ✅ Blocked if on production
+```
+
+**Quick Safety Check:**
+```bash
+pnpm db:check
+```
+
+You'll see:
+- ✅ **DEVELOPMENT DATABASE** = Safe to work (localhost)
+- 🚨 **PRODUCTION DATABASE** = Commands will abort
+
+**Complete safety documentation:** [DATABASE_SAFETY_GUIDE.md](./DATABASE_SAFETY_GUIDE.md)
 
 ## Project Structure
 
@@ -287,18 +335,49 @@ For optimal integration with R2:
 
 ## Security Notes
 
+### 🔒 Database Security (Critical)
+
+**We have multiple layers of protection to prevent production data accidents:**
+
+1. **Environment Isolation**
+   - `.env.local` → Development database (localhost)
+   - Railway → Production database (auto-injected, never stored locally)
+
+2. **Automatic Safety Checks**
+   - All `pnpm db:*` commands verify environment before running
+   - Production access is **blocked by default**
+   - Commands abort with error if you're on production
+
+3. **How to Check Environment**
+   ```bash
+   pnpm db:check
+   ```
+   Shows: Database name, user, environment (dev/prod), and record counts
+
+4. **Production Access** (rare, explicit)
+   ```bash
+   railway run npx prisma studio  # Explicitly use Railway
+   ```
+
+**See [DATABASE_SAFETY_GUIDE.md](./DATABASE_SAFETY_GUIDE.md) for complete details.**
+
+### General Security
+
 1. **Change default admin credentials** after first login
 2. **Generate strong `NEXTAUTH_SECRET`** for production
 3. **Use environment variables** for all secrets
 4. **Enable HTTPS** in production
 5. **Review CORS settings** if integrating with external services
+6. **Never commit** `.env`, `.env.local`, or `.env.production` files
 
 ## Development Tips
 
-- Use `pnpm db:studio` to browse database with Prisma Studio
+- 🔒 **Always run `pnpm db:check`** before database operations to verify environment
+- Use `pnpm db:studio` to browse database with Prisma Studio (auto-checks environment)
 - Pre-commit hooks run linting and formatting automatically
 - Type errors will prevent builds - fix them before deploying
 - Check `src/env.mjs` for environment variable validation errors
+- **Never commit `.env.local` or `.env.production`** - they're gitignored for security
 
 ## Extending the Application
 
