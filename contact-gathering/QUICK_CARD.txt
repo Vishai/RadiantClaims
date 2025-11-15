@@ -1,0 +1,95 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                  RECA CONTACT GATHERING - QUICK CARD                     ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ FASTEST PATH (30 MIN)                                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+  cd /Users/brandonarmstrong/Documents/Github/RadiantClaims/contact-gathering
+  python3 scraper_hospitals_cms.py
+  → Gets ~120 hospital contacts via CMS API (FREE)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ RECOMMENDED PATH (2-4 HOURS)                                            │
+└─────────────────────────────────────────────────────────────────────────┘
+  1. Run hospital scraper (30 min) → 120 contacts
+  2. Manual county offices (1 hr) → 80 contacts  [Use QUICK_START.md]
+  3. Cancer registries (15 min) → 5 contacts
+  4. School districts (30 min) → 40 contacts
+  ═══════════════════════════════════════════════════════════════════════
+  TOTAL: 245 high-quality contacts in 2-4 hours ($0)
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PRIORITY INSTITUTIONS                                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+  ⭐⭐⭐ TIER 1 (Must Have):
+    • County Vital Records offices (birth/death certificates)
+    • Hospitals (medical records, pathology)
+    • State Cancer Registries (diagnosis confirmation)
+  
+  ⭐⭐ TIER 2 (Important):
+    • School Districts (attendance records)
+    • LDS Church (membership records - UT/ID)
+  
+  ⭐ TIER 3 (Nice to Have):
+    • Historical employers
+    • Utility companies
+    • Other churches
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PRIORITY COUNTIES (Focus Here First)                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+  Utah:     Washington (St. George), Iron (Cedar City), Kane, Garfield
+  Nevada:   Nye (Test Site), Lincoln, Clark (Las Vegas)
+  Arizona:  Coconino (Flagstaff), Navajo
+  New Mex:  San Juan, McKinley
+  Idaho:    Bannock, Bingham, Bonneville
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ KEY FILES                                                               │
+└─────────────────────────────────────────────────────────────────────────┘
+  README.md                    Main documentation
+  QUICK_START.md              Step-by-step manual guide
+  COUNTY_REFERENCE.md         County priorities & notes
+  scraper_hospitals_cms.py    Hospital scraper (READY)
+  TEMPLATE_contacts.csv       Use for manual entry
+  SUMMARY.md                  This overview doc
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MANUAL COLLECTION SOURCES                                               │
+└─────────────────────────────────────────────────────────────────────────┘
+  County Vital Records:  https://www.citydirectory.us/vital-records-[state].html
+  Hospitals:             Automated via scraper
+  Cancer Registries:     State DOH websites (5 contacts total)
+  School Districts:      https://nces.ed.gov/ccd/districtsearch/
+  LDS Records:           (866) 406-1830 | FamilySearch.org
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ OUTPUT SCHEMA (CSV Format)                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+  State, County, InstitutionName, InstitutionType, RecordTypes,
+  Address, Phone, Email, Website, Status, Source, Notes
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ INTEGRATION WITH RADIANTCLAIMS                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+  Airtable Table: ResourceContacts
+  Links to: Documents table (what records needed from whom)
+  Used by: n8n automation (sends requests with releases)
+  Tracks: Request status, follow-ups, response rates
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ QUICK START COMMAND                                                     │
+└─────────────────────────────────────────────────────────────────────────┘
+  # Install (first time only)
+  pip3 install requests pandas beautifulsoup4 --break-system-packages
+
+  # Run hospital scraper
+  python3 scraper_hospitals_cms.py
+
+  # View results
+  open reca_hospitals_contacts.csv
+
+═══════════════════════════════════════════════════════════════════════════
+Need help? Check README.md or QUICK_START.md for detailed guides.
+═══════════════════════════════════════════════════════════════════════════
