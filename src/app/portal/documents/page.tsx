@@ -9,6 +9,10 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
+  Upload,
+  ListChecks,
+  Filter,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,8 +23,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { DocumentDashboard } from "@/components/documents/DocumentDashboard";
+import {
+  DocumentTrackingCard,
+  DocumentTrackingData,
+} from "@/components/documents/DocumentTrackingCard";
 import { Progress } from "@/components/ui/progress";
 
 interface RequiredDocument {
@@ -40,6 +56,25 @@ export default function DocumentsPortal() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
+
+  // Tracking state
+  const [trackingDocuments, setTrackingDocuments] = useState<
+    DocumentTrackingData[]
+  >([]);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // Get default tab from URL query parameter
+  const [defaultTab, setDefaultTab] = useState<string>("upload");
+
+  useEffect(() => {
+    // Check URL for tab parameter
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "tracking" || tab === "upload") {
+      setDefaultTab(tab);
+    }
+  }, []);
 
   const loadDocumentRequirements = useCallback(
     async (sessionId: string, claimType?: string) => {
@@ -151,6 +186,22 @@ export default function DocumentsPortal() {
     []
   );
 
+  const fetchTrackingDocuments = useCallback(async () => {
+    try {
+      setTrackingLoading(true);
+      const response = await fetch("/api/documents/tracking");
+      if (!response.ok) {
+        throw new Error("Failed to fetch tracking documents");
+      }
+      const data = await response.json();
+      setTrackingDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Error fetching tracking documents:", err);
+    } finally {
+      setTrackingLoading(false);
+    }
+  }, []);
+
   const loadUserSession = useCallback(async () => {
     setLoading(true);
     try {
@@ -169,12 +220,14 @@ export default function DocumentsPortal() {
           }
         }
       }
+      // Also load tracking documents
+      await fetchTrackingDocuments();
     } catch (error) {
       console.error("Failed to load session:", error);
     } finally {
       setLoading(false);
     }
-  }, [loadDocumentRequirements]);
+  }, [loadDocumentRequirements, fetchTrackingDocuments]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -199,6 +252,56 @@ export default function DocumentsPortal() {
       loadDocumentRequirements(sessionId, "DOWNWINDER");
     }
   };
+
+  const handleStatusUpdate = async (
+    documentType: string,
+    status: string,
+    notes?: string
+  ) => {
+    try {
+      const response = await fetch("/api/documents/tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentType,
+          status,
+          notes,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+
+      // Refresh tracking documents
+      await fetchTrackingDocuments();
+    } catch (err) {
+      console.error("Error updating status:", err);
+      throw err;
+    }
+  };
+
+  const handleUploadClick = (documentType: string) => {
+    // Switch to upload tab
+    const uploadTab = document.querySelector(
+      '[data-state="inactive"][value="upload"]'
+    ) as HTMLButtonElement;
+    uploadTab?.click();
+  };
+
+  const filteredTrackingDocuments =
+    filterStatus === "all"
+      ? trackingDocuments
+      : trackingDocuments.filter((doc) => doc.status === filterStatus);
+
+  // Group tracking documents by status for summary
+  const statusCounts = trackingDocuments.reduce(
+    (acc, doc) => {
+      acc[doc.status] = (acc[doc.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const completionPercentage =
     requiredDocs.length > 0
@@ -286,7 +389,7 @@ export default function DocumentsPortal() {
         </div>
       </nav>
 
-      <main className="container mx-auto max-w-6xl px-6 py-12">
+      <main className="container mx-auto max-w-7xl px-6 py-12">
         {/* Back Button */}
         <Button
           variant="ghost"
@@ -303,168 +406,341 @@ export default function DocumentsPortal() {
             Document Management
           </h1>
           <p className="text-lg text-sage-700">
-            Upload and organize your claim documents
+            Track, upload, and organize your claim documents
           </p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main Content - 2 columns */}
-          <div className="space-y-8 lg:col-span-2">
-            {/* Upload Zone */}
-            <Card className="rounded-3xl border-2 border-cream-200">
-              <CardHeader>
-                <CardTitle>Upload Documents</CardTitle>
-                <CardDescription>
-                  Upload PDFs or images of your documents. Maximum file size:
-                  10MB.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DocumentUploadZone
-                  sessionId={sessionId}
-                  onUploadComplete={handleUploadComplete}
-                  onUploadError={(error) => alert(error)}
-                />
-              </CardContent>
-            </Card>
+        {/* Tabs */}
+        <Tabs defaultValue={defaultTab} className="w-full">
+          <TabsList className="mb-6 grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="upload" className="gap-2">
+              <Upload className="h-4 w-4" />
+              Upload & Manage
+            </TabsTrigger>
+            <TabsTrigger value="tracking" className="gap-2">
+              <ListChecks className="h-4 w-4" />
+              Track Progress
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Uploaded Documents */}
-            <Card className="rounded-3xl border-2 border-cream-200">
-              <CardHeader>
-                <CardTitle>Uploaded Documents</CardTitle>
-                <CardDescription>
-                  View, download, or manage your uploaded documents
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DocumentDashboard
-                  key={refreshKey}
-                  sessionId={sessionId}
-                  onRefresh={handleRefresh}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          {/* Upload Tab */}
+          <TabsContent value="upload">
+            <div className="grid gap-8 lg:grid-cols-3">
+              {/* Main Content - 2 columns */}
+              <div className="space-y-8 lg:col-span-2">
+                {/* Upload Zone */}
+                <Card className="rounded-3xl border-2 border-cream-200">
+                  <CardHeader>
+                    <CardTitle>Upload Documents</CardTitle>
+                    <CardDescription>
+                      Upload PDFs or images of your documents. Maximum file
+                      size: 10MB.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DocumentUploadZone
+                      sessionId={sessionId}
+                      onUploadComplete={handleUploadComplete}
+                      onUploadError={(error) => alert(error)}
+                    />
+                  </CardContent>
+                </Card>
 
-          {/* Sidebar - 1 column */}
-          <div className="space-y-6">
-            {/* Progress Card */}
-            <Card className="rounded-3xl border-2 border-cream-200 bg-gradient-to-br from-sage-50 to-white">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-sage-600" />
-                  Document Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-sage-700">
-                      Completeness
-                    </span>
-                    <span className="text-sage-900">
-                      {completionPercentage}%
-                    </span>
-                  </div>
-                  <Progress value={completionPercentage} className="h-2" />
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-sage-700">Documents Uploaded</span>
-                    <span className="font-medium text-sage-900">
-                      {uploadedCount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sage-700">Required Documents</span>
-                    <span className="font-medium text-sage-900">
-                      {requiredDocs.filter((d) => d.required).length}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                {/* Uploaded Documents */}
+                <Card className="rounded-3xl border-2 border-cream-200">
+                  <CardHeader>
+                    <CardTitle>Uploaded Documents</CardTitle>
+                    <CardDescription>
+                      View, download, or manage your uploaded documents
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DocumentDashboard
+                      key={refreshKey}
+                      sessionId={sessionId}
+                      onRefresh={handleRefresh}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Required Documents Checklist */}
-            <Card className="rounded-3xl border-2 border-cream-200">
-              <CardHeader>
-                <CardTitle className="text-base">Required Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {requiredDocs.map((doc, index) => (
-                    <div
-                      key={index}
-                      className={`rounded-lg border-2 p-3 transition-colors ${
-                        doc.uploaded
-                          ? "border-green-300 bg-green-50"
-                          : "border-sage-200 bg-white"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {doc.uploaded ? (
-                          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
-                        ) : (
-                          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-400" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-sage-900">
-                            {doc.label}
-                            {doc.required && (
-                              <span className="ml-1 text-xs text-terracotta-600">
-                                *
-                              </span>
-                            )}
-                          </p>
-                          <p className="mt-0.5 text-xs text-sage-600">
-                            {doc.description}
-                          </p>
-                          {doc.helpText && (
-                            <p className="mt-1.5 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
-                              💡 {doc.helpText}
-                            </p>
-                          )}
-                        </div>
+              {/* Sidebar - 1 column */}
+              <div className="space-y-6">
+                {/* Progress Card */}
+                <Card className="rounded-3xl border-2 border-cream-200 bg-gradient-to-br from-sage-50 to-white">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-sage-600" />
+                      Document Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-sage-700">
+                          Completeness
+                        </span>
+                        <span className="text-sage-900">
+                          {completionPercentage}%
+                        </span>
+                      </div>
+                      <Progress value={completionPercentage} className="h-2" />
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-sage-700">
+                          Documents Uploaded
+                        </span>
+                        <span className="font-medium text-sage-900">
+                          {uploadedCount}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sage-700">
+                          Required Documents
+                        </span>
+                        <span className="font-medium text-sage-900">
+                          {requiredDocs.filter((d) => d.required).length}
+                        </span>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Required Documents Checklist */}
+                <Card className="rounded-3xl border-2 border-cream-200">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Required Documents
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {requiredDocs.map((doc, index) => (
+                        <div
+                          key={index}
+                          className={`rounded-lg border-2 p-3 transition-colors ${
+                            doc.uploaded
+                              ? "border-green-300 bg-green-50"
+                              : "border-sage-200 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {doc.uploaded ? (
+                              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                            ) : (
+                              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-400" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-sage-900">
+                                {doc.label}
+                                {doc.required && (
+                                  <span className="ml-1 text-xs text-terracotta-600">
+                                    *
+                                  </span>
+                                )}
+                              </p>
+                              <p className="mt-0.5 text-xs text-sage-600">
+                                {doc.description}
+                              </p>
+                              {doc.helpText && (
+                                <p className="mt-1.5 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
+                                  💡 {doc.helpText}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+                      <p className="mb-1 font-semibold">
+                        About Document Requirements:
+                      </p>
+                      <p className="text-[11px]">
+                        * = Required for your claim. Upload here for safekeeping
+                        and organization. Final submission will be via mail
+                        according to RECA requirements.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Need Help Card */}
+                <Card className="rounded-3xl border-2 border-terracotta-200 bg-terracotta-50">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Need Help Finding Documents?
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4 text-sm text-sage-700">
+                      Use our Contact Finder or Resource Directory to find
+                      government offices and medical facilities where you can
+                      request documents.
+                    </p>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => router.push("/chat")}
+                        variant="outline"
+                        className="w-full rounded-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-100"
+                      >
+                        Contact Finder
+                      </Button>
+                      <Button
+                        onClick={() => router.push("/resources")}
+                        variant="outline"
+                        className="w-full rounded-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-100"
+                      >
+                        Browse Resources
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tracking Tab */}
+          <TabsContent value="tracking">
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <Card className="rounded-3xl border-2 border-cream-200 p-4">
+                  <div className="text-2xl font-bold text-sage-900">
+                    {trackingDocuments.length}
+                  </div>
+                  <div className="text-sm text-sage-600">Total Documents</div>
+                </Card>
+                <Card className="rounded-3xl border-2 border-cream-200 p-4">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {statusCounts.AWAITING || 0}
+                  </div>
+                  <div className="text-sm text-sage-600">Awaiting</div>
+                </Card>
+                <Card className="rounded-3xl border-2 border-cream-200 p-4">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {statusCounts.RECEIVED || 0}
+                  </div>
+                  <div className="text-sm text-sage-600">Received</div>
+                </Card>
+                <Card className="rounded-3xl border-2 border-cream-200 p-4">
+                  <div className="text-2xl font-bold text-green-600">
+                    {(statusCounts.UPLOADED || 0) +
+                      (statusCounts.VERIFIED || 0)}
+                  </div>
+                  <div className="text-sm text-sage-600">Complete</div>
+                </Card>
+              </div>
+
+              {/* Filter and Actions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-sage-600" />
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-[200px] rounded-full">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Documents</SelectItem>
+                      <SelectItem value="NOT_STARTED">Not Started</SelectItem>
+                      <SelectItem value="REQUESTED">Requested</SelectItem>
+                      <SelectItem value="AWAITING">Awaiting</SelectItem>
+                      <SelectItem value="RECEIVED">Received</SelectItem>
+                      <SelectItem value="UPLOADED">Uploaded</SelectItem>
+                      <SelectItem value="VERIFIED">Verified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-sage-600">
+                    Showing {filteredTrackingDocuments.length} of{" "}
+                    {trackingDocuments.length} documents
+                  </span>
+                </div>
+                <Button
+                  onClick={() => router.push("/chat")}
+                  className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                >
+                  <Plus className="h-4 w-4" />
+                  Find New Document
+                </Button>
+              </div>
+
+              {/* Document Cards */}
+              {trackingLoading ? (
+                <div className="flex min-h-[400px] items-center justify-center">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-terracotta-500 border-t-transparent"></div>
+                    <p className="text-sage-700">Loading tracking data...</p>
+                  </div>
+                </div>
+              ) : filteredTrackingDocuments.length === 0 ? (
+                <Card className="rounded-3xl border-2 border-cream-200 p-12 text-center">
+                  <FileText className="mx-auto mb-4 h-12 w-12 text-sage-300" />
+                  <h3 className="mb-2 text-lg font-semibold text-sage-900">
+                    No Documents Found
+                  </h3>
+                  <p className="mb-4 text-sage-600">
+                    {filterStatus === "all"
+                      ? "Start tracking documents by using our contact finder to locate the resources you need."
+                      : `No documents with status "${filterStatus.replace(/_/g, " ").toLowerCase()}"`}
+                  </p>
+                  {filterStatus === "all" ? (
+                    <Button
+                      onClick={() => router.push("/chat")}
+                      className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                    >
+                      Find Documents
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setFilterStatus("all")}
+                      className="rounded-full"
+                    >
+                      Clear Filter
+                    </Button>
+                  )}
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filteredTrackingDocuments.map((document, index) => (
+                    <DocumentTrackingCard
+                      key={document.id || `doc-${index}`}
+                      document={document}
+                      onStatusUpdate={handleStatusUpdate}
+                      onUploadClick={handleUploadClick}
+                    />
                   ))}
                 </div>
-                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
-                  <p className="mb-1 font-semibold">
-                    About Document Requirements:
-                  </p>
-                  <p className="text-[11px]">
-                    * = Required for your claim. Upload here for safekeeping and
-                    organization. Final submission will be via mail according to
-                    RECA requirements.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+              )}
 
-            {/* Need Help Card */}
-            <Card className="rounded-3xl border-2 border-terracotta-200 bg-terracotta-50">
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Need Help Finding Documents?
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-4 text-sm text-sage-700">
-                  Use our Resource Directory to find government offices and
-                  medical facilities where you can request documents.
-                </p>
-                <Button
-                  onClick={() => router.push("/resources")}
-                  variant="outline"
-                  className="w-full rounded-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-100"
-                >
-                  Browse Resources
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              {/* Help Text */}
+              <Card className="rounded-3xl border-2 border-blue-200 bg-blue-50 p-4">
+                <h4 className="mb-2 text-sm font-semibold text-blue-900">
+                  How Document Tracking Works
+                </h4>
+                <ul className="space-y-1 text-sm text-blue-800">
+                  <li>
+                    • Use the Contact Finder to locate offices where you can get
+                    documents
+                  </li>
+                  <li>
+                    • Update the status as you request, receive, and upload
+                    documents
+                  </li>
+                  <li>• We'll remind you about documents you're waiting on</li>
+                  <li>
+                    • Track multiple resources for the same document if needed
+                  </li>
+                  <li>
+                    • Switch to the "Upload & Manage" tab when you're ready to
+                    upload files
+                  </li>
+                </ul>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

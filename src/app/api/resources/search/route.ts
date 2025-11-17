@@ -48,13 +48,9 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // Search for resources
+    // Search for resources (we'll sort after attaching stats)
     const resources = await prisma.documentResource.findMany({
       where,
-      orderBy: [
-        { county: "asc" }, // County-level resources first
-        { name: "asc" },
-      ],
     });
 
     // Fetch stats for all resources
@@ -93,6 +89,54 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Sort by best quality first
+    // Priority:
+    // 1. Resources with stats (rated resources first)
+    // 2. High success rate
+    // 3. High avg rating
+    // 4. Number of feedbacks (more is better)
+    // 5. County-specific over state-wide
+    // 6. Name alphabetically
+    resourcesWithStats.sort((a, b) => {
+      const aHasStats = a.stats && a.stats.totalFeedback >= 3;
+      const bHasStats = b.stats && b.stats.totalFeedback >= 3;
+
+      // Resources with sufficient stats come first
+      if (aHasStats && !bHasStats) return -1;
+      if (!aHasStats && bHasStats) return 1;
+
+      // Both have stats - compare quality
+      if (aHasStats && bHasStats) {
+        // Sort by success rate (higher is better)
+        const aSuccess = a.stats!.successRate || 0;
+        const bSuccess = b.stats!.successRate || 0;
+        if (aSuccess !== bSuccess) {
+          return bSuccess - aSuccess; // Descending
+        }
+
+        // If success rates are equal, sort by avg rating
+        const aRating = a.stats!.avgRating || 0;
+        const bRating = b.stats!.avgRating || 0;
+        if (aRating !== bRating) {
+          return bRating - aRating; // Descending
+        }
+
+        // If ratings are equal, sort by number of feedbacks
+        const aFeedback = a.stats!.totalFeedback;
+        const bFeedback = b.stats!.totalFeedback;
+        if (aFeedback !== bFeedback) {
+          return bFeedback - aFeedback; // Descending
+        }
+      }
+
+      // County-specific resources before state-wide
+      if (a.county && !b.county) return -1;
+      if (!a.county && b.county) return 1;
+
+      // Finally, alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
     // If no county-specific results and county was specified, also get state-level resources
     if (resources.length === 0 && county) {
       const stateWideResources = await prisma.documentResource.findMany({
@@ -100,7 +144,6 @@ export async function GET(req: NextRequest) {
           ...where,
           county: null, // State-wide only
         },
-        orderBy: { name: "asc" },
       });
 
       // Fetch stats for state-wide resources
@@ -137,6 +180,31 @@ export async function GET(req: NextRequest) {
               }
             : undefined,
         };
+      });
+
+      // Sort state-wide resources by quality too
+      stateWideWithStats.sort((a, b) => {
+        const aHasStats = a.stats && a.stats.totalFeedback >= 3;
+        const bHasStats = b.stats && b.stats.totalFeedback >= 3;
+
+        if (aHasStats && !bHasStats) return -1;
+        if (!aHasStats && bHasStats) return 1;
+
+        if (aHasStats && bHasStats) {
+          const aSuccess = a.stats!.successRate || 0;
+          const bSuccess = b.stats!.successRate || 0;
+          if (aSuccess !== bSuccess) return bSuccess - aSuccess;
+
+          const aRating = a.stats!.avgRating || 0;
+          const bRating = b.stats!.avgRating || 0;
+          if (aRating !== bRating) return bRating - aRating;
+
+          const aFeedback = a.stats!.totalFeedback;
+          const bFeedback = b.stats!.totalFeedback;
+          if (aFeedback !== bFeedback) return bFeedback - aFeedback;
+        }
+
+        return a.name.localeCompare(b.name);
       });
 
       return NextResponse.json({

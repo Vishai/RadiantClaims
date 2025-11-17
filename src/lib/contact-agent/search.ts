@@ -118,11 +118,8 @@ export async function searchContacts(
       acceptsOnlineRequests: true,
       appointmentRequired: true,
     },
-    orderBy: [
-      { county: "asc" }, // County-specific first
-      { name: "asc" },
-    ],
-    take: 20, // Limit results
+    // We'll sort manually after attaching stats
+    take: 100, // Get more results since we'll filter and sort by rating
   });
 
   // Fetch stats for resources and attach them
@@ -161,7 +158,56 @@ export async function searchContacts(
     };
   });
 
-  return resourcesWithStats;
+  // Sort by best quality first
+  // Priority:
+  // 1. Resources with stats (rated resources first)
+  // 2. High success rate (>=80%)
+  // 3. High avg rating (>=4.0)
+  // 4. Number of feedbacks (more is better)
+  // 5. County-specific over state-wide
+  // 6. Name alphabetically
+  resourcesWithStats.sort((a, b) => {
+    const aHasStats = a.stats && a.stats.totalFeedback >= 3;
+    const bHasStats = b.stats && b.stats.totalFeedback >= 3;
+
+    // Resources with sufficient stats come first
+    if (aHasStats && !bHasStats) return -1;
+    if (!aHasStats && bHasStats) return 1;
+
+    // Both have stats - compare quality
+    if (aHasStats && bHasStats) {
+      // Sort by success rate (higher is better)
+      const aSuccess = a.stats!.successRate || 0;
+      const bSuccess = b.stats!.successRate || 0;
+      if (aSuccess !== bSuccess) {
+        return bSuccess - aSuccess; // Descending
+      }
+
+      // If success rates are equal, sort by avg rating
+      const aRating = a.stats!.avgRating || 0;
+      const bRating = b.stats!.avgRating || 0;
+      if (aRating !== bRating) {
+        return bRating - aRating; // Descending
+      }
+
+      // If ratings are equal, sort by number of feedbacks
+      const aFeedback = a.stats!.totalFeedback;
+      const bFeedback = b.stats!.totalFeedback;
+      if (aFeedback !== bFeedback) {
+        return bFeedback - aFeedback; // Descending
+      }
+    }
+
+    // County-specific resources before state-wide
+    if (a.county && !b.county) return -1;
+    if (!a.county && b.county) return 1;
+
+    // Finally, alphabetically by name
+    return a.name.localeCompare(b.name);
+  });
+
+  // Return top 20 results
+  return resourcesWithStats.slice(0, 20);
 }
 
 /**
