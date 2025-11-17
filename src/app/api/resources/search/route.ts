@@ -57,6 +57,42 @@ export async function GET(req: NextRequest) {
       ],
     });
 
+    // Fetch stats for all resources
+    const resourceIds = resources.map((r) => r.id);
+    const stats = await prisma.resourceStats.findMany({
+      where: {
+        resourceId: { in: resourceIds },
+      },
+      select: {
+        resourceId: true,
+        totalFeedback: true,
+        successCount: true,
+        contactedCount: true,
+        successRate: true,
+        avgRating: true,
+      },
+    });
+
+    // Create stats map
+    const statsMap = new Map(stats.map((s) => [s.resourceId, s]));
+
+    // Attach stats to resources
+    const resourcesWithStats = resources.map((resource) => {
+      const resourceStats = statsMap.get(resource.id);
+      return {
+        ...resource,
+        stats: resourceStats
+          ? {
+              totalFeedback: resourceStats.totalFeedback,
+              successCount: resourceStats.successCount,
+              contactedCount: resourceStats.contactedCount,
+              successRate: resourceStats.successRate,
+              avgRating: resourceStats.avgRating,
+            }
+          : undefined,
+      };
+    });
+
     // If no county-specific results and county was specified, also get state-level resources
     if (resources.length === 0 && county) {
       const stateWideResources = await prisma.documentResource.findMany({
@@ -67,17 +103,53 @@ export async function GET(req: NextRequest) {
         orderBy: { name: "asc" },
       });
 
+      // Fetch stats for state-wide resources
+      const stateWideIds = stateWideResources.map((r) => r.id);
+      const stateWideStats = await prisma.resourceStats.findMany({
+        where: {
+          resourceId: { in: stateWideIds },
+        },
+        select: {
+          resourceId: true,
+          totalFeedback: true,
+          successCount: true,
+          contactedCount: true,
+          successRate: true,
+          avgRating: true,
+        },
+      });
+
+      const stateWideStatsMap = new Map(
+        stateWideStats.map((s) => [s.resourceId, s])
+      );
+
+      const stateWideWithStats = stateWideResources.map((resource) => {
+        const resourceStats = stateWideStatsMap.get(resource.id);
+        return {
+          ...resource,
+          stats: resourceStats
+            ? {
+                totalFeedback: resourceStats.totalFeedback,
+                successCount: resourceStats.successCount,
+                contactedCount: resourceStats.contactedCount,
+                successRate: resourceStats.successRate,
+                avgRating: resourceStats.avgRating,
+              }
+            : undefined,
+        };
+      });
+
       return NextResponse.json({
-        resources: stateWideResources,
+        resources: stateWideWithStats,
         resultsType: "state_wide",
         message: `No ${county} County resources found. Showing state-wide options.`,
       });
     }
 
     return NextResponse.json({
-      resources,
+      resources: resourcesWithStats,
       resultsType: county ? "county_specific" : "state_wide",
-      count: resources.length,
+      count: resourcesWithStats.length,
     });
   } catch (error) {
     console.error("Error searching resources:", error);

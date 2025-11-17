@@ -85,7 +85,7 @@ const headerStyle = {
 };
 
 const eyebrowStyle = {
-  color: "#0ea5e9",
+  color: "#d4674f",
   fontSize: "13px",
   textTransform: "uppercase" as const,
   letterSpacing: "0.08em",
@@ -99,7 +99,7 @@ const headlineStyle = {
 };
 
 const dividerStyle = {
-  borderColor: "#e2e8f0",
+  borderColor: "#f5d1c4",
   margin: "24px 0",
 };
 
@@ -117,7 +117,7 @@ const ctaLinkStyle = {
   display: "inline-block",
   marginTop: "4px",
   fontSize: "15px",
-  color: "#0284c7",
+  color: "#d4674f",
   textDecoration: "none",
   fontWeight: 600,
 };
@@ -126,7 +126,7 @@ const secondaryLinkStyle = {
   display: "block",
   marginTop: "6px",
   fontSize: "13px",
-  color: "#64748b",
+  color: "#7a8c7e",
   textDecoration: "none",
 };
 

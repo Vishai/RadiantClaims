@@ -23,6 +23,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
+  Star,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -57,6 +59,13 @@ interface DocumentResource {
   acceptsMailRequests: boolean;
   acceptsOnlineRequests: boolean;
   estimatedCost: number | null;
+  stats?: {
+    totalFeedback: number;
+    successCount: number;
+    contactedCount: number;
+    successRate: number | null;
+    avgRating: number | null;
+  };
 }
 
 interface ResourceCardProps {
@@ -140,6 +149,38 @@ export function ResourceCard({ resource, compact = false }: ResourceCardProps) {
             )}
           </div>
         </div>
+
+        {/* Social Proof Stats */}
+        {resource.stats && resource.stats.totalFeedback >= 3 && (
+          <div className="mt-4 space-y-2 rounded-lg border border-green-200 bg-green-50 p-3">
+            {resource.stats.successRate !== null &&
+              resource.stats.successRate > 0 && (
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-base font-semibold">
+                    {Math.round(resource.stats.successRate)}% success rate
+                  </span>
+                </div>
+              )}
+            {resource.stats.avgRating !== null &&
+              resource.stats.avgRating > 0 && (
+                <div className="flex items-center gap-2 text-amber-600">
+                  <Star className="h-5 w-5 flex-shrink-0 fill-amber-400" />
+                  <span className="text-base font-semibold">
+                    {resource.stats.avgRating.toFixed(1)} star rating
+                  </span>
+                </div>
+              )}
+            <div className="flex items-center gap-2 text-gray-600">
+              <Users className="h-5 w-5 flex-shrink-0" />
+              <span className="text-base font-medium">
+                {resource.stats.contactedCount}{" "}
+                {resource.stats.contactedCount === 1 ? "person" : "people"} used
+                this
+              </span>
+            </div>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-4">

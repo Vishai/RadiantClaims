@@ -505,6 +505,9 @@ enum EmailType {
   CLIENT_PROGRESS_MILESTONE
   CLIENT_REENGAGEMENT
   CLIENT_DOCUMENT_ASSISTANCE
+  RESOURCE_FOLLOW_UP // Initial follow-up for resource feedback
+  RESOURCE_ALTERNATIVES // Second follow-up with alternatives
+  RESOURCE_SUCCESS // Success confirmation with upload prompt
 }
 
 model EmailPreference {

@@ -4,8 +4,14 @@ import WelcomeEmail from "@/emails/welcome";
 import ResumeLinkEmail from "@/emails/resume-link";
 import UploadConfirmationEmail from "@/emails/upload-confirmation";
 import PacketReadyEmail from "@/emails/packet-ready";
+import ResourceFollowUpEmail from "@/emails/client/resource-follow-up";
+import ResourceAlternativesEmail from "@/emails/client/resource-alternatives";
+import ResourceSuccessEmail from "@/emails/client/resource-success";
 import { EmailType } from "@prisma/client";
-import { isUnsubscribed, generateUnsubscribeUrl } from "@/lib/email-preferences";
+import {
+  isUnsubscribed,
+  generateUnsubscribeUrl,
+} from "@/lib/email-preferences";
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -198,7 +204,10 @@ export async function sendUploadConfirmationEmail(params: {
     );
 
     // Replace unsubscribe URL placeholder
-    const unsubscribeUrl = generateUnsubscribeUrl(to, EmailType.UPLOAD_CONFIRMATION);
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.UPLOAD_CONFIRMATION
+    );
     const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
 
     const { data, error } = await resend.emails.send({
@@ -233,7 +242,13 @@ export async function sendPacketReadyEmail(params: {
   documentCount: number;
   packetUrl?: string;
 }) {
-  const { to, name, claimType = "RECA Claim", documentCount, packetUrl } = params;
+  const {
+    to,
+    name,
+    claimType = "RECA Claim",
+    documentCount,
+    packetUrl,
+  } = params;
 
   // Check if user has unsubscribed
   const unsubscribed = await isUnsubscribed(to, EmailType.PACKET_READY);
@@ -277,6 +292,231 @@ export async function sendPacketReadyEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending packet ready email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send resource follow-up email (first stage - 3-7 days)
+ */
+export async function sendResourceFollowUpEmail(params: {
+  to: string;
+  claimantName?: string;
+  officeName: string;
+  officeType: string;
+  documentType: string;
+  searchQuery?: string;
+  feedbackUrl: string;
+  alternativesUrl?: string;
+}) {
+  const {
+    to,
+    claimantName,
+    officeName,
+    officeType,
+    documentType,
+    searchQuery,
+    feedbackUrl,
+    alternativesUrl,
+  } = params;
+
+  // Check if user has unsubscribed
+  const unsubscribed = await isUnsubscribed(to, EmailType.RESOURCE_FOLLOW_UP);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from RESOURCE_FOLLOW_UP emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const emailHtml = await render(
+      ResourceFollowUpEmail({
+        claimantName,
+        officeName,
+        officeType,
+        documentType,
+        searchQuery,
+        feedbackUrl,
+        alternativesUrl,
+        portalUrl,
+      }),
+      { pretty: true }
+    );
+
+    // Replace unsubscribe URL placeholder
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.RESOURCE_FOLLOW_UP
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `How did it go with ${officeName}?`,
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send resource follow-up email:", error);
+      throw new Error(
+        `Failed to send resource follow-up email: ${error.message}`
+      );
+    }
+
+    console.log("Resource follow-up email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending resource follow-up email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send resource alternatives email (second stage - 10 days)
+ */
+export async function sendResourceAlternativesEmail(params: {
+  to: string;
+  claimantName?: string;
+  officeName: string;
+  documentType: string;
+  alternativeResources?: Array<{
+    name: string;
+    type: string;
+    phone?: string;
+  }>;
+  feedbackUrl: string;
+  chatUrl?: string;
+}) {
+  const {
+    to,
+    claimantName,
+    officeName,
+    documentType,
+    alternativeResources,
+    feedbackUrl,
+    chatUrl,
+  } = params;
+
+  // Check if user has unsubscribed
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.RESOURCE_ALTERNATIVES
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from RESOURCE_ALTERNATIVES emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const emailHtml = await render(
+      ResourceAlternativesEmail({
+        claimantName,
+        officeName,
+        documentType,
+        alternativeResources,
+        feedbackUrl,
+        chatUrl,
+        portalUrl,
+      }),
+      { pretty: true }
+    );
+
+    // Replace unsubscribe URL placeholder
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.RESOURCE_ALTERNATIVES
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `Still need help getting your ${documentType}?`,
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send resource alternatives email:", error);
+      throw new Error(
+        `Failed to send resource alternatives email: ${error.message}`
+      );
+    }
+
+    console.log("Resource alternatives email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending resource alternatives email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send resource success email (after positive feedback)
+ */
+export async function sendResourceSuccessEmail(params: {
+  to: string;
+  claimantName?: string;
+  officeName: string;
+  documentType: string;
+  uploadUrl: string;
+}) {
+  const { to, claimantName, officeName, documentType, uploadUrl } = params;
+
+  // Check if user has unsubscribed
+  const unsubscribed = await isUnsubscribed(to, EmailType.RESOURCE_SUCCESS);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from RESOURCE_SUCCESS emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const emailHtml = await render(
+      ResourceSuccessEmail({
+        claimantName,
+        officeName,
+        documentType,
+        uploadUrl,
+        portalUrl,
+      }),
+      { pretty: true }
+    );
+
+    // Replace unsubscribe URL placeholder
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.RESOURCE_SUCCESS
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `🎉 You got your ${documentType}! Now upload it`,
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send resource success email:", error);
+      throw new Error(
+        `Failed to send resource success email: ${error.message}`
+      );
+    }
+
+    console.log("Resource success email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending resource success email:", error);
     throw error;
   }
 }
