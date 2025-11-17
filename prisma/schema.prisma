@@ -1143,11 +1143,26 @@ model DocumentResource {
   acceptsOnlineRequests Boolean  @default(false)
   estimatedCost         Float? // Dollar amount (e.g., 20.00)
 
+  // Quality & Verification
+  source              ResourceSource           @default(DATABASE) // Where this resource came from
+  verificationStatus  ResourceVerificationStatus @default(UNVERIFIED)
+  verifiedBy          String? // Staff user ID who verified
+  verifiedAt          DateTime?
+  lastUpdated         DateTime                 @default(now())
+  searchCount         Int                      @default(0) // How many times this was returned in search results
+  selectionCount      Int                      @default(0) // How many times this was selected by users
+
   claimantDocumentStatuses ClaimantDocumentStatus[]
+  resourceFeedback         ResourceFeedback[] // User feedback on this resource
+  resourceInteractions     ResourceInteraction[] // Times this was shown to users
 
   @@index([state, county])
   @@index([resourceType])
   @@index([state, resourceType])
+  @@index([source])
+  @@index([verificationStatus])
+  @@index([searchCount])
+  @@index([selectionCount])
 }
 
 enum ResourceType {
@@ -2055,4 +2070,157 @@ model RegistrationWaitlist {
   @@index([createdAt])
   @@index([claimType])
   @@index([interestedTier])
+}
+
+// ============================================================================
+// RESOURCE FEEDBACK & QUALITY TRACKING
+// ============================================================================
+
+enum ResourceSource {
+  DATABASE // Manually entered/curated resource
+  WEB_SEARCH // Found via Tavily/web search
+  AI_SUGGESTED // Suggested by AI
+  USER_SUBMITTED // User submitted this resource
+  STAFF_VERIFIED // Staff verified and cleaned up
+}
+
+enum ResourceVerificationStatus {
+  UNVERIFIED // Not yet verified by staff
+  VERIFIED // Staff verified this is accurate
+  NEEDS_UPDATE // Needs information update
+  DEPRECATED // No longer valid/active
+  DUPLICATE // Duplicate of another resource
+}
+
+enum ResourceFeedbackType {
+  WAS_HELPFUL // User confirmed resource was helpful
+  NOT_HELPFUL // User said it wasn't helpful
+  CONTACTED // User contacted this resource
+  DOCUMENT_OBTAINED // User successfully got document from here
+  INCORRECT_INFO // Contact info was wrong
+  NO_RESPONSE // Resource didn't respond
+  ALREADY_CLOSED // Office/resource is closed
+  WRONG_RESOURCE // This wasn't the right place for their need
+}
+
+// Track when we show a resource to a user (for follow-up)
+model ResourceInteraction {
+  id         String   @id @default(cuid())
+  resourceId String
+  resource   DocumentResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  // Who we showed it to
+  userId     String?
+  sessionId  String?
+  email      String? // For follow-up
+
+  // Context
+  documentType String // What they were looking for
+  shownVia     String @default("chat_bot") // "chat_bot", "resource_page", "email"
+  searchQuery  String? @db.Text // Original user query
+
+  // Immediate feedback (thumbs up/down)
+  immediatelyHelpful  Boolean? // true = thumbs up, false = thumbs down
+  immediateFeedbackAt DateTime?
+  immediateComments   String? @db.Text // Why thumbs down
+
+  // Follow-up tracking
+  followUpScheduledFor DateTime // When to send follow-up
+  followUpSentAt       DateTime?
+  followUpMethod       String? // "email", "sms", "modal"
+  followUpCompletedAt  DateTime?
+  followUpReminderSent Boolean  @default(false)
+
+  // Link to detailed feedback (if provided)
+  feedbackId String?           @unique
+  feedback   ResourceFeedback? @relation(fields: [feedbackId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId])
+  @@index([userId])
+  @@index([followUpScheduledFor, followUpSentAt])
+  @@index([followUpCompletedAt])
+  @@index([createdAt])
+}
+
+// Track user feedback on resources to improve quality
+model ResourceFeedback {
+  id         String   @id @default(cuid())
+  resourceId String
+  resource   DocumentResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  // Who provided feedback
+  userId     String?
+  sessionId  String? // For anonymous users
+  email      String? // Optional contact
+
+  // Feedback details
+  feedbackType ResourceFeedbackType
+  rating       Int? // 1-5 stars
+  wasHelpful   Boolean? // Simple thumbs up/down
+
+  // Detailed feedback
+  documentType String? // What document they were seeking
+  comments     String? @db.Text
+  contactedAt  DateTime? // When they contacted the resource
+  responseTime String? // "same_day", "within_3_days", "within_week", "1_2_weeks", "2_4_weeks", "no_response"
+  successfullyObtained Boolean? // Did they get the document?
+
+  // Cost & Time tracking
+  actualCost           Float? // What they actually paid
+  actualProcessingDays Int? // How long it actually took
+
+  // Metadata
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json? // Additional context
+
+  // Link back to interaction
+  interaction ResourceInteraction?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId])
+  @@index([feedbackType])
+  @@index([wasHelpful])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Aggregate statistics for resources to show social proof
+model ResourceStats {
+  id         String @id @default(cuid())
+  resourceId String @unique
+
+  // Usage stats
+  totalSearches   Int @default(0) // Times shown in search
+  totalSelections Int @default(0) // Times user clicked/selected
+  totalFeedback   Int @default(0) // Total feedback submissions
+
+  // Feedback breakdown
+  helpfulCount    Int @default(0)
+  notHelpfulCount Int @default(0)
+  contactedCount  Int @default(0)
+  successCount    Int @default(0) // Successfully obtained document
+
+  // Averages
+  avgRating            Float? // Average star rating
+  avgActualCost        Float? // Average reported cost
+  avgProcessingDays    Float? // Average reported processing time
+  avgResponseTime      String? // Most common response time
+
+  // Quality indicators
+  helpfulnessRate Float? // % of feedback that was positive
+  successRate     Float? // % that successfully got document
+
+  // Last updated
+  lastFeedbackAt DateTime?
+  updatedAt      DateTime @updatedAt
+
+  @@index([helpfulnessRate])
+  @@index([successRate])
+  @@index([totalSearches])
 }
