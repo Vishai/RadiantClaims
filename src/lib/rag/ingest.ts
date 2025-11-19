@@ -20,6 +20,7 @@ interface IngestOptions {
   isPublic?: boolean;
   claimantId?: string;
   uploadedBy?: string;
+  knowledgeSourceId?: string;
 }
 
 /**
@@ -31,6 +32,7 @@ export async function ingestDocument({
   isPublic = true,
   claimantId,
   uploadedBy,
+  knowledgeSourceId,
 }: IngestOptions) {
   console.log(`Processing ${filename}...`);
 
@@ -73,7 +75,8 @@ export async function ingestDocument({
         "updatedAt",
         "isPublic",
         "claimantId",
-        "uploadedBy"
+        "uploadedBy",
+        "knowledgeSourceId"
       )
       VALUES (
         ${id}, 
@@ -84,7 +87,8 @@ export async function ingestDocument({
         NOW(),
         ${isPublic},
         ${claimantId || null},
-        ${uploadedBy || null}
+        ${uploadedBy || null},
+        ${knowledgeSourceId || null}
       );
     `;
   }
@@ -92,7 +96,6 @@ export async function ingestDocument({
   console.log("Ingestion complete!");
   return { chunks: chunks.length };
 }
-
 function chunkText(text: string, maxLength: number): string[] {
   const chunks: string[] = [];
   let currentChunk = "";

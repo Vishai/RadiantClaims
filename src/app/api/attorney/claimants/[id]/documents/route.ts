@@ -9,10 +9,7 @@ interface RouteContext {
   };
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: RouteContext
-) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     // Require permission
     const { user } = await requirePermission("document:view");
@@ -47,6 +44,11 @@ export async function GET(
           },
           take: 1,
         },
+        knowledgeSources: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -58,12 +60,15 @@ export async function GET(
     }
 
     // Get documents from intake session
-    const documents = claimant.intakeSession?.uploadedFiles || [];
+    const c = claimant as any;
+    const documents = c.intakeSession?.uploadedFiles || [];
+    const knowledgeSources = c.knowledgeSources || [];
 
     // Get IP and user agent for audit log
-    const ipAddress = req.headers.get("x-forwarded-for") ||
-                      req.headers.get("x-real-ip") ||
-                      "unknown";
+    const ipAddress =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
     const userAgent = req.headers.get("user-agent") || undefined;
 
     // Log document access
@@ -80,7 +85,7 @@ export async function GET(
     );
 
     // Get workflow status and claim type from assignment
-    const assignment = claimant.firmAssignments[0];
+    const assignment = c.firmAssignments[0];
 
     return NextResponse.json({
       claimant: {
@@ -105,6 +110,14 @@ export async function GET(
         requiresOriginal: doc.requiresOriginal,
         validatedAt: doc.validatedAt,
         validatedBy: doc.validatedBy,
+      })),
+      knowledgeSources: knowledgeSources.map((ks: any) => ({
+        id: ks.id,
+        fileName: ks.fileName,
+        fileKey: ks.fileKey,
+        mimeType: ks.mimeType,
+        sizeBytes: ks.sizeBytes,
+        uploadedAt: ks.createdAt,
       })),
     });
   } catch (error) {

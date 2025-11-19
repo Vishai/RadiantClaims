@@ -48,6 +48,13 @@ interface Document {
   validatedBy?: string | null;
 }
 
+interface KnowledgeSource {
+  id: string;
+  fileName: string;
+  sizeBytes: number;
+  uploadedAt: Date;
+}
+
 interface Claimant {
   id: string;
   firstName: string;
@@ -61,6 +68,7 @@ interface Claimant {
 interface ApiResponse {
   claimant: Claimant;
   documents: Document[];
+  knowledgeSources: KnowledgeSource[];
 }
 
 const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
@@ -122,6 +130,9 @@ export default function ClaimantDocumentsPage() {
 
   const [claimant, setClaimant] = useState<Claimant | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -169,6 +180,7 @@ export default function ClaimantDocumentsPage() {
 
         setClaimant(data.claimant);
         setDocuments(data.documents);
+        setKnowledgeSources(data.knowledgeSources || []);
       } catch (err) {
         if (!isActive) return;
 
@@ -209,6 +221,18 @@ export default function ClaimantDocumentsPage() {
       alert("Failed to download document. Please try again.");
     } finally {
       setDownloadingId(null);
+    }
+  }
+
+  async function handleKnowledgeDownload(sourceId: string) {
+    try {
+      const response = await fetch(`/api/admin/knowledge/${sourceId}/download`);
+      if (!response.ok) throw new Error("Download failed");
+      const data = await response.json();
+      window.open(data.url, "_blank");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download context document.");
     }
   }
 
@@ -290,8 +314,65 @@ export default function ClaimantDocumentsPage() {
       <main className="container mx-auto px-6 py-8">
         {/* Private Knowledge Base */}
         <div className="mb-10">
-          <KnowledgeUpload claimantId={claimantId} isPublic={false} />
+          <KnowledgeUpload
+            claimantId={claimantId}
+            isPublic={false}
+            onSuccess={() => window.location.reload()}
+          />
         </div>
+
+        {/* Knowledge Sources List */}
+        {knowledgeSources.length > 0 && (
+          <div className="mb-10 rounded-lg border border-cream-200 bg-white">
+            <div className="border-b border-cream-200 px-6 py-4">
+              <h3 className="text-lg font-semibold text-sage-900">
+                Context Documents
+              </h3>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>File Name</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Uploaded</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {knowledgeSources.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-sage-500" />
+                        <span className="font-medium text-sage-900">
+                          {doc.fileName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sage-600">
+                      {formatFileSize(doc.sizeBytes)}
+                    </TableCell>
+                    <TableCell className="text-sage-600">
+                      {formatDistanceToNow(new Date(doc.uploadedAt), {
+                        addSuffix: true,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleKnowledgeDownload(doc.id)}
+                      >
+                        <Download className="h-4 w-4 text-sage-600" />
+                        <span className="sr-only">Download</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         <div className="mb-6 flex items-center justify-between">
           <div>

@@ -81,6 +81,7 @@ model User {
   staffActions                StaffAction[] // NEW: AI validation staff actions
   aiReviewQAs                 AIReviewQA[] // AI assessment reviews performed by this user
   chatSessions                ChatSession[]
+  uploadedKnowledge           KnowledgeSource[]
   promoCodeUsages             PromoCodeUsage[] // Promo codes used by this user
   documentAssistancesAssigned DocumentRequestAssistance[] @relation("DocumentAssistanceAssignedStaff") // Claimants receiving staff assistance
 
@@ -148,6 +149,7 @@ model Claimant {
   documentStatuses        ClaimantDocumentStatus[]
   chatSessions            ChatSession[]
   privateContextDocuments RecaLibrary[]
+  knowledgeSources        KnowledgeSource[]
   // CLAIM LIFECYCLE TRACKING
   lifecycle               ClaimLifecycle?
   queuePosition           ClaimQueuePosition?
@@ -2273,10 +2275,40 @@ model RecaLibrary {
   claimant       Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
   uploadedBy     String?   // Admin/Attorney who added it
   
+  // Link to source file
+  knowledgeSourceId String?
+  knowledgeSource   KnowledgeSource? @relation(fields: [knowledgeSourceId], references: [id], onDelete: Cascade)
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@index([claimantId])
+  @@index([knowledgeSourceId])
+}
+
+model KnowledgeSource {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileKey     String   // R2 Key
+  mimeType    String
+  sizeBytes   Int
+  
+  isPublic    Boolean  @default(true)
+  claimantId  String?
+  claimant    Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  
+  chunkCount  Int      @default(0)
+  
+  recaLibraryEntries RecaLibrary[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([claimantId])
+  @@index([isPublic])
 }
 
 // Chat History Models
