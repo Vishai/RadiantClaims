@@ -5,45 +5,61 @@ import { db } from "../src/lib/db";
 import { createRequire } from "module";
 
 // pdf-parse is a CommonJS module
+
 const require = createRequire(import.meta.url);
-const { PDFParse } = require("pdf-parse");
-const pdfParse = PDFParse;
+
+const pdfModule = require("pdf-parse");
+
+const PDFParse = pdfModule.PDFParse || pdfModule.default?.PDFParse || pdfModule;
 
 // Simple CUID-like generator for ingestion script
+
 function generateCuid(): string {
   const timestamp = Date.now().toString(36);
+
   const randomStr = Math.random().toString(36).substring(2, 15);
+
   return `c${timestamp}${randomStr}`.substring(0, 25);
 }
 
 /**
+
  * Ingests a PDF document into the RECA Library for RAG.
+
  *
+
  * Usage: npx tsx scripts/ingest-reca-docs.ts <path-to-pdf> [page-offset]
+
  */
+
 async function ingestDocument(filePath: string, pageOffset = 0) {
   if (!fs.existsSync(filePath)) {
     console.error(`File not found: ${filePath}`);
+
     process.exit(1);
   }
 
   const filename = path.basename(filePath);
+
   console.log(`Processing ${filename}...`);
 
   const dataBuffer = fs.readFileSync(filePath);
-  const parser = new pdfParse();
-  const data = await parser.parse(dataBuffer);
 
-  // Split text into chunks (naive splitting by paragraphs for now)
-  // A better approach would be to split by actual pages if the PDF parser supports it well,
-  // or use a rolling window of tokens.
-  // pdf-parse gives us the full text. We can try to split by double newlines.
+  // Instantiate the parser with more complete options to avoid potential initialization errors
 
-  // Note: pdf-parse `data.text` is the whole text. `data.numpages` is the count.
-  // For accurate page numbers with pdf-parse, we'd need a custom render function,
-  // but for this script we'll just chunk the plain text.
+  const parser = new PDFParse({
+    data: dataBuffer,
 
-  const text = data.text;
+    verbosity: 0, // ERRORS
+
+    stopAtErrors: false,
+
+    disableFontFace: true,
+  });
+
+  const textResult = await parser.getText();
+
+  const text = textResult.text;
 
   // Naive chunking: Split by approx 1000 characters, respecting sentence boundaries
   const chunks = chunkText(text, 1000);
