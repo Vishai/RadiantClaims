@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
  *
  * Fetch interaction details for the feedback form
  */
-export async function GET(params: { interactionId: string }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: { interactionId: string } }
+) {
   try {
     const { interactionId } = params;
 

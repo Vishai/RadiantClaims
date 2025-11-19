@@ -1825,7 +1825,6 @@ enum PaymentStatus {
 // Service subscription - tracks which tier user is on and payment status
 // Promo codes for discounts and pilot accounts
 enum PromoCodeType {
-<<<<<<< HEAD
   PERCENT_OFF // Percentage discount (e.g., 50% off)
   AMOUNT_OFF // Fixed amount discount (e.g., $50 off)
   FREE_TRIAL // Free trial period (days)
@@ -1881,54 +1880,10 @@ model PromoCode {
   accessGrants          PromoCodeAccessGrant[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
-=======
-  PERCENT_OFF    // Percentage discount (e.g., 50% off)
-  AMOUNT_OFF     // Fixed amount discount (e.g., $50 off)
-  FREE_TRIAL     // Free trial period (days)
-  PILOT_ACCOUNT  // Full pilot account (free usage)
-  WAIVE_SETUP    // Waive setup fee only
-}
-
-enum PromoCodeDuration {
-  ONCE       // Apply discount once (first payment only)
-  REPEATING  // Apply for a specified number of months
-  FOREVER    // Apply forever (lifetime discount)
-}
-
-model PromoCode {
-  id                  String             @id @default(cuid())
-  code                String             @unique // Human-readable code (e.g., "PILOT2025")
-  type                PromoCodeType
-  description         String?            @db.Text
-  // Discount values
-  percentOff          Int?               // 0-100
-  amountOff           Float?             // Dollar amount
-  freeTrialDays       Int?               // Number of days
-  // Duration / Term
-  duration            PromoCodeDuration  @default(ONCE)
-  durationInMonths    Int?               // For REPEATING duration, how many months
-  // Path restrictions
-  allowedTiers        String[]           @default([]) // e.g., ["DIY_PREP"] - empty = all allowed
-  // Usage limits
-  maxUses             Int?               // Max number of redemptions (null = unlimited)
-  currentUses         Int                @default(0)
-  expiresAt           DateTime?          // Code expiration date
-  isActive            Boolean            @default(true)
-  // Stripe integration
-  stripeCouponId      String?            @unique // Link to Stripe coupon
-  // Metadata
-  createdBy           String?            // Admin user ID who created this
-  notes               String?            @db.Text // Internal notes
-  // Relations
-  subscriptions       ServiceSubscription[]
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
->>>>>>> 8f3d6414bf07471cd1dc8bc96bddce2b5b61589a
 
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
-<<<<<<< HEAD
   @@index([isArchived])
   @@index([campaignName])
 }
@@ -1984,8 +1939,6 @@ model PromoCodeUsage {
   @@index([promoCodeId])
   @@index([userId])
   @@index([usedAt])
-=======
->>>>>>> 8f3d6414bf07471cd1dc8bc96bddce2b5b61589a
 }
 
 model ServiceSubscription {
