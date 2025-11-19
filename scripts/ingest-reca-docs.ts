@@ -1,9 +1,20 @@
 import fs from "fs";
 import path from "path";
-import pdf from "pdf-parse";
 import { generateEmbedding } from "../src/lib/rag/embeddings";
 import { db } from "../src/lib/db";
-import { createId } from "@paralleldrive/cuid2";
+import { createRequire } from "module";
+
+// pdf-parse is a CommonJS module
+const require = createRequire(import.meta.url);
+const { PDFParse } = require("pdf-parse");
+const pdfParse = PDFParse;
+
+// Simple CUID-like generator for ingestion script
+function generateCuid(): string {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 15);
+  return `c${timestamp}${randomStr}`.substring(0, 25);
+}
 
 /**
  * Ingests a PDF document into the RECA Library for RAG.
@@ -20,7 +31,8 @@ async function ingestDocument(filePath: string, pageOffset = 0) {
   console.log(`Processing ${filename}...`);
 
   const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdf(dataBuffer);
+  const parser = new pdfParse();
+  const data = await parser.parse(dataBuffer);
 
   // Split text into chunks (naive splitting by paragraphs for now)
   // A better approach would be to split by actual pages if the PDF parser supports it well,
@@ -46,7 +58,7 @@ async function ingestDocument(filePath: string, pageOffset = 0) {
     const vectorString = `[${embedding.join(",")}]`;
 
     // Insert into DB
-    const id = createId();
+    const id = generateCuid();
     await db.$executeRaw`
       INSERT INTO "RecaLibrary" (id, content, "sourceDocument", "pageNumber", embedding, "updatedAt")
       VALUES (${id}, ${chunk}, ${filename}, ${null}, ${vectorString}::vector, NOW());
