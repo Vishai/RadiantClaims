@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
         await sendResourceFollowUpEmail({
           to: interaction.email,
           claimantName: undefined, // Could get from User table if userId is set
-          officeName: interaction.resource.officeName,
-          officeType: interaction.resource.officeType,
+          officeName: interaction.resource.name,
+          officeType: interaction.resource.resourceType,
           documentType: interaction.documentType,
           searchQuery: interaction.searchQuery || undefined,
           feedbackUrl,
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         await sendResourceAlternativesEmail({
           to: interaction.email,
           claimantName: undefined,
-          officeName: interaction.resource.officeName,
+          officeName: interaction.resource.name,
           documentType: interaction.documentType,
           alternativeResources,
           feedbackUrl,
