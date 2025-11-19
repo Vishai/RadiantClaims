@@ -13,7 +13,7 @@ import { RecaContext } from "./types";
 export async function searchRecaLibrary(
   query: string,
   limit = 5,
-  threshold = 0.5
+  threshold = 0.25 // Lowered threshold to capture more relevant context
 ): Promise<RecaContext[]> {
   try {
     const embedding = await generateEmbedding(query);

@@ -7,7 +7,9 @@ async function main() {
   console.log("🌱 Seeding database...\n");
 
   // Hash passwords
+  const claimantPassword = await bcrypt.hash("TestPassword123!", 10);
   const customerPassword = await bcrypt.hash("customer123", 10);
+  const adminLocalPassword = await bcrypt.hash("Admin123!", 10);
   const adminPassword = await bcrypt.hash("admin123", 10);
   const attorneyPassword = await bcrypt.hash("attorney123", 10);
   const reviewerPassword = await bcrypt.hash("reviewer123", 10);
@@ -25,6 +27,34 @@ async function main() {
     },
   });
   console.log("✓ Created customer user: customer@test.com / customer123");
+
+  // Create test claimant user
+  const claimantUser = await prisma.user.upsert({
+    where: { email: "claimant@test.com" },
+    update: {},
+    create: {
+      email: "claimant@test.com",
+      name: "Test Claimant",
+      password: claimantPassword,
+      role: "CUSTOMER",
+      emailVerified: new Date(),
+    },
+  });
+  console.log("✓ Created claimant user: claimant@test.com / TestPassword123!");
+
+  // Create admin user (local dev)
+  const adminLocal = await prisma.user.upsert({
+    where: { email: "admin@local.dev" },
+    update: {},
+    create: {
+      email: "admin@local.dev",
+      name: "Local Admin",
+      password: adminLocalPassword,
+      role: "ADMIN",
+      emailVerified: new Date(),
+    },
+  });
+  console.log("✓ Created admin user: admin@local.dev / Admin123!");
 
   // Create admin user
   const admin = await prisma.user.upsert({
@@ -302,7 +332,9 @@ async function main() {
   console.log("- Document assistance record with staff assignment");
   console.log("\n📝 Test Credentials:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("Claimant:  claimant@test.com / TestPassword123!");
   console.log("Customer:  customer@test.com / customer123");
+  console.log("Admin:     admin@local.dev / Admin123!");
   console.log("Admin:     admin@radiantclaims.com / admin123");
   console.log("Attorney:  attorney@heritagelaw.com / attorney123");
   console.log("Reviewer:  reviewer@radiantclaims.com / reviewer123");
