@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatSSN(value: string): string {
   // Remove all non-digits
-  const digits = value.replace(/\D/g, '');
+  const digits = value.replace(/\D/g, "");
 
   // Limit to 9 digits
   const limitedDigits = digits.slice(0, 9);
@@ -33,7 +33,7 @@ export function formatSSN(value: string): string {
  * @returns Raw SSN digits only
  */
 export function unformatSSN(value: string): string {
-  return value.replace(/\D/g, '');
+  return value.replace(/\D/g, "");
 }
 
 /**
@@ -44,4 +44,12 @@ export function unformatSSN(value: string): string {
 export function isValidSSN(value: string): boolean {
   const digits = unformatSSN(value);
   return digits.length === 9 && /^\d{9}$/.test(digits);
+}
+
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
 }

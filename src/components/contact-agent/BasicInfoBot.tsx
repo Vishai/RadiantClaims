@@ -166,7 +166,7 @@ export function BasicInfoBot() {
               Want help finding contacts for documents?
             </p>
             <p className="text-xs text-sage-600">
-              Upgrade to access our Resource Assistant
+              Upgrade to access our Acquisition Assistant
             </p>
           </div>
           <Link href="/service-tiers">

@@ -1,5 +1,7 @@
 "use client";
 
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { RequestGenerator } from "./RequestGenerator";
 import {
   Card,
   CardContent,
@@ -25,6 +27,7 @@ import {
   Info,
   Star,
   Users,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -76,6 +79,7 @@ interface ResourceCardProps {
 export function ResourceCard({ resource, compact = false }: ResourceCardProps) {
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   const fullAddress = [
     resource.address,
@@ -184,6 +188,29 @@ export function ResourceCard({ resource, compact = false }: ResourceCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Request Generator Button for Hospitals */}
+        {resource.resourceType === "HOSPITAL" && (
+          <div className="mb-4">
+            <Dialog
+              open={isRequestModalOpen}
+              onOpenChange={setIsRequestModalOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className="w-full bg-terracotta-600 text-white hover:bg-terracotta-700">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Request Letter
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+                <RequestGenerator
+                  defaultHospitalName={resource.name}
+                  onCancel={() => setIsRequestModalOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
         {/* Address */}
         {fullAddress && (
           <div className="flex items-start gap-3">

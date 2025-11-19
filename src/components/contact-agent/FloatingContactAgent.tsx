@@ -44,7 +44,7 @@ export function FloatingContactAgent({
         <div className="pointer-events-none absolute bottom-full right-0 mb-2 opacity-0 transition-opacity hover:opacity-100">
           <div className="whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-sm text-white">
             {hasPaidAccess
-              ? "Need help finding contacts?"
+              ? "Need help finding documents?"
               : "Have questions about RECA?"}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function FloatingContactAgent({
           <div className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
             <h3 className="font-semibold">
-              {hasPaidAccess ? "Contact Finder" : "RECA Info Assistant"}
+              {hasPaidAccess ? "Acquisition Assistant" : "RECA Info Assistant"}
             </h3>
           </div>
           <div className="flex gap-1">
@@ -108,7 +108,7 @@ export function FloatingContactAgent({
         {isMinimized && (
           <div className="p-3 text-sm text-muted-foreground">
             {hasPaidAccess
-              ? "Click to expand and find institutional contacts..."
+              ? "Click to expand and find document sources..."
               : "Click to expand and learn about RECA eligibility..."}
           </div>
         )}
