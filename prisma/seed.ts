@@ -12,7 +12,7 @@ async function main() {
   const attorneyPassword = await bcrypt.hash("attorney123", 10);
   const reviewerPassword = await bcrypt.hash("reviewer123", 10);
 
-  // Create test customer (login: customer@test.com, emails go to brandon@radiantclaims.com)
+  // Create test customer
   const customer = await prisma.user.upsert({
     where: { email: "customer@test.com" },
     update: {},
@@ -26,7 +26,7 @@ async function main() {
   });
   console.log("✓ Created customer user: customer@test.com / customer123");
 
-  // Create admin user (login: admin@radiantclaims.com, emails go to brandon@radiantclaims.com)
+  // Create admin user
   const admin = await prisma.user.upsert({
     where: { email: "admin@radiantclaims.com" },
     update: {},
