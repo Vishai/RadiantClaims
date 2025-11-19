@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  * GET /api/documents/tracking
  * Get all document tracking statuses for the current user
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -38,6 +38,10 @@ export async function GET(request: NextRequest) {
     }
 
     const claimant = user.claimants[0]; // Primary claimant
+
+    if (!claimant) {
+      return NextResponse.json({ documents: [] });
+    }
 
     // Get resource interactions to enrich tracking data
     const interactions = await prisma.resourceInteraction.findMany({
@@ -204,12 +208,12 @@ export async function POST(request: NextRequest) {
     const documentStatus = await prisma.claimantDocumentStatus.upsert({
       where: {
         claimantId_documentType: {
-          claimantId: claimant.id,
+          claimantId: claimant?.id || "unknown",
           documentType,
         },
       },
       create: {
-        claimantId: claimant.id,
+        claimantId: claimant?.id || "unknown",
         documentType,
         ...statusData,
       },

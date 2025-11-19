@@ -6,7 +6,7 @@ import { sendResourceSuccessEmail } from "@/lib/email";
  * GET /api/test-emails?type=success
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextParams;
+  // const searchParams = request.nextUrl.searchParams;
   const type = request.nextUrl.searchParams.get("type") || "success";
   const email =
     request.nextUrl.searchParams.get("email") || "brandon@radiantclaims.com";

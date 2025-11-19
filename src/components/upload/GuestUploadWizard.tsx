@@ -15,14 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
-import {
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
-  User,
-  Upload,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+import { CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 
 interface GuestUploadWizardProps {
   uploadToken: any; // Typed as any to avoid complex Prisma type imports in client component for now

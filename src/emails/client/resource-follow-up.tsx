@@ -20,7 +20,7 @@ export const ResourceFollowUpEmail = ({
   previewText = "We'd love to hear how it went with your document request.",
   claimantName = "there",
   officeName,
-  officeType,
+  // officeType,
   documentType,
   searchQuery,
   feedbackUrl,

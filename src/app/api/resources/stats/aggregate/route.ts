@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     for (const resource of resourcesWithActivity) {
       try {
         const feedback = resource.resourceFeedback;
-        const interactions = resource.resourceInteractions;
+        // const interactions = resource.resourceInteractions;
 
         // Calculate usage stats
         const totalSearches = resource.searchCount || 0;
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                 (a, b) =>
                   new Date(b.createdAt).getTime() -
                   new Date(a.createdAt).getTime()
-              )[0].createdAt
+              )[0]?.createdAt
             : null;
 
         // Upsert ResourceStats

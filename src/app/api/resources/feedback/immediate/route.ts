@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
 
 /**
  * POST /api/resources/feedback/immediate
@@ -32,9 +31,9 @@ export async function POST(req: NextRequest) {
 
     // Get user info
     const userId = session?.user?.id;
-    const headersList = headers();
-    const ipAddress = headersList.get("x-forwarded-for") || "unknown";
-    const userAgent = headersList.get("user-agent") || undefined;
+    // const headersList = headers();
+    // const ipAddress = headersList.get("x-forwarded-for") || "unknown";
+    // const userAgent = headersList.get("user-agent") || undefined;
 
     let interaction;
 

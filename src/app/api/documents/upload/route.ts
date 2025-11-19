@@ -301,7 +301,7 @@ async function processDocumentInBackground(
 
         complianceResult = await checkRECACompliance(
           entities,
-          allDocuments,
+          allDocuments as any,
           ocrResult.text,
           finalCategory,
           {

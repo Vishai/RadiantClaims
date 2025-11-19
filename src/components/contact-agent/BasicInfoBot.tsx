@@ -12,11 +12,11 @@ interface Message {
   content: string;
 }
 
-interface BasicInfoBotProps {
-  onUpgradeClick?: () => void;
-}
+// interface BasicInfoBotProps {
+//   onUpgradeClick: () => void;
+// }
 
-export function BasicInfoBot({ onUpgradeClick }: BasicInfoBotProps) {
+export function BasicInfoBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",

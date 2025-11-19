@@ -14,7 +14,7 @@ interface ResourceFeedbackInlineProps {
 
 export function ResourceFeedbackInline({
   resourceId,
-  resourceName,
+  // resourceName,
   interactionId,
   onFeedbackSubmitted,
 }: ResourceFeedbackInlineProps) {

@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, QrCode } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 interface RequestSiblingDocsDialogProps {
   open: boolean;

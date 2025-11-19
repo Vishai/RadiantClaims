@@ -80,6 +80,7 @@ model User {
   aiReviewQAs                 AIReviewQA[] // AI assessment reviews performed by this user
   promoCodeUsages             PromoCodeUsage[] // Promo codes used by this user
   documentAssistancesAssigned DocumentRequestAssistance[] @relation("DocumentAssistanceAssignedStaff") // Claimants receiving staff assistance
+
   createdAt                   DateTime                    @default(now())
   updatedAt                   DateTime                    @updatedAt
 

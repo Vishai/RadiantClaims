@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/resources/feedback/interaction/[interactionId]
  *
  * Fetch interaction details for the feedback form
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { interactionId: string } }
-) {
+export async function GET(params: { interactionId: string }) {
   try {
     const { interactionId } = params;
 

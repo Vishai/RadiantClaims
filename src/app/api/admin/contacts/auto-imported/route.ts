@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
             : "Auto-imported from web search",
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { lastUpdated: "desc" },
       take: 50,
     });
 

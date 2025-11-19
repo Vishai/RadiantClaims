@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
 import { searchContacts } from "@/lib/contact-agent/search";
-import {
-  searchContactsWeb,
-  parseSearchResultsWithAI,
-} from "@/lib/contact-agent/web-search";
+import { searchContactsWeb } from "@/lib/contact-agent/web-search";
 import {
   batchAutoImport,
   scoreWebContact,
@@ -169,7 +166,10 @@ Be conversational, helpful, and guide users step-by-step. Stay focused on findin
       max_tokens: 1000,
     });
 
-    const assistantMessage = response.choices[0].message;
+    const assistantMessage = response.choices[0]?.message;
+    if (!assistantMessage) {
+      throw new Error("No message returned from OpenAI");
+    }
 
     // If AI wants to call a function
     if (assistantMessage.function_call) {
@@ -220,7 +220,7 @@ Be conversational, helpful, and guide users step-by-step. Stay focused on findin
               });
 
             // Transform web contacts to match database format for immediate response
-            contacts = webContacts.map((wc) => ({
+            contacts = webContacts.map((wc: any) => ({
               id: `web-${Math.random().toString(36).substr(2, 9)}`,
               name: wc.name,
               resourceType: wc.type as any,
@@ -369,12 +369,12 @@ Be conversational, helpful, and guide users step-by-step. Stay focused on findin
                     await prisma.claimantDocumentStatus.upsert({
                       where: {
                         claimantId_documentType: {
-                          claimantId: claimant.id,
+                          claimantId: claimant?.id || "unknown",
                           documentType,
                         },
                       },
                       create: {
-                        claimantId: claimant.id,
+                        claimantId: claimant?.id || "unknown",
                         documentType,
                         status: "NOT_STARTED",
                         notes: `Found via contact agent: ${contact.name}`,
@@ -406,7 +406,7 @@ Be conversational, helpful, and guide users step-by-step. Stay focused on findin
         }
 
         return NextResponse.json({
-          message: finalResponse.choices[0].message.content,
+          message: finalResponse.choices[0]?.message?.content || "No response",
           contacts,
           interactions, // Include interaction IDs for frontend
           functionCalled: functionName,

@@ -120,7 +120,7 @@ export async function autoImportWebContact(
     const existing = await prisma.documentResource.findFirst({
       where: {
         name: contact.name,
-        state: contact.state.toUpperCase(),
+        state: contact.state ? contact.state.toUpperCase() : "UNKNOWN",
         county: contact.county
           ? { equals: contact.county, mode: "insensitive" as const }
           : undefined,
@@ -128,7 +128,7 @@ export async function autoImportWebContact(
     });
 
     const data = {
-      state: contact.state.toUpperCase(),
+      state: contact.state ? contact.state.toUpperCase() : "UNKNOWN",
       county: contact.county || null,
       resourceType,
       name: contact.name,
@@ -136,7 +136,7 @@ export async function autoImportWebContact(
       address: addressParts.address || contact.address || null,
       address2: null,
       city: addressParts.city || contact.city || null,
-      stateCode: contact.state.toUpperCase(),
+      stateCode: contact.state ? contact.state.toUpperCase() : "UNKNOWN",
       zipCode: addressParts.zipCode || null,
       phone: contact.phone || null,
       phoneTollFree: null,
@@ -250,12 +250,14 @@ function parseAddress(addressStr: string) {
 
   // Try to extract city (word before state code and zip)
   const cityMatch = addressStr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}\s*\d{5}/);
-  const city = cityMatch ? cityMatch[1].trim() : null;
+  const city = cityMatch && cityMatch[1] ? cityMatch[1].trim() : null;
 
   // Address is everything before city
   let address = addressStr;
   if (city) {
-    address = addressStr.split(city)[0].replace(/,$/, "").trim();
+    address = city
+      ? (addressStr.split(city)[0] || "").replace(/,$/, "").trim()
+      : addressStr;
   }
 
   return { address: address || null, city, zipCode };

@@ -304,7 +304,7 @@ Return as JSON array.`;
     });
 
     const extracted = JSON.parse(
-      response.choices[0].message.content || '{"contacts": []}'
+      response.choices[0]?.message?.content || '{"contacts": []}'
     );
 
     return (extracted.contacts || []).map((c: any) => ({

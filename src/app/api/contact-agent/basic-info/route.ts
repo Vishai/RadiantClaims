@@ -83,7 +83,8 @@ Be conversational, helpful, and guide users to understand if RECA might apply to
       max_tokens: 800,
     });
 
-    const assistantMessage = response.choices[0].message;
+    const assistantMessage = response.choices[0]?.message;
+    if (!assistantMessage) throw new Error("No message returned");
 
     // Regular text response (no function calling for free tier)
     return NextResponse.json({
