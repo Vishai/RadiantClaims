@@ -8,6 +8,7 @@ import {
 } from "@/lib/contact-agent/auto-import";
 import { ResourceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { searchRecaLibrary, formatRecaContext } from "@/lib/rag/retrieve";
 
 /**
  * Calculate when to send follow-up based on document type
@@ -43,6 +44,7 @@ function calculateFollowUpDate(documentType?: string): Date {
  *
  * AI-powered contact agent that helps users find institutional contacts
  * Uses OpenAI function calling to search the DocumentResource database
+ * Uses RAG to answer questions about RECA statutes
  *
  * Body:
  * - messages: Array of chat messages
@@ -60,17 +62,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // RAG: Search for relevant context based on the latest user message
+    let ragContextString = "";
+    const lastUserMessage = messages
+      .filter((m: any) => m.role === "user")
+      .pop();
+
+    if (lastUserMessage && lastUserMessage.content) {
+      try {
+        const ragResults = await searchRecaLibrary(lastUserMessage.content);
+        ragContextString = formatRecaContext(ragResults);
+      } catch (error) {
+        console.error("RAG search failed:", error);
+        // Continue without RAG context if search fails
+      }
+    }
+
     // System prompt for the contact agent
     const systemPrompt = `You are a helpful AI assistant for RadiantClaims, specializing in helping RECA (Radiation Exposure Compensation Act) claimants find institutional contacts to obtain documents.
 
 **IMPORTANT SCOPE RESTRICTIONS:**
 You ONLY help find institutional contacts for RECA-related documents. You do NOT:
-- Answer general questions unrelated to finding contacts
+- Answer general questions unrelated to finding contacts (unless it's about RECA eligibility facts found in your context)
 - Provide general web search capabilities
 - Discuss topics outside of RECA document procurement
 - Help with non-institutional contact searches
 
-If a user asks something outside your scope, politely redirect them: "I'm specifically designed to help you find institutional contacts (vital records offices, hospitals, schools, etc.) for your RECA claim. For other questions, please contact our support team."
+${ragContextString ? ragContextString : ""}
+
+If a user asks something outside your scope and NOT covered by the context above, politely redirect them: "I'm specifically designed to help you find institutional contacts (vital records offices, hospitals, schools, etc.) for your RECA claim. For other questions, please contact our support team."
 
 Your role:
 - Help users find contacts for ALL vital records (birth, death, marriage, divorce certificates), medical records, school records, employment records, church records, and residence proof documents

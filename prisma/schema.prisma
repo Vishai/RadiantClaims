@@ -3,11 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 // NextAuth models
@@ -2249,3 +2251,21 @@ model ResourceStats {
   @@index([successRate])
   @@index([totalSearches])
 }
+
+// ============================================================================
+// RAG & VECTOR SEARCH
+// ============================================================================
+
+model RecaLibrary {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  sourceDocument String // Filename (e.g. "RECA_2025_Amendment.pdf")
+  pageNumber     Int?
+  section        String?
+  embedding      Unsupported("vector(1536)")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([embedding])
+}
+
