@@ -2265,7 +2265,5 @@ model RecaLibrary {
   embedding      Unsupported("vector(1536)")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  @@index([embedding])
 }
 
