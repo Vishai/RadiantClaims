@@ -57,6 +57,7 @@ export async function GET(_req: NextRequest) {
             recaWorkflowStage: true,
             recaWorkflowSection: true,
             recaCompletionPercent: true,
+            recaFormData: true, // Include form data for client-side logic
           },
         },
         referral: true,

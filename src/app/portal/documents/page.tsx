@@ -13,6 +13,7 @@ import {
   ListChecks,
   Filter,
   Plus,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   DocumentTrackingData,
 } from "@/components/documents/DocumentTrackingCard";
 import { Progress } from "@/components/ui/progress";
+import { RequestSiblingDocsDialog } from "@/components/documents/RequestSiblingDocsDialog";
 
 interface RequiredDocument {
   category: string;
@@ -56,6 +58,13 @@ export default function DocumentsPortal() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
+
+  // Request Dialog State
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [requestDialogData, setRequestDialogData] = useState<{
+    siblingName?: string;
+    category?: string;
+  }>({});
 
   // Tracking state
   const [trackingDocuments, setTrackingDocuments] = useState<
@@ -77,7 +86,7 @@ export default function DocumentsPortal() {
   }, []);
 
   const loadDocumentRequirements = useCallback(
-    async (sessionId: string, claimType?: string) => {
+    async (sessionId: string, claimType?: string, formData?: any) => {
       try {
         // Fetch uploaded files
         const response = await fetch(`/api/documents?sessionId=${sessionId}`);
@@ -90,66 +99,173 @@ export default function DocumentsPortal() {
         // Define required documents based on claim type
         const requirements: RequiredDocument[] = [];
 
+        // Helper to check if a category is uploaded
+        const isUploaded = (category: string) =>
+          uploadedFiles.some((f: any) => f.category === category);
+
+        // Helper to check count of uploaded category
+        const countUploaded = (category: string) =>
+          uploadedFiles.filter((f: any) => f.category === category).length;
+
         if (claimType === "DOWNWINDER") {
-          requirements.push(
-            {
-              category: "IDENTITY",
-              label: "Birth Certificate",
-              description:
-                "Your birth certificate (or death certificate if filing for deceased person)",
-              uploaded: uploadedFiles.some(
-                (f: any) => f.category === "IDENTITY"
-              ),
+          // 1. Identity & Vital Records
+          // Check for Deceased Claimant (Death Certificate)
+          const isDeceased =
+            formData?.part_5?.claimantDeceased === "YES" ||
+            formData?.part_6?.claimantDeceased === "YES" ||
+            formData?.part_1?.filingForSelf === false; // Heuristic if not explicit
+
+          if (isDeceased) {
+            requirements.push({
+              category: "DEATH_CERTIFICATE",
+              label: "Death Certificate",
+              description: "Official death certificate for the claimant",
+              uploaded: isUploaded("DEATH_CERTIFICATE"),
               required: true,
-              helpText: "Required to establish identity and eligibility",
-            },
-            {
-              category: "IDENTITY",
-              label: "Marriage/Name Change Certificates",
-              description:
-                "If your name has changed, provide marriage certificates or legal name change documents",
-              uploaded:
-                uploadedFiles.filter((f: any) => f.category === "IDENTITY")
-                  .length >= 2,
-              required: false,
-              helpText:
-                "Only required if name has changed from birth certificate",
-            },
-            {
-              category: "PROOF_OF_RESIDENCE",
-              label: "Proof of Physical Presence (2+ documents)",
-              description:
-                "Tax records, property records, school enrollment, utility bills, employment records, etc.",
-              uploaded:
-                uploadedFiles.filter((f: any) =>
-                  [
-                    "PROOF_OF_RESIDENCE",
-                    "UTILITY_BILL",
-                    "TAX_RETURN",
-                    "SCHOOL_RECORDS",
-                    "MORTGAGE_STATEMENT",
-                    "EMPLOYMENT_RECORDS",
-                  ].includes(f.category || "")
-                ).length >= 2,
-              required: true,
-              helpText:
-                "Need at least 2 documents showing presence in affected area during exposure period",
-            },
-            {
-              category: "MEDICAL_RECORDS",
-              label: "Medical Records Showing Cancer Diagnosis",
-              description:
-                "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
-              uploaded: uploadedFiles.some(
-                (f: any) =>
-                  f.category === "MEDICAL_RECORDS" ||
-                  f.category === "PATHOLOGY_REPORT"
-              ),
-              required: true,
-              helpText:
-                "See RECA form pages 18-24 for specific documents accepted for each disease type",
+              helpText: "Required for all deceased claimants",
+            });
+          }
+
+          // Birth Certificate (Always required for claimant)
+          requirements.push({
+            category: "BIRTH_CERTIFICATE",
+            label: "Birth Certificate",
+            description: "Official birth certificate for the claimant",
+            uploaded: isUploaded("BIRTH_CERTIFICATE"),
+            required: true,
+            helpText: "Must show parents' names",
+          });
+
+          // Name Chain Logic (Marriage Certificates / Name Changes)
+          let nameChainRequired = false;
+          let nameChainReason = "";
+
+          // Check Filer's Name Changes
+          if (formData?.part_1?.formerNames) {
+            nameChainRequired = true;
+            nameChainReason = "Filer has former names";
+          }
+
+          // Check Claimant's Name Changes (if different person)
+          if (formData?.part_2?.formerNames) {
+            nameChainRequired = true;
+            nameChainReason = "Claimant has former names";
+          }
+
+          // Check Relationship (Spouse/Child often implies name changes)
+          const relationship = formData?.part_3?.relationship;
+          if (
+            relationship === "Spouse" ||
+            relationship === "Child" ||
+            relationship === "Grandchild"
+          ) {
+            // If last names differ, we likely need a link
+            const filerLast = formData?.part_1?.lastName?.toLowerCase();
+            const claimantLast =
+              formData?.part_2?.lastName?.toLowerCase() || filerLast; // Fallback if self
+            if (filerLast && claimantLast && filerLast !== claimantLast) {
+              nameChainRequired = true;
+              nameChainReason = "Filer and Claimant last names differ";
             }
-          );
+          }
+
+          if (nameChainRequired) {
+            requirements.push({
+              category: "MARRIAGE_CERTIFICATE",
+              label: "Marriage Certificate(s) / Name Change Docs",
+              description:
+                "Documents linking current names to birth names (e.g., Marriage Certs, Divorce Decrees)",
+              uploaded:
+                isUploaded("MARRIAGE_CERTIFICATE") ||
+                countUploaded("IDENTITY") >= 2, // Fallback to generic identity if specific not found
+              required: true,
+              helpText: `Required because: ${nameChainReason}. Provide a document for EACH name change.`,
+            });
+          }
+
+          // Sibling Requirements (Part 6)
+          if (
+            formData?.part_6?.siblings &&
+            Array.isArray(formData.part_6.siblings)
+          ) {
+            formData.part_6.siblings.forEach((sibling: any, index: number) => {
+              const siblingName = sibling.name || `Sibling #${index + 1}`;
+
+              // Sibling Birth Certificate
+              requirements.push({
+                category: "BIRTH_CERTIFICATE",
+                label: `${siblingName} - Birth Certificate`,
+                description: `Birth certificate for ${siblingName} to prove relationship`,
+                uploaded: uploadedFiles.some(
+                  (f: any) =>
+                    f.category === "BIRTH_CERTIFICATE" &&
+                    f.originalFilename
+                      ?.toLowerCase()
+                      .includes(siblingName.split(" ")[0].toLowerCase())
+                ),
+                required: true,
+                helpText:
+                  "Must show parents' names to establish sibling relationship",
+              });
+
+              // Sibling Name Change / Marriage Certificate
+              if (
+                sibling.hadNameChange === "YES" ||
+                sibling.nameChangeHistory?.length > 0
+              ) {
+                requirements.push({
+                  category: "MARRIAGE_CERTIFICATE",
+                  label: `${siblingName} - Marriage/Name Change`,
+                  description: `Marriage certificate or legal name change for ${siblingName}`,
+                  uploaded: uploadedFiles.some(
+                    (f: any) =>
+                      f.category === "MARRIAGE_CERTIFICATE" &&
+                      f.originalFilename
+                        ?.toLowerCase()
+                        .includes(siblingName.split(" ")[0].toLowerCase())
+                  ),
+                  required: true,
+                  helpText:
+                    "Required to link current name to birth certificate",
+                });
+              }
+            });
+          }
+
+          // 2. Proof of Presence
+          requirements.push({
+            category: "PROOF_OF_RESIDENCE",
+            label: "Proof of Physical Presence (2+ documents)",
+            description:
+              "Tax records, property records, school enrollment, utility bills, employment records, etc.",
+            uploaded:
+              uploadedFiles.filter((f: any) =>
+                [
+                  "PROOF_OF_RESIDENCE",
+                  "UTILITY_BILL",
+                  "TAX_RETURN",
+                  "SCHOOL_RECORDS",
+                  "MORTGAGE_STATEMENT",
+                  "EMPLOYMENT_RECORDS",
+                ].includes(f.category || "")
+              ).length >= 2,
+            required: true,
+            helpText:
+              "Need at least 2 documents showing presence in affected area during exposure period",
+          });
+
+          // 3. Medical Records
+          requirements.push({
+            category: "MEDICAL_RECORDS",
+            label: "Medical Records Showing Cancer Diagnosis",
+            description:
+              "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
+            uploaded:
+              isUploaded("MEDICAL_RECORDS") || isUploaded("PATHOLOGY_REPORT"),
+            required: true,
+            helpText:
+              "See RECA form pages 18-24 for specific documents accepted for each disease type",
+          });
         } else {
           // Generic requirements for other claim types
           requirements.push(
@@ -158,9 +274,7 @@ export default function DocumentsPortal() {
               label: "Identification Documents",
               description:
                 "Birth certificate, death certificate, marriage certificates as applicable",
-              uploaded: uploadedFiles.some(
-                (f: any) => f.category === "IDENTITY"
-              ),
+              uploaded: isUploaded("IDENTITY"),
               required: true,
               helpText: "Required to establish identity and relationships",
             },
@@ -168,9 +282,7 @@ export default function DocumentsPortal() {
               category: "MEDICAL_RECORDS",
               label: "Medical Records",
               description: "Medical documentation relevant to your claim type",
-              uploaded: uploadedFiles.some(
-                (f: any) => f.category === "MEDICAL_RECORDS"
-              ),
+              uploaded: isUploaded("MEDICAL_RECORDS"),
               required: true,
               helpText:
                 "Requirements vary by claim type - refer to your RECA form instructions",
@@ -215,7 +327,8 @@ export default function DocumentsPortal() {
             setSessionId(firstClaim.intakeSession.id);
             await loadDocumentRequirements(
               firstClaim.intakeSession.id,
-              firstClaim.claimType
+              firstClaim.claimType,
+              firstClaim.intakeSession.recaFormData // Pass form data
             );
           }
         }
@@ -281,7 +394,7 @@ export default function DocumentsPortal() {
     }
   };
 
-  const handleUploadClick = (documentType: string) => {
+  const handleUploadClick = (_documentType: string) => {
     // Switch to upload tab
     const uploadTab = document.querySelector(
       '[data-state="inactive"][value="upload"]'
@@ -532,17 +645,40 @@ export default function DocumentsPortal() {
                               <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-400" />
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-sage-900">
-                                {doc.label}
-                                {doc.required && (
-                                  <span className="ml-1 text-xs text-terracotta-600">
-                                    *
-                                  </span>
-                                )}
-                              </p>
-                              <p className="mt-0.5 text-xs text-sage-600">
-                                {doc.description}
-                              </p>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-sage-900">
+                                    {doc.label}
+                                    {doc.required && (
+                                      <span className="ml-1 text-xs text-terracotta-600">
+                                        *
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-sage-600">
+                                    {doc.description}
+                                  </p>
+                                </div>
+                                {!doc.uploaded &&
+                                  doc.label.includes("Sibling") && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() => {
+                                        setRequestDialogData({
+                                          siblingName:
+                                            doc.label.split(" - ")[0],
+                                          category: doc.category,
+                                        });
+                                        setRequestDialogOpen(true);
+                                      }}
+                                    >
+                                      <Mail className="mr-1 h-3 w-3" />
+                                      Request
+                                    </Button>
+                                  )}
+                              </div>
                               {doc.helpText && (
                                 <p className="mt-1.5 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
                                   💡 {doc.helpText}
@@ -581,7 +717,7 @@ export default function DocumentsPortal() {
                     </p>
                     <div className="space-y-2">
                       <Button
-                        onClick={() => router.push("/chat")}
+                        onClick={() => router.push("/resources")}
                         variant="outline"
                         className="w-full rounded-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-100"
                       >
@@ -657,7 +793,7 @@ export default function DocumentsPortal() {
                   </span>
                 </div>
                 <Button
-                  onClick={() => router.push("/chat")}
+                  onClick={() => router.push("/resources")}
                   className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
                 >
                   <Plus className="h-4 w-4" />
@@ -682,11 +818,13 @@ export default function DocumentsPortal() {
                   <p className="mb-4 text-sage-600">
                     {filterStatus === "all"
                       ? "Start tracking documents by using our contact finder to locate the resources you need."
-                      : `No documents with status "${filterStatus.replace(/_/g, " ").toLowerCase()}"`}
+                      : `No documents with status "${filterStatus
+                          .replace(/_/g, " ")
+                          .toLowerCase()}"`}
                   </p>
                   {filterStatus === "all" ? (
                     <Button
-                      onClick={() => router.push("/chat")}
+                      onClick={() => router.push("/resources")}
                       className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
                     >
                       Find Documents
@@ -742,6 +880,14 @@ export default function DocumentsPortal() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <RequestSiblingDocsDialog
+        open={requestDialogOpen}
+        onOpenChange={setRequestDialogOpen}
+        sessionId={sessionId}
+        defaultName={requestDialogData?.siblingName}
+        category={requestDialogData?.category}
+      />
     </div>
   );
 }

@@ -44,91 +44,124 @@ export const DEFAULT_REQUIREMENTS: JurisdictionDocumentRequirement[] = [
     category: "IDENTITY",
     requiresOriginal: true, // Government IDs must be certified copies or originals
     isRequired: true,
-    specificInstructions: "Must be a certified copy or notarized copy of government-issued ID. Upload a photo/scan now, then include the certified copy in your final mailing.",
+    specificInstructions:
+      "Must be a certified copy or notarized copy of government-issued ID. Upload a photo/scan now, then include the certified copy in your final mailing.",
     exampleDocuments: [
       "Certified copy of Driver's License",
       "Certified copy of Passport",
-      "Notarized copy of State ID"
-    ]
+      "Notarized copy of State ID",
+    ],
   },
   {
     category: "PROOF_OF_RESIDENCE",
     requiresOriginal: true, // Historical residence docs often need originals
     isRequired: true,
-    specificInstructions: "Original documents from 1951-1962 showing residence in an eligible area. Upload scans/photos now, then include originals in your final mailing.",
+    specificInstructions:
+      "Original documents from 1951-1962 showing residence in an eligible area. Upload scans/photos now, then include originals in your final mailing.",
     exampleDocuments: [
       "Original utility bills",
       "Original school records",
       "Original property tax records",
-      "Original employment records"
-    ]
+      "Original employment records",
+    ],
   },
   {
     category: "PATHOLOGY_REPORT",
     requiresOriginal: true, // Medical records must be certified
     isRequired: true,
-    specificInstructions: "Must be certified copies from the medical facility. Upload scans now, request certified copies from your hospital/clinic, and include in final mailing.",
+    specificInstructions:
+      "Must be certified copies from the medical facility. Upload scans now, request certified copies from your hospital/clinic, and include in final mailing.",
     helpfulLinks: [
       {
         title: "How to Request Medical Records",
         url: "https://www.hhs.gov/hipaa/for-individuals/medical-records/index.html",
-        description: "HHS guide to requesting your medical records"
-      }
+        description: "HHS guide to requesting your medical records",
+      },
     ],
     exampleDocuments: [
       "Certified pathology report",
       "Certified biopsy results",
-      "Certified cancer diagnosis records"
-    ]
+      "Certified cancer diagnosis records",
+    ],
   },
   {
     category: "MEDICAL_RECORDS",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Certified copies of supporting medical records. Upload scans now, request certified copies, and include in final mailing."
+    specificInstructions:
+      "Certified copies of supporting medical records. Upload scans now, request certified copies, and include in final mailing.",
   },
   {
     category: "DISCHARGE_SUMMARY",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Certified copies from medical facility. Upload scans now, include certified copies in final mailing."
+    specificInstructions:
+      "Certified copies from medical facility. Upload scans now, include certified copies in final mailing.",
   },
   {
     category: "TREATMENT_RECORDS",
     requiresOriginal: false, // Treatment records can be copies
     isRequired: false,
-    specificInstructions: "Copies are acceptable. Upload digital copies."
+    specificInstructions: "Copies are acceptable. Upload digital copies.",
   },
   {
     category: "UTILITY_BILL",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Original historical bills preferred. Upload scans/photos now, include originals in final mailing if available."
+    specificInstructions:
+      "Original historical bills preferred. Upload scans/photos now, include originals in final mailing if available.",
   },
   {
     category: "SCHOOL_RECORDS",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Original records or certified copies. Upload scans now, include originals/certified copies in final mailing."
+    specificInstructions:
+      "Original records or certified copies. Upload scans now, include originals/certified copies in final mailing.",
   },
   {
     category: "EMPLOYMENT_RECORDS",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Original records preferred. Upload scans now, include originals in final mailing if available."
+    specificInstructions:
+      "Original records preferred. Upload scans now, include originals in final mailing if available.",
   },
   {
     category: "TAX_RETURN",
     requiresOriginal: true,
     isRequired: false,
-    specificInstructions: "Original or certified copies from IRS. Upload scans now, include originals in final mailing."
+    specificInstructions:
+      "Original or certified copies from IRS. Upload scans now, include originals in final mailing.",
+  },
+  {
+    category: "DEATH_CERTIFICATE",
+    requiresOriginal: true,
+    isRequired: false,
+    specificInstructions:
+      "Certified copy from state/county vital records office. Funeral home copies are typically not accepted.",
+    exampleDocuments: ["State Death Certificate"],
+  },
+  {
+    category: "BIRTH_CERTIFICATE",
+    requiresOriginal: true,
+    isRequired: false,
+    specificInstructions:
+      "Certified copy (long form preferred). Must show parents' names.",
+    exampleDocuments: ["State Birth Certificate"],
+  },
+  {
+    category: "MARRIAGE_CERTIFICATE",
+    requiresOriginal: true,
+    isRequired: false,
+    specificInstructions: "Certified copy showing both spouses' names.",
+    exampleDocuments: ["State Marriage Certificate"],
   },
   {
     category: "OTHER",
     requiresOriginal: false,
     isRequired: false,
-    specificInstructions: "Upload any supporting documents. We'll advise if originals are needed."
-  }
+    specificInstructions:
+      "Upload any supporting documents. We'll advise if originals are needed.",
+  },
 ];
 
 /**
@@ -136,30 +169,34 @@ export const DEFAULT_REQUIREMENTS: JurisdictionDocumentRequirement[] = [
  */
 export const UTAH_REQUIREMENTS: JurisdictionConfig = {
   state: "UT",
-  generalGuidance: "Utah residents during 1951-1962 may qualify for RECA compensation. Focus on documents proving residence in affected counties during atmospheric testing.",
+  generalGuidance:
+    "Utah residents during 1951-1962 may qualify for RECA compensation. Focus on documents proving residence in affected counties during atmospheric testing.",
   stateResources: [
     {
       title: "Utah State Archives - Historical Records",
       url: "https://archives.utah.gov/",
-      description: "Access historical records including property, school, and vital records"
+      description:
+        "Access historical records including property, school, and vital records",
     },
     {
       title: "Utah Department of Health - Vital Records",
       url: "https://dhhs.utah.gov/vital-records/",
-      description: "Request certified copies of birth certificates and other vital records"
+      description:
+        "Request certified copies of birth certificates and other vital records",
     },
     {
       title: "Utah State Historical Society",
       url: "https://heritage.utah.gov/",
-      description: "Research historical documents and county records"
+      description: "Research historical documents and county records",
     },
     {
       title: "Utah Medical Records Request",
       url: "https://dhhs.utah.gov/medical-records/",
-      description: "How to request medical records from Utah healthcare providers"
-    }
+      description:
+        "How to request medical records from Utah healthcare providers",
+    },
   ],
-  requirements: DEFAULT_REQUIREMENTS
+  requirements: DEFAULT_REQUIREMENTS,
 };
 
 /**
@@ -167,25 +204,26 @@ export const UTAH_REQUIREMENTS: JurisdictionConfig = {
  */
 export const NEVADA_REQUIREMENTS: JurisdictionConfig = {
   state: "NV",
-  generalGuidance: "Nevada residents, particularly in areas downwind from the Nevada Test Site, may qualify for RECA compensation.",
+  generalGuidance:
+    "Nevada residents, particularly in areas downwind from the Nevada Test Site, may qualify for RECA compensation.",
   stateResources: [
     {
       title: "Nevada State Library, Archives and Public Records",
       url: "https://www.nvculture.org/archives",
-      description: "Access historical records and documents"
+      description: "Access historical records and documents",
     },
     {
       title: "Nevada Division of Public and Behavioral Health",
       url: "https://www.dpbh.nv.gov/",
-      description: "Health records and vital statistics information"
+      description: "Health records and vital statistics information",
     },
     {
       title: "Clark County Recorder's Office",
       url: "https://www.clarkcountynv.gov/government/departments/recorder/index.php",
-      description: "Historical property and residence records for Clark County"
-    }
+      description: "Historical property and residence records for Clark County",
+    },
   ],
-  requirements: DEFAULT_REQUIREMENTS
+  requirements: DEFAULT_REQUIREMENTS,
 };
 
 /**
@@ -193,20 +231,21 @@ export const NEVADA_REQUIREMENTS: JurisdictionConfig = {
  */
 export const ARIZONA_REQUIREMENTS: JurisdictionConfig = {
   state: "AZ",
-  generalGuidance: "Arizona residents in affected areas during 1951-1962 may qualify for compensation.",
+  generalGuidance:
+    "Arizona residents in affected areas during 1951-1962 may qualify for compensation.",
   stateResources: [
     {
       title: "Arizona State Library, Archives and Public Records",
       url: "https://azlibrary.gov/",
-      description: "Historical records and documents"
+      description: "Historical records and documents",
     },
     {
       title: "Arizona Department of Health Services",
       url: "https://www.azdhs.gov/",
-      description: "Health records and vital statistics"
-    }
+      description: "Health records and vital statistics",
+    },
   ],
-  requirements: DEFAULT_REQUIREMENTS
+  requirements: DEFAULT_REQUIREMENTS,
 };
 
 /**
@@ -225,12 +264,15 @@ export function getJurisdictionRequirements(
   };
 
   // Return state-specific config or default
-  return stateConfigs[state.toUpperCase()] || {
-    state,
-    county,
-    requirements: DEFAULT_REQUIREMENTS,
-    generalGuidance: "Upload digital copies of all required documents. We'll guide you on which documents need to be mailed as originals."
-  };
+  return (
+    stateConfigs[state.toUpperCase()] || {
+      state,
+      county,
+      requirements: DEFAULT_REQUIREMENTS,
+      generalGuidance:
+        "Upload digital copies of all required documents. We'll guide you on which documents need to be mailed as originals.",
+    }
+  );
 }
 
 /**
@@ -244,7 +286,7 @@ export function requiresOriginalDocument(
   if (!state) return false;
 
   const config = getJurisdictionRequirements(state, county);
-  const requirement = config.requirements.find(r => r.category === category);
+  const requirement = config.requirements.find((r) => r.category === category);
 
   return requirement?.requiresOriginal || false;
 }
@@ -260,7 +302,7 @@ export function getDocumentInstructions(
   if (!state) return undefined;
 
   const config = getJurisdictionRequirements(state, county);
-  const requirement = config.requirements.find(r => r.category === category);
+  const requirement = config.requirements.find((r) => r.category === category);
 
   return requirement?.specificInstructions;
 }
@@ -278,7 +320,9 @@ export function getHelpfulLinks(
   const config = getJurisdictionRequirements(state, county);
 
   if (category) {
-    const requirement = config.requirements.find(r => r.category === category);
+    const requirement = config.requirements.find(
+      (r) => r.category === category
+    );
     return requirement?.helpfulLinks || [];
   }
 

@@ -262,6 +262,7 @@ model IntakeSession {
   followUps               ClaimantFollowUp[]
   documentAssistances     DocumentRequestAssistance[]
   AttorneyNotificationLog AttorneyNotificationLog[]
+  externalUploadTokens    ExternalUploadToken[]
 
   @@index([resumeToken])
   @@index([claimantId])
@@ -317,6 +318,9 @@ enum FileCategory {
   TAX_RETURN
   SCHOOL_RECORDS
   EMPLOYMENT_RECORDS
+  DEATH_CERTIFICATE
+  BIRTH_CERTIFICATE
+  MARRIAGE_CERTIFICATE
   OTHER
 }
 
@@ -1057,6 +1061,23 @@ model DocumentRequestAssistance {
   @@index([claimantId])
   @@index([sessionId])
   @@index([documentType])
+}
+
+model ExternalUploadToken {
+  id              String        @id @default(cuid())
+  token           String        @unique
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  recipientEmail  String
+  recipientName   String?
+  targetCategory  String? // Optional: restrict to specific category
+  guestData       Json?   // Store form data filled by the guest (address, phone, etc.)
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@index([token])
+  @@index([intakeSessionId])
 }
 
 model FollowUpPriorityQueue {

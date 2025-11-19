@@ -21,7 +21,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { DocumentChecklistComponent } from "@/components/document-checklist";
+import { PriorityTaskList } from "@/components/intake/priority-task-list";
 import { MailInProcessBanner } from "@/components/mail-in-process-banner";
 import { DOCUMENT_CHECKLIST } from "@/lib/document-checklist";
 import {
@@ -505,10 +505,11 @@ function Step2Content() {
           </div>
         </div>
 
-        {/* Document Checklist */}
-        <DocumentChecklistComponent
-          sections={DOCUMENT_CHECKLIST}
-          uploadedFiles={session.uploadedFiles || []}
+        {/* Priority Task List */}
+        <PriorityTaskList
+          checklist={DOCUMENT_CHECKLIST}
+          uploadedFiles={session.uploadedFiles}
+          intakeSessionId={session.id}
           onCategorySelect={setSelectedCategory}
         />
 

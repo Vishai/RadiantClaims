@@ -16,6 +16,9 @@ export type FileCategory =
   | "SCHOOL_RECORDS"
   | "EMPLOYMENT_RECORDS"
   | "LDS_CHURCH_RECORDS"
+  | "DEATH_CERTIFICATE"
+  | "BIRTH_CERTIFICATE"
+  | "MARRIAGE_CERTIFICATE"
   | "OTHER";
 
 export interface UploadFileParams {
@@ -278,9 +281,12 @@ export function generateSuggestedFilename(
     MORTGAGE_STATEMENT: "mortgage",
     TAX_RETURN: "tax",
     SCHOOL_RECORDS: "school",
-    EMPLOYMENT_RECORDS: "employment",
-    LDS_CHURCH_RECORDS: "lds_church",
-    OTHER: "document",
+    EMPLOYMENT_RECORDS: "Employment Records",
+    LDS_CHURCH_RECORDS: "LDS Church Records",
+    DEATH_CERTIFICATE: "Death Certificate",
+    BIRTH_CERTIFICATE: "Birth Certificate",
+    MARRIAGE_CERTIFICATE: "Marriage Certificate",
+    OTHER: "Other Document",
   };
 
   const categorySlug = categoryMap[category] || "document";
@@ -351,13 +357,13 @@ export async function waitForValidation(
 
     const validation = await getDocumentValidation(uploadedFileId);
 
-    if (validation && validation.status !== 'PROCESSING') {
+    if (validation && validation.status !== "PROCESSING") {
       return validation;
     }
 
     // Wait before next attempt
     if (attempt < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
   }
 

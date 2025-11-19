@@ -89,6 +89,9 @@ const CATEGORY_LABELS: Record<FileCategory, string> = {
   TAX_RETURN: "Tax Return",
   SCHOOL_RECORDS: "School Records",
   EMPLOYMENT_RECORDS: "Employment Records",
+  BIRTH_CERTIFICATE: "Birth Certificate",
+  DEATH_CERTIFICATE: "Death Certificate",
+  MARRIAGE_CERTIFICATE: "Marriage Certificate",
   OTHER: "Other",
 };
 

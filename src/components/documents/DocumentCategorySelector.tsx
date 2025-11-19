@@ -35,6 +35,9 @@ export type FileCategory =
   | "TAX_RETURN"
   | "SCHOOL_RECORDS"
   | "EMPLOYMENT_RECORDS"
+  | "DEATH_CERTIFICATE"
+  | "BIRTH_CERTIFICATE"
+  | "MARRIAGE_CERTIFICATE"
   | "OTHER";
 
 interface CategoryOption {
@@ -50,8 +53,28 @@ const categoryOptions: CategoryOption[] = [
   {
     value: "IDENTITY",
     label: "Identity Document",
-    description:
-      "Birth certificate, death certificate, marriage certificate, etc.",
+    description: "Driver's license, passport, or state ID card",
+    icon: FileText,
+    group: "identity",
+  },
+  {
+    value: "DEATH_CERTIFICATE",
+    label: "Death Certificate",
+    description: "Official death certificate",
+    icon: FileText,
+    group: "identity",
+  },
+  {
+    value: "BIRTH_CERTIFICATE",
+    label: "Birth Certificate",
+    description: "Official birth certificate",
+    icon: FileText,
+    group: "identity",
+  },
+  {
+    value: "MARRIAGE_CERTIFICATE",
+    label: "Marriage Certificate",
+    description: "Official marriage certificate",
     icon: FileText,
     group: "identity",
   },

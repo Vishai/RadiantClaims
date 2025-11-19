@@ -48,6 +48,9 @@ interface DocumentUploadZoneProps {
 // Documents that require original copies
 const ORIGINAL_REQUIRED_CATEGORIES: FileCategory[] = [
   "IDENTITY",
+  "DEATH_CERTIFICATE",
+  "BIRTH_CERTIFICATE",
+  "MARRIAGE_CERTIFICATE",
   "PATHOLOGY_REPORT",
   "MEDICAL_RECORDS",
   "DISCHARGE_SUMMARY",
@@ -482,12 +485,19 @@ function detectCategoryFromFilename(
 ): FileCategory | undefined {
   const lower = filename.toLowerCase();
 
-  if (
-    lower.includes("birth") ||
-    lower.includes("death") ||
-    lower.includes("marriage") ||
-    lower.includes("certificate")
-  ) {
+  if (lower.includes("death")) {
+    return "DEATH_CERTIFICATE";
+  }
+
+  if (lower.includes("birth")) {
+    return "BIRTH_CERTIFICATE";
+  }
+
+  if (lower.includes("marriage")) {
+    return "MARRIAGE_CERTIFICATE";
+  }
+
+  if (lower.includes("certificate")) {
     return "IDENTITY";
   }
 
