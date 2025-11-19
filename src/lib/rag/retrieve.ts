@@ -8,12 +8,14 @@ import { RecaContext } from "./types";
  * @param query User's search query
  * @param limit Number of results to return (default 5)
  * @param threshold Minimum similarity score (0-1, default 0.5)
+ * @param claimantId Optional claimant ID to scope private documents
  * @returns Array of relevant context chunks
  */
 export async function searchRecaLibrary(
   query: string,
   limit = 5,
-  threshold = 0.25 // Lowered threshold to capture more relevant context
+  threshold = 0.25, // Lowered threshold to capture more relevant context
+  claimantId?: string
 ): Promise<RecaContext[]> {
   try {
     const embedding = await generateEmbedding(query);
@@ -21,6 +23,7 @@ export async function searchRecaLibrary(
 
     // Execute raw SQL query for vector similarity search
     // We use the <=> operator (cosine distance) and convert it to similarity (1 - distance)
+    // AND logic: Must be public OR belong to the specific claimant
     const results = (await db.$queryRaw`
       SELECT 
         id, 
@@ -28,9 +31,12 @@ export async function searchRecaLibrary(
         "sourceDocument", 
         "pageNumber", 
         "section",
+        "isPublic",
+        "claimantId",
         1 - (embedding <=> ${vectorString}::vector) as similarity
       FROM "RecaLibrary"
-      WHERE 1 - (embedding <=> ${vectorString}::vector) > ${threshold}
+      WHERE (1 - (embedding <=> ${vectorString}::vector) > ${threshold})
+      AND ("isPublic" = true OR "claimantId" = ${claimantId || null})
       ORDER BY similarity DESC
       LIMIT ${limit};
     `) as any[];

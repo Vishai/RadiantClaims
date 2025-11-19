@@ -80,6 +80,7 @@ model User {
   serviceSubscription         ServiceSubscription? // Link to subscription
   staffActions                StaffAction[] // NEW: AI validation staff actions
   aiReviewQAs                 AIReviewQA[] // AI assessment reviews performed by this user
+  chatSessions                ChatSession[]
   promoCodeUsages             PromoCodeUsage[] // Promo codes used by this user
   documentAssistancesAssigned DocumentRequestAssistance[] @relation("DocumentAssistanceAssignedStaff") // Claimants receiving staff assistance
 
@@ -145,6 +146,8 @@ model Claimant {
   relationshipToClaimant  RelationshipType?
   cancerType              String? // Reference to specific cancer
   documentStatuses        ClaimantDocumentStatus[]
+  chatSessions            ChatSession[]
+  privateContextDocuments RecaLibrary[]
   // CLAIM LIFECYCLE TRACKING
   lifecycle               ClaimLifecycle?
   queuePosition           ClaimQueuePosition?
@@ -2263,7 +2266,47 @@ model RecaLibrary {
   pageNumber     Int?
   section        String?
   embedding      Unsupported("vector(1536)")
+  
+  // New fields for scoping
+  isPublic       Boolean   @default(true) // True = Global Law/Rules
+  claimantId     String?   // If set, ONLY accessible when discussing this claimant
+  claimant       Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  uploadedBy     String?   // Admin/Attorney who added it
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([claimantId])
+}
+
+// Chat History Models
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String?       // Link to User (optional for guests)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  claimantId String?      // Link to a specific claim context
+  claimant  Claimant?     @relation(fields: [claimantId], references: [id], onDelete: SetNull)
+  messages  ChatMessage[]
+  title     String?       // Auto-generated title from first message
+  
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([claimantId])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String      // "user", "assistant", "system"
+  content   String      @db.Text
+  metadata  Json?       // Store function calls, tool outputs, citations, etc.
+  
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
 

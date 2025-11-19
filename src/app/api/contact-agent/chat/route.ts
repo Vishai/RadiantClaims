@@ -53,7 +53,11 @@ function calculateFollowUpDate(documentType?: string): Date {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, sessionContext } = body;
+    const {
+      messages,
+      sessionContext,
+      chatSessionId: providedChatSessionId,
+    } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -62,15 +66,90 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // RAG: Search for relevant context based on the latest user message
-    let ragContextString = "";
+    // 1. User/Session Resolution
+    const cookieSessionId = req.cookies.get("session_id")?.value;
+    let userId: string | undefined;
+    let claimantId: string | undefined;
+
+    if (cookieSessionId) {
+      const session = await prisma.session.findUnique({
+        where: { sessionToken: cookieSessionId },
+        include: { user: { include: { claimants: true } } },
+      });
+      if (session) {
+        userId = session.userId;
+        claimantId = session.user.claimants[0]?.id;
+      }
+    }
+
+    // 2. Get or Create ChatSession
+    let chatSessionId = providedChatSessionId;
+    let chatSession;
+
+    if (chatSessionId) {
+      chatSession = await prisma.chatSession.findUnique({
+        where: { id: chatSessionId },
+      });
+    }
+
+    if (!chatSession) {
+      chatSession = await prisma.chatSession.create({
+        data: {
+          userId,
+          claimantId,
+          title:
+            messages[messages.length - 1]?.content?.substring(0, 50) ||
+            "New Chat",
+        },
+      });
+      chatSessionId = chatSession.id;
+    }
+
+    // 3. Save User Message
     const lastUserMessage = messages
       .filter((m: any) => m.role === "user")
       .pop();
 
     if (lastUserMessage && lastUserMessage.content) {
+      await prisma.chatMessage.create({
+        data: {
+          sessionId: chatSessionId,
+          role: "user",
+          content: lastUserMessage.content,
+        },
+      });
+    }
+
+    // 4. Load History (Last 10 messages)
+    // We ignore the 'messages' array from the client for history to ensure consistency with DB,
+    // but we still use the last message from it as the trigger.
+    // Actually, standard practice is to use the client's array for immediate UI feedback
+    // but relying on DB is safer. Let's load from DB.
+    const historyMessages = await prisma.chatMessage.findMany({
+      where: { sessionId: chatSessionId },
+      orderBy: { createdAt: "asc" },
+      take: 10, // Context window limit
+    });
+
+    // Format history for OpenAI
+    // Exclude the very last message we just saved, as we might append it manually or rely on 'messages'
+    // Let's just construct the prompt array from DB history entirely.
+    const openAIMessages = historyMessages.map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content,
+    }));
+
+    // RAG: Search for relevant context based on the latest user message
+    let ragContextString = "";
+    if (lastUserMessage && lastUserMessage.content) {
       try {
-        const ragResults = await searchRecaLibrary(lastUserMessage.content);
+        // Pass claimantId to scope the search!
+        const ragResults = await searchRecaLibrary(
+          lastUserMessage.content,
+          5,
+          0.25,
+          claimantId
+        );
         ragContextString = formatRecaContext(ragResults);
       } catch (error) {
         console.error("RAG search failed:", error);
@@ -180,12 +259,7 @@ Be conversational, helpful, and guide users step-by-step.`;
       model: CONTACT_AGENT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          ...(msg.function_call && { function_call: msg.function_call }),
-          ...(msg.name && { name: msg.name }),
-        })),
+        ...openAIMessages, // Use DB history instead of client messages
       ],
       functions,
       function_call: "auto",
@@ -275,7 +349,7 @@ Be conversational, helpful, and guide users step-by-step.`;
 
         // Return the function result to the AI
         const updatedMessages = [
-          ...messages,
+          ...openAIMessages,
           {
             role: "assistant",
             content: null,
@@ -313,6 +387,22 @@ Be conversational, helpful, and guide users step-by-step.`;
           ],
           temperature: 0.7,
           max_tokens: 1000,
+        });
+
+        const finalText =
+          finalResponse.choices[0]?.message?.content || "No response";
+
+        // Save Assistant Message
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSessionId,
+            role: "assistant",
+            content: finalText,
+            metadata: {
+              functionCalled: functionName,
+              searchSource,
+            },
+          },
         });
 
         // Create ResourceInteraction records for tracking and follow-up
@@ -433,7 +523,8 @@ Be conversational, helpful, and guide users step-by-step.`;
         }
 
         return NextResponse.json({
-          message: finalResponse.choices[0]?.message?.content || "No response",
+          chatSessionId, // Return ID to client
+          message: finalText,
           contacts,
           interactions, // Include interaction IDs for frontend
           functionCalled: functionName,
@@ -445,8 +536,22 @@ Be conversational, helpful, and guide users step-by-step.`;
     }
 
     // Regular text response (no function call)
+    const finalText = assistantMessage.content || "";
+
+    // Save Assistant Message
+    if (finalText) {
+      await prisma.chatMessage.create({
+        data: {
+          sessionId: chatSessionId,
+          role: "assistant",
+          content: finalText,
+        },
+      });
+    }
+
     return NextResponse.json({
-      message: assistantMessage.content,
+      chatSessionId, // Return ID to client
+      message: finalText,
       contacts: [],
     });
   } catch (error) {
