@@ -82,23 +82,22 @@ export default async function DashboardPage({
               <Heart className="h-5 w-5 text-white" fill="white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-sage-800">RadiantClaims</h1>
+              <h1 className="text-2xl font-bold text-sage-800">
+                RadiantClaims
+              </h1>
               <p className="text-xs text-sage-600">Admin Dashboard</p>
             </div>
           </Link>
           <div className="flex items-center gap-4">
             <p className="text-sm text-sage-600">{session.user.email}</p>
-            <form
-              action={async () => {
-                "use server";
-                const { signOut } = await import("next-auth/react");
-                await signOut({ callbackUrl: "/login" });
-              }}
-            >
-              <Button variant="outline" type="submit" className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50">
+            <Link href="/signout">
+              <Button
+                variant="outline"
+                className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+              >
                 Sign Out
               </Button>
-            </form>
+            </Link>
           </div>
         </div>
       </nav>
@@ -106,7 +105,9 @@ export default async function DashboardPage({
       <div className="container mx-auto px-6 py-8">
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-sage-900">Claimants</h2>
-          <p className="text-sage-600">View and manage all claimant submissions</p>
+          <p className="text-sage-600">
+            View and manage all claimant submissions
+          </p>
           <div className="mt-2 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
 
@@ -157,8 +158,12 @@ export default async function DashboardPage({
                         <TableCell className="font-medium text-sage-900">
                           {claimant.firstName} {claimant.lastName}
                         </TableCell>
-                        <TableCell className="text-sage-700">{claimant.email}</TableCell>
-                        <TableCell className="text-sage-700">{claimant.state}</TableCell>
+                        <TableCell className="text-sage-700">
+                          {claimant.email}
+                        </TableCell>
+                        <TableCell className="text-sage-700">
+                          {claimant.state}
+                        </TableCell>
                         <TableCell className="text-sage-700">
                           {claimant.referral?.referrerName || "-"}
                         </TableCell>
@@ -172,7 +177,11 @@ export default async function DashboardPage({
                         </TableCell>
                         <TableCell>
                           <Link href={`/dashboard/claimants/${claimant.id}`}>
-                            <Button variant="ghost" size="sm" className="text-terracotta-600 hover:bg-terracotta-50 hover:text-terracotta-700">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-terracotta-600 hover:bg-terracotta-50 hover:text-terracotta-700"
+                            >
                               View
                             </Button>
                           </Link>

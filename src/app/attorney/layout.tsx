@@ -203,7 +203,7 @@ export default function AttorneyLayout({
               </p>
               <button
                 onClick={() => {
-                  void signOut({ callbackUrl: "/login" });
+                  router.push("/signout");
                 }}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-md bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20"
               >
