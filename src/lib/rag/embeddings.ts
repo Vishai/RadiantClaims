@@ -16,5 +16,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     encoding_format: "float",
   });
 
+  if (!response.data || !response.data[0]) {
+    throw new Error("Failed to generate embedding");
+  }
+
   return response.data[0].embedding;
 }
