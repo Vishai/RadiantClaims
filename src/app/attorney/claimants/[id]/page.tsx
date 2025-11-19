@@ -31,6 +31,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { KnowledgeUpload } from "@/components/knowledge/document-upload";
 
 interface Document {
   id: string;
@@ -287,6 +288,11 @@ export default function ClaimantDocumentsPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* Private Knowledge Base */}
+        <div className="mb-10">
+          <KnowledgeUpload claimantId={claimantId} isPublic={false} />
+        </div>
+
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-sage-900">
