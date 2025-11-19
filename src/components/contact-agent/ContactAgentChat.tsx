@@ -8,8 +8,6 @@ import {
   Loader2,
   ExternalLink,
   Phone,
-  Mail,
-  MapPin,
   CheckCircle2,
   Star,
   Users,
@@ -48,6 +46,7 @@ interface Contact {
   acceptsMailRequests: boolean;
   acceptsOnlineRequests: boolean;
   appointmentRequired: boolean;
+  isTribal?: boolean;
   stats?: {
     totalFeedback: number;
     successCount: number;

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const pdfBytes = await generateMedicalRequestPacket(data);
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="Medical_Request_${data.hospitalName.replace(/\s/g, "_")}.pdf"`,
