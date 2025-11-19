@@ -300,7 +300,7 @@ export default function CustomerPortal() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push("/api/auth/signout")}
+              onClick={() => router.push("/signout")}
               className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
             >
               Sign Out

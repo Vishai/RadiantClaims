@@ -247,10 +247,7 @@ export default function AttorneyDashboardPage() {
               <span className="text-sm text-sage-600">
                 {session.user.name || session.user.email}
               </span>
-              <Button
-                variant="outline"
-                onClick={() => router.push("/api/auth/signout")}
-              >
+              <Button variant="outline" onClick={() => router.push("/signout")}>
                 Sign Out
               </Button>
             </div>
