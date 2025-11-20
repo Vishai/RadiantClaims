@@ -136,11 +136,11 @@ Includes: AI document intelligence, Request Generator, Automated form filling.
 
 Refund Policy: Full refund if user upgrades to Legal Path.
 
-Path 2: Legal Representation (Free to claimant)
+Path 2: Legal Representation
 
 Target: Claimants who want full legal representation or have complex cases.
 
-Pricing: $0 to claimant; $1,000 service fee paid by law firm.
+Pricing: 2% of the award amount (statutory limit), paid only if the claim is successful (e.g., $2,000 on a $100,000 claim). No upfront costs.
 
 Risks & Mitigation
 
