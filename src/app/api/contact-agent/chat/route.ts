@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
         const ragResults = await searchRecaLibrary(
           lastUserMessage.content,
           5,
-          0.25,
+          0.15,
           claimantId
         );
         ragContextString = formatRecaContext(ragResults);

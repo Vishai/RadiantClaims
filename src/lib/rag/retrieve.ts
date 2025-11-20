@@ -14,7 +14,7 @@ import { RecaContext } from "./types";
 export async function searchRecaLibrary(
   query: string,
   limit = 5,
-  threshold = 0.25, // Lowered threshold to capture more relevant context
+  threshold = 0.15, // Lowered threshold to capture more relevant context
   claimantId?: string
 ): Promise<RecaContext[]> {
   try {
