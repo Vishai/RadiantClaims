@@ -36,16 +36,23 @@ export async function ingestDocument({
 }: IngestOptions) {
   console.log(`Processing ${filename}...`);
 
-  // Instantiate the parser
-  const parser = new PDFParse({
-    data: fileBuffer,
-    verbosity: 0, // ERRORS
-    stopAtErrors: false,
-    disableFontFace: true,
-  });
+  let text = "";
 
-  const textResult = await parser.getText();
-  const text = textResult.text;
+  if (filename.toLowerCase().endsWith(".pdf")) {
+    // Instantiate the parser
+    const parser = new PDFParse({
+      data: fileBuffer,
+      verbosity: 0, // ERRORS
+      stopAtErrors: false,
+      disableFontFace: true,
+    });
+
+    const textResult = await parser.getText();
+    text = textResult.text;
+  } else {
+    // For Markdown, Text, etc.
+    text = fileBuffer.toString("utf-8");
+  }
 
   // Naive chunking: Split by approx 1000 characters, respecting sentence boundaries
   const chunks = chunkText(text, 1000);
