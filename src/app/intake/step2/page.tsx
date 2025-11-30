@@ -19,6 +19,7 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
+  CircleDashed,
 } from "lucide-react";
 import Link from "next/link";
 import { PriorityTaskList } from "@/components/intake/priority-task-list";
@@ -360,7 +361,7 @@ function Step2Content() {
                       {identityCount >= 1 ? (
                         <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                       ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                        <CircleDashed className="h-5 w-5 text-sage-300" />
                       )}
                       <span className="text-sm font-medium text-sage-900">
                         Government-Issued Photo ID
@@ -393,7 +394,7 @@ function Step2Content() {
                       {residenceCount >= 2 ? (
                         <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                       ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                        <CircleDashed className="h-5 w-5 text-sage-300" />
                       )}
                       <span className="text-sm font-medium text-sage-900">
                         Proofs of Residence (1951-1962)
@@ -419,7 +420,7 @@ function Step2Content() {
                       {pathologyCount >= 1 ? (
                         <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                       ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-sage-300" />
+                        <CircleDashed className="h-5 w-5 text-sage-300" />
                       )}
                       <span className="text-sm font-medium text-sage-900">
                         Medical Document (proving illness)
@@ -433,6 +434,44 @@ function Step2Content() {
                   </div>
                 );
               })()}
+
+              {/* Complete Full Application */}
+              <div className="flex items-center justify-between rounded-xl bg-cream-50 p-4">
+                <div className="flex items-center gap-3">
+                  <CircleDashed className="h-5 w-5 text-sage-300" />
+                  <span className="text-sm font-medium text-sage-900">
+                    Complete Full Application
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-terracotta-600">
+                  Pending
+                </span>
+              </div>
+
+              {/* Unknowns / Disclaimer */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div className="flex gap-3">
+                  <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                  <div className="text-sm text-amber-800">
+                    <p className="mb-1 font-medium">
+                      Additional documents may be required
+                    </p>
+                    <p>
+                      Depending on your specific situation (e.g., name changes,
+                      filing for family members), we may need:
+                    </p>
+                    <ul className="ml-4 mt-1 list-disc space-y-0.5">
+                      <li>Marriage/Divorce Certificates</li>
+                      <li>Birth/Death Certificates</li>
+                      <li>Sibling Documents</li>
+                    </ul>
+                    <p className="mt-2 text-xs text-amber-700">
+                      We will identify these needs as you complete the full
+                      application.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Overall Progress Bar */}
               {(() => {
@@ -453,11 +492,19 @@ function Step2Content() {
                   (f) => f.category === "PATHOLOGY_REPORT"
                 ).length;
 
+                // We have 4 main items now (including "Complete Full Application" which is always pending here)
+                // And potentially more "unknown" items.
+                // Let's calculate progress based on the 3 known document categories for now,
+                // but maybe show it as "Preliminary Progress" or cap it.
+
                 const totalCompleted =
                   (identityCount >= 1 ? 1 : 0) +
                   (residenceCount >= 2 ? 1 : 0) +
                   (pathologyCount >= 1 ? 1 : 0);
-                const totalRequired = 3;
+
+                // Total required is 4 (3 docs + 1 application)
+                const totalRequired = 4;
+
                 const percentComplete = Math.round(
                   (totalCompleted / totalRequired) * 100
                 );
@@ -466,7 +513,7 @@ function Step2Content() {
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-sage-700">
-                        Overall Progress
+                        Preliminary Progress
                       </span>
                       <span className="text-2xl font-bold text-terracotta-600">
                         {percentComplete}%
@@ -478,6 +525,9 @@ function Step2Content() {
                         style={{ width: `${percentComplete}%` }}
                       />
                     </div>
+                    <p className="text-center text-xs text-sage-500">
+                      * Progress may change as we learn more about your case.
+                    </p>
                   </div>
                 );
               })()}

@@ -63,8 +63,7 @@ export function MailInProcessBanner() {
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
                     Our team reviews your uploads to ensure everything is
-                    complete and correct. Then our lawyer reviews printed copies
-                    for approval.
+                    complete and correct.
                   </p>
                 </div>
               </div>
@@ -81,9 +80,10 @@ export function MailInProcessBanner() {
                     </h4>
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
-                    Once approved, we'll send you a prepaid envelope and clear
-                    instructions. You'll replace our printed copies with your
-                    certified copies/originals and mail to the DOJ.
+                    Once completed and approved, we'll send you an assembled
+                    packet with clear instructions. You'll replace our printed
+                    copies with your certified copies/originals and mail the
+                    packet to the DOJ.
                   </p>
                 </div>
               </div>
