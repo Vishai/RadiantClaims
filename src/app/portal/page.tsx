@@ -443,8 +443,18 @@ export default function CustomerPortal() {
                           intakeSession.status !== "SUBMITTED" && (
                             <Button
                               onClick={() => {
-                                // DOWNWINDER claims go to RECA form
-                                if (claim.claimType === "DOWNWINDER") {
+                                const recaTypes = [
+                                  "DOWNWINDER",
+                                  "URANIUM_WORKER",
+                                  "MANHATTAN_PROJECT_WASTE",
+                                  "ONSITE_PARTICIPANT",
+                                ];
+                                const isRecaClaim =
+                                  (claim.claimType &&
+                                    recaTypes.includes(claim.claimType)) ||
+                                  intakeSession.recaWorkflowStage;
+
+                                if (isRecaClaim) {
                                   router.push(
                                     intakeSession.recaWorkflowStage
                                       ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`

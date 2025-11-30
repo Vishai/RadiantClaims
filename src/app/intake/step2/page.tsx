@@ -508,7 +508,7 @@ function Step2Content() {
         {/* Priority Task List */}
         <PriorityTaskList
           checklist={DOCUMENT_CHECKLIST}
-          uploadedFiles={session.uploadedFiles}
+          uploadedFiles={session.uploadedFiles || []}
           intakeSessionId={session.id}
           onCategorySelect={setSelectedCategory}
         />

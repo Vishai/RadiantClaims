@@ -106,6 +106,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log(`💰 Checkout completed for user ${userId}`);
 
+  // Extract subscription ID from session if available (for mode='subscription')
+  const stripeSubscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+
   // Update subscription
   await prisma.serviceSubscription.update({
     where: { id: subscriptionId },
@@ -113,6 +119,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       setupFeePaid: true,
       setupFeePaidAt: new Date(),
       status: "ACTIVE",
+      ...(stripeSubscriptionId && { stripeSubscriptionId }),
     },
   });
 

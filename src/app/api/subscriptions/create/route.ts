@@ -135,6 +135,10 @@ export async function POST(request: NextRequest) {
               quantity: 1,
             },
           ],
+          subscription_data: {
+            trial_period_days: 30,
+          },
+          allow_promotion_codes: true,
           success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
           cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
           metadata: {
@@ -287,6 +291,10 @@ export async function POST(request: NextRequest) {
           { price: diySetupPriceId, quantity: 1 },
           { price: diyMonthlyPriceId, quantity: 1 },
         ],
+        subscription_data: {
+          trial_period_days: 30,
+        },
+        allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
         metadata: {

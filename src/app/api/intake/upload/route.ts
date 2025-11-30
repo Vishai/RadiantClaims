@@ -30,6 +30,10 @@ const uploadRequestSchema = z.object({
       "TAX_RETURN",
       "SCHOOL_RECORDS",
       "EMPLOYMENT_RECORDS",
+      "LDS_CHURCH_RECORDS",
+      "DEATH_CERTIFICATE",
+      "BIRTH_CERTIFICATE",
+      "MARRIAGE_CERTIFICATE",
       "OTHER",
     ])
     .optional(),

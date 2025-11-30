@@ -48,7 +48,7 @@ interface PriorityTaskListProps {
 
 export function PriorityTaskList({
   checklist,
-  uploadedFiles,
+  uploadedFiles = [],
   intakeSessionId,
   onCategorySelect,
 }: PriorityTaskListProps) {
