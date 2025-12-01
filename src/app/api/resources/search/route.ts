@@ -167,6 +167,12 @@ export async function GET(req: NextRequest) {
         county: county || undefined,
       });
 
+      console.log(`[Web Search] Found ${webContacts.length} contacts from AI`);
+      console.log(
+        `[Web Search] Raw contacts:`,
+        JSON.stringify(webContacts, null, 2)
+      );
+
       if (webContacts.length > 0) {
         // Map to Resource format
         const webResources = webContacts.map((contact, index) => ({
@@ -189,6 +195,10 @@ export async function GET(req: NextRequest) {
           createdAt: new Date(),
           updatedAt: new Date(),
         }));
+
+        console.log(
+          `[Web Search] Returning ${webResources.length} mapped resources`
+        );
 
         return NextResponse.json({
           resources: webResources,

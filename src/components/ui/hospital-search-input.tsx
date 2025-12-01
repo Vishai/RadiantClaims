@@ -4,12 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Check, Building2, X } from "lucide-react";
+import { Search, Check, Building2, X } from "lucide-react";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
@@ -34,6 +33,7 @@ interface HospitalSearchInputProps {
   value: string;
   onChange: (name: string) => void;
   onSelect?: (hospital: Hospital) => void;
+  onClear?: () => void;
   defaultState?: string;
   defaultCity?: string;
   label?: string;
@@ -44,6 +44,7 @@ export function HospitalSearchInput({
   value,
   onChange,
   onSelect,
+  onClear,
   defaultState,
   defaultCity,
   label = "Hospital Name",
@@ -102,6 +103,13 @@ export function HospitalSearchInput({
 
       if (response.ok) {
         const data = await response.json();
+        console.log("[HospitalSearch] API Response:", data);
+        console.log("[HospitalSearch] Results Type:", data.resultsType);
+        console.log(
+          "[HospitalSearch] Resources count:",
+          data.resources?.length
+        );
+
         // Map API response to our Hospital interface
         const mappedResults: Hospital[] = (data.resources || []).map(
           (r: any) => ({
@@ -114,6 +122,7 @@ export function HospitalSearchInput({
             phone: r.phone,
           })
         );
+        console.log("[HospitalSearch] Mapped Results:", mappedResults);
         setResults(mappedResults);
       }
     } catch (error) {
@@ -125,6 +134,7 @@ export function HospitalSearchInput({
 
   const handleSelect = (hospital: Hospital) => {
     setSelectedHospital(hospital);
+    setSearchTerm(hospital.name);
     onChange(hospital.name);
     if (onSelect) {
       onSelect(hospital);
@@ -136,6 +146,7 @@ export function HospitalSearchInput({
     setSelectedHospital(null);
     onChange("");
     setSearchTerm("");
+    if (onClear) onClear();
     inputRef.current?.focus();
   };
 
@@ -145,7 +156,11 @@ export function HospitalSearchInput({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            {selectedHospital ? (
+              <Check className="absolute left-3 top-3 h-4 w-4 text-green-600" />
+            ) : (
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            )}
             <Input
               ref={inputRef}
               value={searchTerm}
@@ -156,7 +171,10 @@ export function HospitalSearchInput({
               }}
               onFocus={() => setOpen(true)}
               placeholder={placeholder}
-              className="pl-9 pr-9"
+              className={cn(
+                "pl-9 pr-9",
+                selectedHospital && "border-green-500 bg-green-50"
+              )}
             />
             {searchTerm && (
               <button

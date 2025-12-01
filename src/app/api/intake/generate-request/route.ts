@@ -11,6 +11,11 @@ export const dynamic = "force-dynamic";
 const generateRequestSchema = z.object({
   intakeSessionId: z.string(),
   hospitalName: z.string().min(1),
+  hospitalAddress: z.string().optional(),
+  hospitalCity: z.string().optional(),
+  hospitalState: z.string().optional(),
+  hospitalZip: z.string().optional(),
+  hospitalPhone: z.string().optional(),
   treatmentYear: z.string().min(4),
   cancerType: z.string().min(1),
 });
@@ -24,8 +29,17 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { intakeSessionId, hospitalName, treatmentYear, cancerType } =
-      generateRequestSchema.parse(body);
+    const {
+      intakeSessionId,
+      hospitalName,
+      hospitalAddress,
+      hospitalCity,
+      hospitalState,
+      hospitalZip,
+      hospitalPhone,
+      treatmentYear,
+      cancerType,
+    } = generateRequestSchema.parse(body);
 
     // 2. Fetch Session & Claimant
     const session = await db.intakeSession.findUnique({
@@ -80,6 +94,11 @@ export async function POST(req: NextRequest) {
     // 5. Generate PDF Packet
     const generator = new RequestPacketGenerator({
       hospitalName,
+      hospitalAddress,
+      hospitalCity,
+      hospitalState,
+      hospitalZip,
+      hospitalPhone,
       treatmentYear,
       cancerType,
       patientName: `${session.claimant.firstName} ${session.claimant.lastName}`,

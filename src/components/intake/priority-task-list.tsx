@@ -60,11 +60,15 @@ export function PriorityTaskList({
   const [hospitalName, setHospitalName] = useState("");
   const [hospitalCity, setHospitalCity] = useState("");
   const [hospitalState, setHospitalState] = useState("");
+  const [hospitalAddress, setHospitalAddress] = useState("");
+  const [hospitalZip, setHospitalZip] = useState("");
+  const [hospitalPhone, setHospitalPhone] = useState("");
   const [treatmentYear, setTreatmentYear] = useState("");
   const [cancerType, setCancerType] = useState("");
   const [requestGenerated, setRequestGenerated] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [hospitalSelected, setHospitalSelected] = useState(false);
 
   useEffect(() => {
     // Convert checklist to tasks
@@ -104,12 +108,18 @@ export function PriorityTaskList({
     setGenerationError(null);
 
     try {
+      // 1. Generate Request PDF
       const response = await fetch("/api/intake/generate-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           intakeSessionId,
           hospitalName,
+          hospitalAddress,
+          hospitalCity,
+          hospitalState,
+          hospitalZip,
+          hospitalPhone,
           treatmentYear,
           cancerType,
         }),
@@ -119,6 +129,27 @@ export function PriorityTaskList({
         const data = await response.json();
         throw new Error(data.error || "Failed to generate request");
       }
+
+      // 2. Persist Selection to Database
+      await fetch("/api/intake/response", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intakeSessionId,
+          questionKey: "medical_request_hospital_details",
+          questionText: "Selected Hospital for Medical Records Request",
+          answerValue: JSON.stringify({
+            name: hospitalName,
+            address: hospitalAddress,
+            city: hospitalCity,
+            state: hospitalState,
+            zip: hospitalZip,
+            phone: hospitalPhone,
+            treatmentYear,
+            cancerType,
+          }),
+        }),
+      });
 
       // Download PDF
       const blob = await response.blob();
@@ -291,16 +322,44 @@ export function PriorityTaskList({
                     value={hospitalName}
                     onChange={setHospitalName}
                     onSelect={(hospital) => {
+                      setHospitalName(hospital.name);
                       if (hospital.city) setHospitalCity(hospital.city);
                       if (hospital.state) setHospitalState(hospital.state);
+                      if (hospital.address)
+                        setHospitalAddress(hospital.address || "");
+                      if (hospital.zip) setHospitalZip(hospital.zip || "");
+                      if (hospital.phone)
+                        setHospitalPhone(hospital.phone || "");
+                      setHospitalSelected(true);
+                    }}
+                    onClear={() => {
+                      setHospitalName("");
+                      setHospitalCity("");
+                      setHospitalState("");
+                      setHospitalAddress("");
+                      setHospitalZip("");
+                      setHospitalPhone("");
+                      setHospitalSelected(false);
                     }}
                     defaultState={hospitalState}
                     defaultCity={hospitalCity}
                     placeholder="e.g. St. George Regional"
                   />
                 </div>
+
+                {/* Additional Address Fields */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="hospitalAddress">Street Address</Label>
+                  <Input
+                    id="hospitalAddress"
+                    placeholder="e.g. 123 Medical Center Dr"
+                    value={hospitalAddress}
+                    onChange={(e) => setHospitalAddress(e.target.value)}
+                  />
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="hospitalCity">Hospital City</Label>
+                  <Label htmlFor="hospitalCity">City</Label>
                   <Input
                     id="hospitalCity"
                     placeholder="e.g. St. George"
@@ -308,18 +367,46 @@ export function PriorityTaskList({
                     onChange={(e) => setHospitalCity(e.target.value)}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="hospitalState">Hospital State</Label>
+                  <Label htmlFor="hospitalState">State</Label>
                   <Input
                     id="hospitalState"
                     placeholder="e.g. UT"
-                    maxLength={2}
                     value={hospitalState}
-                    onChange={(e) =>
-                      setHospitalState(e.target.value.toUpperCase())
-                    }
+                    onChange={(e) => setHospitalState(e.target.value)}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hospitalZip">Zip Code</Label>
+                  <Input
+                    id="hospitalZip"
+                    placeholder="e.g. 84790"
+                    value={hospitalZip}
+                    onChange={(e) => setHospitalZip(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hospitalPhone">Phone Number</Label>
+                  <Input
+                    id="hospitalPhone"
+                    placeholder="e.g. (435) 555-1234"
+                    value={hospitalPhone}
+                    onChange={(e) => setHospitalPhone(e.target.value)}
+                  />
+                </div>
+
+                {/* Success Indicator when hospital is selected */}
+                {hospitalSelected && hospitalCity && hospitalState && (
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 md:col-span-2">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium">
+                      Hospital details populated from search result
+                    </span>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="year">Treatment Year</Label>
                   <Input

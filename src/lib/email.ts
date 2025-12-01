@@ -7,6 +7,7 @@ import PacketReadyEmail from "@/emails/packet-ready";
 import ResourceFollowUpEmail from "@/emails/client/resource-follow-up";
 import ResourceAlternativesEmail from "@/emails/client/resource-alternatives";
 import ResourceSuccessEmail from "@/emails/client/resource-success";
+import PasswordResetEmail from "@/emails/password-reset";
 import { EmailType } from "@prisma/client";
 import {
   isUnsubscribed,
@@ -517,6 +518,58 @@ export async function sendResourceSuccessEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending resource success email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  name: string;
+  resetToken: string;
+  expiresAt: Date;
+}) {
+  const { to, name, resetToken, expiresAt } = params;
+
+  const baseUrl = getBaseUrl();
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+  // Calculate expiration text
+  const minutesUntilExpiry = Math.ceil(
+    (expiresAt.getTime() - Date.now()) / (1000 * 60)
+  );
+  const expiresText = `${minutesUntilExpiry} minute${
+    minutesUntilExpiry !== 1 ? "s" : ""
+  }`;
+
+  try {
+    const emailHtml = await render(
+      PasswordResetEmail({
+        name,
+        resetUrl,
+        expiresText,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Reset Your RadiantClaims Password",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send password reset email:", error);
+      throw new Error(`Failed to send password reset email: ${error.message}`);
+    }
+
+    console.log("Password reset email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending password reset email:", error);
     throw error;
   }
 }

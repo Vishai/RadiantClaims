@@ -11,6 +11,11 @@ const COLORS = {
 
 interface RequestPacketOptions {
   hospitalName: string;
+  hospitalAddress?: string;
+  hospitalCity?: string;
+  hospitalState?: string;
+  hospitalZip?: string;
+  hospitalPhone?: string;
   treatmentYear: string;
   cancerType: string;
   patientName: string;
@@ -86,7 +91,41 @@ export class RequestPacketGenerator {
       size: 12,
       font: this.font,
     });
-    y -= 40;
+    y -= 20;
+
+    // Address block if available
+    if (this.options.hospitalAddress) {
+      page.drawText(this.options.hospitalAddress, {
+        x: margin,
+        y,
+        size: 12,
+        font: this.font,
+      });
+      y -= 20;
+    }
+
+    if (this.options.hospitalCity && this.options.hospitalState) {
+      const cityStateZip = `${this.options.hospitalCity}, ${this.options.hospitalState} ${this.options.hospitalZip || ""}`;
+      page.drawText(cityStateZip, {
+        x: margin,
+        y,
+        size: 12,
+        font: this.font,
+      });
+      y -= 20;
+    }
+
+    if (this.options.hospitalPhone) {
+      page.drawText(`Phone: ${this.options.hospitalPhone}`, {
+        x: margin,
+        y,
+        size: 12,
+        font: this.font,
+      });
+      y -= 20;
+    }
+
+    y -= 20; // Extra spacing
 
     // Subject
     page.drawText(
