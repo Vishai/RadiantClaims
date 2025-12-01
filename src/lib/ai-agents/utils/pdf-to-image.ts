@@ -20,59 +20,34 @@ const pdfToPng = pdfToPngLib.default || pdfToPngLib;
  * @returns Base64-encoded PNG image (data URL format)
  */
 export async function convertPdfToImage(pdfBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      // pdf-to-png writes to a file, so we need a temporary output
-      // However, the library might support buffer output if we don't provide outputFolder?
-      // Looking at library source (inferred), it likely wraps 'gs'.
+  try {
+    // The pdf-to-png library is promise-based, not callback-based.
+    // It returns a Promise<PngPage[]>.
+    const pngPages = await pdfToPng(pdfBuffer, {
+      viewportScale: 2.0,
+      pagesToProcess: [1],
+    });
 
-      // Since we can't easily check library internals, we'll try the standard usage
-      // But we want a Buffer back, not a file.
+    if (Array.isArray(pngPages) && pngPages.length > 0 && pngPages[0].content) {
+      const imageBuffer = pngPages[0].content;
+      const base64 = imageBuffer.toString("base64");
+      return `data:image/png;base64,${base64}`;
+    } else {
+      throw new Error("No image data returned from PDF conversion");
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // If pdf-to-png doesn't support buffer output easily, we might need a different approach.
-      // Let's assume standard usage for now and see if it returns a buffer in the callback.
-
-      // Based on typical pdf-to-png usage:
-      pdfToPng(
-        pdfBuffer,
-        {
-          viewportScale: 2.0,
-          pagesToProcess: [1],
-        },
-        (err: any, data: any) => {
-          if (err) {
-            const errorMessage = err.toString().toLowerCase();
-            if (
-              errorMessage.includes("command not found") ||
-              errorMessage.includes("gs")
-            ) {
-              reject(
-                new Error(
-                  "Ghostscript is required for PDF conversion. Please install it (e.g., 'brew install ghostscript')."
-                )
-              );
-            } else {
-              reject(new Error(`PDF to PNG conversion failed: ${err}`));
-            }
-            return;
-          }
-
-          // data is usually an array of { pageNumber, content: Buffer }
-          if (Array.isArray(data) && data.length > 0 && data[0].content) {
-            const imageBuffer = data[0].content;
-            const base64 = imageBuffer.toString("base64");
-            resolve(`data:image/png;base64,${base64}`);
-          } else {
-            reject(new Error("No image data returned from PDF conversion"));
-          }
-        }
-      );
-    } catch (error) {
-      reject(
-        new Error(
-          `PDF conversion setup failed: ${error instanceof Error ? error.message : String(error)}`
-        )
+    if (
+      errorMessage.toLowerCase().includes("command not found") ||
+      errorMessage.toLowerCase().includes("gs") ||
+      errorMessage.toLowerCase().includes("ghostscript")
+    ) {
+      throw new Error(
+        "Ghostscript is required for PDF conversion. Please install it (e.g., 'brew install ghostscript')."
       );
     }
-  });
+
+    throw new Error(`PDF conversion failed: ${errorMessage}`);
+  }
 }

@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import sharp from "sharp";
 
 // Color scheme matching our UI
 const COLORS = {
@@ -223,8 +224,8 @@ I understand that I have the right to revoke this authorization at any time.`;
         this.addErrorPage("Could not merge ID PDF. Please attach manually.");
       }
     }
-    // If ID is Image, embed it
-    else if (this.options.idFileType.startsWith("image/")) {
+    // Use sharp to convert HEIC/JPG/PNG/Other to PNG for embedding
+    else {
       const page = this.pdfDoc.addPage();
       const { width, height } = page.getSize();
       const margin = 50;
@@ -237,12 +238,11 @@ I understand that I have the right to revoke this authorization at any time.`;
       });
 
       try {
-        let image;
-        if (this.options.idFileType.includes("png")) {
-          image = await this.pdfDoc.embedPng(this.options.idFileBuffer);
-        } else {
-          image = await this.pdfDoc.embedJpg(this.options.idFileBuffer);
-        }
+        const processedBuffer = await sharp(this.options.idFileBuffer)
+          .png()
+          .toBuffer();
+
+        const image = await this.pdfDoc.embedPng(processedBuffer);
 
         // Scale image to fit
         const maxWidth = width - 2 * margin;
@@ -262,8 +262,6 @@ I understand that I have the right to revoke this authorization at any time.`;
         console.error("Failed to embed ID Image", e);
         this.addErrorPage("Could not embed ID Image. Please attach manually.");
       }
-    } else {
-      this.addErrorPage("Unsupported ID file format. Please attach manually.");
     }
   }
 

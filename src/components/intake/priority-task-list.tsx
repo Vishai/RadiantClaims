@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HospitalSearchInput } from "@/components/ui/hospital-search-input";
 
 interface UploadedFile {
   id: string;
@@ -57,6 +58,8 @@ export function PriorityTaskList({
 
   // Medical Request State
   const [hospitalName, setHospitalName] = useState("");
+  const [hospitalCity, setHospitalCity] = useState("");
+  const [hospitalState, setHospitalState] = useState("");
   const [treatmentYear, setTreatmentYear] = useState("");
   const [cancerType, setCancerType] = useState("");
   const [requestGenerated, setRequestGenerated] = useState(false);
@@ -157,6 +160,11 @@ export function PriorityTaskList({
   const topTask = activeTasks[0];
   const showMedicalIntervention =
     topTask?.type === "MEDICAL_PATHOLOGY" && !requestGenerated;
+
+  // Filter out the pathology task from the list if we are showing the intervention card
+  const displayedActiveTasks = showMedicalIntervention
+    ? activeTasks.filter((t) => t.type !== "MEDICAL_PATHOLOGY")
+    : activeTasks;
 
   return (
     <div className="space-y-8">
@@ -276,13 +284,40 @@ export function PriorityTaskList({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="hospital">Hospital Name</Label>
-                  <Input
-                    id="hospital"
-                    placeholder="e.g. St. George Regional"
+                <div className="space-y-2 md:col-span-2">
+                  {/* Replaced standard Input with HospitalSearchInput */}
+                  <HospitalSearchInput
+                    label="Hospital Name"
                     value={hospitalName}
-                    onChange={(e) => setHospitalName(e.target.value)}
+                    onChange={setHospitalName}
+                    onSelect={(hospital) => {
+                      if (hospital.city) setHospitalCity(hospital.city);
+                      if (hospital.state) setHospitalState(hospital.state);
+                    }}
+                    defaultState={hospitalState}
+                    defaultCity={hospitalCity}
+                    placeholder="e.g. St. George Regional"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hospitalCity">Hospital City</Label>
+                  <Input
+                    id="hospitalCity"
+                    placeholder="e.g. St. George"
+                    value={hospitalCity}
+                    onChange={(e) => setHospitalCity(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hospitalState">Hospital State</Label>
+                  <Input
+                    id="hospitalState"
+                    placeholder="e.g. UT"
+                    maxLength={2}
+                    value={hospitalState}
+                    onChange={(e) =>
+                      setHospitalState(e.target.value.toUpperCase())
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -294,7 +329,7 @@ export function PriorityTaskList({
                     onChange={(e) => setTreatmentYear(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2">
                   <Label htmlFor="cancer">Cancer Type</Label>
                   <Input
                     id="cancer"
@@ -304,6 +339,33 @@ export function PriorityTaskList({
                   />
                 </div>
               </div>
+
+              {/* Pre-2000 Warning */}
+              {parseInt(treatmentYear) < 2000 && treatmentYear.length === 4 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                    <div>
+                      <p className="font-bold">
+                        Records older than 20-25 years?
+                      </p>
+                      <p className="mb-2">
+                        Hospitals often purge records after 10-20 years. For a{" "}
+                        {treatmentYear} diagnosis, we recommend contacting the{" "}
+                        <strong>State Cancer Registry</strong> instead.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 border-amber-300 text-amber-800 hover:bg-amber-100"
+                        onClick={() => setHospitalName("State Cancer Registry")}
+                      >
+                        Switch to Registry Request
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <hr className="border-terracotta-100" />
 
@@ -394,7 +456,7 @@ export function PriorityTaskList({
           <span className="text-sm text-sage-600">Sorted by Urgency</span>
         </div>
 
-        {activeTasks.map((task, index) => (
+        {displayedActiveTasks.map((task, index) => (
           <Card
             key={task.id}
             className={`cursor-pointer border-2 transition-all hover:shadow-md ${index === 0 ? "border-terracotta-200 shadow-sm" : "border-cream-200 opacity-90 hover:opacity-100"} `}
@@ -448,7 +510,7 @@ export function PriorityTaskList({
           </Card>
         ))}
 
-        {activeTasks.length === 0 && (
+        {displayedActiveTasks.length === 0 && !showMedicalIntervention && (
           <div className="rounded-2xl border-2 border-dashed border-cream-200 bg-cream-50 py-12 text-center">
             <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
             <h3 className="text-lg font-semibold text-sage-900">

@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/env.mjs";
@@ -27,6 +28,57 @@ function getS3Client(): S3Client | null {
   }
 
   return s3Client;
+}
+
+/**
+ * Set the CORS configuration for the R2 bucket
+ * Use this to fix "No 'Access-Control-Allow-Origin' header" errors
+ */
+export async function setBucketCors(corsRules: any[]) {
+  const client = getS3Client();
+
+  if (!client || !env.R2_BUCKET) {
+    throw new Error("R2 is not configured.");
+  }
+
+  const command = new PutBucketCorsCommand({
+    Bucket: env.R2_BUCKET,
+    CORSConfiguration: {
+      CORSRules: corsRules,
+    },
+  });
+
+  try {
+    await client.send(command);
+    console.log("✓ Successfully updated R2 CORS configuration");
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to update R2 CORS config:", error);
+    throw error;
+  }
+}
+
+/**
+ * Helper to apply the standard CORS config for RadiantClaims
+ */
+export async function fixR2Cors() {
+  const standardConfig = [
+    {
+      AllowedOrigins: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://radiantclaims.com",
+        "https://*.radiantclaims.com",
+        "https://*.vercel.app",
+      ],
+      AllowedMethods: ["GET", "PUT", "POST", "HEAD", "DELETE"],
+      AllowedHeaders: ["*"],
+      ExposeHeaders: ["ETag"],
+      MaxAgeSeconds: 3600,
+    },
+  ];
+
+  return await setBucketCors(standardConfig);
 }
 
 /**

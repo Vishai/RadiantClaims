@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatDate } from "@/lib/utils";
+import sharp from "sharp";
 
 interface RequestPacketData {
   hospitalName: string;
@@ -172,14 +173,26 @@ Sincerely,`;
   if (idCardImageBytes) {
     const idPage = doc.addPage();
     let idImage;
+    let processedImageBytes = idCardImageBytes;
+
     try {
-      // Try PNG first, then JPG
-      idImage = await doc.embedPng(idCardImageBytes);
+      // Attempt to convert any image to PNG using sharp (handles HEIC, etc.)
+      // This ensures compatibility with pdf-lib which only supports PNG/JPG
+      processedImageBytes = await sharp(idCardImageBytes).png().toBuffer();
+
+      // Now embed the PNG
+      idImage = await doc.embedPng(processedImageBytes);
     } catch (e) {
+      console.error("Sharp conversion failed, trying direct embed:", e);
+      // Fallback to direct embed if sharp fails (for standard JPG/PNG)
       try {
-        idImage = await doc.embedJpg(idCardImageBytes);
+        idImage = await doc.embedPng(idCardImageBytes);
       } catch (e2) {
-        console.error("Failed to embed ID image");
+        try {
+          idImage = await doc.embedJpg(idCardImageBytes);
+        } catch (e3) {
+          console.error("Failed to embed ID image directly");
+        }
       }
     }
 
@@ -200,6 +213,17 @@ Sincerely,`;
         width: imgW,
         height: imgH,
       });
+    } else {
+      // If image failed to load, add error text on the page
+      idPage.drawText(
+        "Error: Could not attach ID image. Please attach manually.",
+        {
+          x: 50,
+          y: height - 100,
+          size: 12,
+          color: rgb(1, 0, 0),
+        }
+      );
     }
   }
 

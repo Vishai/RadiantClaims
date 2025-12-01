@@ -235,9 +235,12 @@ function Step2Content() {
   };
 
   const handleContinue = () => {
-    // TODO: Navigate to next step - consent page not yet created
-    const resumeToken = session?.resumeToken || "";
-    router.push(`/intake/consent?token=${resumeToken}` as any);
+    // Navigate to the RECA application start page
+    // Pass the intake session ID if available, though RECA start checks auth primarily
+    const sessionId = session?.id;
+    router.push(
+      sessionId ? `/reca/start?sessionId=${sessionId}` : "/reca/start"
+    );
   };
 
   if (loading) {
@@ -637,60 +640,76 @@ function Step2Content() {
         )}
 
         {/* Action Buttons */}
-        <div className="mt-8 flex flex-col-reverse gap-4 sm:flex-row sm:justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/intake")}
-            className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-          >
-            ← Back to Information
-          </Button>
-          <div className="flex gap-4">
+        <div className="mt-8 flex flex-col gap-4">
+          <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-between">
             <Button
               variant="outline"
-              onClick={handleSaveForLater}
-              disabled={isSendingEmail}
-              className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50 sm:flex-none"
+              onClick={() => router.push("/intake")}
+              className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
             >
-              {isSendingEmail ? "Sending..." : "Save & Resume Later"}
+              ← Back to Information
             </Button>
-            <Button
-              onClick={handleContinue}
-              disabled={(() => {
-                const identityCount = (session.uploadedFiles || []).filter(
-                  (f) => f.category === "IDENTITY"
-                ).length;
-                const residenceCategories = [
-                  "PROOF_OF_RESIDENCE",
-                  "UTILITY_BILL",
-                  "SCHOOL_RECORDS",
-                  "MORTGAGE_STATEMENT",
-                  "LDS_CHURCH_RECORDS",
-                ];
-                const residenceCount = (session.uploadedFiles || []).filter(
-                  (f) => f.category && residenceCategories.includes(f.category)
-                ).length;
-                const pathologyCount = (session.uploadedFiles || []).filter(
-                  (f) => f.category === "PATHOLOGY_REPORT"
-                ).length;
+            <div className="flex gap-4">
+              <Button
+                variant="outline"
+                onClick={handleSaveForLater}
+                disabled={isSendingEmail}
+                className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50 sm:flex-none"
+              >
+                {isSendingEmail ? "Sending..." : "Save & Resume Later"}
+              </Button>
+              <Button
+                onClick={handleContinue}
+                disabled={(() => {
+                  const identityCount = (session.uploadedFiles || []).filter(
+                    (f) => f.category === "IDENTITY"
+                  ).length;
+                  const residenceCategories = [
+                    "PROOF_OF_RESIDENCE",
+                    "UTILITY_BILL",
+                    "SCHOOL_RECORDS",
+                    "MORTGAGE_STATEMENT",
+                    "LDS_CHURCH_RECORDS",
+                  ];
+                  const residenceCount = (session.uploadedFiles || []).filter(
+                    (f) =>
+                      f.category && residenceCategories.includes(f.category)
+                  ).length;
+                  const pathologyCount = (session.uploadedFiles || []).filter(
+                    (f) => f.category === "PATHOLOGY_REPORT"
+                  ).length;
 
-                return (
-                  identityCount < 1 || residenceCount < 2 || pathologyCount < 1
-                );
-              })()}
-              className="flex-1 rounded-full bg-terracotta-500 px-8 hover:bg-terracotta-600 sm:flex-none"
+                  return (
+                    identityCount < 1 ||
+                    residenceCount < 2 ||
+                    pathologyCount < 1
+                  );
+                })()}
+                className="flex-1 rounded-full bg-terracotta-500 px-8 hover:bg-terracotta-600 sm:flex-none"
+              >
+                Continue to Consent →
+              </Button>
+            </div>
+          </div>
+
+          {/* Skip Option */}
+          <div className="text-center">
+            <button
+              onClick={handleContinue}
+              className="text-sm text-sage-500 underline decoration-dotted underline-offset-4 hover:text-sage-700"
             >
-              Continue to Consent →
-            </Button>
+              Skip uploading for now and continue to RECA application
+            </button>
           </div>
         </div>
 
         {/* Help Text */}
         <div className="mt-8 rounded-2xl bg-gradient-to-br from-sage-50 to-cream-100 p-6 text-center">
           <p className="text-sm text-sage-700">
-            <strong>Need help finding documents?</strong> We can assist you in
+            <strong>Need help finding documents?</strong> You can skip uploading
+            for now and continue with the application. We can assist you in
             obtaining medical records, utility bills, and other required
-            documents. Just save your progress and contact our support team.
+            documents later.
           </p>
         </div>
       </main>

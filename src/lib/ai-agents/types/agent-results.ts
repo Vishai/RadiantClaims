@@ -78,6 +78,8 @@ export interface IdentityResult extends BaseAgentResult {
     isValid: boolean;
     fullName: string | null;
     dateOfBirth: string | null; // ISO date string
+    isDeathCertificate?: boolean;
+    causeOfDeath?: string | null;
     placeOfBirth: {
       city?: string;
       county?: string;

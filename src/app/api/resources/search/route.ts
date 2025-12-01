@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ResourceType } from "@prisma/client";
+import { searchContactsWithAI } from "@/lib/contact-agent/web-search";
 
 /**
  * GET /api/resources/search
@@ -19,13 +20,29 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const state = searchParams.get("state");
     const county = searchParams.get("county");
+    const city = searchParams.get("city"); // Added city param
     const resourceType = searchParams.get(
       "resourceType"
     ) as ResourceType | null;
     const documentType = searchParams.get("documentType");
+    const query = searchParams.get("query") || searchParams.get("name"); // Generic search query
 
     // Build query filters
     const where: any = {};
+
+    if (query) {
+      where.name = {
+        contains: query,
+        mode: "insensitive",
+      };
+    }
+
+    if (city) {
+      where.city = {
+        contains: city,
+        mode: "insensitive",
+      };
+    }
 
     if (state) {
       where.state = state.toUpperCase();
@@ -137,7 +154,52 @@ export async function GET(req: NextRequest) {
       return a.name.localeCompare(b.name);
     });
 
-    // If no county-specific results and county was specified, also get state-level resources
+    // If no results found in DB, try Web Search
+    if (resourcesWithStats.length === 0 && query) {
+      console.log(
+        `No internal resources found for "${query}". Falling back to AI web search (Google).`
+      );
+
+      // Perform web search using Google (via Serper) + OpenAI Parsing
+      const webContacts = await searchContactsWithAI({
+        query: `${query} ${city || ""} Hospital`, // Direct query: "St Marks Salt Lake City Hospital"
+        state: state || undefined,
+        county: county || undefined,
+      });
+
+      if (webContacts.length > 0) {
+        // Map to Resource format
+        const webResources = webContacts.map((contact, index) => ({
+          id: `web-${index}`,
+          name: contact.name,
+          resourceType: "HOSPITAL",
+          address: contact.address || null,
+          city: contact.city || null,
+          county: contact.county || null,
+          state: contact.state || null,
+          zip: null,
+          phone: contact.phone || null,
+          email: contact.email || null,
+          website: contact.website || null,
+          notes: contact.notes || "Found via web search",
+          isVetted: false, // Explicitly mark as not vetted
+          documentTypesProvided: [],
+          requirements: [],
+          fees: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+
+        return NextResponse.json({
+          resources: webResources,
+          resultsType: "web_search",
+          count: webResources.length,
+          message: "Found results via web search.",
+        });
+      }
+    }
+
+    // If no county-specific results and county was specified (and no web results), also get state-level resources
     if (resources.length === 0 && county) {
       const stateWideResources = await prisma.documentResource.findMany({
         where: {

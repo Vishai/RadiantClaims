@@ -57,6 +57,23 @@ export class IdentityVerificationAgent extends BaseAgent<IdentityResult> {
       });
     }
 
+    if (parsed.extracted.isDeathCertificate) {
+      evidence.push({
+        type: "document_type",
+        description: "Identified as Death Certificate",
+        confidence: 0.95,
+      });
+
+      if (parsed.extracted.causeOfDeath) {
+        evidence.push({
+          type: "extracted_field",
+          description: "Cause of Death extracted",
+          extractedText: parsed.extracted.causeOfDeath,
+          confidence: 0.9,
+        });
+      }
+    }
+
     // Determine issues
     const issues: Issue[] = [];
     const requiredElements = parsed.requiredElements;
@@ -143,6 +160,19 @@ export class IdentityVerificationAgent extends BaseAgent<IdentityResult> {
       });
     }
 
+    // Check for cause of death on death certificates
+    if (parsed.extracted.isDeathCertificate && !parsed.extracted.causeOfDeath) {
+      issues.push({
+        severity: "WARNING",
+        code: "MISSING_CAUSE_OF_DEATH",
+        message: "Cause of Death is missing or unclear on Death Certificate",
+        suggestion:
+          "Ensure the death certificate clearly lists the cause of death to verify eligibility.",
+        affectsApproval: true,
+        field: "causeOfDeath",
+      });
+    }
+
     // Calculate validity score
     const validationChecks = {
       total: 5,
@@ -186,6 +216,8 @@ export class IdentityVerificationAgent extends BaseAgent<IdentityResult> {
         issuingAuthority: parsed.extracted.issuingAuthority,
         hasOfficialSeal: parsed.extracted.hasOfficialSeal,
         documentDate: parsed.extracted.documentDate,
+        isDeathCertificate: parsed.extracted.isDeathCertificate,
+        causeOfDeath: parsed.extracted.causeOfDeath,
         requiredElements: parsed.requiredElements,
       },
       evidence,
@@ -261,12 +293,17 @@ Your task is to:
 1. Verify the document is a valid identity document
 2. Extract key identity information
 3. Check for required elements that make the document acceptable for DOJ submission
+4. If it is a Death Certificate, extract the Cause of Death.
 
 For RECA claims, identity documents MUST have:
 - Full legal name
 - Date of birth (for birth certificates) or date of death (for death certificates)
 - Official seal or certification stamp from the issuing agency
 - Issuing authority clearly stated (e.g., "State of Utah, Department of Health")
+
+For Death Certificates:
+- Identify if the document is a death certificate.
+- Extract the "Cause of Death" exactly as written. This is critical for verifying eligibility if the claimant is deceased.
 
 Highly valuable but not always required:
 - Place of birth (city, county, state) - helps establish residency in covered areas
@@ -288,6 +325,8 @@ Respond with JSON in this exact format:
     "issuingAuthority": "Utah Department of Health",
     "hasOfficialSeal": true,
     "documentDate": "2024-01-15",
+    "isDeathCertificate": false,
+    "causeOfDeath": null,
     "nameConfidence": 0.98,
     "dobConfidence": 0.95
   },
@@ -337,6 +376,8 @@ interface IdentityAgentResponse {
     issuingAuthority: string | null;
     hasOfficialSeal: boolean;
     documentDate: string | null;
+    isDeathCertificate: boolean;
+    causeOfDeath: string | null;
     nameConfidence?: number;
     dobConfidence?: number;
   };

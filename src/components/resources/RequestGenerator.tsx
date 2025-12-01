@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, FileText, Download } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, FileText, Download, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { HospitalSearchInput } from "@/components/ui/hospital-search-input";
 
 interface RequestGeneratorProps {
   defaultHospitalName?: string;
@@ -27,11 +29,13 @@ export function RequestGenerator({
 }: RequestGeneratorProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegistryAlert, setShowRegistryAlert] = useState(false);
   const [formData, setFormData] = useState({
     hospitalName: defaultHospitalName,
     patientName: defaultPatientName,
     patientDOB: "",
     patientSSN: "",
+    diagnosisYear: "",
     requesterName: defaultPatientName, // Default to self-request
     requesterAddress: "",
     requesterCity: "",
@@ -42,9 +46,31 @@ export function RequestGenerator({
     treatmentDates: "1950-1970",
   });
 
+  useEffect(() => {
+    const year = parseInt(formData.diagnosisYear);
+    if (year && year < 2000) {
+      setShowRegistryAlert(true);
+    } else {
+      setShowRegistryAlert(false);
+    }
+  }, [formData.diagnosisYear]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSwitchToRegistry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      hospitalName: "State Cancer Registry",
+      treatmentDates: prev.diagnosisYear || prev.treatmentDates,
+    }));
+    toast({
+      title: "Switched to Registry Request",
+      description:
+        "Please ensure you find the correct mailing address for your State Cancer Registry.",
+    });
   };
 
   const handleGenerate = async () => {
@@ -94,19 +120,20 @@ export function RequestGenerator({
         </CardTitle>
         <CardDescription>
           Create a professional request packet (Cover Letter + HIPAA Release +
-          ID) to send to hospitals.
+          ID) to send to hospitals or cancer registries.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="hospitalName">Hospital / Facility Name</Label>
+            <Label htmlFor="diagnosisYear">Diagnosis Year</Label>
             <Input
-              id="hospitalName"
-              name="hospitalName"
-              value={formData.hospitalName}
+              id="diagnosisYear"
+              name="diagnosisYear"
+              type="number"
+              value={formData.diagnosisYear}
               onChange={handleInputChange}
-              placeholder="e.g. St. George Regional Hospital"
+              placeholder="e.g. 1998"
             />
           </div>
           <div className="space-y-2">
@@ -119,6 +146,58 @@ export function RequestGenerator({
               placeholder="e.g. 1950-1965"
             />
           </div>
+        </div>
+
+        {showRegistryAlert && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertTitle>Historical Records Warning</AlertTitle>
+            <AlertDescription className="mt-2">
+              <p className="mb-2 text-sm">
+                Hospitals are generally not required to keep medical records for
+                more than 20-25 years (state laws vary, but 7-10 years is the
+                federal minimum). For a diagnosis in {formData.diagnosisYear},
+                the hospital likely no longer has these records.
+              </p>
+              <p className="mb-3 text-sm">
+                We recommend contacting the{" "}
+                <strong>State Cancer Registry</strong>, as they maintain
+                permanent records of cancer diagnoses.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSwitchToRegistry}
+                className="border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+              >
+                Switch to Cancer Registry Request
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 p-4">
+          <div className="flex gap-3">
+            <Info className="h-5 w-5 flex-shrink-0 text-blue-600" />
+            <div className="text-sm text-blue-800">
+              <strong>Includes Pathology Request:</strong> This tool
+              automatically generates a request for your
+              <strong>Pathology Report</strong> and other critical documents.
+              You do not need to create a separate request for pathology.
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {/* Replaced standard Input with HospitalSearchInput */}
+          <HospitalSearchInput
+            label="Hospital / Facility Name"
+            value={formData.hospitalName}
+            onChange={(val) =>
+              setFormData((prev) => ({ ...prev, hospitalName: val }))
+            }
+            placeholder="e.g. St. George Regional Hospital"
+          />
         </div>
 
         <div className="border-t pt-4">

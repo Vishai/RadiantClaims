@@ -34,6 +34,7 @@ export async function searchContactsWeb(query: {
   county?: string;
   documentType?: string;
   institutionType?: string;
+  query?: string; // Allow explicit query
 }): Promise<ContactFromWeb[]> {
   const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
@@ -44,31 +45,52 @@ export async function searchContactsWeb(query: {
 
   try {
     // Build search query
-    const searchTerms = [];
+    let searchQuery = "";
 
-    if (query.county && query.state) {
-      searchTerms.push(`${query.county} County ${query.state}`);
-    } else if (query.state) {
-      searchTerms.push(query.state);
+    if (query.query) {
+      // If explicit query is provided, use it primarily
+      // E.g. "St Marks Hospital Salt Lake City"
+      searchQuery = query.query;
+
+      // Append state if not present in query (simple check)
+      if (
+        query.state &&
+        !searchQuery.toLowerCase().includes(query.state.toLowerCase())
+      ) {
+        searchQuery += ` ${query.state}`;
+      }
+
+      // Append "contact" only, to keep it focused but get contact info
+      searchQuery += " contact info";
+    } else {
+      // Construct from components
+      const searchTerms = [];
+
+      if (query.county && query.state) {
+        searchTerms.push(`${query.county} County ${query.state}`);
+      } else if (query.state) {
+        searchTerms.push(query.state);
+      }
+
+      if (query.institutionType) {
+        searchTerms.push(
+          query.institutionType.toLowerCase().replace(/_/g, " ")
+        );
+      }
+
+      if (query.documentType) {
+        const docMap: Record<string, string> = {
+          BIRTH_CERTIFICATE: "birth certificate",
+          DEATH_CERTIFICATE: "death certificate",
+          MEDICAL_RECORDS: "medical records",
+          SCHOOL_RECORDS: "school records transcripts",
+        };
+        searchTerms.push(docMap[query.documentType] || query.documentType);
+      }
+
+      searchTerms.push("contact phone address");
+      searchQuery = searchTerms.join(" ");
     }
-
-    if (query.institutionType) {
-      searchTerms.push(query.institutionType.toLowerCase().replace(/_/g, " "));
-    }
-
-    if (query.documentType) {
-      const docMap: Record<string, string> = {
-        BIRTH_CERTIFICATE: "birth certificate",
-        DEATH_CERTIFICATE: "death certificate",
-        MEDICAL_RECORDS: "medical records",
-        SCHOOL_RECORDS: "school records transcripts",
-      };
-      searchTerms.push(docMap[query.documentType] || query.documentType);
-    }
-
-    searchTerms.push("contact phone address");
-
-    const searchQuery = searchTerms.join(" ");
 
     console.log(`[Web Search] Searching: ${searchQuery}`);
 
@@ -128,6 +150,7 @@ export async function searchContactsWithAI(query: {
   county?: string;
   documentType?: string;
   institutionType?: string;
+  query?: string; // Allow explicit query
 }): Promise<ContactFromWeb[]> {
   const SERPER_API_KEY = process.env.SERPER_API_KEY; // Serper.dev for Google Search API
 
@@ -138,29 +161,52 @@ export async function searchContactsWithAI(query: {
 
   try {
     // Build search query
-    const searchTerms = [];
+    let searchQuery = "";
 
-    if (query.county && query.state) {
-      searchTerms.push(`"${query.county} County" ${query.state}`);
-    } else if (query.state) {
-      searchTerms.push(query.state);
+    if (query.query) {
+      // If explicit query is provided, use it primarily
+      // E.g. "St Marks Hospital Salt Lake City"
+      searchQuery = query.query;
+
+      // Append state if not present in query (simple check)
+      if (
+        query.state &&
+        !searchQuery.toLowerCase().includes(query.state.toLowerCase())
+      ) {
+        searchQuery += ` ${query.state}`;
+      }
+
+      // Append "contact" only
+      searchQuery += " contact address phone";
+    } else {
+      const searchTerms = [];
+
+      if (query.county && query.state) {
+        searchTerms.push(`"${query.county} County" ${query.state}`);
+      } else if (query.state) {
+        searchTerms.push(query.state);
+      }
+
+      if (query.institutionType === "VITAL_RECORDS") {
+        searchTerms.push("vital records office");
+      } else if (query.institutionType === "COUNTY_CLERK") {
+        searchTerms.push("county clerk");
+      } else if (query.institutionType === "HOSPITAL") {
+        searchTerms.push("hospital medical records");
+      }
+
+      if (query.documentType === "BIRTH_CERTIFICATE") {
+        searchTerms.push("birth certificate");
+      }
+
+      searchTerms.push("contact phone address");
+      searchQuery = searchTerms.join(" ");
     }
 
-    if (query.institutionType === "VITAL_RECORDS") {
-      searchTerms.push("vital records office");
-    } else if (query.institutionType === "COUNTY_CLERK") {
-      searchTerms.push("county clerk");
-    } else if (query.institutionType === "HOSPITAL") {
-      searchTerms.push("hospital medical records");
-    }
-
-    if (query.documentType === "BIRTH_CERTIFICATE") {
-      searchTerms.push("birth certificate");
-    }
-
-    searchTerms.push("contact phone address");
-
-    const searchQuery = searchTerms.join(" ");
+    console.log(`[AI Web Search] Searching Google via Serper: ${searchQuery}`);
+    console.log(
+      `[AI Web Search] Serper API Key status: ${SERPER_API_KEY ? "Set" : "Not Set"}`
+    );
 
     // Use Serper.dev API (Google Search)
     const response = await fetch("https://google.serper.dev/search", {
@@ -171,35 +217,34 @@ export async function searchContactsWithAI(query: {
       },
       body: JSON.stringify({
         q: searchQuery,
-        num: 10,
+        num: 8, // Get top 8 results
       }),
     });
 
     if (!response.ok) {
-      console.error("Serper API error:", response.status);
+      console.error(
+        `[AI Web Search] Serper API error: ${response.status} - ${response.statusText}`
+      );
+      const errorText = await response.text();
+      console.error(`[AI Web Search] Serper API error details: ${errorText}`);
       return [];
     }
 
     const data = await response.json();
 
-    // Extract contacts from organic results
-    const contacts: ContactFromWeb[] = [];
+    // Use AI to parse the search results for better accuracy
+    // This handles unstructured data much better than regex
+    const searchResults: WebSearchResult[] = (data.organic || []).map(
+      (r: any) => ({
+        title: r.title,
+        url: r.link,
+        snippet: r.snippet,
+      })
+    );
 
-    for (const result of data.organic || []) {
-      const contact = extractContactFromResult(
-        {
-          title: result.title,
-          url: result.link,
-          snippet: result.snippet,
-        },
-        query
-      );
-      if (contact) {
-        contacts.push(contact);
-      }
-    }
+    if (searchResults.length === 0) return [];
 
-    return contacts;
+    return await parseSearchResultsWithAI(searchResults, query);
   } catch (error) {
     console.error("AI web search error:", error);
     return [];
@@ -284,6 +329,8 @@ Extract the following for each relevant institution:
 - Phone number
 - Email (if mentioned)
 - Physical address
+- City
+- State
 - Website URL
 - Any relevant notes
 
@@ -295,7 +342,7 @@ Return as JSON array.`;
         {
           role: "system",
           content:
-            "You are a data extraction expert. Extract contact information from search results accurately.",
+            "You are a data extraction expert. Extract contact information from search results accurately. Ensure City and State are extracted as separate fields if available within the address, and the institution's primary contact phone number.",
         },
         { role: "user", content: prompt },
       ],
@@ -304,13 +351,21 @@ Return as JSON array.`;
     });
 
     const extracted = JSON.parse(
-      response.choices[0]?.message?.content || '{"contacts": []}'
+      response.choices[0]?.message?.content || '{"institutions": []}'
     );
 
-    return (extracted.contacts || []).map((c: any) => ({
-      ...c,
+    return (extracted.institutions || []).map((c: any) => ({
+      name: c.institution_name || c.name, // Handle both potential keys from AI
+      type: c.type,
+      address: c.physical_address || c.address, // Handle both potential keys
+      city: c.city,
+      state: c.state,
+      phone: c.phone_number || c.phone, // Handle both potential keys
+      email: c.email,
+      website: c.website_url || c.website, // Handle both potential keys
+      notes: c.notes,
       source: "Web Search (AI Parsed)",
-      sourceUrl: c.website || "",
+      sourceUrl: c.website_url || c.website || "", // Use AI website or fallback
     }));
   } catch (error) {
     console.error("AI parsing error:", error);
