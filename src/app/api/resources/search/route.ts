@@ -27,6 +27,10 @@ export async function GET(req: NextRequest) {
     const documentType = searchParams.get("documentType");
     const query = searchParams.get("query") || searchParams.get("name"); // Generic search query
 
+    console.log(
+      `[API Search] Parameters: query="${query}", state="${state}", county="${county}", city="${city}", resourceType="${resourceType}"`
+    );
+
     // Build query filters
     const where: any = {};
 
@@ -155,14 +159,20 @@ export async function GET(req: NextRequest) {
     });
 
     // If no results found in DB, try Web Search
+    console.log(
+      `[API Search] Web search check: resourcesWithStats.length=${resourcesWithStats.length}, query="${query}"`
+    );
     if (resourcesWithStats.length === 0 && query) {
       console.log(
         `No internal resources found for "${query}". Falling back to AI web search (Google).`
       );
 
       // Perform web search using Google (via Serper) + OpenAI Parsing
+      const searchQuery = `${query} ${city || ""} Hospital`;
+      console.log(`[Web Search] Executing search with query: "${searchQuery}"`);
+
       const webContacts = await searchContactsWithAI({
-        query: `${query} ${city || ""} Hospital`, // Direct query: "St Marks Salt Lake City Hospital"
+        query: searchQuery,
         state: state || undefined,
         county: county || undefined,
       });
@@ -210,7 +220,13 @@ export async function GET(req: NextRequest) {
     }
 
     // If no county-specific results and county was specified (and no web results), also get state-level resources
+    console.log(
+      `[API Search] Checking county fallback: resources.length=${resources.length}, county="${county}"`
+    );
     if (resources.length === 0 && county) {
+      console.log(
+        `[API Search] Falling back to state-wide resources (county was specified but no results)`
+      );
       const stateWideResources = await prisma.documentResource.findMany({
         where: {
           ...where,

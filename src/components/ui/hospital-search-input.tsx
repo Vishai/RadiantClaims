@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, Check, Building2, X } from "lucide-react";
+import { Search, Check, Building2, X, Loader2 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -12,11 +12,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface Hospital {
@@ -64,19 +59,21 @@ export function HospitalSearchInput({
     setSearchTerm(value);
   }, [value]);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (open && searchTerm.length >= 2) {
-        searchHospitals(searchTerm);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm, open, defaultState, defaultCity]);
+  // Remove auto-search - we'll use manual trigger instead
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     if (open && searchTerm.length >= 2) {
+  //       searchHospitals(searchTerm);
+  //     }
+  //   }, 400);
+  //   return () => clearTimeout(timer);
+  // }, [searchTerm, open, defaultState, defaultCity]);
 
   const searchHospitals = async (query: string) => {
+    console.log("[HospitalSearch] Starting search for:", query);
     setLoading(true);
+    setResults([]); // Clear previous results
+
     try {
       // Search using our internal API
       const params = new URLSearchParams({
@@ -92,13 +89,14 @@ export function HospitalSearchInput({
         params.append("city", defaultCity);
       }
 
-      // Using the existing search endpoint - we might need to update it to support 'query' param
-      // if it doesn't already, or filter client-side.
-      // The current implementation in route.ts filters by state/county/type.
-      // We will modify the route.ts to accept a generic 'query' or 'name' filter.
+      const url = `/api/resources/search?${params.toString()}`;
+      console.log("[HospitalSearch] Fetching URL:", url);
 
-      const response = await fetch(
-        `/api/resources/search?${params.toString()}`
+      const response = await fetch(url);
+      console.log(
+        "[HospitalSearch] Response status:",
+        response.status,
+        response.ok
       );
 
       if (response.ok) {
@@ -109,6 +107,7 @@ export function HospitalSearchInput({
           "[HospitalSearch] Resources count:",
           data.resources?.length
         );
+        console.log("[HospitalSearch] Raw resources:", data.resources);
 
         // Map API response to our Hospital interface
         const mappedResults: Hospital[] = (data.resources || []).map(
@@ -123,23 +122,40 @@ export function HospitalSearchInput({
           })
         );
         console.log("[HospitalSearch] Mapped Results:", mappedResults);
+        console.log("[HospitalSearch] Setting results state...");
         setResults(mappedResults);
+        console.log("[HospitalSearch] Results state set!");
+      } else {
+        console.error(
+          "[HospitalSearch] API returned non-OK status:",
+          response.status
+        );
       }
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error("[HospitalSearch] Search failed:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelect = (hospital: Hospital) => {
+    console.log("[HospitalSearch] handleSelect called with:", hospital);
+    console.log("[HospitalSearch] onSelect callback exists?", !!onSelect);
+
     setSelectedHospital(hospital);
     setSearchTerm(hospital.name);
     onChange(hospital.name);
+
     if (onSelect) {
+      console.log("[HospitalSearch] Calling onSelect callback...");
       onSelect(hospital);
+      console.log("[HospitalSearch] onSelect callback completed");
+    } else {
+      console.warn("[HospitalSearch] No onSelect callback provided!");
     }
-    setOpen(false);
+
+    // Keep results open so user can see what was selected
+    // setOpen(false); // Don't close - let user dismiss manually
   };
 
   const handleClear = () => {
@@ -150,51 +166,87 @@ export function HospitalSearchInput({
     inputRef.current?.focus();
   };
 
+  const handleSearchClick = () => {
+    if (searchTerm.length >= 2) {
+      setOpen(true);
+      searchHospitals(searchTerm);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div className="relative">
-            {selectedHospital ? (
-              <Check className="absolute left-3 top-3 h-4 w-4 text-green-600" />
-            ) : (
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          {selectedHospital ? (
+            <Check className="absolute left-3 top-3 h-4 w-4 text-green-600" />
+          ) : (
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          )}
+          <Input
+            ref={inputRef}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              onChange(e.target.value);
+              setSelectedHospital(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearchClick();
+              }
+            }}
+            placeholder={placeholder}
+            className={cn(
+              "pl-9 pr-9",
+              selectedHospital && "border-green-500 bg-green-50"
             )}
-            <Input
-              ref={inputRef}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                onChange(e.target.value); // Allow typing freely
-                setSelectedHospital(null); // Clear selection if typing
+          />
+          {searchTerm && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClear();
               }}
-              onFocus={() => setOpen(true)}
-              placeholder={placeholder}
-              className={cn(
-                "pl-9 pr-9",
-                selectedHospital && "border-green-500 bg-green-50"
-              )}
-            />
-            {searchTerm && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClear();
-                }}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </PopoverTrigger>
-        <PopoverContent
-          className="p-0"
-          align="start"
-          style={{ width: "var(--radix-popover-trigger-width)" }}
-          onOpenAutoFocus={(e) => e.preventDefault()}
+              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <Button
+          type="button"
+          onClick={handleSearchClick}
+          disabled={loading || searchTerm.length < 2}
+          className="flex-shrink-0"
         >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Searching...
+            </>
+          ) : (
+            <>
+              <Search className="mr-2 h-4 w-4" />
+              Search
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Search Results Popover */}
+      {open && (
+        <div className="relative mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+          {/* Close button */}
+          <button
+            onClick={() => setOpen(false)}
+            className="absolute right-2 top-2 z-10 rounded-full bg-gray-100 p-1 hover:bg-gray-200"
+            aria-label="Close results"
+          >
+            <X className="h-4 w-4 text-gray-600" />
+          </button>
+
           <Command shouldFilter={false}>
             {" "}
             {/* We handle filtering server-side */}
@@ -228,38 +280,72 @@ export function HospitalSearchInput({
               )}
 
               {!loading && results.length > 0 && (
-                <CommandGroup heading="Best Matches">
+                <div className="p-2">
+                  <p className="mb-2 px-2 text-xs font-semibold text-gray-500">
+                    Best Matches - Click to Select
+                  </p>
                   {results.map((hospital) => (
-                    <CommandItem
+                    <button
                       key={hospital.id || hospital.name}
-                      value={hospital.name}
-                      onSelect={() => handleSelect(hospital)}
-                      className="flex items-start gap-2 py-3"
+                      type="button"
+                      onClick={(e) => {
+                        console.log(
+                          "[Hospital Button] onClick fired for:",
+                          hospital.name
+                        );
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSelect(hospital);
+                      }}
+                      className="flex w-full cursor-pointer items-start gap-3 rounded-lg border-b border-gray-100 p-4 text-left transition-colors last:border-b-0 hover:bg-blue-50"
                     >
-                      <Building2 className="mt-1 h-4 w-4 flex-shrink-0 text-gray-500" />
-                      <div className="flex flex-col">
-                        <span className="flex items-center gap-2 font-medium">
-                          {hospital.name}
-                          {/* Identify web results (ids start with 'web-') */}
+                      <Building2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-600" />
+                      <div className="flex-1">
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="font-semibold text-gray-900">
+                            {hospital.name}
+                          </span>
                           {hospital.id?.startsWith("web-") && (
-                            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-700">
+                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
                               Web Result
                             </span>
                           )}
-                        </span>
+                        </div>
+
+                        {/* Address line */}
+                        {hospital.address && (
+                          <p className="text-sm text-gray-600">
+                            {hospital.address}
+                          </p>
+                        )}
+
+                        {/* City, State, Zip line */}
                         {(hospital.city || hospital.state) && (
-                          <span className="text-xs text-gray-500">
-                            {hospital.address ? `${hospital.address}, ` : ""}
-                            {hospital.city}, {hospital.state}
-                          </span>
+                          <p className="text-sm text-gray-600">
+                            {hospital.city && `${hospital.city}, `}
+                            {hospital.state}
+                            {hospital.zip && ` ${hospital.zip}`}
+                          </p>
+                        )}
+
+                        {/* Phone number */}
+                        {hospital.phone && (
+                          <p className="mt-1 text-sm font-medium text-gray-700">
+                            📞 {hospital.phone}
+                          </p>
                         )}
                       </div>
-                      {selectedHospital?.name === hospital.name && (
-                        <Check className="ml-auto h-4 w-4 text-green-600" />
+
+                      {selectedHospital?.name === hospital.name ? (
+                        <Check className="mt-1 h-5 w-5 flex-shrink-0 text-green-600" />
+                      ) : (
+                        <div className="mt-1 text-xs text-blue-600">
+                          Click to select
+                        </div>
                       )}
-                    </CommandItem>
+                    </button>
                   ))}
-                </CommandGroup>
+                </div>
               )}
 
               <div className="border-t border-blue-100 bg-blue-50 p-3 text-xs text-blue-700">
@@ -268,8 +354,8 @@ export function HospitalSearchInput({
               </div>
             </CommandList>
           </Command>
-        </PopoverContent>
-      </Popover>
+        </div>
+      )}
     </div>
   );
 }

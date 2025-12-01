@@ -142,6 +142,7 @@ model Claimant {
   followUps               ClaimantFollowUp[]
   documentAssistances     DocumentRequestAssistance[]
   followUpPriority        FollowUpPriorityQueue?
+  medicalRecordSources    MedicalRecordSource[] // Medical facilities for record requests
   // NEW FIELDS FOR RECA DOCUMENTATION
   claimType               ClaimType?
   relationshipToClaimant  RelationshipType?
@@ -2336,10 +2337,51 @@ model ChatMessage {
   role      String      // "user", "assistant", "system"
   content   String      @db.Text
   metadata  Json?       // Store function calls, tool outputs, citations, etc.
-  
+
   createdAt DateTime    @default(now())
 
   @@index([sessionId])
   @@index([createdAt])
+}
+
+// Medical Record Sources - Track hospitals/facilities for medical records
+model MedicalRecordSource {
+  id                String    @id @default(cuid())
+  claimantId        String
+  claimant          Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Hospital/Facility Information
+  facilityName      String
+  streetAddress     String?
+  city              String?
+  state             String?
+  zipCode           String?
+  phoneNumber       String?
+
+  // Operation Dates (for validation)
+  yearOpened        Int?
+  yearClosed        Int?
+  stillOperating    Boolean   @default(true)
+
+  // Treatment Information
+  treatmentYear     Int?      // Year patient was treated at this facility
+  treatmentType     String?   // Type of treatment (e.g., "Radiation", "Chemotherapy")
+
+  // Metadata
+  source            String    @default("USER_ENTERED") // "USER_ENTERED", "WEB_SEARCH", "DATABASE"
+  webSearchResult   Boolean   @default(false) // Was this from web search?
+  requestGenerated  Boolean   @default(false) // Has request packet been generated?
+  requestedAt       DateTime? // When request was made
+  receivedAt        DateTime? // When records were received
+
+  // Notes
+  notes             String?   @db.Text
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([claimantId])
+  @@index([treatmentYear])
+  @@index([requestGenerated])
 }
 

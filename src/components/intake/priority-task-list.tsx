@@ -63,12 +63,45 @@ export function PriorityTaskList({
   const [hospitalAddress, setHospitalAddress] = useState("");
   const [hospitalZip, setHospitalZip] = useState("");
   const [hospitalPhone, setHospitalPhone] = useState("");
+  const [hospitalOpenedYear, setHospitalOpenedYear] = useState("");
+  const [hospitalClosedYear, setHospitalClosedYear] = useState("");
+  const [hospitalStillOperating, setHospitalStillOperating] = useState(true);
   const [treatmentYear, setTreatmentYear] = useState("");
   const [cancerType, setCancerType] = useState("");
   const [requestGenerated, setRequestGenerated] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [hospitalSelected, setHospitalSelected] = useState(false);
+  const [treatmentYearWarning, setTreatmentYearWarning] = useState<
+    string | null
+  >(null);
+
+  // Validate treatment year against hospital operation dates
+  useEffect(() => {
+    if (treatmentYear && treatmentYear.length === 4) {
+      const year = parseInt(treatmentYear);
+      const openedYear = hospitalOpenedYear
+        ? parseInt(hospitalOpenedYear)
+        : null;
+      const closedYear = hospitalClosedYear
+        ? parseInt(hospitalClosedYear)
+        : null;
+
+      if (openedYear && year < openedYear) {
+        setTreatmentYearWarning(
+          `⚠️ ${hospitalName || "This hospital"} opened in ${hospitalOpenedYear}. Treatment before opening date may be incorrect.`
+        );
+      } else if (closedYear && year > closedYear) {
+        setTreatmentYearWarning(
+          `⚠️ ${hospitalName || "This hospital"} closed in ${hospitalClosedYear}. Treatment after closure date may be incorrect.`
+        );
+      } else {
+        setTreatmentYearWarning(null);
+      }
+    } else {
+      setTreatmentYearWarning(null);
+    }
+  }, [treatmentYear, hospitalOpenedYear, hospitalClosedYear, hospitalName]);
 
   useEffect(() => {
     // Convert checklist to tasks
@@ -315,36 +348,102 @@ export function PriorityTaskList({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  {/* Replaced standard Input with HospitalSearchInput */}
-                  <HospitalSearchInput
-                    label="Hospital Name"
-                    value={hospitalName}
-                    onChange={setHospitalName}
-                    onSelect={(hospital) => {
-                      setHospitalName(hospital.name);
-                      if (hospital.city) setHospitalCity(hospital.city);
-                      if (hospital.state) setHospitalState(hospital.state);
-                      if (hospital.address)
-                        setHospitalAddress(hospital.address || "");
-                      if (hospital.zip) setHospitalZip(hospital.zip || "");
-                      if (hospital.phone)
-                        setHospitalPhone(hospital.phone || "");
-                      setHospitalSelected(true);
-                    }}
-                    onClear={() => {
-                      setHospitalName("");
-                      setHospitalCity("");
-                      setHospitalState("");
-                      setHospitalAddress("");
-                      setHospitalZip("");
-                      setHospitalPhone("");
+                {/* State Field - Required First */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="hospitalState"
+                    className="flex items-center gap-1"
+                  >
+                    State <span className="text-terracotta-500">*</span>
+                  </Label>
+                  <Input
+                    id="hospitalState"
+                    placeholder="e.g. UT"
+                    value={hospitalState}
+                    onChange={(e) => {
+                      setHospitalState(e.target.value.toUpperCase());
                       setHospitalSelected(false);
                     }}
-                    defaultState={hospitalState}
-                    defaultCity={hospitalCity}
-                    placeholder="e.g. St. George Regional"
+                    maxLength={2}
+                    className="uppercase"
                   />
+                </div>
+
+                {/* City Field - Recommended */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="hospitalCity"
+                    className="flex items-center gap-1"
+                  >
+                    City{" "}
+                    <span className="text-xs text-sage-600">(Recommended)</span>
+                  </Label>
+                  <Input
+                    id="hospitalCity"
+                    placeholder="e.g. Salt Lake City"
+                    value={hospitalCity}
+                    onChange={(e) => {
+                      setHospitalCity(e.target.value);
+                      setHospitalSelected(false);
+                    }}
+                  />
+                </div>
+
+                {/* Hospital Search - Only enabled if State is provided */}
+                <div className="space-y-2 md:col-span-2">
+                  {!hospitalState ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      <p className="font-semibold">Please enter State first</p>
+                      <p className="text-xs">
+                        We need to know which state to search for better
+                        results.
+                      </p>
+                    </div>
+                  ) : (
+                    <HospitalSearchInput
+                      label="Hospital Name"
+                      value={hospitalName}
+                      onChange={setHospitalName}
+                      onSelect={(hospital) => {
+                        console.log(
+                          "[PriorityTaskList] Hospital selected:",
+                          hospital
+                        );
+                        setHospitalName(hospital.name);
+                        if (hospital.city) setHospitalCity(hospital.city);
+                        if (hospital.state) setHospitalState(hospital.state);
+                        if (hospital.address)
+                          setHospitalAddress(hospital.address || "");
+                        if (hospital.zip) setHospitalZip(hospital.zip || "");
+                        if (hospital.phone)
+                          setHospitalPhone(hospital.phone || "");
+                        setHospitalSelected(true);
+
+                        // Scroll to confirmation card
+                        setTimeout(() => {
+                          const confirmationCard = document.querySelector(
+                            "[data-hospital-confirmation]"
+                          );
+                          if (confirmationCard) {
+                            confirmationCard.scrollIntoView({
+                              behavior: "smooth",
+                              block: "nearest",
+                            });
+                          }
+                        }, 100);
+                      }}
+                      onClear={() => {
+                        setHospitalName("");
+                        setHospitalAddress("");
+                        setHospitalZip("");
+                        setHospitalPhone("");
+                        setHospitalSelected(false);
+                      }}
+                      defaultState={hospitalState}
+                      defaultCity={hospitalCity}
+                      placeholder="e.g. St. George Regional Hospital"
+                    />
+                  )}
                 </div>
 
                 {/* Additional Address Fields */}
@@ -355,26 +454,6 @@ export function PriorityTaskList({
                     placeholder="e.g. 123 Medical Center Dr"
                     value={hospitalAddress}
                     onChange={(e) => setHospitalAddress(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hospitalCity">City</Label>
-                  <Input
-                    id="hospitalCity"
-                    placeholder="e.g. St. George"
-                    value={hospitalCity}
-                    onChange={(e) => setHospitalCity(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hospitalState">State</Label>
-                  <Input
-                    id="hospitalState"
-                    placeholder="e.g. UT"
-                    value={hospitalState}
-                    onChange={(e) => setHospitalState(e.target.value)}
                   />
                 </div>
 
@@ -398,12 +477,98 @@ export function PriorityTaskList({
                 </div>
 
                 {/* Success Indicator when hospital is selected */}
-                {hospitalSelected && hospitalCity && hospitalState && (
-                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 md:col-span-2">
-                    <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                    <span className="font-medium">
-                      Hospital details populated from search result
-                    </span>
+                {hospitalSelected && hospitalName && (
+                  <div
+                    data-hospital-confirmation
+                    className="rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4 md:col-span-2"
+                  >
+                    <div className="mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                      <span className="font-semibold text-emerald-900">
+                        Hospital Selected
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm text-emerald-800">
+                      <p className="font-medium">{hospitalName}</p>
+                      {hospitalAddress && <p>{hospitalAddress}</p>}
+                      {(hospitalCity || hospitalState || hospitalZip) && (
+                        <p>
+                          {hospitalCity && `${hospitalCity}, `}
+                          {hospitalState} {hospitalZip}
+                        </p>
+                      )}
+                      {hospitalPhone && <p>Phone: {hospitalPhone}</p>}
+                    </div>
+                    <p className="mt-2 text-xs text-emerald-700">
+                      ✓ This facility will be saved to your medical record
+                      sources
+                    </p>
+                  </div>
+                )}
+
+                {/* Hospital Operation Dates */}
+                {hospitalName && (
+                  <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 md:col-span-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      Hospital Operation Dates (Optional but helpful for
+                      validation)
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="hospitalOpened">Year Opened</Label>
+                        <Input
+                          id="hospitalOpened"
+                          placeholder="e.g. 1965"
+                          value={hospitalOpenedYear}
+                          onChange={(e) =>
+                            setHospitalOpenedYear(e.target.value)
+                          }
+                          maxLength={4}
+                          type="number"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="hospitalClosed">
+                          Year Closed (if applicable)
+                        </Label>
+                        <Input
+                          id="hospitalClosed"
+                          placeholder="e.g. 2010"
+                          value={hospitalClosedYear}
+                          onChange={(e) => {
+                            setHospitalClosedYear(e.target.value);
+                            if (e.target.value) {
+                              setHospitalStillOperating(false);
+                            }
+                          }}
+                          maxLength={4}
+                          type="number"
+                          disabled={hospitalStillOperating}
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2 pt-8">
+                        <input
+                          type="checkbox"
+                          id="stillOperating"
+                          checked={hospitalStillOperating}
+                          onChange={(e) => {
+                            setHospitalStillOperating(e.target.checked);
+                            if (e.target.checked) {
+                              setHospitalClosedYear("");
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-sage-600 focus:ring-sage-500"
+                        />
+                        <Label
+                          htmlFor="stillOperating"
+                          className="cursor-pointer font-normal"
+                        >
+                          Still Operating
+                        </Label>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -414,7 +579,14 @@ export function PriorityTaskList({
                     placeholder="e.g. 1982"
                     value={treatmentYear}
                     onChange={(e) => setTreatmentYear(e.target.value)}
+                    maxLength={4}
+                    className={treatmentYearWarning ? "border-amber-400" : ""}
                   />
+                  {treatmentYearWarning && (
+                    <p className="text-sm font-medium text-amber-700">
+                      {treatmentYearWarning}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cancer">Cancer Type</Label>
