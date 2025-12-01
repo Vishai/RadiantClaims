@@ -22,6 +22,9 @@ interface Hospital {
   state?: string;
   zip?: string;
   phone?: string;
+  yearOpened?: number;
+  yearClosed?: number;
+  stillOperating?: boolean;
 }
 
 interface HospitalSearchInputProps {
@@ -333,6 +336,29 @@ export function HospitalSearchInput({
                           <p className="mt-1 text-sm font-medium text-gray-700">
                             📞 {hospital.phone}
                           </p>
+                        )}
+
+                        {/* Operation Status */}
+                        {(hospital.yearOpened ||
+                          hospital.stillOperating !== undefined) && (
+                          <div className="mt-2 flex items-center gap-3 text-xs">
+                            {hospital.yearOpened && (
+                              <span className="text-gray-600">
+                                Opened: {hospital.yearOpened}
+                              </span>
+                            )}
+                            {hospital.stillOperating === true && (
+                              <span className="font-medium text-green-600">
+                                ✓ Operating
+                              </span>
+                            )}
+                            {hospital.stillOperating === false &&
+                              hospital.yearClosed && (
+                                <span className="font-medium text-amber-600">
+                                  Closed: {hospital.yearClosed}
+                                </span>
+                              )}
+                          </div>
                         )}
                       </div>
 

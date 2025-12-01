@@ -417,6 +417,15 @@ export function PriorityTaskList({
                         if (hospital.zip) setHospitalZip(hospital.zip || "");
                         if (hospital.phone)
                           setHospitalPhone(hospital.phone || "");
+
+                        // Set operation dates from search data
+                        if (hospital.yearOpened)
+                          setHospitalOpenedYear(hospital.yearOpened.toString());
+                        if (hospital.yearClosed)
+                          setHospitalClosedYear(hospital.yearClosed.toString());
+                        if (hospital.stillOperating !== undefined)
+                          setHospitalStillOperating(hospital.stillOperating);
+
                         setHospitalSelected(true);
 
                         // Scroll to confirmation card
@@ -506,68 +515,31 @@ export function PriorityTaskList({
                   </div>
                 )}
 
-                {/* Hospital Operation Dates */}
-                {hospitalName && (
-                  <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 md:col-span-2">
-                    <p className="text-sm font-medium text-gray-700">
-                      Hospital Operation Dates (Optional but helpful for
-                      validation)
+                {/* Hospital Operation Info - Display Only (from search data) */}
+                {hospitalName && (hospitalOpenedYear || hospitalClosedYear) && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 md:col-span-2">
+                    <p className="mb-2 text-sm font-semibold text-blue-900">
+                      Hospital Operation Information
                     </p>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="hospitalOpened">Year Opened</Label>
-                        <Input
-                          id="hospitalOpened"
-                          placeholder="e.g. 1965"
-                          value={hospitalOpenedYear}
-                          onChange={(e) =>
-                            setHospitalOpenedYear(e.target.value)
-                          }
-                          maxLength={4}
-                          type="number"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="hospitalClosed">
-                          Year Closed (if applicable)
-                        </Label>
-                        <Input
-                          id="hospitalClosed"
-                          placeholder="e.g. 2010"
-                          value={hospitalClosedYear}
-                          onChange={(e) => {
-                            setHospitalClosedYear(e.target.value);
-                            if (e.target.value) {
-                              setHospitalStillOperating(false);
-                            }
-                          }}
-                          maxLength={4}
-                          type="number"
-                          disabled={hospitalStillOperating}
-                        />
-                      </div>
-
-                      <div className="flex items-center space-x-2 pt-8">
-                        <input
-                          type="checkbox"
-                          id="stillOperating"
-                          checked={hospitalStillOperating}
-                          onChange={(e) => {
-                            setHospitalStillOperating(e.target.checked);
-                            if (e.target.checked) {
-                              setHospitalClosedYear("");
-                            }
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-sage-600 focus:ring-sage-500"
-                        />
-                        <Label
-                          htmlFor="stillOperating"
-                          className="cursor-pointer font-normal"
-                        >
-                          Still Operating
-                        </Label>
-                      </div>
+                    <div className="flex gap-4 text-sm text-blue-800">
+                      {hospitalOpenedYear && (
+                        <p>
+                          <span className="font-medium">Opened:</span>{" "}
+                          {hospitalOpenedYear}
+                        </p>
+                      )}
+                      {hospitalStillOperating ? (
+                        <p className="font-medium text-green-700">
+                          ✓ Currently Operating
+                        </p>
+                      ) : (
+                        hospitalClosedYear && (
+                          <p>
+                            <span className="font-medium">Closed:</span>{" "}
+                            {hospitalClosedYear}
+                          </p>
+                        )
+                      )}
                     </div>
                   </div>
                 )}

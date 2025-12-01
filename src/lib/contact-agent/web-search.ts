@@ -20,6 +20,9 @@ export interface ContactFromWeb {
   phone?: string;
   email?: string;
   website?: string;
+  yearOpened?: number;
+  yearClosed?: number;
+  stillOperating?: boolean;
   notes?: string;
   source: string;
   sourceUrl: string;
@@ -332,6 +335,9 @@ Extract the following for each relevant institution:
 - City
 - State
 - Website URL
+- Year opened/founded (if mentioned)
+- Year closed (if mentioned, or if described as "closed", "defunct", "no longer operating")
+- Still operating (boolean - true if currently open, false if closed)
 - Any relevant notes
 
 Return as JSON array.`;
@@ -363,6 +369,14 @@ Return as JSON array.`;
       phone: c.phone_number || c.phone, // Handle both potential keys
       email: c.email,
       website: c.website_url || c.website, // Handle both potential keys
+      yearOpened: c.year_opened || c.yearOpened,
+      yearClosed: c.year_closed || c.yearClosed,
+      stillOperating:
+        c.still_operating !== undefined
+          ? c.still_operating
+          : c.stillOperating !== undefined
+            ? c.stillOperating
+            : true,
       notes: c.notes,
       source: "Web Search (AI Parsed)",
       sourceUrl: c.website_url || c.website || "", // Use AI website or fallback

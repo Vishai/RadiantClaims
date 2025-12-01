@@ -197,6 +197,12 @@ export async function GET(req: NextRequest) {
           phone: contact.phone || null,
           email: contact.email || null,
           website: contact.website || null,
+          yearOpened: contact.yearOpened || null,
+          yearClosed: contact.yearClosed || null,
+          stillOperating:
+            contact.stillOperating !== undefined
+              ? contact.stillOperating
+              : null,
           notes: contact.notes || "Found via web search",
           isVetted: false, // Explicitly mark as not vetted
           documentTypesProvided: [],
