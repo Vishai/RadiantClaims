@@ -175,23 +175,57 @@ Sincerely,`;
     let idImage;
     let processedImageBytes = idCardImageBytes;
 
+    console.log(
+      `[ID Embedding] Attempting to embed ID image. Buffer size: ${idCardImageBytes.length} bytes`
+    );
+
     try {
       // Attempt to convert any image to PNG using sharp (handles HEIC, etc.)
       // This ensures compatibility with pdf-lib which only supports PNG/JPG
+      console.log("[ID Embedding] Converting image to PNG with sharp...");
       processedImageBytes = await sharp(idCardImageBytes).png().toBuffer();
+      console.log(
+        `[ID Embedding] Sharp conversion successful. PNG buffer size: ${processedImageBytes.length} bytes`
+      );
 
       // Now embed the PNG
       idImage = await doc.embedPng(processedImageBytes);
+      console.log(
+        `[ID Embedding] PNG embedded successfully. Dimensions: ${idImage.width}x${idImage.height}`
+      );
     } catch (e) {
-      console.error("Sharp conversion failed, trying direct embed:", e);
+      console.error("❌ Sharp conversion failed:", e);
+      console.error("Error details:", {
+        message: e instanceof Error ? e.message : "Unknown error",
+        bufferSize: idCardImageBytes.length,
+      });
+
       // Fallback to direct embed if sharp fails (for standard JPG/PNG)
+      console.log(
+        "[ID Embedding] Attempting fallback: direct embed without sharp..."
+      );
       try {
+        console.log("[ID Embedding] Trying direct PNG embed...");
         idImage = await doc.embedPng(idCardImageBytes);
+        console.log(
+          `[ID Embedding] Direct PNG embed successful! Dimensions: ${idImage.width}x${idImage.height}`
+        );
       } catch (e2) {
+        console.error("❌ PNG embed failed:", e2);
         try {
+          console.log("[ID Embedding] Trying direct JPEG embed...");
           idImage = await doc.embedJpg(idCardImageBytes);
+          console.log(
+            `[ID Embedding] Direct JPEG embed successful! Dimensions: ${idImage.width}x${idImage.height}`
+          );
         } catch (e3) {
-          console.error("Failed to embed ID image directly");
+          console.error("❌ All embedding methods failed:", e3);
+          console.error("Final error details:", {
+            sharpError: e instanceof Error ? e.message : "Unknown sharp error",
+            pngError: e2 instanceof Error ? e2.message : "Unknown PNG error",
+            jpegError: e3 instanceof Error ? e3.message : "Unknown JPEG error",
+            bufferSize: idCardImageBytes.length,
+          });
         }
       }
     }
@@ -213,17 +247,40 @@ Sincerely,`;
         width: imgW,
         height: imgH,
       });
+      console.log("✓ ID image embedded successfully in PDF");
     } else {
       // If image failed to load, add error text on the page
+      console.error(
+        "❌ Could not attach ID image - all methods exhausted. Adding error page."
+      );
+      idPage.drawText("⚠ ATTACHMENT ERROR", {
+        x: 50,
+        y: height - 50,
+        size: 16,
+        font: boldFont,
+        color: rgb(0.8, 0, 0),
+      });
       idPage.drawText(
         "Error: Could not attach ID image. Please attach manually.",
         {
           x: 50,
-          y: height - 100,
+          y: height - 80,
           size: 12,
-          color: rgb(1, 0, 0),
+          color: rgb(0, 0, 0),
         }
       );
+      idPage.drawText("The system was unable to process your ID image file.", {
+        x: 50,
+        y: height - 100,
+        size: 11,
+        color: rgb(0, 0, 0),
+      });
+      idPage.drawText("Please ensure it is a valid PNG, JPEG, or PDF file.", {
+        x: 50,
+        y: height - 120,
+        size: 11,
+        color: rgb(0, 0, 0),
+      });
     }
   }
 

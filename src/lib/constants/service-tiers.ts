@@ -65,7 +65,7 @@ export const SERVICE_TIERS = {
 
     pricing: {
       setupFee: 0,
-      monthlyFee: 0,
+      monthlyFee: 14.99,
       attorneyFeeAmount: 2000,
       attorneyFeePercentage: 2,
       recaAwardAmount: 100000,
@@ -100,7 +100,7 @@ export const SERVICE_TIERS = {
     ],
 
     refundPolicy: {
-      note: "No upfront payment required. No refunds applicable.",
+      note: "Monthly technology fee can be canceled anytime. No setup fee refunds as none is charged.",
     },
   },
 } as const;
@@ -120,6 +120,13 @@ export const STRIPE_PRODUCTS = {
     interval: "month",
     description:
       "RadiantClaims DIY Document Preparation - Monthly Subscription",
+  },
+  LEGAL_MONTHLY_SUBSCRIPTION: {
+    priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY || "",
+    amount: 14.99,
+    currency: "usd",
+    interval: "month",
+    description: "RadiantClaims Legal Path - Monthly Technology Fee",
   },
 } as const;
 

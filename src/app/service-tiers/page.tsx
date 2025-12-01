@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,19 @@ import {
   Building,
   Phone,
   ArrowRight,
+  ShieldCheck,
+  FileSearch,
+  Scale,
 } from "lucide-react";
 import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
 import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
 import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
 
-export default function ServiceTiersPage() {
+function ServiceTiersContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const intent = searchParams.get("intent"); // "self", "deceased-relative", etc.
   const { status } = useSession();
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showDIYAgreement, setShowDIYAgreement] = useState(false);
@@ -206,6 +211,46 @@ export default function ServiceTiersPage() {
     }
   };
 
+  // Customize content based on intent
+  const isDeceased =
+    intent === "deceased-relative" || intent === "someone-else-relative";
+
+  const documentRequirements = isDeceased
+    ? [
+        {
+          title: "Medical History",
+          desc: "Proof of the primary cancer diagnosis.",
+          icon: FileText,
+        },
+        {
+          title: "Presence Proof",
+          desc: "Records placing them in the area (1951-1962).",
+          icon: Map,
+        },
+        {
+          title: "Survivor Evidence",
+          desc: "Marriage/Birth certs to prove your relationship.",
+          icon: Users,
+        },
+      ]
+    : [
+        {
+          title: "Medical History",
+          desc: "Proof of your cancer diagnosis.",
+          icon: FileText,
+        },
+        {
+          title: "Presence Proof",
+          desc: "Records placing you in the area (1951-1962).",
+          icon: Map,
+        },
+        {
+          title: "Identity",
+          desc: "Standard government ID.",
+          icon: ShieldCheck,
+        },
+      ];
+
   return (
     <div className="min-h-screen bg-cream-50">
       {/* Navigation */}
@@ -232,7 +277,7 @@ export default function ServiceTiersPage() {
 
       <main className="container mx-auto px-6 py-12">
         {/* Header */}
-        <div className="mx-auto mb-8 max-w-4xl text-center">
+        <div className="mx-auto mb-12 max-w-4xl text-center">
           <h1 className="mb-4 text-4xl font-bold text-sage-900">
             Choose Your RECA Claim Path
           </h1>
@@ -242,23 +287,40 @@ export default function ServiceTiersPage() {
           <div className="mx-auto h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
 
-        {/* Important Notice */}
-        <div className="mx-auto mb-8 max-w-4xl">
-          <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
-                ℹ️
-              </div>
-              <div>
-                <h3 className="mb-2 font-semibold text-sage-900">
-                  What You're Paying For
-                </h3>
-                <p className="text-sm text-sage-700">
-                  Our free eligibility check indicated you likely qualify. These
-                  services help you <strong>prepare and submit</strong> your
-                  claim documents to the DOJ. We do not charge for determining
-                  eligibility - that assessment was already provided at no cost.
-                </p>
+        {/* Golden Triad Education Section */}
+        <div className="mx-auto mb-12 max-w-5xl">
+          <div className="overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-sage-200">
+            <div className="bg-sage-50 px-8 py-6 text-center">
+              <h2 className="mb-2 text-2xl font-bold text-sage-900">
+                The "Golden Triad" of Evidence
+              </h2>
+              <p className="text-sage-700">
+                {isDeceased
+                  ? "Since you are filing for a loved one, the DOJ requires three specific types of proof. Both paths below help you gather these."
+                  : "To get approved, you must provide three specific types of proof. Both paths below help you gather these."}
+              </p>
+            </div>
+            <div className="grid gap-px bg-sage-100 sm:grid-cols-3">
+              {documentRequirements.map((req, idx) => (
+                <div
+                  key={idx}
+                  className="group bg-white p-6 transition-colors hover:bg-sage-50/50"
+                >
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sage-100 text-sage-600 group-hover:bg-terracotta-100 group-hover:text-terracotta-600">
+                    <req.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-2 font-semibold text-sage-900">
+                    {req.title}
+                  </h3>
+                  <p className="text-sm text-sage-600">{req.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="bg-cream-50 px-8 py-4">
+              <div className="flex items-center justify-center gap-2 text-sm font-medium text-terracotta-700">
+                <CheckCircle className="h-4 w-4" />
+                Our systems are designed specifically to help you secure these
+                difficult documents.
               </div>
             </div>
           </div>
@@ -283,7 +345,7 @@ export default function ServiceTiersPage() {
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sage-100">
-                  <FileText className="h-8 w-8 text-sage-600" />
+                  <FileSearch className="h-8 w-8 text-sage-600" />
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-sage-900">
@@ -376,14 +438,14 @@ export default function ServiceTiersPage() {
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-terracotta-100">
-                  <Users className="h-8 w-8 text-terracotta-600" />
+                  <Scale className="h-8 w-8 text-terracotta-600" />
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-terracotta-900">
                     $0
                   </div>
                   <div className="text-sm text-terracotta-600">
-                    upfront cost
+                    + $14.99/month
                   </div>
                 </div>
               </div>
@@ -571,7 +633,24 @@ export default function ServiceTiersPage() {
                         $149.99
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-terracotta-600">
-                        $0
+                        $0 + $14.99/mo
+                      </td>
+                    </tr>
+                    <tr className="border-t-2 border-cream-200 bg-cream-50">
+                      <td className="px-4 py-3 font-bold text-sage-900">
+                        Estimated Total Cost
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-emerald-700">
+                        ~$300
+                        <div className="text-xs font-normal text-sage-600">
+                          ($149.99 + ~6 months fee)
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-sage-900">
+                        ~$2,100
+                        <div className="text-xs font-normal text-sage-600">
+                          ($2,000 from award + ~6 months fee)
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -617,11 +696,13 @@ export default function ServiceTiersPage() {
                   How much does Heritage Law charge?
                 </h3>
                 <p className="text-sm text-sage-700">
-                  Heritage Law Offices charges the standard RECA attorney fee of
-                  2% of your award ($2,000 on a $100,000 claim). This fee is
-                  paid directly by the Department of Justice from your award -
-                  you receive $98,000 and the attorney receives $2,000. This is
-                  mandated by federal law.
+                  Our free eligibility check indicated you likely qualify. These
+                  services help you <strong>prepare and submit</strong> your
+                  claim documents to the DOJ. For the Legal Representation path,
+                  please note that the standard 2% attorney fee ($2,000) is
+                  deducted from your award <em>in addition</em> to the monthly
+                  technology fee. This is why the DIY path is significantly less
+                  expensive overall.
                 </p>
               </div>
               <div>
@@ -767,5 +848,40 @@ export default function ServiceTiersPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Map icon for dynamic display
+const Map = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+    <line x1="9" x2="9" y1="3" y2="18" />
+    <line x1="15" x2="15" y1="6" y2="21" />
+  </svg>
+);
+
+export default function ServiceTiersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
+            <p className="text-sage-600">Loading options...</p>
+          </div>
+        </div>
+      }
+    >
+      <ServiceTiersContent />
+    </Suspense>
   );
 }
