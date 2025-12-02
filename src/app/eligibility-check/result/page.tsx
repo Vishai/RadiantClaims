@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Route } from "next";
@@ -27,6 +27,12 @@ function ResultContent() {
   const eligibility = searchParams.get("eligibility");
   const intent = searchParams.get("intent");
   const name = searchParams.get("name");
+
+  useEffect(() => {
+    if (eligibility === "likely" || eligibility === "unlikely") {
+      sessionStorage.setItem("eligibility_verified", "true");
+    }
+  }, [eligibility]);
 
   type ResultConfig = {
     icon: typeof CheckCircle2;

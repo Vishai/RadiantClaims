@@ -40,17 +40,33 @@ function ServiceTiersContent() {
   const [showLegalAgreement, setShowLegalAgreement] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [showEligibilityPrompt, setShowEligibilityPrompt] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
+    console.log("handleSelectTier called with:", tierId);
+
+    // Check eligibility first
+    const eligibilityVerified = sessionStorage.getItem("eligibility_verified");
+    console.log("Eligibility verified status:", eligibilityVerified);
+
+    if (!eligibilityVerified) {
+      console.log("Eligibility not verified, showing prompt");
+      setShowEligibilityPrompt(true);
+      return;
+    }
+
+    console.log("User status:", status);
     // Check if user is authenticated
     if (status === "unauthenticated") {
+      console.log("User unauthenticated, showing auth prompt");
       setSelectedTier(tierId);
       setShowAuthPrompt(true);
       return;
     }
 
+    console.log("Proceeding with tier selection");
     setErrorMessage(null);
     setInfoMessage(null);
     setSelectedTier(tierId);
@@ -409,8 +425,10 @@ function ServiceTiersContent() {
 
               {/* CTA Button */}
               <Button
-                onClick={() => handleSelectTier("DIY_PREP")}
-                disabled={isLoading && selectedTier === "DIY_PREP"}
+                onClick={() => {
+                  console.log("DIY Button Clicked");
+                  handleSelectTier("DIY_PREP");
+                }}
                 className="w-full rounded-full bg-sage-600 py-6 text-lg font-semibold hover:bg-sage-700"
               >
                 {isLoading && selectedTier === "DIY_PREP" ? (
@@ -515,8 +533,10 @@ function ServiceTiersContent() {
 
               {/* CTA Button */}
               <Button
-                onClick={() => handleSelectTier("LEGAL_REP")}
-                disabled={isLoading && selectedTier === "LEGAL_REP"}
+                onClick={() => {
+                  console.log("Legal Button Clicked");
+                  handleSelectTier("LEGAL_REP");
+                }}
                 className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-semibold hover:bg-terracotta-600"
               >
                 {isLoading && selectedTier === "LEGAL_REP" ? (
@@ -632,8 +652,8 @@ function ServiceTiersContent() {
                       <td className="px-4 py-3 text-center font-semibold text-sage-900">
                         $149.99
                       </td>
-                      <td className="px-4 py-3 text-center font-semibold text-terracotta-600">
-                        $0 + $14.99/mo
+                      <td className="px-4 py-3 text-center font-semibold text-sage-900">
+                        $14.99
                       </td>
                     </tr>
                     <tr className="border-t-2 border-cream-200 bg-cream-50">
@@ -838,6 +858,45 @@ function ServiceTiersContent() {
                   setShowAuthPrompt(false);
                   setSelectedTier(null);
                 }}
+                variant="outline"
+                className="w-full rounded-full border-sage-300 py-6 text-lg font-semibold text-sage-700 hover:bg-sage-50"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Eligibility Required Dialog */}
+      <Dialog
+        open={showEligibilityPrompt}
+        onOpenChange={setShowEligibilityPrompt}
+      >
+        <DialogContent className="max-w-md rounded-3xl">
+          <div className="space-y-4 p-6">
+            <div className="flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-terracotta-100">
+                <ShieldCheck className="h-8 w-8 text-terracotta-600" />
+              </div>
+            </div>
+            <div className="text-center">
+              <h2 className="mb-2 text-2xl font-bold text-sage-900">
+                Eligibility Check Required
+              </h2>
+              <p className="text-sage-700">
+                Before selecting a service path, we need to verify that you or
+                your loved one meets the basic RECA requirements.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Link href="/eligibility-check" className="w-full">
+                <Button className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-semibold hover:bg-terracotta-600">
+                  Check Eligibility
+                </Button>
+              </Link>
+              <Button
+                onClick={() => setShowEligibilityPrompt(false)}
                 variant="outline"
                 className="w-full rounded-full border-sage-300 py-6 text-lg font-semibold text-sage-700 hover:bg-sage-50"
               >
