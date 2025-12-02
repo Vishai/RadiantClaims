@@ -442,10 +442,10 @@ function ServiceTiersContent() {
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-terracotta-900">
-                    $0
+                    $14.99/month
                   </div>
                   <div className="text-sm text-terracotta-600">
-                    + $14.99/month
+                    + 2% of Award
                   </div>
                 </div>
               </div>
