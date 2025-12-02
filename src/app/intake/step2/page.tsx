@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   AlertCircle,
   CircleDashed,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { PriorityTaskList } from "@/components/intake/priority-task-list";
@@ -27,7 +28,7 @@ import { MailInProcessBanner } from "@/components/mail-in-process-banner";
 import { DOCUMENT_CHECKLIST } from "@/lib/document-checklist";
 import {
   uploadFile,
-  // deleteFile, // Currently unused but kept for future use
+  deleteFile,
   getIntakeSession,
   createIntakeSession,
   FileCategory,
