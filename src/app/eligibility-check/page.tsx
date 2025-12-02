@@ -62,6 +62,7 @@ interface FormData {
   // Step 3: Residence
   residenceState: ResidenceState | "";
   residenceDuration: "yes" | "no" | "";
+  residenceStartYear: string;
   arizonaCounty: string;
   nevadaCounty: string;
 
@@ -137,12 +138,13 @@ export default function EligibilityCheckPage() {
     deceasedLastName: "",
     residenceState: "",
     residenceDuration: "",
+    residenceStartYear: "",
     arizonaCounty: "",
     nevadaCounty: "",
     hasCancer: "",
     cancerType: "",
     diagnosisYear: "",
-    latencyMet: "",
+    latencyMet: "", // We'll still use this to store the calculated result
     referrerName: "",
     referrerEmail: "",
     referrerPhone: "",
@@ -158,6 +160,31 @@ export default function EligibilityCheckPage() {
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 7));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
+  // Helper to calculate latency status
+  const checkLatency = (): boolean => {
+    if (
+      !formData.residenceStartYear ||
+      !formData.diagnosisYear ||
+      !formData.cancerType
+    ) {
+      return false;
+    }
+
+    const startYear = parseInt(formData.residenceStartYear);
+    const diagYear = parseInt(formData.diagnosisYear);
+
+    // Exposure starts at max(1951, user's start year)
+    const exposureStart = Math.max(1951, startYear);
+
+    // Latency requirement: 2 years for Leukemia, 5 for others
+    const isLeukemia = formData.cancerType.toLowerCase().includes("leukemia");
+    const requiredYears = isLeukemia ? 2 : 5;
+
+    // Diagnosis must be AFTER the required latency period
+    // e.g. Exposed 1951, Leukemia (2 yrs) -> Diagnosis >= 1953
+    return diagYear - exposureStart >= requiredYears;
+  };
+
   // Calculate eligibility
   const calculateEligibility = () => {
     const hasResidence =
@@ -165,16 +192,13 @@ export default function EligibilityCheckPage() {
       formData.residenceState !== "none" &&
       formData.residenceDuration === "yes";
     const hasCoveredCancer = formData.hasCancer === "yes";
-    const meetsLatency =
-      formData.latencyMet === "yes" || formData.latencyMet === "unsure";
+
+    // Use calculated latency check
+    const meetsLatency = checkLatency();
 
     if (hasResidence && hasCoveredCancer && meetsLatency) {
       return "likely";
-    } else if (
-      hasResidence &&
-      hasCoveredCancer &&
-      formData.latencyMet === "no"
-    ) {
+    } else if (hasResidence && hasCoveredCancer && !meetsLatency) {
       return "unlikely";
     } else if (!hasResidence || !hasCoveredCancer) {
       return "ineligible";
@@ -827,6 +851,32 @@ export default function EligibilityCheckPage() {
                         </div>
                       </div>
                     </RadioGroup>
+
+                    {formData.residenceDuration === "yes" && (
+                      <div className="mt-4">
+                        <Label
+                          htmlFor="residenceStartYear"
+                          className="mb-2 block font-medium text-sage-800"
+                        >
+                          Year {getPronoun()} began living in the affected area
+                        </Label>
+                        <Input
+                          id="residenceStartYear"
+                          type="number"
+                          value={formData.residenceStartYear}
+                          onChange={(e) =>
+                            updateFormData("residenceStartYear", e.target.value)
+                          }
+                          placeholder="e.g., 1955"
+                          min="1940"
+                          max="1962"
+                          className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400"
+                        />
+                        <p className="mt-2 text-sm text-sage-600">
+                          If {getPronoun()} lived there before 1951, enter 1951.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -848,7 +898,9 @@ export default function EligibilityCheckPage() {
                     (formData.residenceState === "NV" &&
                       !formData.nevadaCounty) ||
                     (formData.residenceState !== "none" &&
-                      !formData.residenceDuration)
+                      !formData.residenceDuration) ||
+                    (formData.residenceDuration === "yes" &&
+                      !formData.residenceStartYear)
                   }
                   size="lg"
                   className="flex-1 rounded-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 py-6"
@@ -987,6 +1039,18 @@ export default function EligibilityCheckPage() {
         );
 
       case 5:
+        const latencyPassed = checkLatency();
+        const isLeukemia = formData.cancerType
+          .toLowerCase()
+          .includes("leukemia");
+        const requiredYears = isLeukemia ? 2 : 5;
+        const exposureStart = Math.max(
+          1951,
+          parseInt(formData.residenceStartYear || "1951")
+        );
+        const diagYear = parseInt(formData.diagnosisYear || "0");
+        const yearsElapsed = diagYear - exposureStart;
+
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -994,83 +1058,67 @@ export default function EligibilityCheckPage() {
                 <Calendar className="h-8 w-8 text-white" />
               </div>
               <h2 className="mb-3 text-3xl font-bold text-sage-900">
-                Latency Period
+                Latency Period Analysis
               </h2>
               <p className="text-lg text-sage-600">
-                Time between exposure and diagnosis
+                Checking if the timing meets RECA requirements
               </p>
             </div>
 
             <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-sage-50 p-6">
               <h3 className="mb-3 flex items-center gap-2 font-semibold text-sage-900">
                 <Info className="h-5 w-5 text-blue-600" />
-                Requirements:
+                The Rule:
               </h3>
-              <ul className="space-y-3 text-sage-700">
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                    1
-                  </div>
-                  <span>
-                    <strong>For leukemia:</strong> Must be diagnosed at least{" "}
-                    <strong className="text-blue-700">2 years</strong> after
-                    last exposure
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                    2
-                  </div>
-                  <span>
-                    <strong>For all other cancers:</strong> Must be diagnosed at
-                    least <strong className="text-blue-700">5 years</strong>{" "}
-                    after last exposure
-                  </span>
-                </li>
-              </ul>
+              <p className="text-sage-700">
+                For{" "}
+                <strong>{isLeukemia ? "Leukemia" : "this cancer type"}</strong>,
+                the diagnosis must be at least{" "}
+                <strong className="text-blue-700">{requiredYears} years</strong>{" "}
+                after first exposure.
+              </p>
             </div>
 
-            <div className="rounded-2xl border-2 border-sage-200 bg-white p-5">
-              <Label className="mb-4 block text-lg font-medium text-sage-900">
-                Based on when {getPronoun()} left the affected area and the
-                cancer diagnosis, does this meet the latency requirement?
-              </Label>
-              <RadioGroup
-                value={formData.latencyMet}
-                onValueChange={(value) =>
-                  updateFormData("latencyMet", value as "yes" | "no" | "unsure")
-                }
+            <div
+              className={`rounded-2xl border-2 p-6 ${latencyPassed ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}
+            >
+              <h3
+                className={`mb-2 text-xl font-bold ${latencyPassed ? "text-green-800" : "text-amber-800"}`}
               >
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-xl border-2 border-green-200 bg-green-50 p-4">
-                    <RadioGroupItem value="yes" id="latency-yes" />
-                    <Label
-                      htmlFor="latency-yes"
-                      className="flex-1 cursor-pointer font-medium"
-                    >
-                      Yes, it meets the requirement
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border-2 border-yellow-200 bg-yellow-50 p-4">
-                    <RadioGroupItem value="unsure" id="latency-unsure" />
-                    <Label
-                      htmlFor="latency-unsure"
-                      className="flex-1 cursor-pointer font-medium"
-                    >
-                      I'm not sure / Need help calculating
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border-2 border-red-200 bg-red-50 p-4">
-                    <RadioGroupItem value="no" id="latency-no" />
-                    <Label
-                      htmlFor="latency-no"
-                      className="flex-1 cursor-pointer font-medium"
-                    >
-                      No, the diagnosis was too soon after exposure
-                    </Label>
-                  </div>
+                {latencyPassed ? "Requirement Met" : "Requirement Not Met"}
+              </h3>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between border-b border-black/10 pb-2">
+                  <span className="text-gray-600">
+                    First Exposure (approx):
+                  </span>
+                  <span className="font-semibold">{exposureStart}</span>
                 </div>
-              </RadioGroup>
+                <div className="flex justify-between border-b border-black/10 pb-2">
+                  <span className="text-gray-600">Diagnosis Year:</span>
+                  <span className="font-semibold">{diagYear}</span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="text-gray-600">Time Elapsed:</span>
+                  <span
+                    className={`font-bold ${latencyPassed ? "text-green-700" : "text-amber-700"}`}
+                  >
+                    {yearsElapsed} years
+                  </span>
+                </div>
+              </div>
+
+              {!latencyPassed && (
+                <div className="mt-4 rounded-xl bg-white p-3 text-sm text-amber-800 shadow-sm">
+                  <p>
+                    <strong>Note:</strong> Even if the latency period isn't met
+                    based on these dates, there may be exceptions or special
+                    circumstances. We recommend continuing so an attorney can
+                    review your specific case details.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
@@ -1089,7 +1137,6 @@ export default function EligibilityCheckPage() {
                     ? nextStep
                     : handleSubmit
                 }
-                disabled={!formData.latencyMet}
                 size="lg"
                 className="flex-1 rounded-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 py-6"
               >

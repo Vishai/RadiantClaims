@@ -330,18 +330,23 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Link
+              {/* <Link
                 href="/admin/waitlist"
                 className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
               >
                 <div className="flex items-center gap-3">
-                  <Activity className="h-5 w-5 text-gray-600" />
-                  <span className="text-sm font-medium">Waitlist</span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">Waitlist</div>
+                    <div className="text-xs text-gray-500">
+                      Manage registration leads
+                    </div>
+                  </div>
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-800">
-                  {stats.waitlist.pending}
-                </Badge>
-              </Link>
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </Link> */}
               <Link
                 href="/admin/promo-codes"
                 className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
