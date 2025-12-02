@@ -123,10 +123,8 @@ function IntakeForm() {
 
       const result = await response.json();
 
-      // Determine next route based on claim type
-      const nextRoute = isRECAClaim
-        ? `/reca/start?sessionId=${result.intakeSession?.id || result.claimant.id}`
-        : `/intake/step2?claimantId=${result.claimant.id}`;
+      // Send users to the dashboard after intake to continue application/documents
+      const nextRoute = "/portal";
 
       // If new account was created, auto-login the user
       if (result.credentials) {

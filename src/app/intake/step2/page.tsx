@@ -256,7 +256,39 @@ function Step2Content() {
   }
 
   if (!session) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
+        <Card className="w-full max-w-lg rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sage-900">Unable to load</CardTitle>
+            <CardDescription className="text-sage-600">
+              {error ||
+                "We couldn't load your intake session. Please try again from the portal."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/portal")}
+              className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+            >
+              Back to Portal
+            </Button>
+            <Button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                // Trigger re-init by forcing a reload
+                window.location.reload();
+              }}
+              className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

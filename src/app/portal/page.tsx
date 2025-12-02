@@ -438,43 +438,28 @@ export default function CustomerPortal() {
 
                       {/* Actions */}
                       <div className="flex flex-wrap gap-3">
-                        {/* Claim Button */}
+                        {/* Primary Action: Fill Out Application */}
                         {intakeSession &&
                           intakeSession.status !== "SUBMITTED" && (
                             <Button
                               onClick={() => {
-                                const recaTypes = [
-                                  "DOWNWINDER",
-                                  "URANIUM_WORKER",
-                                  "MANHATTAN_PROJECT_WASTE",
-                                  "ONSITE_PARTICIPANT",
-                                ];
-                                const isRecaClaim =
-                                  (claim.claimType &&
-                                    recaTypes.includes(claim.claimType)) ||
-                                  intakeSession.recaWorkflowStage;
-
-                                if (isRecaClaim) {
-                                  router.push(
-                                    intakeSession.recaWorkflowStage
-                                      ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
-                                      : `/reca/start?sessionId=${intakeSession.id}`
-                                  );
-                                } else {
-                                  // Other claims continue intake flow
-                                  router.push(
-                                    `/intake/step2?token=${intakeSession.resumeToken || ""}`
-                                  );
-                                }
+                                // Always route to RECA application form as primary action
+                                router.push(
+                                  intakeSession.recaWorkflowStage
+                                    ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
+                                    : `/reca/start?sessionId=${intakeSession.id}`
+                                );
                               }}
                               className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
                             >
                               <FileText className="h-4 w-4" />
-                              Claim
+                              {intakeSession.recaWorkflowStage
+                                ? "Continue Application"
+                                : "Start Application"}
                             </Button>
                           )}
 
-                        {/* Documents Button */}
+                        {/* Upload Documents (Optional) */}
                         <Button
                           variant="outline"
                           onClick={() => router.push("/portal/documents")}
@@ -483,6 +468,22 @@ export default function CustomerPortal() {
                           <Upload className="h-4 w-4" />
                           Documents
                         </Button>
+
+                        {/* Direct link to Intake Step 2 (document upload flow) */}
+                        {intakeSession?.resumeToken && (
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              router.push(
+                                `/intake/step2?token=${intakeSession.resumeToken}`
+                              )
+                            }
+                            className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                          >
+                            <Upload className="h-4 w-4" />
+                            Intake S2
+                          </Button>
+                        )}
 
                         {/* Resources Button */}
                         <Button

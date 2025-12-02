@@ -82,10 +82,19 @@ export default function HomePage() {
                       PATH 1: DIY Prep
                     </p>
                     <p className="mb-2 text-sm text-sage-700">
-                      $149.99 setup + $24.99/month
+                      Initial setup: $149.99
+                    </p>
+                    <p className="mb-2 text-sm text-sage-700">
+                      Monthly cost: $24.99 (expected 6 months)
+                    </p>
+                    <p className="mb-2 text-sm font-bold text-sage-700">
+                      Estimated Total: $299.93*
                     </p>
                     <p className="text-xs text-sage-600">
                       We prepare your documents. You file with DOJ.
+                    </p>
+                    <p className="mt-2 text-xs text-sage-600">
+                      *Process typically takes 6 months, but can vary.
                     </p>
                   </div>
 
@@ -94,10 +103,21 @@ export default function HomePage() {
                       PATH 2: Legal Rep
                     </p>
                     <p className="mb-2 text-sm text-sage-700">
-                      No upfront cost
+                      Estimated Upfront Cost: $2000
+                    </p>
+                    <p className="mb-2 text-sm text-sage-700">
+                      Monthly processing: $14.99 (expected 6 months)
+                    </p>
+                    <p className="mb-2 text-sm font-bold text-sage-700">
+                      Estimated Total: $2089.94*
                     </p>
                     <p className="text-xs text-sage-600">
-                      Heritage Law Offices reviews and files for you.
+                      Heritage Law Offices reviews and assist you in filing your
+                      claim.
+                    </p>
+                    <p className="mt-2 text-xs text-sage-600">
+                      *Process typically takes 6 months, but can vary. Plus 2%
+                      RECA attorney fee (paid out of your award by DOJ).
                     </p>
                   </div>
                 </div>
