@@ -43,6 +43,15 @@ export const STRIPE_CONFIG = {
       "RadiantClaims DIY Document Preparation - Monthly Subscription",
   },
 
+  // Legal Rep Path - Monthly Subscription
+  LEGAL_REP_MONTHLY: {
+    priceId: process.env.STRIPE_PRICE_ID_LEGAL_REP_MONTHLY || "",
+    amount: 1499, // $14.99 in cents
+    currency: "usd",
+    interval: "month" as const,
+    description: "RadiantClaims Legal Representation - Monthly Platform Fee",
+  },
+
   // Webhook configuration
   WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
 } as const;

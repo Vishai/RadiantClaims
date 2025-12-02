@@ -45,24 +45,27 @@ export async function GET() {
       });
     }
 
-    // Legal path users (full representation) - always have access
+    // Legal path users - must have ACTIVE status (after first payment)
     if (subscription.tier === "LEGAL_REP") {
+      const canAccessForms = subscription.status === "ACTIVE";
+
       return NextResponse.json({
         hasSubscription: true,
         needsToSelectTier: false,
         tier: "LEGAL_REP",
         status: subscription.status,
-        canAccessForms: true,
+        canAccessForms,
+        needsPayment: !canAccessForms,
         referredToFirm: subscription.referredToFirm,
         referredAt: subscription.referredAt,
       });
     }
 
-    // DIY path users - need to have paid setup fee AND have active subscription
+    // DIY path users - must have ACTIVE status (set by webhook after payment)
+    // OR have setupFeePaid flag set (legacy/manual cases)
     const canAccessForms =
       subscription.tier === "DIY_PREP" &&
-      subscription.setupFeePaid === true &&
-      subscription.status === "ACTIVE";
+      (subscription.status === "ACTIVE" || subscription.setupFeePaid === true);
 
     return NextResponse.json({
       hasSubscription: true,

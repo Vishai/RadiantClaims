@@ -46,7 +46,6 @@ function RECAStartContent() {
   const [showAuthOptions, setShowAuthOptions] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
 
   useEffect(() => {
     const id = searchParams.get("sessionId");
@@ -59,7 +58,6 @@ function RECAStartContent() {
   useEffect(() => {
     if (status === "unauthenticated") {
       setShowAuthOptions(true);
-      setCheckingSubscription(false);
     }
   }, [status]);
 
@@ -75,11 +73,7 @@ function RECAStartContent() {
           }
         } catch (error) {
           console.error("Error checking subscription:", error);
-        } finally {
-          setCheckingSubscription(false);
         }
-      } else if (status === "unauthenticated") {
-        setCheckingSubscription(false);
       }
     }
 
@@ -87,11 +81,7 @@ function RECAStartContent() {
   }, [status]);
 
   const handleStart = async () => {
-    if (
-      status !== "authenticated" ||
-      checkingSubscription ||
-      !subscriptionStatus?.canAccessForms
-    ) {
+    if (status !== "authenticated") {
       return;
     }
 
@@ -339,99 +329,40 @@ function RECAStartContent() {
         {/* Start Button - Only show for authenticated users */}
         {status === "authenticated" && (
           <div className="text-center">
-            {checkingSubscription ? (
-              <div className="py-8">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-terracotta-500 border-r-transparent"></div>
-                <p className="mt-4 text-sage-600">
-                  Checking your subscription...
-                </p>
-              </div>
-            ) : subscriptionStatus?.needsToSelectTier ? (
-              <div className="space-y-4">
-                <Card className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-peach-50 shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
-                      <div className="text-sm text-sage-700">
-                        <p className="mb-1 font-semibold">Choose Your Path</p>
-                        <p>
-                          Before you can start your RECA claim, please select
-                          your service tier.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Button
-                  size="lg"
-                  onClick={() => router.push("/service-tiers")}
-                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
-                >
-                  Choose Your Service Tier
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : subscriptionStatus?.needsPayment ? (
-              <div className="space-y-4">
-                <Card className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-peach-50 shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <Lock className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
-                      <div className="text-sm text-sage-700">
-                        <p className="mb-1 font-semibold">Payment Required</p>
-                        <p>
-                          Complete your payment to unlock access to the RECA
-                          form builder.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Button
-                  size="lg"
-                  onClick={() => router.push("/service-tiers")}
-                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
-                >
-                  Complete Payment
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : subscriptionStatus?.canAccessForms ? (
-              <>
-                <Button
-                  size="lg"
-                  onClick={handleStart}
-                  disabled={isLoading}
-                  className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
-                >
-                  {isLoading ? "Loading..." : "Start RECA Form"}
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-                <p className="mt-4 text-sm text-sage-600">
-                  Estimated time: 45-60 minutes • Auto-saves your progress
-                </p>
-                {subscriptionStatus.tier === "LEGAL_REP" &&
-                  subscriptionStatus.referredToFirm && (
-                    <Card className="mt-6 rounded-3xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
-                          <div className="text-sm text-sage-700">
-                            <p className="mb-1 font-semibold">
-                              Legal Representation Active
-                            </p>
-                            <p>
-                              Your case has been referred to{" "}
-                              {subscriptionStatus.referredToFirm.name}. They
-                              will be in touch soon to discuss your claim.
-                            </p>
-                          </div>
+            <>
+              <Button
+                size="lg"
+                onClick={handleStart}
+                disabled={isLoading}
+                className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
+              >
+                {isLoading ? "Loading..." : "Start RECA Form"}
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+              <p className="mt-4 text-sm text-sage-600">
+                Estimated time: 45-60 minutes • Auto-saves your progress
+              </p>
+              {subscriptionStatus?.tier === "LEGAL_REP" &&
+                subscriptionStatus?.referredToFirm && (
+                  <Card className="mt-6 rounded-3xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                        <div className="text-sm text-sage-700">
+                          <p className="mb-1 font-semibold">
+                            Legal Representation Active
+                          </p>
+                          <p>
+                            Your case has been referred to{" "}
+                            {subscriptionStatus.referredToFirm.name}. They will
+                            be in touch soon to discuss your claim.
+                          </p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-              </>
-            ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+            </>
           </div>
         )}
 

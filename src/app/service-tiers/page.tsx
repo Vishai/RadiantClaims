@@ -45,37 +45,44 @@ function ServiceTiersContent() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
-    console.log("handleSelectTier called with:", tierId);
+    try {
+      console.log("handleSelectTier called with:", tierId);
 
-    // Check eligibility first
-    const eligibilityVerified = sessionStorage.getItem("eligibility_verified");
-    console.log("Eligibility verified status:", eligibilityVerified);
+      // Check eligibility first
+      const eligibilityVerified = sessionStorage.getItem(
+        "eligibility_verified"
+      );
+      console.log("Eligibility verified status:", eligibilityVerified);
 
-    if (!eligibilityVerified) {
-      console.log("Eligibility not verified, showing prompt");
-      setShowEligibilityPrompt(true);
-      return;
-    }
+      if (!eligibilityVerified) {
+        console.log("Eligibility not verified, showing prompt");
+        setShowEligibilityPrompt(true);
+        return;
+      }
 
-    console.log("User status:", status);
-    // Check if user is authenticated
-    if (status === "unauthenticated") {
-      console.log("User unauthenticated, showing auth prompt");
+      console.log("User status:", status);
+      // Check if user is authenticated
+      if (status === "unauthenticated") {
+        console.log("User unauthenticated, showing auth prompt");
+        setSelectedTier(tierId);
+        setShowAuthPrompt(true);
+        return;
+      }
+
+      console.log("Proceeding with tier selection");
+      setErrorMessage(null);
+      setInfoMessage(null);
       setSelectedTier(tierId);
-      setShowAuthPrompt(true);
-      return;
-    }
 
-    console.log("Proceeding with tier selection");
-    setErrorMessage(null);
-    setInfoMessage(null);
-    setSelectedTier(tierId);
-
-    // Show appropriate agreement dialog
-    if (tierId === "DIY_PREP") {
-      setShowDIYAgreement(true);
-    } else {
-      setShowLegalAgreement(true);
+      // Show appropriate agreement dialog
+      if (tierId === "DIY_PREP") {
+        setShowDIYAgreement(true);
+      } else {
+        setShowLegalAgreement(true);
+      }
+    } catch (error) {
+      console.error("Error in handleSelectTier:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
     }
   };
 

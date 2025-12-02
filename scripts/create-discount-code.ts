@@ -164,6 +164,18 @@ async function main() {
         stripeCouponId = coupon.id;
       }
 
+      // Create Stripe Promotion Code so it can be used in Checkout UI
+      if (stripeCouponId) {
+        const promotionCode = await stripe.promotionCodes.create({
+          coupon: stripeCouponId,
+          code: args.code,
+          max_redemptions: args.maxUses,
+          expires_at:
+            Math.floor(Date.now() / 1000) + args.expiresInDays! * 24 * 60 * 60,
+        });
+        console.log(`   ✓ Stripe promotion code created: ${promotionCode.id}`);
+      }
+
       console.log(`   ✓ Stripe coupon created: ${stripeCouponId}`);
     } catch (error) {
       console.warn(

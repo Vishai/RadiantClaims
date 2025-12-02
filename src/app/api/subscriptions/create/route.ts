@@ -208,15 +208,60 @@ export async function POST(request: NextRequest) {
     });
 
     if (tier === "LEGAL_REP") {
-      // For Legal Rep: No payment needed, create subscription immediately
+      // For Legal Rep: Create subscription and Stripe checkout for $14.99/month
+      const legalRepMonthlyPriceId = STRIPE_CONFIG.LEGAL_REP_MONTHLY.priceId;
+
+      if (!legalRepMonthlyPriceId) {
+        return NextResponse.json(
+          {
+            error:
+              "Legal Rep checkout is temporarily unavailable. Please contact support.",
+            code: "LEGAL_REP_PRICE_NOT_CONFIGURED",
+          },
+          { status: 503 }
+        );
+      }
+
       const subscription = await db.serviceSubscription.create({
         data: {
           userId: session.user.id,
           tier: "LEGAL_REP",
-          status: "ACTIVE",
-          setupFeePaid: true, // No setup fee for legal
+          status: "PENDING", // Will be set to ACTIVE by webhook after payment
+          setupFeePaid: false, // No setup fee, but need first month payment
           setupFeeAmount: 0,
-          setupFeePaidAt: new Date(),
+          monthlyFeeAmount: 14.99,
+        },
+      });
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: session.user.email || undefined,
+        name: session.user.name || undefined,
+        metadata: {
+          userId: session.user.id,
+          subscriptionId: subscription.id,
+        },
+      });
+
+      // Update subscription with Stripe customer ID
+      await db.serviceSubscription.update({
+        where: { id: subscription.id },
+        data: { stripeCustomerId: customer.id },
+      });
+
+      // Create Stripe Checkout Session for monthly subscription only
+      const checkoutSession = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [{ price: legalRepMonthlyPriceId, quantity: 1 }],
+        allow_promotion_codes: true,
+        success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
+        metadata: {
+          userId: session.user.id,
+          subscriptionId: subscription.id,
+          policyAcceptanceId: policyAcceptance.id,
         },
       });
 
@@ -230,6 +275,7 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get("user-agent") || undefined,
         metadata: {
           tier: "LEGAL_REP",
+          stripeCheckoutSessionId: checkoutSession.id,
           policyAcceptanceId: policyAcceptance.id,
         },
       });
@@ -237,7 +283,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         subscription,
-        redirectTo: "/portal",
+        checkoutUrl: checkoutSession.url,
       });
     } else {
       // For DIY: Create subscription and Stripe checkout session
@@ -259,7 +305,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: session.user.id,
           tier: "DIY_PREP",
-          status: "ACTIVE",
+          status: "PENDING", // Changed from ACTIVE - will be set to ACTIVE by webhook
           setupFeePaid: false,
           setupFeeAmount: 149.99,
           monthlyFeeAmount: 24.99,
