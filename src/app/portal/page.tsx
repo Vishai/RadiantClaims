@@ -472,9 +472,10 @@ export default function CustomerPortal() {
                               )
                             }
                             className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                            title="Complete after the RECA application to generate hospital/registry request packets"
                           >
                             <Upload className="h-4 w-4" />
-                            Intake S2
+                            Document Request Forms
                           </Button>
                         )}
 
@@ -497,6 +498,11 @@ export default function CustomerPortal() {
                           Resources
                         </Button>
                       </div>
+                      <p className="text-xs text-sage-600">
+                        Finish the RECA application first. Then complete the
+                        Document Request Forms to generate and send your
+                        hospital and registry packets.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -512,6 +518,73 @@ export default function CustomerPortal() {
               <Plus className="h-5 w-5" />
               Start Another Claim
             </Button>
+
+            <Card className="rounded-3xl border-2 border-cream-200 bg-white">
+              <CardHeader>
+                <CardTitle className="text-sage-900">
+                  What Happens Next?
+                </CardTitle>
+                <CardDescription className="text-sage-600">
+                  Your path to compensation, explained in plain language.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-sage-700">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-terracotta-50 p-2">
+                    <FileText className="h-4 w-4 text-terracotta-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sage-900">
+                      RECA Application
+                    </p>
+                    <p>
+                      Complete the form walkthrough first. This locks in
+                      eligibility details and sets your document requirements.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-emerald-50 p-2">
+                    <Upload className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sage-900">
+                      Document Request Forms
+                    </p>
+                    <p>
+                      After the application, generate and send hospital/registry
+                      packets. This is paramount to start record retrieval.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-sage-50 p-2">
+                    <CheckCircle className="h-4 w-4 text-sage-700" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sage-900">
+                      Document Uploader
+                    </p>
+                    <p>
+                      Upload IDs, birth/death certificates, and other proofs
+                      your path requires. We track completeness for you.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-blue-50 p-2">
+                    <BookOpen className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sage-900">Sources</p>
+                    <p>
+                      Find where to request vital records and supporting docs.
+                      Tailored to your state/county.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>
