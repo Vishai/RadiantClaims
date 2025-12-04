@@ -94,15 +94,27 @@ export async function POST(req: NextRequest) {
 
 /**
  * Handle checkout.session.completed
- * This fires when the setup fee payment is successful
+ * DIY: setup fee checkout completion
+ * Legal Rep: subscription checkout completion (no setup fee)
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const { userId, subscriptionId } = session.metadata || {};
+  const metadata = (session.metadata || {}) as Record<
+    string,
+    string | undefined
+  >;
+  const userId = metadata.userId;
+  const subscriptionId = metadata.subscriptionId;
 
   if (!userId || !subscriptionId) {
     console.error("Missing metadata in checkout session");
     return;
   }
+
+  const subscription = await prisma.serviceSubscription.findUnique({
+    where: { id: subscriptionId },
+  });
+
+  const tier = metadata.tier || subscription?.tier;
 
   console.log(`💰 Checkout completed for user ${userId}`);
 
@@ -111,6 +123,36 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     typeof session.subscription === "string"
       ? session.subscription
       : session.subscription?.id;
+
+  // Legal Rep: monthly subscription only, no setup fee
+  if (tier === "LEGAL_REP") {
+    await prisma.serviceSubscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: "ACTIVE",
+        ...(stripeSubscriptionId && { stripeSubscriptionId }),
+      },
+    });
+
+    if (userId) {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: "SUBSCRIPTION_CREATED",
+          resourceType: "ServiceSubscription",
+          resourceId: subscriptionId,
+          ipAddress: "stripe-webhook",
+          metadata: JSON.stringify({
+            tier: "LEGAL_REP",
+            checkoutSessionId: session.id,
+            amount: session.amount_total ? session.amount_total / 100 : null,
+          }),
+        },
+      });
+    }
+
+    return;
+  }
 
   // Update subscription
   await prisma.serviceSubscription.update({

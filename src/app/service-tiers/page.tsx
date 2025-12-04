@@ -200,9 +200,9 @@ function ServiceTiersContent() {
           return;
         }
 
-        if (data.code === "DIY_PRICE_NOT_CONFIGURED") {
+        if (data.code === "LEGAL_REP_PRICE_NOT_CONFIGURED") {
           setErrorMessage(
-            "Legal path is available, but we're still finishing DIY billing setup. Please contact support if you need DIY access."
+            "Legal representation checkout is temporarily offline while we finish billing setup. Please contact support and we'll get you set up."
           );
           setIsLoading(false);
           return;
@@ -221,8 +221,13 @@ function ServiceTiersContent() {
         setInfoMessage(data.message);
       }
 
-      // Redirect to portal dashboard (they can start from there)
-      router.push("/portal");
+      // Redirect to Stripe checkout for payment
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        // Fallback to portal if no checkout needed
+        router.push("/portal");
+      }
     } catch (error) {
       console.error("Error:", error);
       setErrorMessage(

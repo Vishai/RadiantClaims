@@ -1812,6 +1812,7 @@ enum ServiceTier {
 }
 
 enum SubscriptionStatus {
+  PENDING // Subscription created but payment not completed yet
   ACTIVE // Subscription is active and in good standing
   PAST_DUE // Payment failed, grace period
   CANCELED // User canceled subscription
@@ -2384,4 +2385,3 @@ model MedicalRecordSource {
   @@index([treatmentYear])
   @@index([requestGenerated])
 }
-

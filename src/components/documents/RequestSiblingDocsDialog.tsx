@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -103,11 +104,13 @@ export function RequestSiblingDocsDialog({
           <div className="flex flex-col items-center gap-6 py-4">
             {/* QR Code */}
             <div className="rounded-xl border-2 border-dashed border-sage-200 bg-white p-4">
-              <img
+              <Image
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                   generatedUrl
                 )}`}
                 alt="QR Code"
+                width={150}
+                height={150}
                 className="h-36 w-36"
               />
             </div>

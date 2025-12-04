@@ -305,6 +305,10 @@ export default function CustomerPortal() {
           <p className="text-lg text-sage-700">
             Track your RECA claims and manage your documents
           </p>
+          <p className="mt-1 text-sm text-sage-600">
+            Currently supporting RECA Downwinder claims; additional RECA claim
+            types will be added soon.
+          </p>
         </div>
 
         {/* Claims List */}

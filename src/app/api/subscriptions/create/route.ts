@@ -262,6 +262,15 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           subscriptionId: subscription.id,
           policyAcceptanceId: policyAcceptance.id,
+          tier: "LEGAL_REP",
+        },
+        subscription_data: {
+          metadata: {
+            userId: session.user.id,
+            subscriptionId: subscription.id,
+            policyAcceptanceId: policyAcceptance.id,
+            tier: "LEGAL_REP",
+          },
         },
       });
 
@@ -339,6 +348,12 @@ export async function POST(request: NextRequest) {
         ],
         subscription_data: {
           trial_period_days: 30,
+          metadata: {
+            userId: session.user.id,
+            subscriptionId: subscription.id,
+            policyAcceptanceId: policyAcceptance.id,
+            tier: "DIY_PREP",
+          },
         },
         allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
@@ -347,6 +362,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           subscriptionId: subscription.id,
           policyAcceptanceId: policyAcceptance.id,
+          tier: "DIY_PREP",
         },
       });
 

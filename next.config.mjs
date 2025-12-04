@@ -19,6 +19,14 @@ const nextConfig = {
       },
     },
   }),
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.qrserver.com',
+      },
+    ],
+  },
   // Webpack configuration for server-side modules
   webpack: (config, { isServer }) => {
     if (isServer) {

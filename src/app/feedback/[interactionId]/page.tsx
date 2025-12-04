@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,11 +44,8 @@ export default function FeedbackPage() {
   const [processingDays, setProcessingDays] = useState<string>("");
   const [comments, setComments] = useState<string>("");
 
-  useEffect(() => {
-    fetchInteraction();
-  }, [interactionId]);
-
-  const fetchInteraction = async () => {
+  const fetchInteraction = useCallback(async () => {
+    setLoading(true);
     try {
       const response = await fetch(
         `/api/resources/feedback/interaction/${interactionId}`
@@ -72,7 +69,11 @@ export default function FeedbackPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [interactionId]);
+
+  useEffect(() => {
+    void fetchInteraction();
+  }, [fetchInteraction]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
