@@ -106,17 +106,12 @@ export async function searchContactsWeb(query: {
       body: JSON.stringify({
         api_key: TAVILY_API_KEY,
         query: searchQuery,
-        search_depth: "advanced", // More thorough search
-        include_answer: true, // Get AI-generated answer
+        search_depth: "basic", // Changed from "advanced" - faster and often better for direct queries
+        include_answer: false, // Don't need AI answer, we'll parse ourselves
         include_raw_content: false,
-        max_results: 5,
-        include_domains: [
-          // Prioritize official government sites
-          "*.gov",
-          "*.us",
-          "familysearch.org",
-          "vitalrecordsoffice.net",
-        ],
+        max_results: 8, // Increased from 5 to match Serper
+        // Removed include_domains restriction - many hospitals/institutions use .com/.org
+        // Google's ranking is often better than manual filtering
       }),
     });
 
@@ -127,17 +122,29 @@ export async function searchContactsWeb(query: {
 
     const data = await response.json();
 
-    // Extract contacts from search results
-    const contacts: ContactFromWeb[] = [];
+    // Convert Tavily results to standard WebSearchResult format
+    const searchResults: WebSearchResult[] = (data.results || []).map(
+      (r: any) => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.content || r.snippet || "", // Tavily uses 'content' field
+      })
+    );
 
-    for (const result of data.results || []) {
-      const contact = extractContactFromResult(result, query);
-      if (contact) {
-        contacts.push(contact);
-      }
+    if (searchResults.length === 0) {
+      console.log("[Web Search] No results from Tavily");
+      return [];
     }
 
-    return contacts;
+    console.log(
+      `[Web Search] Tavily returned ${searchResults.length} results, parsing with AI...`
+    );
+
+    // Use AI parsing (same as Serper) instead of regex extraction
+    const parsedContacts = await parseSearchResultsWithAI(searchResults, query);
+
+    // Deduplicate results before returning
+    return deduplicateContacts(parsedContacts);
   } catch (error) {
     console.error("Web search error:", error);
     return [];
@@ -190,12 +197,22 @@ export async function searchContactsWithAI(query: {
         searchTerms.push(query.state);
       }
 
-      if (query.institutionType === "VITAL_RECORDS") {
-        searchTerms.push("vital records office");
-      } else if (query.institutionType === "COUNTY_CLERK") {
-        searchTerms.push("county clerk");
-      } else if (query.institutionType === "HOSPITAL") {
-        searchTerms.push("hospital medical records");
+      // Add institution type - use a map for better search terms
+      if (query.institutionType) {
+        const institutionMap: Record<string, string> = {
+          VITAL_RECORDS: "vital records office",
+          COUNTY_CLERK: "county clerk",
+          COUNTY_RECORDER: "county recorder",
+          HOSPITAL: "hospital medical records",
+          CANCER_REGISTRY: "cancer registry",
+          SCHOOL_DISTRICT: "school district records",
+          CHURCH: "church records",
+          TRIBAL_OFFICE: "tribal office records",
+        };
+        searchTerms.push(
+          institutionMap[query.institutionType] ||
+            query.institutionType.toLowerCase().replace(/_/g, " ")
+        );
       }
 
       if (query.documentType === "BIRTH_CERTIFICATE") {
@@ -247,7 +264,10 @@ export async function searchContactsWithAI(query: {
 
     if (searchResults.length === 0) return [];
 
-    return await parseSearchResultsWithAI(searchResults, query);
+    const parsedContacts = await parseSearchResultsWithAI(searchResults, query);
+
+    // Deduplicate results before returning
+    return deduplicateContacts(parsedContacts);
   } catch (error) {
     console.error("AI web search error:", error);
     return [];
@@ -378,11 +398,237 @@ Return as JSON array.`;
             ? c.stillOperating
             : true,
       notes: c.notes,
-      source: "Web Search (AI Parsed)",
+      source: "Web Search (AI Parsed)", // Both Tavily and Serper now use AI parsing
       sourceUrl: c.website_url || c.website || "", // Use AI website or fallback
     }));
   } catch (error) {
     console.error("AI parsing error:", error);
     return [];
   }
+}
+
+/**
+ * Deduplicate contact results by phone number and email
+ * Consolidates multiple entries for the same institution into one comprehensive record
+ * Preserves multiple locations and phone numbers as they may serve different communities
+ */
+export function deduplicateContacts(
+  contacts: ContactFromWeb[]
+): ContactFromWeb[] {
+  if (contacts.length <= 1) return contacts;
+
+  const deduped = new Map<
+    string,
+    ContactFromWeb & {
+      allPhones?: string[];
+      allAddresses?: string[];
+      allCities?: string[];
+    }
+  >();
+
+  for (const contact of contacts) {
+    // Create a deduplication key based on institution name (normalized)
+    // Use name as primary key since same institution may have different phones/addresses for different locations
+    const normalizedName = contact.name
+      .toLowerCase()
+      .trim()
+      .replace(
+        /\b(the|hospital|medical|center|registry|office|department)\b/g,
+        ""
+      ) // Remove common words
+      .replace(/[^\w\s]/g, "") // Remove punctuation
+      .replace(/\s+/g, " ") // Normalize whitespace
+      .trim();
+
+    // Also check for phone/email matches to catch variations in naming
+    const normalizedPhone = contact.phone?.replace(/\D/g, "").slice(-10);
+    const normalizedEmail = contact.email?.toLowerCase().trim();
+
+    // Try to find existing entry by name similarity or exact phone/email match
+    let existingKey: string | null = null;
+    for (const [key, existing] of deduped.entries()) {
+      const existingNameNorm = existing.name
+        .toLowerCase()
+        .trim()
+        .replace(
+          /\b(the|hospital|medical|center|registry|office|department)\b/g,
+          ""
+        )
+        .replace(/[^\w\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const existingPhone = existing.phone?.replace(/\D/g, "").slice(-10);
+      const existingEmail = existing.email?.toLowerCase().trim();
+
+      // Check if it's the same institution
+      const nameMatch =
+        existingNameNorm === normalizedName ||
+        existingNameNorm.includes(normalizedName) ||
+        normalizedName.includes(existingNameNorm);
+      const phoneMatch = normalizedPhone && existingPhone === normalizedPhone;
+      const emailMatch = normalizedEmail && existingEmail === normalizedEmail;
+
+      if (nameMatch || phoneMatch || emailMatch) {
+        existingKey = key;
+        break;
+      }
+    }
+
+    if (existingKey && deduped.has(existingKey)) {
+      // Merge with existing entry
+      const existing = deduped.get(existingKey)!;
+
+      // Consolidate phones (collect all unique phone numbers)
+      const phones = new Set<string>();
+      if (existing.phone) phones.add(existing.phone);
+      if (contact.phone) phones.add(contact.phone);
+      // Also add from array if exists
+      if (existing.allPhones) existing.allPhones.forEach((p) => phones.add(p));
+
+      // Consolidate addresses (collect all unique addresses)
+      const addresses = new Set<string>();
+      if (existing.address) addresses.add(existing.address);
+      if (contact.address) addresses.add(contact.address);
+      // Also add from array if exists
+      if (existing.allAddresses)
+        existing.allAddresses.forEach((a) => addresses.add(a));
+
+      // Consolidate cities (collect all unique cities for location context)
+      const cities = new Set<string>();
+      if (existing.city) cities.add(existing.city);
+      if (contact.city) cities.add(contact.city);
+      // Also add from array if exists
+      if (existing.allCities) existing.allCities.forEach((c) => cities.add(c));
+
+      // Consolidate emails (collect all unique emails)
+      const emails = new Set<string>();
+      if (existing.email) emails.add(existing.email);
+      if (contact.email) emails.add(contact.email);
+
+      // Consolidate websites (collect all unique websites)
+      const websites = new Set<string>();
+      if (existing.website) websites.add(existing.website);
+      if (contact.website) websites.add(contact.website);
+
+      // Consolidate notes
+      const notes = [existing.notes, contact.notes]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const phonesArray = Array.from(phones);
+      const addressesArray = Array.from(addresses);
+      const citiesArray = Array.from(cities);
+
+      // Merge the records - prefer non-empty fields
+      deduped.set(existingKey, {
+        ...existing,
+        name: existing.name, // Keep first name (usually most complete)
+        phone: phonesArray[0], // Primary phone
+        allPhones: phonesArray, // All phone numbers
+        address: addressesArray[0], // Primary address
+        allAddresses: addressesArray, // All addresses
+        city: citiesArray[0], // Primary city
+        allCities: citiesArray, // All cities
+        email:
+          emails.size > 1
+            ? Array.from(emails).join(", ")
+            : existing.email || contact.email,
+        website:
+          websites.size > 1
+            ? Array.from(websites)[0] // Use first website
+            : existing.website || contact.website,
+        state: existing.state || contact.state,
+        county: existing.county || contact.county,
+        notes: notes || existing.notes || contact.notes,
+        yearOpened: existing.yearOpened || contact.yearOpened,
+        yearClosed: existing.yearClosed || contact.yearClosed,
+        stillOperating:
+          existing.stillOperating !== undefined
+            ? existing.stillOperating
+            : contact.stillOperating,
+      });
+    } else {
+      // First occurrence
+      const key =
+        normalizedName || normalizedPhone || normalizedEmail || contact.name;
+      deduped.set(key, {
+        ...contact,
+        allPhones: contact.phone ? [contact.phone] : [],
+        allAddresses: contact.address ? [contact.address] : [],
+        allCities: contact.city ? [contact.city] : [],
+      });
+    }
+  }
+
+  // Convert back to regular ContactFromWeb format with enhanced notes
+  const result = Array.from(deduped.values()).map((contact) => {
+    const hasMultipleLocations =
+      contact.allAddresses && contact.allAddresses.length > 1;
+    const hasMultiplePhones = contact.allPhones && contact.allPhones.length > 1;
+
+    let enhancedNotes = contact.notes || "";
+
+    // Add location information to notes
+    if (hasMultipleLocations) {
+      const locationInfo = contact
+        .allAddresses!.map((addr, idx) => {
+          const city = contact.allCities?.[idx] || "";
+          return `${addr}${city ? `, ${city}` : ""}`;
+        })
+        .join("\n• ");
+
+      enhancedNotes = `MULTIPLE LOCATIONS - This institution has ${contact.allAddresses!.length} locations that may serve different communities:\n• ${locationInfo}\n\n${enhancedNotes}`;
+    }
+
+    // Add phone information to notes
+    if (hasMultiplePhones) {
+      const phoneInfo = contact
+        .allPhones!.map((phone, idx) => {
+          // Try to associate phone with location if we have same number of each
+          if (
+            contact.allAddresses &&
+            contact.allAddresses.length === contact.allPhones!.length
+          ) {
+            return `${phone} (${contact.allAddresses[idx]})`;
+          }
+          return phone;
+        })
+        .join("\n• ");
+
+      enhancedNotes = `MULTIPLE CONTACT NUMBERS:\n• ${phoneInfo}\n\n${enhancedNotes}`;
+    }
+
+    // Return clean ContactFromWeb object (without our internal tracking fields)
+    const { allPhones, allAddresses, allCities, ...cleanContact } = contact;
+
+    return {
+      ...cleanContact,
+      notes: enhancedNotes.trim() || contact.notes,
+    };
+  });
+
+  // Log deduplication results
+  if (result.length < contacts.length) {
+    console.log(
+      `[Deduplication] Reduced ${contacts.length} results to ${result.length} unique contact(s)`
+    );
+
+    // Log details about consolidated information
+    result.forEach((contact) => {
+      const match = deduped.get(contact.name);
+      if (match?.allAddresses && match.allAddresses.length > 1) {
+        console.log(
+          `  - ${contact.name}: ${match.allAddresses.length} locations consolidated`
+        );
+      }
+      if (match?.allPhones && match.allPhones.length > 1) {
+        console.log(
+          `  - ${contact.name}: ${match.allPhones.length} phone numbers consolidated`
+        );
+      }
+    });
+  }
+
+  return result;
 }

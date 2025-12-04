@@ -267,18 +267,55 @@ function parseAddress(addressStr: string) {
  * Map web contact type to Prisma ResourceType
  */
 function mapResourceType(type: string): ResourceType {
+  const normalizedType = type.toUpperCase().replace(/\s+/g, "_");
+
   const typeMap: Record<string, ResourceType> = {
     VITAL_RECORDS: "VITAL_RECORDS",
+    VITAL_RECORDS_OFFICE: "VITAL_RECORDS",
     COUNTY_CLERK: "COUNTY_CLERK",
     COUNTY_RECORDER: "COUNTY_RECORDER",
     HOSPITAL: "HOSPITAL",
+    MEDICAL_CENTER: "HOSPITAL",
+    MEDICAL_RECORDS: "HOSPITAL",
     CANCER_REGISTRY: "CANCER_REGISTRY",
+    CANCER: "CANCER_REGISTRY",
     SCHOOL_DISTRICT: "SCHOOL_DISTRICT",
+    SCHOOL: "SCHOOL_DISTRICT",
     CHURCH: "CHURCH",
     TRIBAL_OFFICE: "TRIBAL_OFFICE",
+    TRIBAL: "TRIBAL_OFFICE",
   };
 
-  return typeMap[type] || "VITAL_RECORDS"; // Default fallback
+  // Try exact match first
+  if (typeMap[normalizedType]) {
+    return typeMap[normalizedType];
+  }
+
+  // Try partial match
+  for (const [key, value] of Object.entries(typeMap)) {
+    if (normalizedType.includes(key) || key.includes(normalizedType)) {
+      return value;
+    }
+  }
+
+  // Default fallback based on common keywords
+  if (
+    normalizedType.includes("HOSPITAL") ||
+    normalizedType.includes("MEDICAL")
+  ) {
+    return "HOSPITAL";
+  }
+  if (normalizedType.includes("CANCER")) {
+    return "CANCER_REGISTRY";
+  }
+  if (normalizedType.includes("SCHOOL")) {
+    return "SCHOOL_DISTRICT";
+  }
+  if (normalizedType.includes("CLERK") || normalizedType.includes("RECORDER")) {
+    return "COUNTY_CLERK";
+  }
+
+  return "VITAL_RECORDS"; // Ultimate fallback
 }
 
 /**

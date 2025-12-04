@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
 import { searchContacts } from "@/lib/contact-agent/search";
-import { searchContactsWeb } from "@/lib/contact-agent/web-search";
+import {
+  searchContactsWeb,
+  searchContactsWithAI,
+  deduplicateContacts,
+} from "@/lib/contact-agent/web-search";
 import {
   batchAutoImport,
   scoreWebContact,
@@ -185,8 +189,27 @@ Your role:
 - Be empathetic and understanding.
 
 When you find contacts:
-- Present the most relevant results clearly.
-- Suggest the best method to contact them.
+- Present the most relevant results clearly in a unified, easy-to-read format.
+- If multiple search results were consolidated, acknowledge this naturally (e.g., "I found information from several sources for this institution").
+- **IMPORTANT for Confidence Indicators:**
+  - If a contact has stats (totalFeedback, successRate, avgRating), mention this to build user confidence
+  - Examples:
+    - "This resource is in our database and has been verified by X users" (if totalFeedback >= 3)
+    - "Users have reported a Y% success rate with this resource" (if successRate > 0)
+    - "This resource has an average rating of Z/5 stars" (if avgRating > 0)
+  - More user confirmations = stronger confidence: "Many users have confirmed this is the correct contact"
+  - Fewer confirmations = cautious language: "This resource has limited user feedback, so please verify before using"
+  - Web search results (no stats): "This was found via web search and hasn't been verified by our user community yet. Please call to confirm details before sending documents."
+- **IMPORTANT for Multiple Locations:**
+  - If the notes mention "MULTIPLE LOCATIONS", present ALL locations to the user
+  - Explain that these are different locations that may serve different communities
+  - Do NOT suggest locations are incorrect - they are all valid locations for the same institution
+  - Help the user understand which location is most relevant for their needs (based on city/county if mentioned)
+- **IMPORTANT for Multiple Phone Numbers:**
+  - If the notes mention "MULTIPLE CONTACT NUMBERS", present ALL phone numbers
+  - If phone numbers are associated with specific addresses, show that association clearly
+  - Explain that different locations may have different contact numbers
+- Suggest the best method to contact them (call the primary number to verify current information).
 
 Context about the user's claim:
 ${
@@ -204,7 +227,7 @@ Be conversational, helpful, and guide users step-by-step.`;
       {
         name: "search_contacts",
         description:
-          "Search the database for institutional contacts (vital records offices, hospitals, schools, etc.) that can provide documents for RECA claims",
+          "Search the database for institutional contacts (vital records offices, hospitals, schools, etc.) that can provide documents for RECA claims. Use searchQuery for institution names like 'Utah Cancer Registry' or 'St Mark Hospital'.",
         parameters: {
           type: "object",
           properties: {
@@ -216,6 +239,11 @@ Be conversational, helpful, and guide users step-by-step.`;
             county: {
               type: "string",
               description: "County name (e.g., Washington, Clark, Coconino)",
+            },
+            searchQuery: {
+              type: "string",
+              description:
+                'Name or partial name of the institution to search for (e.g., "Utah Cancer Registry", "St Mark", "Washington County"). Use this when user mentions specific institution names.',
             },
             resourceTypes: {
               type: "array",
@@ -276,6 +304,7 @@ Be conversational, helpful, and guide users step-by-step.`;
         let contacts = await searchContacts({
           state: functionArgs.state,
           county: functionArgs.county,
+          searchQuery: functionArgs.searchQuery, // Add searchQuery parameter
           resourceTypes: functionArgs.resourceTypes as ResourceType[],
           documentTypes: functionArgs.documentTypes,
         });
@@ -284,19 +313,64 @@ Be conversational, helpful, and guide users step-by-step.`;
         let webSearchPerformed = false;
 
         // Fallback to web search if no results found
-        if (contacts.length === 0 && process.env.TAVILY_API_KEY) {
-          console.log(
-            "[Contact Agent] No database results, trying web search..."
-          );
+        // Try Serper first (preferred), then Tavily as backup
+        let wasDeduplicated = false;
+        let originalResultCount = 0;
 
-          const webContacts = await searchContactsWeb({
-            state: functionArgs.state,
-            county: functionArgs.county,
-            institutionType: functionArgs.resourceTypes?.[0],
-            documentType: functionArgs.documentTypes?.[0],
-          });
+        if (contacts.length === 0) {
+          let webContacts: any[] = [];
+
+          // Try Serper/Google first (higher quality results)
+          if (process.env.SERPER_API_KEY) {
+            console.log(
+              "[Contact Agent] No database results, trying Serper (Google) search..."
+            );
+
+            try {
+              webContacts = await searchContactsWithAI({
+                state: functionArgs.state,
+                county: functionArgs.county,
+                institutionType: functionArgs.resourceTypes?.[0],
+                documentType: functionArgs.documentTypes?.[0],
+              });
+
+              if (webContacts.length > 0) {
+                searchSource = "web-serper";
+                console.log(
+                  `[Contact Agent] Serper found ${webContacts.length} results`
+                );
+              }
+            } catch (error) {
+              console.error("[Contact Agent] Serper search failed:", error);
+              // Continue to Tavily fallback
+            }
+          }
+
+          // Fallback to Tavily if Serper didn't find anything or isn't configured
+          if (webContacts.length === 0 && process.env.TAVILY_API_KEY) {
+            console.log("[Contact Agent] Trying Tavily search as fallback...");
+
+            try {
+              webContacts = await searchContactsWeb({
+                state: functionArgs.state,
+                county: functionArgs.county,
+                institutionType: functionArgs.resourceTypes?.[0],
+                documentType: functionArgs.documentTypes?.[0],
+              });
+
+              if (webContacts.length > 0) {
+                searchSource = "web-tavily";
+                console.log(
+                  `[Contact Agent] Tavily found ${webContacts.length} results`
+                );
+              }
+            } catch (error) {
+              console.error("[Contact Agent] Tavily search failed:", error);
+            }
+          }
 
           if (webContacts.length > 0) {
+            originalResultCount = webContacts.length;
             // Auto-import high-quality web results to database (async, don't wait)
             batchAutoImport(webContacts, {
               minConfidenceScore: 70, // Only import good results
@@ -336,8 +410,19 @@ Be conversational, helpful, and guide users step-by-step.`;
               appointmentRequired: false,
             }));
 
-            searchSource = "web";
+            // Check if deduplication occurred
+            if (originalResultCount > contacts.length) {
+              wasDeduplicated = true;
+              console.log(
+                `[Contact Agent] Deduplicated ${originalResultCount} results to ${contacts.length} unique contact(s)`
+              );
+            }
+
             webSearchPerformed = true;
+          } else {
+            console.log(
+              "[Contact Agent] No results from web search. User will need to search manually."
+            );
           }
         }
 
@@ -358,8 +443,14 @@ Be conversational, helpful, and guide users step-by-step.`;
               searchParams: functionArgs,
               searchSource,
               webSearchPerformed,
+              wasDeduplicated,
+              originalResultCount: wasDeduplicated
+                ? originalResultCount
+                : contacts.length,
               note: webSearchPerformed
-                ? "Results found via web search. Information may need verification."
+                ? wasDeduplicated
+                  ? `Found ${originalResultCount} search results, which were consolidated into ${contacts.length} unique contact(s). Results found via web search and may need verification.`
+                  : "Results found via web search. Information may need verification."
                 : contacts.length > 0
                   ? "Results from verified database."
                   : "No results found in database or web search.",
