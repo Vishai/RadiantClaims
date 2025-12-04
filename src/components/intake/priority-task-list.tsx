@@ -71,10 +71,21 @@ export function PriorityTaskList({
   const [requestGenerated, setRequestGenerated] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFilename, setPdfFilename] = useState<string>("");
   const [hospitalSelected, setHospitalSelected] = useState(false);
   const [treatmentYearWarning, setTreatmentYearWarning] = useState<
     string | null
   >(null);
+
+  // Clean up object URL when component unmounts or when replaced/reset
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   // Validate treatment year against hospital operation dates
   useEffect(() => {
@@ -134,6 +145,15 @@ export function PriorityTaskList({
     setTasks(prioritized);
   }, [checklist, uploadedFiles, isDeceased]);
 
+  const triggerPdfDownload = (url: string, filename: string) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleGenerateRequest = async () => {
     if (!hospitalName || !treatmentYear || !cancerType) return;
 
@@ -187,13 +207,16 @@ export function PriorityTaskList({
       // Download PDF
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Medical_Request_${hospitalName.replace(/\s+/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const filename = `Medical_Request_${hospitalName.replace(/\s+/g, "_")}.pdf`;
+
+      // Replace previous URL to avoid leaks
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl);
+      }
+
+      setPdfUrl(url);
+      setPdfFilename(filename);
+      triggerPdfDownload(url, filename);
 
       setRequestGenerated(true);
     } catch (error) {
@@ -229,6 +252,15 @@ export function PriorityTaskList({
   const displayedActiveTasks = showMedicalIntervention
     ? activeTasks.filter((t) => t.type !== "MEDICAL_PATHOLOGY")
     : activeTasks;
+
+  const handleResetRequest = () => {
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+    }
+    setPdfUrl(null);
+    setPdfFilename("");
+    setRequestGenerated(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -663,13 +695,24 @@ export function PriorityTaskList({
                     packet to <strong>{hospitalName}</strong>.
                   </p>
                   <div className="flex gap-3">
-                    <Button className="bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      onClick={() => {
+                        if (pdfUrl && pdfFilename) {
+                          triggerPdfDownload(pdfUrl, pdfFilename);
+                        } else {
+                          // Fallback: regenerate if URL is missing
+                          handleGenerateRequest();
+                        }
+                      }}
+                      disabled={isGenerating}
+                    >
                       Download PDF Packet
                     </Button>
                     <Button
                       variant="outline"
                       className="border-emerald-300 text-emerald-700 hover:bg-emerald-100"
-                      onClick={() => setRequestGenerated(false)}
+                      onClick={handleResetRequest}
                     >
                       Reset
                     </Button>

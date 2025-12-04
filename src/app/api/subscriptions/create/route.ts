@@ -3,12 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
-import { STRIPE_CONFIG } from "@/lib/stripe";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-10-29.clover",
-});
+import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
