@@ -295,62 +295,6 @@ export async function searchContactsWithAI(query: {
 }
 
 /**
- * Extract contact information from a search result
- */
-function extractContactFromResult(
-  result: WebSearchResult,
-  query: { state?: string; county?: string }
-): ContactFromWeb | null {
-  try {
-    // Extract phone numbers
-    const phonePattern = /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
-    const phones = (result.snippet + " " + (result.content || "")).match(
-      phonePattern
-    );
-
-    // Extract email addresses
-    const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emails = (result.snippet + " " + (result.content || "")).match(
-      emailPattern
-    );
-
-    // Extract address (basic pattern)
-    const addressPattern =
-      /\d+\s+[A-Za-z\s]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd)/i;
-    const addresses = (result.snippet + " " + (result.content || "")).match(
-      addressPattern
-    );
-
-    // Determine institution type from title/snippet
-    let type = "UNKNOWN";
-    const lowerText = (result.title + " " + result.snippet).toLowerCase();
-
-    if (lowerText.includes("vital records")) type = "VITAL_RECORDS";
-    else if (lowerText.includes("county clerk")) type = "COUNTY_CLERK";
-    else if (lowerText.includes("hospital")) type = "HOSPITAL";
-    else if (lowerText.includes("cancer registry")) type = "CANCER_REGISTRY";
-    else if (lowerText.includes("school district")) type = "SCHOOL_DISTRICT";
-
-    return {
-      name: result.title,
-      type,
-      phone: phones?.[0] || undefined,
-      email: emails?.[0] || undefined,
-      address: addresses?.[0] || undefined,
-      website: result.url,
-      state: query.state,
-      county: query.county,
-      notes: result.snippet,
-      source: "Web Search",
-      sourceUrl: result.url,
-    };
-  } catch (error) {
-    console.error("Error extracting contact:", error);
-    return null;
-  }
-}
-
-/**
  * Parse web search results using OpenAI
  * This is more intelligent than regex parsing
  */
@@ -466,7 +410,8 @@ export function deduplicateContacts(
 
     // Try to find existing entry by name similarity or exact phone/email match
     let existingKey: string | null = null;
-    for (const [key, existing] of deduped.entries()) {
+    deduped.forEach((existing, key) => {
+      if (existingKey) return;
       const existingNameNorm = existing.name
         .toLowerCase()
         .trim()
@@ -491,9 +436,8 @@ export function deduplicateContacts(
 
       if (nameMatch || phoneMatch || emailMatch) {
         existingKey = key;
-        break;
       }
-    }
+    });
 
     if (existingKey && deduped.has(existingKey)) {
       // Merge with existing entry

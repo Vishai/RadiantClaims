@@ -4,7 +4,6 @@ import { searchContacts } from "@/lib/contact-agent/search";
 import {
   searchContactsWeb,
   searchContactsWithAI,
-  deduplicateContacts,
 } from "@/lib/contact-agent/web-search";
 import {
   batchAutoImport,

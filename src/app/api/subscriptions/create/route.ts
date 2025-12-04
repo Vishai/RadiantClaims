@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
+import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
