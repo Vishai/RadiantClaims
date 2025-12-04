@@ -40,6 +40,16 @@ export async function searchContactsWeb(query: {
   query?: string; // Allow explicit query
 }): Promise<ContactFromWeb[]> {
   const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+  const hasQueryString = (query.query || "").trim().length >= 3;
+  const hasContext =
+    query.state || query.county || query.documentType || query.institutionType;
+
+  if (!hasQueryString && !hasContext) {
+    console.warn(
+      "[Web Search] Skipping search: insufficient query/context provided"
+    );
+    return [];
+  }
 
   if (!TAVILY_API_KEY) {
     console.warn("TAVILY_API_KEY not set, skipping web search");
@@ -163,6 +173,16 @@ export async function searchContactsWithAI(query: {
   query?: string; // Allow explicit query
 }): Promise<ContactFromWeb[]> {
   const SERPER_API_KEY = process.env.SERPER_API_KEY; // Serper.dev for Google Search API
+  const hasQueryString = (query.query || "").trim().length >= 3;
+  const hasContext =
+    query.state || query.county || query.documentType || query.institutionType;
+
+  if (!hasQueryString && !hasContext) {
+    console.warn(
+      "[Web Search AI] Skipping search: insufficient query/context provided"
+    );
+    return [];
+  }
 
   if (!SERPER_API_KEY) {
     console.warn("SERPER_API_KEY not set, skipping web search");

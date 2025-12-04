@@ -4,6 +4,10 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import crypto from "crypto";
 import { createAuditLog, getClientIp, getUserAgent } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
+import {
+  passwordResetRateLimiter,
+  createRateLimitResponse,
+} from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -13,12 +17,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    // Rate limit by email and IP to prevent abuse
+    const ipAddress = getClientIp(req);
+    const rateKeyEmail = `password-reset:${email.toLowerCase()}`;
+    const rateKeyIp = `password-reset-ip:${ipAddress}`;
+
+    const [emailLimit, ipLimit] = await Promise.all([
+      passwordResetRateLimiter.limit(rateKeyEmail),
+      passwordResetRateLimiter.limit(rateKeyIp),
+    ]);
+
+    if (!emailLimit.success || !ipLimit.success) {
+      return createRateLimitResponse(
+        !emailLimit.success ? emailLimit : ipLimit
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
     // Audit logging details
-    const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
 
     if (!user) {

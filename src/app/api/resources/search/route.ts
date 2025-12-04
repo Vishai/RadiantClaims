@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { ResourceType } from "@prisma/client";
+import { authOptions } from "@/lib/auth";
+import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/audit";
 import { searchContactsWithAI } from "@/lib/contact-agent/web-search";
 
 /**
@@ -17,6 +21,19 @@ import { searchContactsWithAI } from "@/lib/contact-agent/web-search";
  */
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateKey = session.user.id || getClientIp(req) || "unknown";
+    const rateResult = await apiRateLimiter.limit(
+      `resources-search:${rateKey}`
+    );
+    if (!rateResult.success) {
+      return createRateLimitResponse(rateResult);
+    }
+
     const { searchParams } = new URL(req.url);
     const state = searchParams.get("state");
     const county = searchParams.get("county");
@@ -162,13 +179,15 @@ export async function GET(req: NextRequest) {
     console.log(
       `[API Search] Web search check: resourcesWithStats.length=${resourcesWithStats.length}, query="${query}"`
     );
-    if (resourcesWithStats.length === 0 && query) {
+    const normalizedQuery = (query || "").trim();
+
+    if (resourcesWithStats.length === 0 && normalizedQuery.length >= 3) {
       console.log(
-        `No internal resources found for "${query}". Falling back to AI web search (Google).`
+        `No internal resources found for "${normalizedQuery}". Falling back to AI web search (Google).`
       );
 
       // Perform web search using Google (via Serper) + OpenAI Parsing
-      const searchQuery = `${query} ${city || ""} Hospital`;
+      const searchQuery = `${normalizedQuery} ${city || ""} Hospital`;
       console.log(`[Web Search] Executing search with query: "${searchQuery}"`);
 
       const webContacts = await searchContactsWithAI({
