@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
+import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 
 interface Claimant {
   id: string;
@@ -309,6 +310,11 @@ export default function CustomerPortal() {
             Currently supporting RECA Downwinder claims; additional RECA claim
             types will be added soon.
           </p>
+        </div>
+
+        {/* DOJ Metrics Dashboard */}
+        <div className="mb-8">
+          <DOJMetricsDashboard />
         </div>
 
         {/* Claims List */}

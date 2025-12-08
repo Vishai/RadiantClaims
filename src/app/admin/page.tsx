@@ -19,6 +19,7 @@ import {
   Activity,
 } from "lucide-react";
 import Link from "next/link";
+import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 
 interface DashboardStats {
   users: {
@@ -374,6 +375,11 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* DOJ Processing Metrics */}
+      <div className="mb-8">
+        <DOJMetricsDashboard />
       </div>
 
       {/* Recent Activity */}

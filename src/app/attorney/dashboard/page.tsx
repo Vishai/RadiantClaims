@@ -40,6 +40,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 
 interface Claimant {
   id: string;
@@ -312,6 +313,11 @@ export default function AttorneyDashboardPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        {/* DOJ Processing Metrics */}
+        <div className="mb-8">
+          <DOJMetricsDashboard />
+        </div>
+
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-1 items-center gap-3">

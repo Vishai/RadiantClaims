@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Heart, FileText, Users, TrendingUp } from "lucide-react";
+import { DOJUrgencyBanner } from "@/components/landing/DOJUrgencyBanner";
 
 export default function HomePage() {
   return (
@@ -256,6 +257,15 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* DOJ Processing Urgency Banner */}
+        <section className="bg-cream-50 py-12">
+          <div className="container mx-auto px-6">
+            <div className="mx-auto max-w-5xl">
+              <DOJUrgencyBanner />
             </div>
           </div>
         </section>

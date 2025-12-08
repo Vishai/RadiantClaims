@@ -2432,3 +2432,111 @@ model MedicalRecordSource {
   @@index([treatmentYear])
   @@index([requestGenerated])
 }
+
+// ============================================================================
+// DOJ Data Scraping System
+// ============================================================================
+
+// DOJClaimCategory enum for DOJ statistics
+enum DOJClaimCategory {
+  DOWNWINDER
+  ONSITE_PARTICIPANT
+  MANHATTAN_PROJECT_WASTE
+  URANIUM_WORKER
+}
+
+// TrendDirection for metrics analysis
+enum TrendDirection {
+  FASTER
+  SLOWER
+  STABLE
+}
+
+// MetricWindow for time-based analysis
+enum MetricWindow {
+  LAST_7_DAYS
+  LAST_14_DAYS
+  LAST_30_DAYS
+  LAST_60_DAYS
+  ALL_TIME
+}
+
+// DOJ Daily Statistics - scraped from justice.gov/civil/awards-date-MMDDYYYY
+model DOJDailyStats {
+  id               String             @id @default(cuid())
+
+  // Date tracking
+  reportDate       DateTime           // Date from URL (e.g., 12/05/2024)
+  scrapedAt        DateTime           @default(now())
+
+  // Claim type
+  claimCategory    DOJClaimCategory
+
+  // Under PL 119-21 (current law, starting 7/3/2025)
+  pending          Int
+  approved         Int
+  approvalPercent  Float
+  dollarsApproved  Float     // In dollars (e.g., 39100000)
+  denied           Int
+  totalClaims      Int
+
+  // Calculated fields (vs previous day)
+  dailyApproved    Int?      // Approved today vs yesterday
+  dailyDenied      Int?      // Denied today vs yesterday
+  dailySubmitted   Int?      // New submissions today
+
+  // Processing velocity
+  approvalRate     Float?    // Claims approved per day (rolling avg)
+
+  // Data quality
+  dataSource       String    @default("justice.gov")
+  scrapingSuccess  Boolean   @default(true)
+  scrapingError    String?   @db.Text
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([reportDate, claimCategory])
+  @@index([reportDate])
+  @@index([claimCategory, reportDate])
+  @@index([scrapedAt])
+}
+
+// DOJ Processing Metrics - calculated from daily stats
+model DOJProcessingMetrics {
+  id                    String             @id @default(cuid())
+
+  // Time window
+  claimCategory         DOJClaimCategory
+  windowStart           DateTime
+  windowEnd             DateTime
+  windowType            MetricWindow
+
+  // Velocity metrics
+  avgApprovalsPerDay    Float
+  medianApprovalsPerDay Float
+  avgSubmissionsPerDay  Float
+
+  // Capacity metrics
+  avgPendingQueue       Float
+  avgProcessingTime     Float?        // Days from submission to approval (estimated)
+
+  // Success metrics
+  approvalRate          Float
+  denialRate            Float
+
+  // Trend analysis
+  velocityTrend         TrendDirection
+  velocityChange        Float         // % change from previous period
+  queueTrend            TrendDirection
+  queueChange           Float
+
+  // Sample
+  daysInSample          Int
+
+  // Metadata
+  calculatedAt          DateTime           @default(now())
+
+  @@index([claimCategory, windowType])
+  @@index([calculatedAt])
+}
