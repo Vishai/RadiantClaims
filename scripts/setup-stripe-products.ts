@@ -2,8 +2,15 @@
  * Stripe Products Setup Script
  *
  * This script creates the required Stripe products and prices for RadiantClaims:
- * 1. DIY Setup Fee (one-time, $149.99)
- * 2. DIY Monthly Subscription (recurring monthly, $24.99)
+ *
+ * DIY Path (per claim):
+ * 1. Setup Fee: $149.99 (includes first month)
+ * 2. First Claim Monthly: $24.99/mo (starting month 2)
+ * 3. Additional Claim Monthly: $14.99/mo (each additional claim)
+ *
+ * Lawyer Path (per claim):
+ * 4. Setup Fee: $89.99 (refundable on DOJ claim receipt)
+ * 5. Monthly per Claim: $24.99/mo (no discount for additional claims)
  *
  * Usage:
  *   npx tsx scripts/setup-stripe-products.ts

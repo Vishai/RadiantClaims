@@ -15,10 +15,12 @@ export const SERVICE_TIERS = {
       "We prepare your RECA claim forms and documents. You file directly with the Department of Justice.",
 
     pricing: {
-      setupFee: 149.99,
-      monthlyFee: 24.99,
+      setupFee: 149.99, // Per claim, includes first month
+      monthlyFeeFirstClaim: 24.99, // First claim monthly fee (starting month 2)
+      monthlyFeeAdditional: 14.99, // Each additional claim monthly fee
       currency: "USD",
       billingCycle: "monthly",
+      note: "Setup fee includes first month of service. Monthly billing starts month 2.",
     },
 
     features: [
@@ -64,14 +66,17 @@ export const SERVICE_TIERS = {
       "Work with Heritage Law Offices for full legal representation throughout your RECA claim process.",
 
     pricing: {
-      setupFee: 0,
-      monthlyFee: 14.99,
+      setupFee: 89.99, // Per claim, refundable upon DOJ claim receipt
+      setupFeeRefundable: true,
+      monthlyFeePerClaim: 24.99, // No discount for additional claims on lawyer track
+      currency: "USD",
+      billingCycle: "monthly",
       attorneyFeeAmount: 2000,
       attorneyFeePercentage: 2,
       recaAwardAmount: 100000,
       attorneyFeeNote:
-        "Attorney fees are limited to 2% of the $100,000 RECA award ($2,000) and are paid directly by the Department of Justice. This is governed by federal RECA regulations (42 U.S.C. § 2210 note).",
-      currency: "USD",
+        "Attorney fees are limited to 2% of the $100,000 RECA award ($2,000). The DOJ pays you directly, and you pay the attorney fee from your award. This is governed by federal RECA regulations (42 U.S.C. § 2210 note).",
+      note: "Setup fee refunded when DOJ receives your claim. No monthly discount for additional claims.",
     },
 
     features: [
@@ -107,26 +112,42 @@ export const SERVICE_TIERS = {
 
 // Stripe product IDs (to be set after creating products in Stripe)
 export const STRIPE_PRODUCTS = {
+  // DIY Path - Per Claim Products
   DIY_SETUP_FEE: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.setupFee,
     currency: "usd",
-    description: "RadiantClaims DIY Document Preparation - Setup Fee",
-  },
-  DIY_MONTHLY_SUBSCRIPTION: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY || "",
-    amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFee,
-    currency: "usd",
-    interval: "month",
     description:
-      "RadiantClaims DIY Document Preparation - Monthly Subscription",
+      "RadiantClaims DIY - Setup Fee (includes first month, per claim)",
   },
-  LEGAL_MONTHLY_SUBSCRIPTION: {
-    priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY || "",
-    amount: 14.99,
+  DIY_MONTHLY_FIRST_CLAIM: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST || "",
+    amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeFirstClaim,
     currency: "usd",
     interval: "month",
-    description: "RadiantClaims Legal Path - Monthly Technology Fee",
+    description: "RadiantClaims DIY - First Claim Monthly Fee",
+  },
+  DIY_MONTHLY_ADDITIONAL: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL || "",
+    amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeAdditional,
+    currency: "usd",
+    interval: "month",
+    description: "RadiantClaims DIY - Additional Claim Monthly Fee",
+  },
+
+  // Legal Path - Per Claim Products
+  LEGAL_SETUP_FEE: {
+    priceId: process.env.STRIPE_PRICE_ID_LEGAL_SETUP || "",
+    amount: SERVICE_TIERS.LEGAL_REP.pricing.setupFee,
+    currency: "usd",
+    description: "RadiantClaims Legal - Setup Fee (refundable, per claim)",
+  },
+  LEGAL_MONTHLY_PER_CLAIM: {
+    priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM || "",
+    amount: SERVICE_TIERS.LEGAL_REP.pricing.monthlyFeePerClaim,
+    currency: "usd",
+    interval: "month",
+    description: "RadiantClaims Legal - Monthly Fee Per Claim",
   },
 } as const;
 

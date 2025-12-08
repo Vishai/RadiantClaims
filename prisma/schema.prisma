@@ -155,6 +155,8 @@ model Claimant {
   lifecycle               ClaimLifecycle?
   queuePosition           ClaimQueuePosition?
   notificationPreferences LifecycleNotificationPreference?
+  // PER-CLAIM SUBSCRIPTION
+  claimSubscription       ClaimSubscription?
   createdAt               DateTime                         @default(now())
   updatedAt               DateTime                         @updatedAt
 
@@ -1997,9 +1999,10 @@ model ServiceSubscription {
   cancelReason String?   @db.Text
 
   // Relations
-  payments        Payment[]
-  intakeSessions  IntakeSession[]
-  promoCodeUsages PromoCodeUsage[] // Detailed promo code usage tracking
+  payments          Payment[]
+  intakeSessions    IntakeSession[]
+  promoCodeUsages   PromoCodeUsage[] // Detailed promo code usage tracking
+  claimSubscriptions ClaimSubscription[] // Per-claim subscriptions
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2011,6 +2014,50 @@ model ServiceSubscription {
   @@index([referredToFirmId])
   @@index([promoCodeId])
   @@index([isPilotAccount])
+}
+
+// Per-claim subscription tracking
+// Each claim gets its own subscription with individual pricing
+model ClaimSubscription {
+  id                   String              @id @default(cuid())
+  claimantId           String              @unique
+  claimant             Claimant            @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  serviceSubscriptionId String
+  serviceSubscription  ServiceSubscription @relation(fields: [serviceSubscriptionId], references: [id], onDelete: Cascade)
+
+  // Claim order tracking (for pricing tier)
+  claimOrder           Int // 1 = first claim ($24.99/mo), 2+ = additional ($14.99/mo)
+
+  // Per-claim setup fee
+  setupFeePaid         Boolean             @default(false)
+  setupFeeAmount       Float // DIY: 149.99, Lawyer: 89.99
+  setupFeePaidAt       DateTime?
+  setupFeeRefunded     Boolean             @default(false) // Lawyer track: refundable on claim receipt
+  setupFeeRefundedAt   DateTime?
+
+  // Monthly fee (calculated based on claimOrder)
+  monthlyFeeAmount     Float // $24.99 for claimOrder=1, $14.99 for claimOrder>1
+
+  // Lawyer track: no discount on additional claims
+  lawyerTrackNoDiscount Boolean           @default(false)
+
+  // Stripe tracking (individual subscription per claim)
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String? // The Stripe price ID for this claim's monthly fee
+
+  // Lifecycle
+  status               SubscriptionStatus  @default(ACTIVE)
+  startedAt            DateTime            @default(now())
+  canceledAt           DateTime?
+  cancelReason         String?             @db.Text
+
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([serviceSubscriptionId])
+  @@index([claimantId])
+  @@index([status])
+  @@index([claimOrder])
 }
 
 // Payment tracking - all payment events

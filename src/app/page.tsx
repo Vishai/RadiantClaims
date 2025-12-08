@@ -130,7 +130,7 @@ export default function HomePage() {
                     <br />
                     <strong>Legal Services:</strong> Provided by Heritage Law
                     Offices, a licensed law firm. Standard 2% RECA attorney fee
-                    applies (paid by DOJ).
+                    applies (you pay from your award).
                   </p>
                 </div>
               </div>

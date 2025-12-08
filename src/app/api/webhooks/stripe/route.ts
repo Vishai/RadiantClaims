@@ -13,6 +13,12 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import {
+  handleClaimSetupFeePayment,
+  handleClaimMonthlyPayment,
+  handleClaimSubscriptionCancelled,
+  handleClaimSubscriptionUpdated,
+} from "@/lib/stripe-webhook-handlers";
 
 export const dynamic = "force-dynamic";
 
@@ -53,27 +59,58 @@ export async function POST(req: NextRequest) {
         );
         break;
 
-      case "invoice.payment_succeeded":
-        await handleInvoicePaymentSucceeded(
-          event.data.object as Stripe.Invoice
+      case "payment_intent.succeeded": {
+        // Handle claim setup fee payments
+        const handled = await handleClaimSetupFeePayment(
+          event.data.object as Stripe.PaymentIntent
         );
+        if (!handled) {
+          console.log("Payment intent not related to claim setup fee");
+        }
         break;
+      }
+
+      case "invoice.payment_succeeded": {
+        // Try claim subscription handler first
+        const invoice = event.data.object as Stripe.Invoice;
+        const handledByClaim = await handleClaimMonthlyPayment(invoice);
+
+        // Fall back to account-level handler if not a claim payment
+        if (!handledByClaim) {
+          await handleInvoicePaymentSucceeded(invoice);
+        }
+        break;
+      }
 
       case "invoice.payment_failed":
         await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
         break;
 
-      case "customer.subscription.deleted":
-        await handleSubscriptionDeleted(
-          event.data.object as Stripe.Subscription
-        );
-        break;
+      case "customer.subscription.deleted": {
+        // Try claim subscription handler first
+        const subscription = event.data.object as Stripe.Subscription;
+        const handledByClaim =
+          await handleClaimSubscriptionCancelled(subscription);
 
-      case "customer.subscription.updated":
-        await handleSubscriptionUpdated(
-          event.data.object as Stripe.Subscription
-        );
+        // Fall back to account-level handler if not a claim subscription
+        if (!handledByClaim) {
+          await handleSubscriptionDeleted(subscription);
+        }
         break;
+      }
+
+      case "customer.subscription.updated": {
+        // Try claim subscription handler first
+        const subscription = event.data.object as Stripe.Subscription;
+        const handledByClaim =
+          await handleClaimSubscriptionUpdated(subscription);
+
+        // Fall back to account-level handler if not a claim subscription
+        if (!handledByClaim) {
+          await handleSubscriptionUpdated(subscription);
+        }
+        break;
+      }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
