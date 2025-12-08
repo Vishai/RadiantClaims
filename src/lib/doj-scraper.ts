@@ -28,6 +28,28 @@ interface DOJPageData {
   URANIUM_WORKER: DOJClaimStats;
 }
 
+// Array of user agents to rotate through (anti-detection)
+const USER_AGENTS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+];
+
+/**
+ * Get a random user agent from the pool
+ */
+function getRandomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
+/**
+ * Sleep for a random duration (anti-detection)
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Fetch and parse DOJ awards page for a specific date
  */
@@ -40,11 +62,15 @@ export async function scrapeDOJDataForDate(
   try {
     console.log(`📥 Fetching DOJ data for ${format(date, "MM/dd/yyyy")}...`);
 
+    // Random delay between 1-3 seconds (anti-detection)
+    const delay = 1000 + Math.random() * 2000;
+    console.log(`   Waiting ${Math.round(delay / 1000)}s before request...`);
+    await sleep(delay);
+
     // Add browser-like headers to avoid being blocked
     const response = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": getRandomUserAgent(),
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
@@ -55,6 +81,7 @@ export async function scrapeDOJDataForDate(
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Cache-Control": "max-age=0",
+        Referer: "https://www.justice.gov/",
       },
     });
 
@@ -79,8 +106,8 @@ export async function scrapeDOJDataForDate(
  * Looks for tables with claim statistics
  */
 function parseDOJAwardsPage(html: string): DOJPageData {
-  // The page structure has tables with claim data
-  // We'll look for specific patterns to extract the data
+  // The page has HTML tables with claim data
+  // We parse the table structure to extract numbers for each claim type
 
   const data: DOJPageData = {
     DOWNWINDER: {
@@ -117,87 +144,63 @@ function parseDOJAwardsPage(html: string): DOJPageData {
     },
   };
 
-  // Helper to extract numbers from text
+  // Helper to extract numbers from text (handles commas)
   const extractNumber = (text: string): number => {
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);
   };
 
-  const extractPercent = (text: string): number => {
-    const match = text.match(/([\d.]+)%/);
-    if (!match) return 0;
-    return parseFloat(match[1]);
+  // Helper to parse a table row with claim data
+  // Format: ClaimType | Pending | Approved | %Approved | $Approved | Denied | Total
+  const parseRow = (claimTypeName: string): DOJClaimStats | null => {
+    // Match the claim type row with all its data cells
+    // The HTML structure has the claim name followed by numbers in <td> or <p> tags
+    const rowPattern = new RegExp(
+      `${claimTypeName}[\\s\\S]*?` + // Claim type name
+        `<p[^>]*?text-align-right[^>]*?>\\s*([\\d,]+)\\s*</p>[\\s\\S]*?` + // Pending
+        `<p[^>]*?text-align-right[^>]*?>\\s*([\\d,]+)\\s*</p>[\\s\\S]*?` + // Approved
+        `<p[^>]*?text-align-right[^>]*?>\\s*([\\d.]+)\\s*</p>[\\s\\S]*?` + // Approval %
+        `<p[^>]*?text-align-right[^>]*?>\\s*\\$([\\d,]+)\\s*</p>[\\s\\S]*?` + // $ Approved
+        `<p[^>]*?text-align-right[^>]*?>\\s*([\\d,]+)\\s*</p>[\\s\\S]*?` + // Denied
+        `<p[^>]*?text-align-right[^>]*?>\\s*([\\d,]+)\\s*</p>`, // Total
+      "i"
+    );
+
+    const match = html.match(rowPattern);
+    if (!match) return null;
+
+    return {
+      pending: extractNumber(match[1]),
+      approved: extractNumber(match[2]),
+      approvalPercent: parseFloat(match[3]),
+      dollarsApproved: extractNumber(match[4]),
+      denied: extractNumber(match[5]),
+      totalClaims: extractNumber(match[6]),
+    };
   };
 
-  const extractDollars = (text: string): number => {
-    const match = text.match(/\$([\d,]+)/);
-    if (!match) return 0;
-    return parseInt(match[0].substring(1).replace(/,/g, ""), 10);
-  };
-
-  // Look for Downwinder section
-  const downwinderMatch = html.match(
-    /Downwinder[\s\S]{0,500}?Pending[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approved[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approval\s+%[:\s]+([\d.]+)%[\s\S]{0,100}?\$\s+Approved[:\s]+\$([\d,]+)[\s\S]{0,100}?Denied[:\s]+(\d+,?\d*)[\s\S]{0,100}?Total[:\s]+(\d+,?\d*)/i
-  );
-
-  if (downwinderMatch) {
-    data.DOWNWINDER = {
-      pending: extractNumber(downwinderMatch[1]),
-      approved: extractNumber(downwinderMatch[2]),
-      approvalPercent: extractPercent(downwinderMatch[3]),
-      dollarsApproved: extractDollars(downwinderMatch[4]),
-      denied: extractNumber(downwinderMatch[5]),
-      totalClaims: extractNumber(downwinderMatch[6]),
-    };
+  // Parse each claim type
+  const downwinderData = parseRow("Downwinder");
+  if (downwinderData) {
+    data.DOWNWINDER = downwinderData;
   }
 
-  // Look for Onsite Participant section
-  const onsiteMatch = html.match(
-    /Onsite\s+Participant[\s\S]{0,500}?Pending[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approved[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approval\s+%[:\s]+([\d.]+)%[\s\S]{0,100}?\$\s+Approved[:\s]+\$([\d,]+)[\s\S]{0,100}?Denied[:\s]+(\d+,?\d*)[\s\S]{0,100}?Total[:\s]+(\d+,?\d*)/i
-  );
-
-  if (onsiteMatch) {
-    data.ONSITE_PARTICIPANT = {
-      pending: extractNumber(onsiteMatch[1]),
-      approved: extractNumber(onsiteMatch[2]),
-      approvalPercent: extractPercent(onsiteMatch[3]),
-      dollarsApproved: extractDollars(onsiteMatch[4]),
-      denied: extractNumber(onsiteMatch[5]),
-      totalClaims: extractNumber(onsiteMatch[6]),
-    };
+  const onsiteData = parseRow("Onsite<span[^>]*?>[^<]*?</span>Participant");
+  if (onsiteData) {
+    data.ONSITE_PARTICIPANT = onsiteData;
   }
 
-  // Look for Manhattan Project Waste section
-  const manhattanMatch = html.match(
-    /Manhattan\s+Project\s+Waste[\s\S]{0,500}?Pending[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approved[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approval\s+%[:\s]+([\d.]+)%[\s\S]{0,100}?\$\s+Approved[:\s]+\$([\d,]+)[\s\S]{0,100}?Denied[:\s]+(\d+,?\d*)[\s\S]{0,100}?Total[:\s]+(\d+,?\d*)/i
+  const manhattanData = parseRow(
+    "Manhattan<span[^>]*?>[^<]*?</span>Project<span[^>]*?>[^<]*?</span>Waste"
   );
-
-  if (manhattanMatch) {
-    data.MANHATTAN_PROJECT_WASTE = {
-      pending: extractNumber(manhattanMatch[1]),
-      approved: extractNumber(manhattanMatch[2]),
-      approvalPercent: extractPercent(manhattanMatch[3]),
-      dollarsApproved: extractDollars(manhattanMatch[4]),
-      denied: extractNumber(manhattanMatch[5]),
-      totalClaims: extractNumber(manhattanMatch[6]),
-    };
+  if (manhattanData) {
+    data.MANHATTAN_PROJECT_WASTE = manhattanData;
   }
 
-  // Look for Uranium Worker section
-  const uraniumMatch = html.match(
-    /Uranium\s+Worker[\s\S]{0,500}?Pending[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approved[:\s]+(\d+,?\d*)[\s\S]{0,100}?Approval\s+%[:\s]+([\d.]+)%[\s\S]{0,100}?\$\s+Approved[:\s]+\$([\d,]+)[\s\S]{0,100}?Denied[:\s]+(\d+,?\d*)[\s\S]{0,100}?Total[:\s]+(\d+,?\d*)/i
-  );
-
-  if (uraniumMatch) {
-    data.URANIUM_WORKER = {
-      pending: extractNumber(uraniumMatch[1]),
-      approved: extractNumber(uraniumMatch[2]),
-      approvalPercent: extractPercent(uraniumMatch[3]),
-      dollarsApproved: extractDollars(uraniumMatch[4]),
-      denied: extractNumber(uraniumMatch[5]),
-      totalClaims: extractNumber(uraniumMatch[6]),
-    };
+  const uraniumData = parseRow("Uranium<span[^>]*?>[^<]*?</span>Worker");
+  if (uraniumData) {
+    data.URANIUM_WORKER = uraniumData;
   }
 
   return data;
@@ -334,6 +337,58 @@ export async function scrapeDOJDailyData(date: Date = new Date()) {
  * Backfill historical data
  * Scrapes all dates from startDate to endDate
  */
+/**
+ * Scrape and store DOJ stats for a specific date string (MMDDYYYY format)
+ * Used by the daily scraper script
+ */
+export async function scrapeAndStoreDOJStats(dateString: string) {
+  try {
+    // Parse date from MMDDYYYY format
+    const month = dateString.substring(0, 2);
+    const day = dateString.substring(2, 4);
+    const year = dateString.substring(4, 8);
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+    console.log(`\nScraping DOJ data for ${format(date, "MM/dd/yyyy")}...`);
+
+    const data = await scrapeDOJDataForDate(date);
+
+    if (!data) {
+      return {
+        success: false,
+        error: "Failed to fetch or parse DOJ data",
+        recordsCreated: 0,
+        recordsUpdated: 0,
+      };
+    }
+
+    // Store data in database
+    await storeDOJData(date, data);
+
+    // Count how many records were created/updated
+    const categories: DOJClaimCategory[] = [
+      "DOWNWINDER",
+      "ONSITE_PARTICIPANT",
+      "MANHATTAN_PROJECT_WASTE",
+      "URANIUM_WORKER",
+    ];
+
+    return {
+      success: true,
+      recordsCreated: categories.length,
+      recordsUpdated: 0,
+    };
+  } catch (error) {
+    console.error(`Error in scrapeAndStoreDOJStats:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      recordsCreated: 0,
+      recordsUpdated: 0,
+    };
+  }
+}
+
 export async function backfillHistoricalData(
   startDate: Date,
   endDate: Date = subDays(new Date(), 1)

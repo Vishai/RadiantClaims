@@ -19,6 +19,7 @@
     "db:studio": "npm run db:check && prisma studio",
     "db:reset": "npm run db:check && prisma migrate reset",
     "test:ocr": "npx tsx scripts/test-ocr-tiers.ts",
+    "scrape:daily": "npx tsx src/scripts/daily-doj-scraper.ts",
     "prepare": "husky install"
   },
   "dependencies": {

@@ -1,0 +1,49 @@
+name: Daily DOJ Scraper
+
+on:
+  schedule:
+    # Run at 8:00 AM UTC (3:00 AM EST / 12:00 AM PST) Monday-Friday
+    # Cron format: minute hour day-of-month month day-of-week
+    - cron: '0 8 * * 1-5'
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  scrape-doj-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run daily scraper
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx src/scripts/daily-doj-scraper.ts
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Daily DOJ Scraper Failed',
+              body: `The daily DOJ scraper failed on ${new Date().toDateString()}.\n\nPlease check the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`,
+              labels: ['bug', 'automated']
+            })
