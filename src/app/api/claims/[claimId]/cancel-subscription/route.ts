@@ -90,7 +90,7 @@ export async function POST(
     // Create audit log
     await createAuditLog({
       userId: session.user.id,
-      action: "CLAIM_SUBSCRIPTION_CANCELLED",
+      action: "SUBSCRIPTION_CANCELED",
       resourceType: "ClaimSubscription",
       resourceId: claimant.claimSubscription.id,
       ipAddress: request.headers.get("x-forwarded-for") || "unknown",

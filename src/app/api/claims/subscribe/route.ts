@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId: session.user.id,
-      action: "CLAIM_SUBSCRIPTION_CREATED",
+      action: "SUBSCRIPTION_CREATED",
       resourceType: "ClaimSubscription",
       resourceId: claimSubscription.id,
       ipAddress: request.headers.get("x-forwarded-for") || "unknown",
