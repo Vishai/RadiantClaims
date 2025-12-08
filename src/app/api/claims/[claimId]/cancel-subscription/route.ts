@@ -141,7 +141,7 @@ export async function POST(
  * Preview what would happen if this claim subscription was cancelled
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { claimId: string } }
 ) {
   try {
