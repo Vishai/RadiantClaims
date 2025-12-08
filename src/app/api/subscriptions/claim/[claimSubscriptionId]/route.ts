@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
  * Get a single claim subscription by ID
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { claimSubscriptionId: string } }
 ) {
   try {

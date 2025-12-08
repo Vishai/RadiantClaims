@@ -192,7 +192,6 @@ export function PricingTable({ tier, maxClaims = 5 }: PricingTableProps) {
  */
 export function PricingCalculator({ tier }: { tier: ServiceTier }) {
   const [claimCount, setClaimCount] = React.useState(1);
-  const pricing = calculateAccountPricing(tier, claimCount);
   const isDIY = tier === "DIY_PREP";
 
   return (

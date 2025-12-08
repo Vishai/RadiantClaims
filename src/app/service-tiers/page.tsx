@@ -489,10 +489,11 @@ function ServiceTiersContent() {
                       <span>Breakdown:</span>
                       <span className="font-mono text-sage-900">
                         $
-                        {diyPricing.monthlyFeeBreakdown[0].monthlyFee.toFixed(
+                        {diyPricing.monthlyFeeBreakdown[0]?.monthlyFee.toFixed(
                           2
                         )}
                         {diyClaimCount > 1 &&
+                          diyPricing.monthlyFeeBreakdown[1] &&
                           ` + ${diyClaimCount - 1} × $${diyPricing.monthlyFeeBreakdown[1].monthlyFee.toFixed(2)}`}
                       </span>
                     </div>

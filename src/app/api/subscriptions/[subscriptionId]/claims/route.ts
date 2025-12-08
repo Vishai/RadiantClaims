@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
  * Get all claims (subscribed and unsubscribed) for a service subscription
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { subscriptionId: string } }
 ) {
   try {

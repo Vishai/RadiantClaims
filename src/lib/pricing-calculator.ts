@@ -37,22 +37,24 @@ export function calculateClaimPricing(
   const tierConfig = SERVICE_TIERS[tier];
 
   if (tier === "DIY_PREP") {
+    const pricing = tierConfig.pricing as any;
     return {
       claimOrder,
-      setupFee: tierConfig.pricing.setupFee,
+      setupFee: pricing.setupFee,
       monthlyFee:
         claimOrder === 1
-          ? tierConfig.pricing.monthlyFeeFirstClaim
-          : tierConfig.pricing.monthlyFeeAdditional,
+          ? pricing.monthlyFeeFirstClaim
+          : pricing.monthlyFeeAdditional,
       setupFeeRefundable: false,
     };
   } else {
     // LEGAL_REP - no discount for additional claims
+    const pricing = tierConfig.pricing as any;
     return {
       claimOrder,
-      setupFee: tierConfig.pricing.setupFee,
-      monthlyFee: tierConfig.pricing.monthlyFeePerClaim,
-      setupFeeRefundable: tierConfig.pricing.setupFeeRefundable ?? false,
+      setupFee: pricing.setupFee,
+      monthlyFee: pricing.monthlyFeePerClaim,
+      setupFeeRefundable: pricing.setupFeeRefundable ?? false,
     };
   }
 }

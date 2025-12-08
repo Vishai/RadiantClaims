@@ -60,7 +60,6 @@ interface ClaimSubscriptionsListProps {
  */
 export function ClaimSubscriptionsList({
   serviceSubscriptionId,
-  tier,
 }: ClaimSubscriptionsListProps) {
   const [claimSubscriptions, setClaimSubscriptions] = useState<
     ClaimSubscription[]

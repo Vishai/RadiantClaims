@@ -10,7 +10,7 @@
 
 import { db } from "./db";
 import { DOJClaimCategory, MetricWindow, TrendDirection } from "@prisma/client";
-import { subDays, differenceInDays } from "date-fns";
+import { subDays } from "date-fns";
 
 // Statistical helpers
 function mean(numbers: number[]): number {
@@ -23,25 +23,8 @@ function median(numbers: number[]): number {
   const sorted = [...numbers].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-}
-
-function standardDeviation(numbers: number[]): number {
-  if (numbers.length === 0) return 0;
-  const avg = mean(numbers);
-  const squareDiffs = numbers.map((n) => Math.pow(n - avg, 2));
-  return Math.sqrt(mean(squareDiffs));
-}
-
-function percentile(numbers: number[], p: number): number {
-  if (numbers.length === 0) return 0;
-  const sorted = [...numbers].sort((a, b) => a - b);
-  const index = (p / 100) * (sorted.length - 1);
-  const lower = Math.floor(index);
-  const upper = Math.ceil(index);
-  const weight = index - lower;
-  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+    ? (sorted[mid - 1]! + sorted[mid]!) / 2
+    : sorted[mid]!;
 }
 
 /**
@@ -177,7 +160,6 @@ export async function calculateMetricsForWindow(
 
   // Calculate queue metrics
   const avgPendingQueue = mean(pendingQueue);
-  const currentPending = dailyStats[dailyStats.length - 1].pending;
 
   // Estimate processing time (days)
   const avgProcessingTime =
@@ -185,7 +167,7 @@ export async function calculateMetricsForWindow(
 
   // Calculate approval rate
   const latestStats = dailyStats[dailyStats.length - 1];
-  const approvalRate = latestStats.approvalPercent;
+  const approvalRate = latestStats ? latestStats.approvalPercent : 0;
   const denialRate = 100 - approvalRate;
 
   // Calculate trends (compare first half vs second half of period)

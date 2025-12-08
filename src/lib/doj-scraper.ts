@@ -9,7 +9,7 @@
 
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
-import { format, subDays, differenceInDays, addDays } from "date-fns";
+import { format, subDays, addDays } from "date-fns";
 
 // Types for parsed data
 interface DOJClaimStats {
@@ -40,7 +40,7 @@ const USER_AGENTS = [
  * Get a random user agent from the pool
  */
 function getRandomUserAgent(): string {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]!;
 }
 
 /**
@@ -145,7 +145,8 @@ function parseDOJAwardsPage(html: string): DOJPageData {
   };
 
   // Helper to extract numbers from text (handles commas)
-  const extractNumber = (text: string): number => {
+  const extractNumber = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);
@@ -173,7 +174,7 @@ function parseDOJAwardsPage(html: string): DOJPageData {
     return {
       pending: extractNumber(match[1]),
       approved: extractNumber(match[2]),
-      approvalPercent: parseFloat(match[3]),
+      approvalPercent: match[3] ? parseFloat(match[3]) : 0,
       dollarsApproved: extractNumber(match[4]),
       denied: extractNumber(match[5]),
       totalClaims: extractNumber(match[6]),

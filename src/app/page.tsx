@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
 import { DOJStickyBanner } from "@/components/landing/DOJStickyBanner";
 import { BacklogRaceSection } from "@/components/landing/BacklogRaceSection";
 

@@ -96,19 +96,22 @@ export async function scrapeDOJDataWithPuppeteer(
  * Parse HTML from DOJ awards page
  */
 function parseDOJAwardsPage(html: string): DOJPageData {
-  const extractNumber = (text: string): number => {
+  const extractNumber = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);
   };
 
-  const extractPercent = (text: string): number => {
+  const extractPercent = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/([\d.]+)/);
     if (!match) return 0;
-    return parseFloat(match[1]);
+    return parseFloat(match[1] || "0");
   };
 
-  const extractDollars = (text: string): number => {
+  const extractDollars = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);

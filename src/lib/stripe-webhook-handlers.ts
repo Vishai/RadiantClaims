@@ -82,9 +82,13 @@ export async function handleClaimSetupFeePayment(
  * This fires when a monthly subscription payment is successful
  */
 export async function handleClaimMonthlyPayment(invoice: Stripe.Invoice) {
+  const subscription = (invoice as any).subscription as unknown as
+    | Stripe.Subscription
+    | string
+    | null;
   const subscriptionMetadata =
-    typeof invoice.subscription === "object"
-      ? invoice.subscription?.metadata
+    typeof subscription === "object" && subscription !== null
+      ? (subscription as Stripe.Subscription).metadata
       : undefined;
 
   const claimSubscriptionId = subscriptionMetadata?.claimSubscriptionId;
@@ -157,7 +161,7 @@ export async function handleClaimSubscriptionCancelled(
       stripeSubscriptionId: subscription.id,
     },
     data: {
-      status: "CANCELLED",
+      status: "CANCELED",
       canceledAt: new Date(),
     },
   });

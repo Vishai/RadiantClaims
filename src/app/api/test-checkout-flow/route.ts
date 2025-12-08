@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
       return {
         expected: expected.expected,
         actual: actual
-          ? `${actual.amountFormatted}${actual.type === "recurring" ? "/" + actual.recurring.interval : " (one-time)"}`
+          ? `${actual.amountFormatted}${actual.type === "recurring" && actual.recurring ? "/" + actual.recurring.interval : " (one-time)"}`
           : "NOT FOUND",
         priceId: expected.priceId,
         matches: !!actual,

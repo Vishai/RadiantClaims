@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { generateInsightsSummary } from "@/lib/doj-metrics-calculator";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Check authentication
     const session = await getServerAuthSession();

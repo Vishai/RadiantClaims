@@ -15,7 +15,6 @@ import {
   recalculateClaimOrders,
 } from "./pricing-calculator";
 import type { ServiceTier } from "./pricing-calculator";
-import type { Prisma } from "@prisma/client";
 
 export interface CreateClaimSubscriptionParams {
   claimantId: string;
@@ -173,12 +172,6 @@ export async function chargeClaimSetupFee(
 
   const tier = claimSub.serviceSubscription.tier as ServiceTier;
 
-  // Get correct setup fee price ID
-  const setupPriceId =
-    tier === "DIY_PREP"
-      ? STRIPE_CONFIG.DIY_SETUP_FEE.priceId
-      : STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
-
   // Create one-time payment for setup fee
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(claimSub.setupFeeAmount * 100), // Convert to cents
@@ -243,7 +236,7 @@ export async function cancelClaimSubscription(
   await db.claimSubscription.update({
     where: { id: claimSubscriptionId },
     data: {
-      status: "CANCELLED",
+      status: "CANCELED",
       canceledAt: new Date(),
     },
   });
@@ -315,7 +308,7 @@ export async function cancelClaimSubscription(
         await stripe.subscriptions.update(claim.stripeSubscriptionId, {
           items: [
             {
-              id: subscription.items.data[0].id,
+              id: subscription.items.data[0]?.id,
               price: newStripePriceId,
             },
           ],

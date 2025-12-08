@@ -26,39 +26,6 @@ interface DOJPageData {
 }
 
 /**
- * Parse structured text data from DOJ page
- * Expects format like: "Pending: 1,358\nApproved: 391\nApproval %: 100.0%..."
- */
-function parseClaimStats(text: string): DOJClaimStats {
-  const extractNumber = (pattern: RegExp): number => {
-    const match = text.match(pattern);
-    if (!match) return 0;
-    return parseInt(match[1].replace(/,/g, ""), 10);
-  };
-
-  const extractPercent = (pattern: RegExp): number => {
-    const match = text.match(pattern);
-    if (!match) return 0;
-    return parseFloat(match[1]);
-  };
-
-  const extractDollars = (pattern: RegExp): number => {
-    const match = text.match(pattern);
-    if (!match) return 0;
-    return parseInt(match[1].replace(/,/g, ""), 10);
-  };
-
-  return {
-    pending: extractNumber(/Pending[:\s]+(\d+,?\d*)/i),
-    approved: extractNumber(/Approved[:\s]+(\d+,?\d*)/i),
-    approvalPercent: extractPercent(/Approval\s*%[:\s]+([\d.]+)/i),
-    dollarsApproved: extractDollars(/\$\s*Approved[:\s]+\$?([\d,]+)/i),
-    denied: extractNumber(/Denied[:\s]+(\d+,?\d*)/i),
-    totalClaims: extractNumber(/Total(?:\s+Claims)?[:\s]+(\d+,?\d*)/i),
-  };
-}
-
-/**
  * Fetch DOJ data using internal API endpoint
  * The API endpoint uses server-side fetch which has better success
  */

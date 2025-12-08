@@ -94,7 +94,9 @@ export function DOJClaimNumberManager({
         setDojClaimNumber(data.dojClaimNumber);
       }
       if (data.receivedByDOJAt) {
-        setReceivedDate(data.receivedByDOJAt.split("T")[0]);
+        setReceivedDate(data.receivedByDOJAt.split("T")[0] || "");
+      } else {
+        setReceivedDate("");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
@@ -190,7 +192,9 @@ export function DOJClaimNumberManager({
       setDojClaimNumber(claimInfo.dojClaimNumber);
     }
     if (claimInfo?.receivedByDOJAt) {
-      setReceivedDate(claimInfo.receivedByDOJAt.split("T")[0]);
+      setReceivedDate(claimInfo.receivedByDOJAt.split("T")[0] || "");
+    } else {
+      setReceivedDate("");
     }
   };
 

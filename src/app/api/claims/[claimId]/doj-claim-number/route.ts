@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
  * Get the DOJ claim number for a claimant
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { claimId: string } }
 ) {
   try {
@@ -170,13 +170,11 @@ export async function PUT(
             ? new Date(receivedByDOJAt)
             : claimant.lifecycle.receivedByDOJAt || new Date(),
           currentMilestone:
-            claimant.lifecycle.currentMilestone === "NOT_SUBMITTED" ||
-            claimant.lifecycle.currentMilestone === "SUBMITTED_TO_DOJ"
+            claimant.lifecycle.currentMilestone === "NOT_SUBMITTED"
               ? "RECEIVED_BY_DOJ"
               : claimant.lifecycle.currentMilestone,
           currentMilestoneDate:
-            claimant.lifecycle.currentMilestone === "NOT_SUBMITTED" ||
-            claimant.lifecycle.currentMilestone === "SUBMITTED_TO_DOJ"
+            claimant.lifecycle.currentMilestone === "NOT_SUBMITTED"
               ? new Date()
               : claimant.lifecycle.currentMilestoneDate,
         },
@@ -201,9 +199,8 @@ export async function PUT(
       data: {
         lifecycleId: lifecycle.id,
         milestone: "RECEIVED_BY_DOJ",
-        occurredAt: receivedByDOJAt ? new Date(receivedByDOJAt) : new Date(),
+        achievedAt: receivedByDOJAt ? new Date(receivedByDOJAt) : new Date(),
         notes: `DOJ Claim Number assigned: ${dojClaimNumber.trim()}`,
-        updatedBy: session.user.id,
       },
     });
 
@@ -211,7 +208,7 @@ export async function PUT(
     await db.auditLog.create({
       data: {
         userId: session.user.id,
-        action: "DOJ_CLAIM_NUMBER_UPDATED",
+        action: "CLAIMANT_UPDATED",
         resourceType: "ClaimLifecycle",
         resourceId: lifecycle.id,
         ipAddress: req.headers.get("x-forwarded-for") || "unknown",
@@ -219,6 +216,7 @@ export async function PUT(
           claimantId,
           dojClaimNumber: dojClaimNumber.trim(),
           receivedByDOJAt: receivedByDOJAt || null,
+          details: "DOJ Claim Number Assigned",
         }),
       },
     });
@@ -297,13 +295,14 @@ export async function DELETE(
     await db.auditLog.create({
       data: {
         userId: session.user.id,
-        action: "DOJ_CLAIM_NUMBER_REMOVED",
+        action: "CLAIMANT_UPDATED",
         resourceType: "ClaimLifecycle",
         resourceId: lifecycle.id,
         ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         metadata: JSON.stringify({
           claimantId,
           removedDojClaimNumber: lifecycle.dojClaimNumber,
+          details: "DOJ Claim Number Removed",
         }),
       },
     });

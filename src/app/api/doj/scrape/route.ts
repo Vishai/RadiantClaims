@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { format } from "date-fns";
 
 /**
  * DOJ Scraping API Endpoint
@@ -72,19 +71,22 @@ export async function GET(req: NextRequest) {
 }
 
 function parseDOJAwardsPage(html: string) {
-  const extractNumber = (text: string): number => {
+  const extractNumber = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);
   };
 
-  const extractPercent = (text: string): number => {
+  const extractPercent = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/([\d.]+)/);
     if (!match) return 0;
-    return parseFloat(match[1]);
+    return parseFloat(match[1] || "0");
   };
 
-  const extractDollars = (text: string): number => {
+  const extractDollars = (text: string | undefined): number => {
+    if (!text) return 0;
     const match = text.match(/[\d,]+/);
     if (!match) return 0;
     return parseInt(match[0].replace(/,/g, ""), 10);

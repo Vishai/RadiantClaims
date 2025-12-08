@@ -262,7 +262,7 @@ export async function GET(
       remainingClaimsCount: remainingClaims.length,
       canCancel: activeClaims.length > 0, // Can always cancel
       warnings:
-        affectedClaims.length > 0
+        affectedClaims.length > 0 && affectedClaims[0]
           ? [
               `Cancelling this claim will increase monthly fee for ${affectedClaims[0].claimName} from $${affectedClaims[0].currentMonthlyFee.toFixed(2)} to $${affectedClaims[0].newMonthlyFee.toFixed(2)}`,
             ]
