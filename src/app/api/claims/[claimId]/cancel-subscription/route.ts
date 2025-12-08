@@ -233,15 +233,17 @@ export async function GET(
     ) {
       // Claim 2 would become claim 1 (fee increases from $14.99 to $24.99)
       const claim2 = remainingClaims[0];
-      affectedClaims.push({
-        claimId: claim2.claimant.id,
-        claimName: `${claim2.claimant.firstName} ${claim2.claimant.lastName}`,
-        currentOrder: claim2.claimOrder,
-        newOrder: 1,
-        currentMonthlyFee: claim2.monthlyFeeAmount,
-        newMonthlyFee: 24.99,
-        feeChange: 24.99 - claim2.monthlyFeeAmount,
-      });
+      if (claim2) {
+        affectedClaims.push({
+          claimId: claim2.claimant.id,
+          claimName: `${claim2.claimant.firstName} ${claim2.claimant.lastName}`,
+          currentOrder: claim2.claimOrder,
+          newOrder: 1,
+          currentMonthlyFee: claim2.monthlyFeeAmount,
+          newMonthlyFee: 24.99,
+          feeChange: 24.99 - claim2.monthlyFeeAmount,
+        });
+      }
     }
 
     return NextResponse.json({
