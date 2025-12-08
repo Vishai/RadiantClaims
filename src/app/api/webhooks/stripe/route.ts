@@ -274,7 +274,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
       const stripeSubscription = await stripe.subscriptions.create({
         customer: subscription.stripeCustomerId,
-        items: [{ price: STRIPE_CONFIG.DIY_MONTHLY.priceId }],
+        items: [{ price: STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId }],
         billing_cycle_anchor: billingAnchorTimestamp,
         proration_behavior: "none",
         ...(couponId && { coupon: couponId }),

@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       customer: subscription.stripeCustomerId,
       items: [
         {
-          price: STRIPE_CONFIG.DIY_MONTHLY.priceId,
+          price: STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId,
         },
       ],
       metadata: {

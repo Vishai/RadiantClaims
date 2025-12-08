@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     } else {
       // LEGAL_REP Path Test
       const legalSetupPriceId = STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
-      const legalMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_ADDITIONAL.priceId; // $14.99/mo
+      const legalMonthlyPriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId; // $24.99/mo
 
       if (!legalSetupPriceId || !legalMonthlyPriceId) {
         return NextResponse.json(
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
         {
           name: "Legal Monthly",
           priceId: legalMonthlyPriceId,
-          expected: "$14.99/month",
+          expected: "$24.99/month",
         },
       ];
 
