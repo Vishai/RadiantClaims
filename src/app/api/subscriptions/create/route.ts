@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
         // Create a fresh checkout session so the user can finish payment
         const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
-        const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY.priceId;
+        const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId;
 
         if (!diySetupPriceId || !diyMonthlyPriceId) {
           return NextResponse.json(
@@ -204,8 +204,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (tier === "LEGAL_REP") {
-      // For Legal Rep: Create subscription and Stripe checkout for $14.99/month
-      const legalRepMonthlyPriceId = STRIPE_CONFIG.LEGAL_REP_MONTHLY.priceId;
+      // For Legal Rep: Create subscription and Stripe checkout for $24.99/month per claim
+      const legalRepMonthlyPriceId =
+        STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId;
 
       if (!legalRepMonthlyPriceId) {
         return NextResponse.json(
@@ -223,9 +224,9 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           tier: "LEGAL_REP",
           status: "PENDING", // Will be set to ACTIVE by webhook after payment
-          setupFeePaid: false, // No setup fee, but need first month payment
+          setupFeePaid: false,
           setupFeeAmount: 0,
-          monthlyFeeAmount: 14.99,
+          monthlyFeeAmount: 24.99,
         },
       });
 
@@ -293,7 +294,7 @@ export async function POST(request: NextRequest) {
     } else {
       // For DIY: Create subscription and Stripe checkout session
       const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
-      const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY.priceId;
+      const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId;
 
       if (!diySetupPriceId || !diyMonthlyPriceId) {
         return NextResponse.json(
