@@ -60,11 +60,11 @@ async function main() {
       // Parse date (format: MM/DD)
       const [month, day] = row.Date.split("/").map(Number);
 
-      // All this data is from 2024 (Oct-Dec 2024)
-      const year = 2024;
+      // All data is from 2025
+      const year = 2025;
 
       const date = new Date(year, month - 1, day);
-      date.setHours(0, 0, 0, 0);
+      date.setHours(7, 0, 0, 0); // Set to 7 AM to match scraper
 
       // Parse numbers
       const pending = parseInt(row.Pending.replace(/,/g, ""), 10);

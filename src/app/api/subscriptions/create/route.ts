@@ -204,11 +204,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (tier === "LEGAL_REP") {
-      // For Legal Rep: Create subscription and Stripe checkout for $24.99/month per claim
-      const legalRepMonthlyPriceId =
-        STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId;
+      // For Legal Rep: Create subscription and Stripe checkout
+      // $89.99 setup (one-time) + $14.99/month (starts after 30-day trial)
+      const legalSetupPriceId = STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
+      const legalMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_ADDITIONAL.priceId; // $14.99/mo
 
-      if (!legalRepMonthlyPriceId) {
+      if (!legalSetupPriceId || !legalMonthlyPriceId) {
         return NextResponse.json(
           {
             error:
@@ -225,8 +226,8 @@ export async function POST(request: NextRequest) {
           tier: "LEGAL_REP",
           status: "PENDING", // Will be set to ACTIVE by webhook after payment
           setupFeePaid: false,
-          setupFeeAmount: 0,
-          monthlyFeeAmount: 24.99,
+          setupFeeAmount: 89.99,
+          monthlyFeeAmount: 14.99,
         },
       });
 
@@ -246,12 +247,25 @@ export async function POST(request: NextRequest) {
         data: { stripeCustomerId: customer.id },
       });
 
-      // Create Stripe Checkout Session for monthly subscription only
+      // Create Stripe Checkout Session
+      // Setup fee charged immediately, monthly starts after 30-day trial
       const checkoutSession = await stripe.checkout.sessions.create({
         customer: customer.id,
         mode: "subscription",
         payment_method_types: ["card"],
-        line_items: [{ price: legalRepMonthlyPriceId, quantity: 1 }],
+        line_items: [
+          { price: legalSetupPriceId, quantity: 1 }, // $89.99 one-time
+          { price: legalMonthlyPriceId, quantity: 1 }, // $14.99/month
+        ],
+        subscription_data: {
+          trial_period_days: 30, // Free first month
+          metadata: {
+            userId: session.user.id,
+            subscriptionId: subscription.id,
+            policyAcceptanceId: policyAcceptance.id,
+            tier: "LEGAL_REP",
+          },
+        },
         allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
@@ -260,14 +274,6 @@ export async function POST(request: NextRequest) {
           subscriptionId: subscription.id,
           policyAcceptanceId: policyAcceptance.id,
           tier: "LEGAL_REP",
-        },
-        subscription_data: {
-          metadata: {
-            userId: session.user.id,
-            subscriptionId: subscription.id,
-            policyAcceptanceId: policyAcceptance.id,
-            tier: "LEGAL_REP",
-          },
         },
       });
 

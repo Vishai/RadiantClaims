@@ -29,6 +29,9 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <header className="mx-auto mb-12 mt-8 max-w-4xl px-4 text-center md:mt-16">
+        <div className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-500">
+          RECA Compensation
+        </div>
         <span className="mb-4 inline-block rounded-full border border-orange-200 bg-orange-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-orange-700">
           Eligibility Expanded (July 2025)
         </span>

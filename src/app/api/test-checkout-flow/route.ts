@@ -75,9 +75,10 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // LEGAL_REP Path Test
-      const legalMonthlyPriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId;
+      const legalSetupPriceId = STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
+      const legalMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_ADDITIONAL.priceId; // $14.99/mo
 
-      if (!legalMonthlyPriceId) {
+      if (!legalSetupPriceId || !legalMonthlyPriceId) {
         return NextResponse.json(
           { error: "Legal prices not configured" },
           { status: 503 }
@@ -86,9 +87,14 @@ export async function GET(request: NextRequest) {
 
       lineItemsConfig = [
         {
-          name: "Legal Monthly Per Claim",
+          name: "Legal Setup Fee",
+          priceId: legalSetupPriceId,
+          expected: "$89.99 (one-time)",
+        },
+        {
+          name: "Legal Monthly",
           priceId: legalMonthlyPriceId,
-          expected: "$24.99/month",
+          expected: "$14.99/month",
         },
       ];
 
@@ -96,19 +102,23 @@ export async function GET(request: NextRequest) {
         customer: testCustomer.id,
         mode: "subscription",
         payment_method_types: ["card"],
-        line_items: [{ price: legalMonthlyPriceId, quantity: 1 }],
+        line_items: [
+          { price: legalSetupPriceId, quantity: 1 },
+          { price: legalMonthlyPriceId, quantity: 1 },
+        ],
+        subscription_data: {
+          trial_period_days: 30, // Free first month
+          metadata: {
+            test: "true",
+            tier: "LEGAL_REP",
+          },
+        },
         allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/test-success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/test-cancel`,
         metadata: {
           test: "true",
           tier: "LEGAL_REP",
-        },
-        subscription_data: {
-          metadata: {
-            test: "true",
-            tier: "LEGAL_REP",
-          },
         },
       });
     }
