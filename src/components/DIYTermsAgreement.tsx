@@ -10,18 +10,25 @@ interface DIYTermsAgreementProps {
   onAccept: () => void;
   onDecline: () => void;
   isLoading?: boolean;
+  paymentPlan?: "full" | "installment";
 }
 
 export function DIYTermsAgreement({
   onAccept,
   onDecline,
   isLoading = false,
+  paymentPlan = "full", // eslint-disable-line @typescript-eslint/no-unused-vars
 }: DIYTermsAgreementProps) {
   const [hasRead, setHasRead] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [acknowledgeRefund, setAcknowledgeRefund] = useState(false);
 
   const canAccept = hasRead && hasAgreed && acknowledgeRefund;
+
+  // Calculate pricing based on plan (for potential future use)
+  // const pricing = paymentPlan === "installment"
+  //   ? { total: "$499.98", payment: "$249.99 × 2 payments" }
+  //   : { total: "$499.99", payment: "$499.99 one-time" };
 
   return (
     <div className="space-y-6">
@@ -93,31 +100,39 @@ export function DIYTermsAgreement({
                 2. PRICING & PAYMENT TERMS
               </h4>
               <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
-                <p className="font-semibold text-sage-900">
-                  Payment Structure:
-                </p>
-                <ul className="ml-6 mt-2 list-disc space-y-1 text-sage-900">
+                <p className="font-semibold text-sage-900">Payment Options:</p>
+                <ul className="ml-6 mt-2 list-disc space-y-2 text-sage-900">
                   <li>
-                    <strong>Setup Fee:</strong> $149.99 (one-time, paid at
-                    signup)
+                    <strong>Pay in Full:</strong> $499.99 one-time payment (no
+                    recurring charges)
                   </li>
                   <li>
-                    <strong>Monthly Subscription:</strong> $24.99/month (billed
-                    monthly until canceled)
+                    <strong>2-Payment Installment Plan:</strong> $249.99 × 2
+                    payments
+                    <ul className="list-circle ml-6 mt-1 text-sm text-sage-700">
+                      <li>First payment: $249.99 at signup</li>
+                      <li>Second payment: $249.99 after 30 days</li>
+                      <li>
+                        Total: $499.98 (automatically stops after 2 payments)
+                      </li>
+                    </ul>
                   </li>
                 </ul>
               </div>
               <p className="mt-3">
                 <strong>Payment Authorization:</strong> By accepting this
                 agreement, you authorize RadiantClaims to charge your payment
-                method:
+                method according to your selected payment plan:
               </p>
               <ul className="ml-6 mt-2 list-disc space-y-1">
-                <li>$149.99 setup fee immediately upon signup</li>
-                <li>$24.99 monthly on the same day each month thereafter</li>
                 <li>
-                  Subscription continues until you cancel through your account
-                  settings
+                  <strong>Full Payment:</strong> $499.99 charged immediately
+                  (one-time)
+                </li>
+                <li>
+                  <strong>Installment Plan:</strong> $249.99 charged
+                  immediately, then $249.99 after 30 days (subscription
+                  automatically cancels after 2 payments)
                 </li>
               </ul>
             </section>

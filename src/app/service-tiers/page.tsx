@@ -29,7 +29,7 @@ import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
 import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
 import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
-import { calculateAccountPricing } from "@/lib/pricing-calculator";
+// import { calculateAccountPricing } from "@/lib/pricing-calculator"; // Deprecated - using flat pricing now
 
 function ServiceTiersContent() {
   const router = useRouter();
@@ -44,12 +44,14 @@ function ServiceTiersContent() {
   const [showEligibilityPrompt, setShowEligibilityPrompt] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [paymentPlan, setPaymentPlan] = useState<"full" | "installment">(
+    "full"
+  );
 
-  // Per-claim pricing
-  const [diyClaimCount, setDiyClaimCount] = useState(1);
+  // Legacy per-claim pricing (deprecated, kept for backwards compatibility)
+  // const [diyClaimCount, setDiyClaimCount] = useState(1);
   // const [legalClaimCount, setLegalClaimCount] = useState(1);
-
-  const diyPricing = calculateAccountPricing("DIY_PREP", diyClaimCount);
+  // const diyPricing = calculateAccountPricing("DIY_PREP", diyClaimCount);
   // const legalPricing = calculateAccountPricing("LEGAL_REP", legalClaimCount);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
@@ -123,6 +125,7 @@ function ServiceTiersContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tier: "DIY_PREP",
+          paymentPlan,
           policyType: "TERMS_OF_SERVICE",
           policyVersion: "1.0",
           ipAddress: window.location.hostname,
@@ -385,10 +388,10 @@ function ServiceTiersContent() {
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-sage-900">
-                    ${diyPricing.setupFeePerClaim}
+                    $499.99
                   </div>
                   <div className="text-sm font-bold text-terracotta-600">
-                    One-time Flat Fee
+                    One-time or 2 Payments
                   </div>
                 </div>
               </div>
@@ -443,43 +446,78 @@ function ServiceTiersContent() {
                 </p>
               </div>
 
-              {/* Claim Counter */}
+              {/* Payment Plan Selector */}
               <div className="rounded-lg border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white p-4">
                 <p className="mb-3 text-sm font-semibold text-sage-900">
-                  How many claims will you file?
+                  Choose Your Payment Plan
                 </p>
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() =>
-                      setDiyClaimCount(Math.max(1, diyClaimCount - 1))
-                    }
-                    disabled={diyClaimCount <= 1}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-200 text-sage-900 transition hover:bg-sage-300 disabled:opacity-30"
+                <div className="space-y-3">
+                  {/* Full Payment Option */}
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
+                      paymentPlan === "full"
+                        ? "border-sage-600 bg-sage-100"
+                        : "border-sage-200 bg-white hover:border-sage-400"
+                    }`}
                   >
-                    −
-                  </button>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-sage-900">
-                      {diyClaimCount}
+                    <input
+                      type="radio"
+                      name="paymentPlan"
+                      value="full"
+                      checked={paymentPlan === "full"}
+                      onChange={(e) =>
+                        setPaymentPlan(e.target.value as "full" | "installment")
+                      }
+                      className="mt-1 h-4 w-4 text-sage-600"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sage-900">
+                          Pay in Full
+                        </span>
+                        <span className="text-lg font-bold text-sage-900">
+                          $499.99
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-sage-600">
+                        One-time payment • No recurring charges
+                      </p>
                     </div>
-                    <div className="text-xs text-sage-600">
-                      {diyClaimCount === 1 ? "claim" : "claims"}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setDiyClaimCount(diyClaimCount + 1)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-sage-200 text-sage-900 transition hover:bg-sage-300"
+                  </label>
+
+                  {/* Installment Plan Option */}
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
+                      paymentPlan === "installment"
+                        ? "border-sage-600 bg-sage-100"
+                        : "border-sage-200 bg-white hover:border-sage-400"
+                    }`}
                   >
-                    +
-                  </button>
-                </div>
-                <div className="mt-3 space-y-1 text-xs text-sage-600">
-                  <div className="flex justify-between">
-                    <span>Total:</span>
-                    <span className="font-semibold text-sage-900">
-                      ${diyPricing.firstMonthTotal.toFixed(2)}
-                    </span>
-                  </div>
+                    <input
+                      type="radio"
+                      name="paymentPlan"
+                      value="installment"
+                      checked={paymentPlan === "installment"}
+                      onChange={(e) =>
+                        setPaymentPlan(e.target.value as "full" | "installment")
+                      }
+                      className="mt-1 h-4 w-4 text-sage-600"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sage-900">
+                          2-Payment Plan
+                        </span>
+                        <span className="text-lg font-bold text-sage-900">
+                          $249.99 × 2
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-sage-600">
+                        $249.99 today, then $249.99 in 30 days • Auto-stops
+                        after 2 payments
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
 
@@ -860,6 +898,7 @@ function ServiceTiersContent() {
               setIsLoading(false);
             }}
             isLoading={isLoading}
+            paymentPlan={paymentPlan}
           />
         </DialogContent>
       </Dialog>

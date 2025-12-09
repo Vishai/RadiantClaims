@@ -35,9 +35,9 @@ export function FloatingContactAgent({
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
-          className="h-14 w-14 rounded-full shadow-lg transition-all hover:shadow-xl"
+          className="h-14 w-14 rounded-full bg-terracotta-500 shadow-lg transition-all hover:bg-terracotta-600 hover:shadow-xl"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6 text-white" />
         </Button>
 
         {/* Tooltip */}
