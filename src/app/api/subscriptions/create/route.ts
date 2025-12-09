@@ -38,8 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate payment plan (for DIY tier only)
+    const normalizedPaymentPlan =
+      paymentPlan === "installment" ? "installment" : "full";
     const isInstallmentPlan =
-      tier === "DIY_PREP" && paymentPlan === "installment";
+      tier === "DIY_PREP" && normalizedPaymentPlan === "installment";
     if (
       tier === "DIY_PREP" &&
       paymentPlan &&
@@ -117,10 +119,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Create a fresh checkout session so the user can finish payment
-        const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
-        const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId;
+        const diyPriceId = isInstallmentPlan
+          ? STRIPE_CONFIG.DIY_PACKET_INSTALLMENT.priceId
+          : STRIPE_CONFIG.DIY_PACKET_FULL.priceId;
 
-        if (!diySetupPriceId || !diyMonthlyPriceId) {
+        if (!diyPriceId) {
           return NextResponse.json(
             {
               error:
@@ -131,23 +134,42 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        await db.serviceSubscription.update({
+          where: { id: existingSubscription.id },
+          data: {
+            isInstallmentPlan,
+            installmentPaymentCount: 0,
+            installmentCompleted: false,
+            setupFeePaid: false,
+            setupFeeAmount: 499.0,
+            monthlyFeeAmount: 0,
+          },
+        });
+
         const checkoutSession = await stripe.checkout.sessions.create({
           customer: stripeCustomerId,
-          mode: "subscription",
-          payment_method_types: ["card"],
+          mode: isInstallmentPlan ? "subscription" : "payment",
+          payment_method_types: [
+            "card",
+            "klarna",
+            "affirm",
+            "afterpay_clearpay",
+          ],
           line_items: [
             {
-              price: diySetupPriceId,
-              quantity: 1,
-            },
-            {
-              price: diyMonthlyPriceId,
+              price: diyPriceId,
               quantity: 1,
             },
           ],
-          subscription_data: {
-            trial_period_days: 30,
-          },
+          ...(isInstallmentPlan && {
+            subscription_data: {
+              metadata: {
+                subscriptionId: existingSubscription.id,
+                paymentPlan: "installment",
+                maxPayments: "2",
+              },
+            },
+          }),
           allow_promotion_codes: true,
           success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
           cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
@@ -156,6 +178,11 @@ export async function POST(request: NextRequest) {
             subscriptionId: existingSubscription.id,
             policyAcceptanceId: policyAcceptance.id,
             reusedSubscription: "true",
+            tier: "DIY_PREP",
+            type: isInstallmentPlan
+              ? "INSTALLMENT_PAYMENT"
+              : "ONE_TIME_PAYMENT",
+            paymentPlan: normalizedPaymentPlan,
           },
         });
 
@@ -171,6 +198,8 @@ export async function POST(request: NextRequest) {
             stripeCheckoutSessionId: checkoutSession.id,
             policyAcceptanceId: policyAcceptance.id,
             reusedSubscription: true,
+            paymentPlan: normalizedPaymentPlan,
+            isInstallmentPlan,
           },
         });
 
@@ -254,7 +283,7 @@ export async function POST(request: NextRequest) {
         message: "Legal representation profile created.",
       });
     } else {
-      // DIY PATH: $499.99 One-time OR 2-Payment Installment Plan
+      // DIY PATH: $499.00 One-time OR 2-Payment Installment Plan
       const diyPriceId = isInstallmentPlan
         ? STRIPE_CONFIG.DIY_PACKET_INSTALLMENT.priceId
         : STRIPE_CONFIG.DIY_PACKET_FULL.priceId;
@@ -324,7 +353,7 @@ export async function POST(request: NextRequest) {
           policyAcceptanceId: policyAcceptance.id,
           tier: "DIY_PREP",
           type: isInstallmentPlan ? "INSTALLMENT_PAYMENT" : "ONE_TIME_PAYMENT",
-          paymentPlan: paymentPlan || "full",
+          paymentPlan: normalizedPaymentPlan,
         },
       });
 
@@ -340,7 +369,7 @@ export async function POST(request: NextRequest) {
           tier: "DIY_PREP",
           stripeCheckoutSessionId: checkoutSession.id,
           policyAcceptanceId: policyAcceptance.id,
-          paymentPlan: paymentPlan || "full",
+          paymentPlan: normalizedPaymentPlan,
           isInstallmentPlan,
         },
       });

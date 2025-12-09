@@ -191,40 +191,62 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Check if this is an installment plan
-  const paymentPlan = metadata.paymentPlan;
+  const paymentPlan = metadata.paymentPlan || "full";
   const isInstallmentPlan = paymentPlan === "installment";
+  const paymentAmount =
+    session.amount_total !== null && session.amount_total !== undefined
+      ? (session.amount_total as number) / 100
+      : isInstallmentPlan
+        ? 249.99
+        : 499.0;
 
-  // For full payment or first installment payment
-  if (!isInstallmentPlan || !stripeSubscriptionId) {
-    // One-time payment: mark as fully paid
-    await prisma.serviceSubscription.update({
-      where: { id: subscriptionId },
-      data: {
-        setupFeePaid: true,
-        setupFeePaidAt: new Date(),
-        status: "ACTIVE",
-        ...(isInstallmentPlan &&
-          stripeSubscriptionId && {
-            stripeSubscriptionId,
-            installmentPaymentCount: 1, // First payment made
-          }),
-      },
-    });
-  } else {
-    // Installment plan: first payment via subscription
+  if (isInstallmentPlan && !stripeSubscriptionId) {
+    console.error(
+      `Missing Stripe subscription ID for installment checkout ${session.id}`
+    );
+    return;
+  }
+
+  if (isInstallmentPlan && stripeSubscriptionId) {
+    // Mark as active and store Stripe sub for installment billing; payment will be recorded via invoice webhook
     await prisma.serviceSubscription.update({
       where: { id: subscriptionId },
       data: {
         status: "ACTIVE",
         stripeSubscriptionId,
-        installmentPaymentCount: 1, // First payment made
+        isInstallmentPlan: true,
       },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: "SUBSCRIPTION_CREATED",
+        resourceType: "ServiceSubscription",
+        resourceId: subscriptionId,
+        ipAddress: "stripe-webhook",
+        metadata: JSON.stringify({
+          tier: "DIY_PREP",
+          checkoutSessionId: session.id,
+          paymentPlan,
+          stripeSubscriptionId,
+        }),
+      },
+    });
+
+    return;
   }
 
-  // Update or create payment record
-  const paymentAmount = isInstallmentPlan ? 249.99 : 499.99;
+  // One-time payment path
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      setupFeePaid: true,
+      setupFeePaidAt: new Date(),
+      status: "ACTIVE",
+    },
+  });
+
   if (session.payment_intent) {
     await prisma.payment.updateMany({
       where: {
@@ -237,25 +259,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       },
     });
   } else {
-    // Create payment record if it doesn't exist
     await prisma.payment.create({
       data: {
         subscriptionId,
-        paymentType: isInstallmentPlan ? "MONTHLY_FEE" : "SETUP_FEE",
+        paymentType: "SETUP_FEE",
         amount: paymentAmount,
         currency: "USD",
         status: "COMPLETED",
         paidAt: new Date(),
         stripePaymentIntentId: session.payment_intent as string,
         metadata: JSON.stringify({
-          paymentPlan: paymentPlan || "full",
-          isFirstInstallment: isInstallmentPlan,
+          paymentPlan,
         }),
       },
     });
   }
 
-  // Create audit log
   await prisma.auditLog.create({
     data: {
       userId,
@@ -264,73 +283,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       resourceId: subscriptionId,
       ipAddress: "stripe-webhook",
       metadata: JSON.stringify({
-        paymentType: isInstallmentPlan ? "INSTALLMENT_1" : "FULL_PAYMENT",
+        paymentType: "FULL_PAYMENT",
         amount: paymentAmount,
         checkoutSessionId: session.id,
-        paymentPlan: paymentPlan || "full",
+        paymentPlan,
       }),
     },
   });
-
-  // Automatically create monthly subscription after setup fee, starting 31 days from now
-  try {
-    const subscription = await prisma.serviceSubscription.findUnique({
-      where: { id: subscriptionId },
-      include: { promoCode: true },
-    });
-
-    if (subscription?.stripeCustomerId && !subscription.stripeSubscriptionId) {
-      // Check if this is a pilot account or has setup fee waived
-      // If setup fee was waived, they likely already have a subscription created
-      if (subscription.setupFeeWaived || subscription.isPilotAccount) {
-        console.log(
-          `ℹ️  Skipping auto-subscription creation for pilot/waived account ${subscriptionId}`
-        );
-        return;
-      }
-
-      // Calculate the billing anchor date (31 days from now)
-      const billingAnchorDate = new Date();
-      billingAnchorDate.setDate(billingAnchorDate.getDate() + 31);
-      const billingAnchorTimestamp = Math.floor(
-        billingAnchorDate.getTime() / 1000
-      );
-
-      // Check if there's a Stripe coupon to apply
-      const couponId = subscription.stripeCouponId || undefined;
-
-      const stripeSubscription = await stripe.subscriptions.create({
-        customer: subscription.stripeCustomerId,
-        items: [{ price: STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId }],
-        billing_cycle_anchor: billingAnchorTimestamp,
-        proration_behavior: "none",
-        ...(couponId && { coupon: couponId }),
-        metadata: {
-          userId,
-          subscriptionId,
-          promoCode: subscription.promoCode?.code || "",
-        },
-      });
-
-      const subscriptionData = stripeSubscription as Stripe.Subscription;
-      const nextBillingDate = getNextBillingDate(subscriptionData);
-      await prisma.serviceSubscription.update({
-        where: { id: subscriptionId },
-        data: {
-          stripeSubscriptionId: stripeSubscription.id,
-          billingCycleDay: nextBillingDate?.getDate() ?? null,
-          nextBillingDate,
-          lastBillingDate: null, // No billing has occurred yet for the monthly subscription
-        },
-      });
-
-      console.log(
-        `✅ Monthly subscription created: ${stripeSubscription.id} (billing starts ${billingAnchorDate.toISOString()})`
-      );
-    }
-  } catch (error) {
-    console.error("Error creating monthly subscription:", error);
-  }
 }
 
 /**
@@ -338,22 +297,46 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
  * This fires when a monthly subscription payment is successful
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  const subscriptionId = invoice.metadata?.subscriptionId;
+  const subscriptionIdFromMetadata = invoice.metadata?.subscriptionId;
+  const stripeSubscriptionId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription?.id;
 
-  if (!subscriptionId) {
-    console.log("No subscriptionId in invoice metadata, skipping");
+  const whereClauses: Array<{
+    id?: string;
+    stripeSubscriptionId?: string;
+  }> = [];
+  if (subscriptionIdFromMetadata) {
+    whereClauses.push({ id: subscriptionIdFromMetadata });
+  }
+  if (stripeSubscriptionId) {
+    whereClauses.push({ stripeSubscriptionId });
+  }
+
+  if (whereClauses.length === 0) {
+    console.log("No subscription reference in invoice, skipping");
     return;
   }
 
+  const subscription =
+    (await prisma.serviceSubscription.findFirst({
+      where: { OR: whereClauses },
+    })) || undefined;
+
+  if (!subscription) {
+    console.log(
+      `No matching service subscription for invoice ${invoice.id}, skipping`
+    );
+    return;
+  }
+
+  const subscriptionId = subscription.id;
   console.log(
     `💰 Invoice payment succeeded for subscription ${subscriptionId}`
   );
 
   // Check if this is a pilot account that has expired
-  const subscription = await prisma.serviceSubscription.findUnique({
-    where: { id: subscriptionId },
-  });
-
   if (
     subscription?.isPilotAccount &&
     subscription.pilotExpiresAt &&
@@ -372,30 +355,99 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     });
   }
 
-  // Check if this is an installment plan payment
-  const isInstallmentPlan = subscription?.isInstallmentPlan;
-  const currentPaymentCount = subscription?.installmentPaymentCount || 0;
+  const amountPaid = (invoice.amount_paid || 0) / 100;
 
-  // Create payment record
+  if (subscription.isInstallmentPlan) {
+    const newCount = (subscription.installmentPaymentCount || 0) + 1;
+    const updates: Record<string, unknown> = {
+      installmentPaymentCount: newCount,
+      status: "ACTIVE",
+      lastBillingDate: new Date(),
+    };
+
+    if (newCount >= 2) {
+      Object.assign(updates, {
+        setupFeePaid: true,
+        setupFeePaidAt: new Date(),
+        installmentCompleted: true,
+        nextBillingDate: null,
+      });
+
+      if (stripeSubscriptionId) {
+        try {
+          await stripe.subscriptions.update(stripeSubscriptionId, {
+            cancel_at_period_end: true,
+          });
+        } catch (error) {
+          console.error(
+            "Error canceling installment subscription after final payment",
+            error
+          );
+        }
+      }
+    } else if (stripeSubscriptionId) {
+      const subscriptionResponse =
+        await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      const stripeSubscription = subscriptionResponse as Stripe.Subscription;
+      const nextBillingDate = getNextBillingDate(stripeSubscription);
+      Object.assign(updates, { nextBillingDate });
+    }
+
+    await prisma.serviceSubscription.update({
+      where: { id: subscriptionId },
+      data: updates,
+    });
+
+    await prisma.payment.create({
+      data: {
+        subscriptionId,
+        paymentType: "MONTHLY_FEE",
+        amount: amountPaid,
+        currency: "USD",
+        status: "COMPLETED",
+        paidAt: new Date(),
+        stripePaymentIntentId: getPaymentIntentId(invoice) ?? undefined,
+        stripeInvoiceId: invoice.id,
+        metadata: JSON.stringify({
+          paymentPlan: "installment",
+          installmentNumber: newCount,
+        }),
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: invoice.metadata?.userId || subscription.userId,
+        action: "PAYMENT_SUCCEEDED",
+        resourceType: "Payment",
+        resourceId: subscriptionId,
+        ipAddress: "stripe-webhook",
+        metadata: JSON.stringify({
+          paymentType: newCount === 1 ? "INSTALLMENT_1" : "INSTALLMENT_2",
+          amount: amountPaid,
+          invoiceId: invoice.id,
+          paymentPlan: "installment",
+        }),
+      },
+    });
+
+    return;
+  }
+
+  // Non-installment (legacy) flow
   await prisma.payment.create({
     data: {
       subscriptionId,
       paymentType: "MONTHLY_FEE",
-      amount: (invoice.amount_paid || 0) / 100,
+      amount: amountPaid,
       currency: "USD",
       status: "COMPLETED",
       paidAt: new Date(),
       stripePaymentIntentId: getPaymentIntentId(invoice) ?? undefined,
       stripeInvoiceId: invoice.id,
-      metadata: JSON.stringify({
-        isInstallmentPayment: isInstallmentPlan,
-        installmentNumber: currentPaymentCount + 1,
-      }),
     },
   });
 
-  // Update subscription
-  const stripeSubscriptionId = getStripeSubscriptionId(invoice);
   let nextBillingDate: Date | null = null;
 
   if (stripeSubscriptionId) {
@@ -405,82 +457,29 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     nextBillingDate = getNextBillingDate(stripeSubscription);
   }
 
-  // Handle installment plan logic
-  if (isInstallmentPlan) {
-    const newPaymentCount = currentPaymentCount + 1;
+  await prisma.serviceSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      status: "ACTIVE",
+      lastBillingDate: new Date(),
+      nextBillingDate,
+    },
+  });
 
-    if (newPaymentCount >= 2) {
-      // Second payment completed - mark as fully paid and cancel subscription
-      console.log(
-        `✅ Second installment payment completed for ${subscriptionId}. Marking as paid and canceling subscription.`
-      );
-
-      await prisma.serviceSubscription.update({
-        where: { id: subscriptionId },
-        data: {
-          status: "ACTIVE",
-          setupFeePaid: true,
-          setupFeePaidAt: new Date(),
-          installmentPaymentCount: 2,
-          installmentCompleted: true,
-          lastBillingDate: new Date(),
-          nextBillingDate: null, // No more payments needed
-        },
-      });
-
-      // Cancel the Stripe subscription to prevent further charges
-      if (stripeSubscriptionId) {
-        try {
-          await stripe.subscriptions.cancel(stripeSubscriptionId);
-          console.log(
-            `✅ Stripe subscription ${stripeSubscriptionId} canceled after 2 payments`
-          );
-        } catch (error) {
-          console.error(`Error canceling Stripe subscription: ${error}`);
-        }
-      }
-    } else {
-      // First payment - update count
-      await prisma.serviceSubscription.update({
-        where: { id: subscriptionId },
-        data: {
-          status: "ACTIVE",
-          installmentPaymentCount: newPaymentCount,
-          lastBillingDate: new Date(),
-          nextBillingDate,
-        },
-      });
-    }
-  } else {
-    // Regular monthly subscription (legacy)
-    await prisma.serviceSubscription.update({
-      where: { id: subscriptionId },
-      data: {
-        status: "ACTIVE",
-        lastBillingDate: new Date(),
-        nextBillingDate,
-      },
-    });
-  }
-
-  // Create audit log
-  const userId = invoice.metadata?.userId;
-  if (userId) {
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        action: "PAYMENT_SUCCEEDED",
-        resourceType: "Payment",
-        resourceId: subscriptionId,
-        ipAddress: "stripe-webhook",
-        metadata: JSON.stringify({
-          paymentType: "MONTHLY_FEE",
-          amount: (invoice.amount_paid || 0) / 100,
-          invoiceId: invoice.id,
-        }),
-      },
-    });
-  }
+  await prisma.auditLog.create({
+    data: {
+      userId: invoice.metadata?.userId || subscription.userId,
+      action: "PAYMENT_SUCCEEDED",
+      resourceType: "Payment",
+      resourceId: subscriptionId,
+      ipAddress: "stripe-webhook",
+      metadata: JSON.stringify({
+        paymentType: "MONTHLY_FEE",
+        amount: amountPaid,
+        invoiceId: invoice.id,
+      }),
+    },
+  });
 }
 
 /**
@@ -623,25 +622,4 @@ function getPaymentIntentId(invoice: Stripe.Invoice): string | null {
   }
 
   return typeof raw === "string" ? raw : raw.id;
-}
-
-function getStripeSubscriptionId(invoice: Stripe.Invoice): string | null {
-  const legacy = (
-    invoice as {
-      subscription?: string | Stripe.Subscription;
-    }
-  ).subscription;
-
-  if (legacy) {
-    return typeof legacy === "string" ? legacy : legacy.id;
-  }
-
-  const parentSubscription = invoice.parent?.subscription_details?.subscription;
-  if (!parentSubscription) {
-    return null;
-  }
-
-  return typeof parentSubscription === "string"
-    ? parentSubscription
-    : parentSubscription.id;
 }

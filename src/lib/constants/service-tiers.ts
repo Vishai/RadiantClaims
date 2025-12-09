@@ -113,13 +113,19 @@ export const SERVICE_TIERS = {
 export const STRIPE_PRODUCTS = {
   // DIY Path - NEW PRICING (Dec 2024)
   DIY_PACKET_FULL: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_PACKET || "",
+    priceId:
+      process.env.STRIPE_PRICE_ID_DIY_PACKET ||
+      process.env.STRIPE_PRICE_ID_DIY_SETUP ||
+      "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.setupFee,
     currency: "usd",
-    description: "RadiantClaims DIY - Complete Packet (One-time $499.99)",
+    description: "RadiantClaims DIY - Complete Packet (One-time $499.00)",
   },
   DIY_PACKET_INSTALLMENT: {
-    priceId: process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS || "",
+    priceId:
+      process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT ||
+      process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS ||
+      "",
     amount: 249.99, // Per payment ($499.98 total for 2 payments)
     currency: "usd",
     interval: "month",

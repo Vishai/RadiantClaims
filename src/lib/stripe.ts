@@ -25,19 +25,26 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
  * These will be set after creating products in Stripe Dashboard
  *
  * NEW PRICING STRUCTURE (Dec 2024):
- * - DIY: $499.99 one-time OR 2 payments of $249.99
+ * - DIY: $499.00 one-time OR 2 payments of $249.99
  * - Lawyer: $0 Upfront for user (Backend B2B billing)
  */
 export const STRIPE_CONFIG = {
   // DIY Path - NEW PRICING
   DIY_PACKET_FULL: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_PACKET || "",
-    amount: 49999, // $499.99 in cents
+    // Fallback to legacy env var if new one is missing
+    priceId:
+      process.env.STRIPE_PRICE_ID_DIY_PACKET ||
+      process.env.STRIPE_PRICE_ID_DIY_SETUP ||
+      "",
+    amount: 49900, // $499.00 in cents
     currency: "usd",
-    description: "RadiantClaims DIY - Complete Packet (One-time $499.99)",
+    description: "RadiantClaims DIY - Complete Packet (One-time $499.00)",
   },
   DIY_PACKET_INSTALLMENT: {
-    priceId: process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS || "",
+    priceId:
+      process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT ||
+      process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS ||
+      "",
     amount: 24999, // $249.99 per payment in cents
     currency: "usd",
     interval: "month" as const,
