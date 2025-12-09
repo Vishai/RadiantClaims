@@ -17,13 +17,18 @@ export function DIYTermsAgreement({
   onAccept,
   onDecline,
   isLoading = false,
-  paymentPlan = "full", // eslint-disable-line @typescript-eslint/no-unused-vars
+  paymentPlan = "full",
 }: DIYTermsAgreementProps) {
   const [hasRead, setHasRead] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
   const [acknowledgeRefund, setAcknowledgeRefund] = useState(false);
 
   const canAccept = hasRead && hasAgreed && acknowledgeRefund;
+
+  const selectedPlanLabel =
+    paymentPlan === "installment"
+      ? "Installment Plan ($249.99 × 2 payments)"
+      : "Pay in Full ($499.00 one-time)";
 
   // Calculate pricing based on plan (for potential future use)
   // const pricing = paymentPlan === "installment"
@@ -101,9 +106,12 @@ export function DIYTermsAgreement({
               </h4>
               <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
                 <p className="font-semibold text-sage-900">Payment Options:</p>
+                <p className="mt-1 text-xs uppercase tracking-wide text-sage-600">
+                  Selected: {selectedPlanLabel}
+                </p>
                 <ul className="ml-6 mt-2 list-disc space-y-2 text-sage-900">
                   <li>
-                    <strong>Pay in Full:</strong> $499.99 one-time payment (no
+                    <strong>Pay in Full:</strong> $499.00 one-time payment (no
                     recurring charges)
                   </li>
                   <li>
@@ -126,7 +134,7 @@ export function DIYTermsAgreement({
               </p>
               <ul className="ml-6 mt-2 list-disc space-y-1">
                 <li>
-                  <strong>Full Payment:</strong> $499.99 charged immediately
+                  <strong>Full Payment:</strong> $499.00 charged immediately
                   (one-time)
                 </li>
                 <li>
@@ -171,10 +179,10 @@ export function DIYTermsAgreement({
               </h4>
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="font-semibold text-blue-900">
-                  7-Day Money-Back Guarantee (Setup Fee Only)
+                  7-Day Money-Back Guarantee (Full or Installment Payment)
                 </p>
                 <p className="mt-2 text-blue-900">
-                  You may request a full refund of the $149.99 setup fee if:
+                  You may request a full refund of your initial payment if:
                 </p>
                 <ul className="ml-6 mt-2 list-disc space-y-1 text-blue-900">
                   <li>
@@ -189,17 +197,11 @@ export function DIYTermsAgreement({
                   ⚠️ Non-Refundable After PDF Download
                 </p>
                 <p className="mt-1 text-blue-900">
-                  Once you download your completed RECA form PDF, the setup fee
+                  Once you download your completed RECA form PDF, the fee
                   becomes <strong>non-refundable</strong>. This is because you
                   have received the primary deliverable of our service.
                 </p>
               </div>
-              <p className="mt-3">
-                <strong>Monthly Subscription:</strong> You may cancel your
-                subscription at any time. No refunds for partial months.
-                Cancellation takes effect at the end of the current billing
-                period.
-              </p>
             </section>
 
             <section>

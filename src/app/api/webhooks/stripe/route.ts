@@ -298,10 +298,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const subscriptionIdFromMetadata = invoice.metadata?.subscriptionId;
-  const stripeSubscriptionId =
-    typeof invoice.subscription === "string"
-      ? invoice.subscription
-      : invoice.subscription?.id;
+  const stripeSubscriptionId = (() => {
+    const sub = (
+      invoice as Stripe.Invoice & {
+        subscription?: string | { id?: string } | null;
+      }
+    ).subscription;
+    if (!sub) return null;
+    return typeof sub === "string" ? sub : (sub.id ?? null);
+  })();
 
   const whereClauses: Array<{
     id?: string;

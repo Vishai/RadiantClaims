@@ -43,18 +43,13 @@ export const env = createEnv({
         ? z.string()
         : z.string().optional(),
     // DIY packet pricing
-    STRIPE_PRICE_ID_DIY_SETUP:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
+    // Full-price and installment price IDs (production required)
     STRIPE_PRICE_ID_DIY_PACKET:
-      process.env.NODE_ENV === "production"
-        ? z.string().optional()
-        : z.string().optional(),
+      process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
     STRIPE_PRICE_ID_DIY_INSTALLMENT:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
+      process.env.NODE_ENV === "production" ? z.string() : z.string().optional(),
+    // Legacy fallback (optional)
+    STRIPE_PRICE_ID_DIY_SETUP: z.string().optional(),
     STRIPE_WEBHOOK_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string()
@@ -88,6 +83,8 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_PRICE_ID_DIY_SETUP: process.env.STRIPE_PRICE_ID_DIY_SETUP,
+    STRIPE_PRICE_ID_DIY_PACKET: process.env.STRIPE_PRICE_ID_DIY_PACKET,
+    STRIPE_PRICE_ID_DIY_INSTALLMENT: process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT,
     STRIPE_PRICE_ID_DIY_PACKET: process.env.STRIPE_PRICE_ID_DIY_PACKET,
     STRIPE_PRICE_ID_DIY_INSTALLMENT:
       process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT,
