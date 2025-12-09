@@ -17,6 +17,7 @@ import {
   getPreviousSection,
   getSectionDisplayName,
 } from "@/lib/reca/workflow";
+import { useFamilyMemberCache } from "@/lib/reca/useFamilyMemberCache";
 
 interface FormWizardProps {
   sessionId: string;
@@ -47,6 +48,13 @@ export function FormWizard({
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [hasPromptedAccount, setHasPromptedAccount] = useState(false);
 
+  // Auto-save family members to cache as form progresses
+  useFamilyMemberCache({
+    claimId: sessionId,
+    formData: workflowState.formData,
+    autoSave: true,
+  });
+
   const handleAutoSave = useCallback(async () => {
     if (isSaving) return;
 
@@ -54,20 +62,17 @@ export function FormWizard({
       setIsSaving(true);
       setSaveError(null);
 
-      const response = await fetch(
-        `/api/reca/workflow/${sessionId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            currentSection: workflowState.currentSection,
-            currentStage: workflowState.currentStage,
-            formData: workflowState.formData,
-            supportingForms: workflowState.supportingForms,
-            eligibilityData: workflowState.eligibilityData,
-          } as SaveWorkflowRequest),
-        }
-      );
+      const response = await fetch(`/api/reca/workflow/${sessionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentSection: workflowState.currentSection,
+          currentStage: workflowState.currentStage,
+          formData: workflowState.formData,
+          supportingForms: workflowState.supportingForms,
+          eligibilityData: workflowState.eligibilityData,
+        } as SaveWorkflowRequest),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to save");
@@ -92,7 +97,14 @@ export function FormWizard({
     } finally {
       setIsSaving(false);
     }
-  }, [sessionId, workflowState, status, hasPromptedAccount, lastSaved, isSaving]);
+  }, [
+    sessionId,
+    workflowState,
+    status,
+    hasPromptedAccount,
+    lastSaved,
+    isSaving,
+  ]);
 
   // Auto-save every 2 minutes
   useEffect(() => {
@@ -115,7 +127,7 @@ export function FormWizard({
         return; // Don't navigate if form is invalid
       }
       // Delay to allow state to propagate from form submission
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
     // Save before navigating (though form should have already saved)
@@ -124,7 +136,9 @@ export function FormWizard({
     // Reload the latest state from the server to ensure we have the most up-to-date data
     let latestState = workflowState;
     try {
-      const latestStateResponse = await fetch(`/api/reca/workflow/${sessionId}`);
+      const latestStateResponse = await fetch(
+        `/api/reca/workflow/${sessionId}`
+      );
       if (latestStateResponse.ok) {
         latestState = await latestStateResponse.json();
         setWorkflowState(latestState);
@@ -165,7 +179,8 @@ export function FormWizard({
       const filingForSelf = latestState.formData.part_1?.filingForSelf;
 
       // If filing for self, we know relationship is "Self" even if not yet in state
-      const effectiveRelationship = filingForSelf === true ? "Self" : updatedRelationship;
+      const effectiveRelationship =
+        filingForSelf === true ? "Self" : updatedRelationship;
 
       if (!effectiveRelationship) {
         alert("Please select your relationship to the person who became ill");
@@ -201,7 +216,9 @@ export function FormWizard({
     if (nextSection) {
       // Route to supporting forms if that's the next section
       if (nextSection === "supporting_forms") {
-        router.push(`/reca/supporting/${sessionId}?form=certification_of_identity` as any);
+        router.push(
+          `/reca/supporting/${sessionId}?form=certification_of_identity` as any
+        );
       } else if (nextSection === "document_checklist") {
         router.push(`/reca/documents/${sessionId}` as any);
       } else if (nextSection === "final_review") {
@@ -264,7 +281,7 @@ export function FormWizard({
   };
 
   return (
-    <div className="min-h-screen bg-cream-50 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-cream-50">
       {/* Progress Bar */}
       <ProgressBar
         currentSection={currentSection}
@@ -272,7 +289,7 @@ export function FormWizard({
       />
 
       {/* Main Content */}
-      <div className="flex-1 container mx-auto px-6 py-8">
+      <div className="container mx-auto flex-1 px-6 py-8">
         {/* Save Status */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-sage-900">
@@ -285,7 +302,7 @@ export function FormWizard({
               </span>
             )}
             {isSaving && (
-              <span className="text-sm text-sage-600 flex items-center gap-2">
+              <span className="flex items-center gap-2 text-sm text-sage-600">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-terracotta-500 border-t-transparent" />
                 Saving...
               </span>
@@ -305,21 +322,21 @@ export function FormWizard({
 
         {/* Error Message */}
         {saveError && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
             <div>
-              <h3 className="font-semibold text-red-900 mb-1">Save Error</h3>
+              <h3 className="mb-1 font-semibold text-red-900">Save Error</h3>
               <p className="text-sm text-red-700">{saveError}</p>
             </div>
           </div>
         )}
 
         {/* Form Content */}
-        <div className="max-w-4xl mx-auto">{children}</div>
+        <div className="mx-auto max-w-4xl">{children}</div>
 
         {/* Navigation Buttons */}
         {!hideNavigation && (
-          <div className="mt-8 flex items-center justify-between max-w-4xl mx-auto">
+          <div className="mx-auto mt-8 flex max-w-4xl items-center justify-between">
             <Button
               variant="outline"
               onClick={handlePrevious}
