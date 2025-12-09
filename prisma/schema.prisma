@@ -1961,13 +1961,18 @@ model ServiceSubscription {
   tier   ServiceTier        @default(DIY_PREP)
   status SubscriptionStatus @default(ACTIVE)
 
-  // DIY Path Pricing ($149.99 + $24.99/mo)
+  // DIY Path Pricing - NEW (Dec 2024): $499.99 one-time or 2 payments of $249.99
   setupFeePaid   Boolean   @default(false)
-  setupFeeAmount Float? // 149.99
+  setupFeeAmount Float? // 499.99
   setupFeePaidAt DateTime?
 
-  monthlyFeeAmount Float? // 24.99
-  billingCycleDay  Int? // Day of month for billing (1-28)
+  // Installment Plan Support (2 payments of $249.99)
+  isInstallmentPlan     Boolean @default(false) // True if user chose 2-payment plan
+  installmentPaymentCount Int   @default(0) // Track number of payments made (max 2)
+  installmentCompleted  Boolean @default(false) // True when all installments paid
+
+  monthlyFeeAmount Float? // DEPRECATED: No longer used (was $24.99)
+  billingCycleDay  Int? // DEPRECATED
   nextBillingDate  DateTime?
   lastBillingDate  DateTime?
 

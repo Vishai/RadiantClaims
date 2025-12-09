@@ -31,10 +31,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tier, policyType, policyVersion, ipAddress } = body;
+    const { tier, policyType, policyVersion, ipAddress, paymentPlan } = body;
 
     if (!tier || !["DIY_PREP", "LEGAL_REP"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+    }
+
+    // Validate payment plan (for DIY tier only)
+    const isInstallmentPlan =
+      tier === "DIY_PREP" && paymentPlan === "installment";
+    if (
+      tier === "DIY_PREP" &&
+      paymentPlan &&
+      !["full", "installment"].includes(paymentPlan)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid payment plan" },
+        { status: 400 }
+      );
     }
 
     // Check if user already has a subscription
@@ -240,10 +254,12 @@ export async function POST(request: NextRequest) {
         message: "Legal representation profile created.",
       });
     } else {
-      // DIY PATH: One-time Payment ($499), No Subscription
-      const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
+      // DIY PATH: $499.99 One-time OR 2-Payment Installment Plan
+      const diyPriceId = isInstallmentPlan
+        ? STRIPE_CONFIG.DIY_PACKET_INSTALLMENT.priceId
+        : STRIPE_CONFIG.DIY_PACKET_FULL.priceId;
 
-      if (!diySetupPriceId) {
+      if (!diyPriceId) {
         return NextResponse.json(
           {
             error:
@@ -260,8 +276,11 @@ export async function POST(request: NextRequest) {
           tier: "DIY_PREP",
           status: "PENDING",
           setupFeePaid: false,
-          setupFeeAmount: 499.0, // $499 Flat Fee
+          setupFeeAmount: 499.0, // $499 Flat Fee (total)
           monthlyFeeAmount: 0,
+          isInstallmentPlan,
+          installmentPaymentCount: 0,
+          installmentCompleted: false,
         },
       });
 
@@ -281,12 +300,21 @@ export async function POST(request: NextRequest) {
         data: { stripeCustomerId: customer.id },
       });
 
-      // Create Stripe Checkout Session (One-Time Payment)
+      // Create Stripe Checkout Session
       const checkoutSession = await stripe.checkout.sessions.create({
         customer: customer.id,
-        mode: "payment", // Changed from 'subscription' to 'payment'
+        mode: isInstallmentPlan ? "subscription" : "payment",
         payment_method_types: ["card", "klarna", "affirm", "afterpay_clearpay"], // Added BNPL
-        line_items: [{ price: diySetupPriceId, quantity: 1 }],
+        line_items: [{ price: diyPriceId, quantity: 1 }],
+        ...(isInstallmentPlan && {
+          subscription_data: {
+            metadata: {
+              subscriptionId: subscription.id,
+              maxPayments: "2",
+              paymentPlan: "installment",
+            },
+          },
+        }),
         allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
@@ -295,7 +323,8 @@ export async function POST(request: NextRequest) {
           subscriptionId: subscription.id,
           policyAcceptanceId: policyAcceptance.id,
           tier: "DIY_PREP",
-          type: "ONE_TIME_PAYMENT",
+          type: isInstallmentPlan ? "INSTALLMENT_PAYMENT" : "ONE_TIME_PAYMENT",
+          paymentPlan: paymentPlan || "full",
         },
       });
 
@@ -311,6 +340,8 @@ export async function POST(request: NextRequest) {
           tier: "DIY_PREP",
           stripeCheckoutSessionId: checkoutSession.id,
           policyAcceptanceId: policyAcceptance.id,
+          paymentPlan: paymentPlan || "full",
+          isInstallmentPlan,
         },
       });
 

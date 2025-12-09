@@ -111,29 +111,44 @@ export const SERVICE_TIERS = {
 
 // Stripe product IDs (to be set after creating products in Stripe)
 export const STRIPE_PRODUCTS = {
-  // DIY Path - Per Claim Products
-  DIY_SETUP_FEE: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
+  // DIY Path - NEW PRICING (Dec 2024)
+  DIY_PACKET_FULL: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_PACKET || "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.setupFee,
     currency: "usd",
-    description: "RadiantClaims DIY - Complete Packet (One-time)",
+    description: "RadiantClaims DIY - Complete Packet (One-time $499.99)",
+  },
+  DIY_PACKET_INSTALLMENT: {
+    priceId: process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS || "",
+    amount: 249.99, // Per payment ($499.98 total for 2 payments)
+    currency: "usd",
+    interval: "month",
+    intervalCount: 1,
+    maxPayments: 2, // Limit to exactly 2 payments
+    description: "RadiantClaims DIY - 2 Payment Plan ($249.99 × 2)",
+  },
+
+  // DEPRECATED - Legacy per-claim pricing (kept for backwards compatibility)
+  DIY_SETUP_FEE: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
+    amount: 499.0,
+    currency: "usd",
+    description: "DEPRECATED: Use DIY_PACKET_FULL instead",
   },
   DIY_MONTHLY_FIRST_CLAIM: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST || "",
-    amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeFirstClaim,
+    amount: 0,
     currency: "usd",
     interval: "month",
     description: "DEPRECATED",
   },
   DIY_MONTHLY_ADDITIONAL: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL || "",
-    amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeAdditional,
+    amount: 0,
     currency: "usd",
     interval: "month",
     description: "DEPRECATED",
   },
-
-  // Legal Path - Per Claim Products
   LEGAL_SETUP_FEE: {
     priceId: process.env.STRIPE_PRICE_ID_LEGAL_SETUP || "",
     amount: SERVICE_TIERS.LEGAL_REP.pricing.setupFee,

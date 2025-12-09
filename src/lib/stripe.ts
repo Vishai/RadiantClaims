@@ -24,20 +24,34 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
  * Stripe Product & Price IDs
  * These will be set after creating products in Stripe Dashboard
  *
- * NEW PER-CLAIM PRICING STRUCTURE (Dec 2025 Pivot):
- * - DIY: $499.00 Flat Fee (One-time payment)
+ * NEW PRICING STRUCTURE (Dec 2024):
+ * - DIY: $499.99 one-time OR 2 payments of $249.99
  * - Lawyer: $0 Upfront for user (Backend B2B billing)
  */
 export const STRIPE_CONFIG = {
-  // DIY Path - Flat Fee (one-time payment)
-  DIY_SETUP_FEE: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
-    amount: 49900, // $499.00 in cents
+  // DIY Path - NEW PRICING
+  DIY_PACKET_FULL: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_PACKET || "",
+    amount: 49999, // $499.99 in cents
     currency: "usd",
-    description: "RadiantClaims DIY - Complete Packet (One-time)",
+    description: "RadiantClaims DIY - Complete Packet (One-time $499.99)",
+  },
+  DIY_PACKET_INSTALLMENT: {
+    priceId: process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS || "",
+    amount: 24999, // $249.99 per payment in cents
+    currency: "usd",
+    interval: "month" as const,
+    maxPayments: 2,
+    description: "RadiantClaims DIY - 2 Payment Plan ($249.99 × 2)",
   },
 
-  // Legacy/Unused Keys (kept to avoid immediate breaking changes if referenced elsewhere, but should be deprecated)
+  // DEPRECATED - Legacy pricing (kept for backwards compatibility)
+  DIY_SETUP_FEE: {
+    priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
+    amount: 49999,
+    currency: "usd",
+    description: "DEPRECATED: Use DIY_PACKET_FULL instead",
+  },
   DIY_MONTHLY_FIRST_CLAIM: {
     priceId: "",
     amount: 0,
