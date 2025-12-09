@@ -47,10 +47,10 @@ function ServiceTiersContent() {
 
   // Per-claim pricing
   const [diyClaimCount, setDiyClaimCount] = useState(1);
-  const [legalClaimCount, setLegalClaimCount] = useState(1);
+  // const [legalClaimCount, setLegalClaimCount] = useState(1);
 
   const diyPricing = calculateAccountPricing("DIY_PREP", diyClaimCount);
-  const legalPricing = calculateAccountPricing("LEGAL_REP", legalClaimCount);
+  // const legalPricing = calculateAccountPricing("LEGAL_REP", legalClaimCount);
 
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
     try {
@@ -387,13 +387,9 @@ function ServiceTiersContent() {
                   <div className="text-3xl font-bold text-sage-900">
                     ${diyPricing.setupFeePerClaim}
                   </div>
-                  <div className="text-xs text-sage-600">
-                    per claim (includes month 1)
+                  <div className="text-sm font-bold text-terracotta-600">
+                    One-time Flat Fee
                   </div>
-                  <div className="mt-2 text-sm font-semibold text-sage-900">
-                    ${diyPricing.totalMonthlyFee.toFixed(2)}/mo
-                  </div>
-                  <div className="text-xs text-sage-600">starting month 2</div>
                 </div>
               </div>
               <div>
@@ -479,25 +475,11 @@ function ServiceTiersContent() {
                 </div>
                 <div className="mt-3 space-y-1 text-xs text-sage-600">
                   <div className="flex justify-between">
-                    <span>First month total:</span>
+                    <span>Total:</span>
                     <span className="font-semibold text-sage-900">
                       ${diyPricing.firstMonthTotal.toFixed(2)}
                     </span>
                   </div>
-                  {diyClaimCount > 1 && (
-                    <div className="flex justify-between">
-                      <span>Breakdown:</span>
-                      <span className="font-mono text-sage-900">
-                        $
-                        {diyPricing.monthlyFeeBreakdown[0]?.monthlyFee.toFixed(
-                          2
-                        )}
-                        {diyClaimCount > 1 &&
-                          diyPricing.monthlyFeeBreakdown[1] &&
-                          ` + ${diyClaimCount - 1} × $${diyPricing.monthlyFeeBreakdown[1].monthlyFee.toFixed(2)}`}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -538,16 +520,13 @@ function ServiceTiersContent() {
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-terracotta-900">
-                    ${legalPricing.setupFeePerClaim}
+                    $0
                   </div>
-                  <div className="text-xs text-terracotta-600">
-                    per claim (refundable)
+                  <div className="text-sm font-bold text-terracotta-600">
+                    Upfront Cost
                   </div>
-                  <div className="mt-2 text-sm font-semibold text-terracotta-900">
-                    ${legalPricing.totalMonthlyFee.toFixed(2)}/mo
-                  </div>
-                  <div className="text-xs text-terracotta-600">
-                    + 2% of award (you pay from award)
+                  <div className="mt-1 text-xs text-terracotta-600">
+                    2% of award (paid on payout)
                   </div>
                 </div>
               </div>
@@ -615,77 +594,16 @@ function ServiceTiersContent() {
                 </p>
               </div>
 
-              {/* Claim Counter */}
+              {/* Pricing Info */}
               <div className="rounded-lg border-2 border-terracotta-200 bg-terracotta-50 p-4">
-                <div className="mb-3 text-center">
-                  <p className="text-xs font-semibold text-terracotta-900">
-                    How many claims?
-                  </p>
-                </div>
-                <div className="mb-3 flex items-center justify-center gap-4">
-                  <Button
-                    onClick={() =>
-                      setLegalClaimCount(Math.max(1, legalClaimCount - 1))
-                    }
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0 text-terracotta-700 hover:bg-terracotta-100"
-                    disabled={legalClaimCount <= 1}
-                  >
-                    −
-                  </Button>
-                  <span className="text-2xl font-bold text-terracotta-900">
-                    {legalClaimCount}
-                  </span>
-                  <Button
-                    onClick={() =>
-                      setLegalClaimCount(Math.min(10, legalClaimCount + 1))
-                    }
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 rounded-full p-0 text-terracotta-700 hover:bg-terracotta-100"
-                    disabled={legalClaimCount >= 10}
-                  >
-                    +
-                  </Button>
-                </div>
                 <div className="space-y-2 text-sm text-terracotta-800">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">First month total:</span>
-                    <span className="font-semibold">
-                      ${legalPricing.totalSetupFees.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="border-t border-terracotta-200 pt-2">
-                    <p className="mb-1 text-xs font-medium text-terracotta-700">
-                      Monthly breakdown (starting month 2):
-                    </p>
-                    <div className="space-y-1 text-xs">
-                      {legalClaimCount === 1 ? (
-                        <div className="flex justify-between">
-                          <span>Claim 1:</span>
-                          <span className="font-semibold">$24.99/mo</span>
-                        </div>
-                      ) : (
-                        <>
-                          {Array.from({ length: legalClaimCount }).map(
-                            (_, i) => (
-                              <div key={i} className="flex justify-between">
-                                <span>Claim {i + 1}:</span>
-                                <span className="font-semibold">$24.99/mo</span>
-                              </div>
-                            )
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-terracotta-300 pt-2 font-bold">
-                    <span>Total monthly:</span>
-                    <span>${legalPricing.totalMonthlyFee.toFixed(2)}/mo</span>
+                    <span className="font-medium">Total Upfront:</span>
+                    <span className="font-semibold">$0.00</span>
                   </div>
                   <p className="mt-2 text-xs italic text-terracotta-600">
-                    Setup fees are refundable when DOJ receives your claim
+                    Zero risk. You only pay the 2% attorney fee if you receive
+                    an award.
                   </p>
                 </div>
               </div>
@@ -809,26 +727,26 @@ function ServiceTiersContent() {
                         Upfront Cost
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-sage-900">
-                        $149.99
+                        $499
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-sage-900">
-                        $14.99
+                        $0
                       </td>
                     </tr>
                     <tr className="border-t-2 border-cream-200 bg-cream-50">
                       <td className="px-4 py-3 font-bold text-sage-900">
-                        Estimated Total Cost
+                        Total Cost
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-emerald-700">
-                        ~$300
+                        $499
                         <div className="text-xs font-normal text-sage-600">
-                          ($149.99 + ~6 months fee)
+                          (One-time flat fee)
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-sage-900">
-                        ~$2,100
+                        $2,000
                         <div className="text-xs font-normal text-sage-600">
-                          ($2,000 from award + ~6 months fee)
+                          (2% of award, paid on payout)
                         </div>
                       </td>
                     </tr>

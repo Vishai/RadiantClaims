@@ -24,10 +24,16 @@ export async function GET() {
     });
 
     if (!latestData) {
-      return NextResponse.json(
-        { error: "No data available" },
-        { status: 404 }
-      );
+      // Fallback data for Beta Launch / Empty DB
+      return NextResponse.json({
+        queueSize: 45230,
+        estimatedWaitDays: 240,
+        applicationsPerDay: 18.5,
+        approvalsPerDay: 4.2,
+        ratio: 4.4,
+        asOfDate: new Date().toISOString(),
+        isFallback: true,
+      });
     }
 
     // Calculate 7-day averages for recent velocity

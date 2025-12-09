@@ -204,76 +204,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (tier === "LEGAL_REP") {
-      // For Legal Rep: Create subscription and Stripe checkout
-      // $89.99 setup (one-time) + $24.99/month per claim (starts after 30-day trial)
-      const legalSetupPriceId = STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
-      const legalMonthlyPriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId; // $24.99/mo
-
-      if (!legalSetupPriceId || !legalMonthlyPriceId) {
-        return NextResponse.json(
-          {
-            error:
-              "Legal Rep checkout is temporarily unavailable. Please contact support.",
-            code: "LEGAL_REP_PRICE_NOT_CONFIGURED",
-          },
-          { status: 503 }
-        );
-      }
+      // LEGAL REP PATH: $0 Upfront, No Stripe Checkout
+      // Immediate activation of "subscription" (tracking record)
 
       const subscription = await db.serviceSubscription.create({
         data: {
           userId: session.user.id,
           tier: "LEGAL_REP",
-          status: "PENDING", // Will be set to ACTIVE by webhook after payment
-          setupFeePaid: false,
-          setupFeeAmount: 89.99,
-          monthlyFeeAmount: 24.99,
-        },
-      });
-
-      // Create Stripe customer
-      const customer = await stripe.customers.create({
-        email: session.user.email || undefined,
-        name: session.user.name || undefined,
-        metadata: {
-          userId: session.user.id,
-          subscriptionId: subscription.id,
-        },
-      });
-
-      // Update subscription with Stripe customer ID
-      await db.serviceSubscription.update({
-        where: { id: subscription.id },
-        data: { stripeCustomerId: customer.id },
-      });
-
-      // Create Stripe Checkout Session
-      // Setup fee charged immediately, monthly starts after 30-day trial
-      const checkoutSession = await stripe.checkout.sessions.create({
-        customer: customer.id,
-        mode: "subscription",
-        payment_method_types: ["card"],
-        line_items: [
-          { price: legalSetupPriceId, quantity: 1 }, // $89.99 one-time
-          { price: legalMonthlyPriceId, quantity: 1 }, // $24.99/month
-        ],
-        subscription_data: {
-          trial_period_days: 30, // Free first month
-          metadata: {
-            userId: session.user.id,
-            subscriptionId: subscription.id,
-            policyAcceptanceId: policyAcceptance.id,
-            tier: "LEGAL_REP",
-          },
-        },
-        allow_promotion_codes: true,
-        success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
-        cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
-        metadata: {
-          userId: session.user.id,
-          subscriptionId: subscription.id,
-          policyAcceptanceId: policyAcceptance.id,
-          tier: "LEGAL_REP",
+          status: "ACTIVE", // Active immediately (no payment needed)
+          setupFeePaid: true, // Considered paid/waived
+          setupFeeAmount: 0, // $0 upfront
+          monthlyFeeAmount: 0, // No monthly fee
         },
       });
 
@@ -287,7 +228,7 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get("user-agent") || undefined,
         metadata: {
           tier: "LEGAL_REP",
-          stripeCheckoutSessionId: checkoutSession.id,
+          note: "Strategic Pivot: $0 Upfront Legal Sign-up",
           policyAcceptanceId: policyAcceptance.id,
         },
       });
@@ -295,14 +236,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         subscription,
-        checkoutUrl: checkoutSession.url,
+        redirectTo: "/portal",
+        message: "Legal representation profile created.",
       });
     } else {
-      // For DIY: Create subscription and Stripe checkout session
+      // DIY PATH: One-time Payment ($499), No Subscription
       const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
-      const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId;
 
-      if (!diySetupPriceId || !diyMonthlyPriceId) {
+      if (!diySetupPriceId) {
         return NextResponse.json(
           {
             error:
@@ -317,10 +258,10 @@ export async function POST(request: NextRequest) {
         data: {
           userId: session.user.id,
           tier: "DIY_PREP",
-          status: "PENDING", // Changed from ACTIVE - will be set to ACTIVE by webhook
+          status: "PENDING",
           setupFeePaid: false,
-          setupFeeAmount: 149.99,
-          monthlyFeeAmount: 24.99,
+          setupFeeAmount: 499.0, // $499 Flat Fee
+          monthlyFeeAmount: 0,
         },
       });
 
@@ -340,24 +281,12 @@ export async function POST(request: NextRequest) {
         data: { stripeCustomerId: customer.id },
       });
 
-      // Create Stripe Checkout Session for setup fee + monthly subscription
+      // Create Stripe Checkout Session (One-Time Payment)
       const checkoutSession = await stripe.checkout.sessions.create({
         customer: customer.id,
-        mode: "subscription",
-        payment_method_types: ["card"],
-        line_items: [
-          { price: diySetupPriceId, quantity: 1 },
-          { price: diyMonthlyPriceId, quantity: 1 },
-        ],
-        subscription_data: {
-          trial_period_days: 30,
-          metadata: {
-            userId: session.user.id,
-            subscriptionId: subscription.id,
-            policyAcceptanceId: policyAcceptance.id,
-            tier: "DIY_PREP",
-          },
-        },
+        mode: "payment", // Changed from 'subscription' to 'payment'
+        payment_method_types: ["card", "klarna", "affirm", "afterpay_clearpay"], // Added BNPL
+        line_items: [{ price: diySetupPriceId, quantity: 1 }],
         allow_promotion_codes: true,
         success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
         cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
@@ -366,6 +295,7 @@ export async function POST(request: NextRequest) {
           subscriptionId: subscription.id,
           policyAcceptanceId: policyAcceptance.id,
           tier: "DIY_PREP",
+          type: "ONE_TIME_PAYMENT",
         },
       });
 

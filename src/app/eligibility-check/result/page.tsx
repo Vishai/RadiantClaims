@@ -188,35 +188,121 @@ function ResultContent() {
                 </div>
               )}
 
-              <div className="rounded-2xl bg-white p-6 shadow-sm">
-                <h3 className="mb-4 text-xl font-semibold text-sage-900">
-                  {isReferral && eligibility === "likely"
-                    ? "What Happens Next:"
-                    : "Next Steps:"}
-                </h3>
-                <ul className="space-y-3">
-                  {config.nextSteps.map((step, index) => (
-                    <li key={index} className="flex gap-3">
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-xs font-bold text-white">
-                        {index + 1}
-                      </div>
-                      <span className="text-sage-700">{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Fork in the Road for Eligible Users */}
+              {!isReferral && eligibility === "likely" ? (
+                <div className="space-y-8">
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-sage-900">
+                      Choose Your Path to $100,000
+                    </h3>
+                    <p className="text-sage-700">
+                      Select the option that best fits your needs.
+                    </p>
+                  </div>
 
-              {!isReferral && (
-                <div className="text-center">
-                  <Link href={config.ctaLink}>
-                    <Button
-                      size="lg"
-                      className="rounded-full bg-terracotta-500 px-8 py-6 text-lg hover:bg-terracotta-600"
-                    >
-                      {config.ctaText} <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Option A: DIY */}
+                    <div className="relative rounded-xl border-2 border-sage-200 bg-white p-6 transition-all hover:border-terracotta-300 hover:shadow-md">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-700">
+                        Save ~$1,500
+                      </div>
+                      <h4 className="mb-2 text-xl font-bold text-sage-900">
+                        File Yourself
+                      </h4>
+                      <div className="mb-4 text-3xl font-bold text-terracotta-600">
+                        $499
+                      </div>
+                      <ul className="mb-6 space-y-2 text-sm text-sage-700">
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
+                          Keep 100% of award
+                        </li>
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
+                          Instant PDF Download
+                        </li>
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
+                          Simple Instructions
+                        </li>
+                      </ul>
+                      <Link href="/service-tiers?tier=DIY_PREP">
+                        <Button className="w-full rounded-lg bg-terracotta-500 py-3 font-bold text-white hover:bg-terracotta-600">
+                          Buy Packet - $499
+                        </Button>
+                      </Link>
+                    </div>
+
+                    {/* Option B: Legal */}
+                    <div className="relative rounded-xl border-2 border-sage-200 bg-white p-6 transition-all hover:border-blue-300 hover:shadow-md">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                        No Risk
+                      </div>
+                      <h4 className="mb-2 text-xl font-bold text-sage-900">
+                        Attorney Review
+                      </h4>
+                      <div className="mb-4 text-3xl font-bold text-sage-900">
+                        $0{" "}
+                        <span className="text-sm font-normal text-sage-600">
+                          Upfront
+                        </span>
+                      </div>
+                      <ul className="mb-6 space-y-2 text-sm text-sage-700">
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
+                          Full Legal Representation
+                        </li>
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" /> 2%
+                          Fee paid on payout
+                        </li>
+                        <li className="flex gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-green-500" /> We
+                          handle everything
+                        </li>
+                      </ul>
+                      <Link href="/service-tiers?tier=LEGAL_REP">
+                        <Button className="w-full rounded-lg bg-sage-700 py-3 font-bold text-white hover:bg-sage-800">
+                          Sign with Attorney
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="rounded-2xl bg-white p-6 shadow-sm">
+                    <h3 className="mb-4 text-xl font-semibold text-sage-900">
+                      {isReferral && eligibility === "likely"
+                        ? "What Happens Next:"
+                        : "Next Steps:"}
+                    </h3>
+                    <ul className="space-y-3">
+                      {config.nextSteps.map((step, index) => (
+                        <li key={index} className="flex gap-3">
+                          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-xs font-bold text-white">
+                            {index + 1}
+                          </div>
+                          <span className="text-sage-700">{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {!isReferral && (
+                    <div className="text-center">
+                      <Link href={config.ctaLink}>
+                        <Button
+                          size="lg"
+                          className="rounded-full bg-terracotta-500 px-8 py-6 text-lg hover:bg-terracotta-600"
+                        >
+                          {config.ctaText}{" "}
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

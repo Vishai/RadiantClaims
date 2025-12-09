@@ -24,52 +24,46 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
  * Stripe Product & Price IDs
  * These will be set after creating products in Stripe Dashboard
  *
- * NEW PER-CLAIM PRICING STRUCTURE:
- * - DIY: $149.99 setup (includes month 1) + $24.99/mo first claim + $14.99/mo additional
- * - Lawyer: $89.99 setup (refundable) + $24.99/mo per claim (no discount)
+ * NEW PER-CLAIM PRICING STRUCTURE (Dec 2025 Pivot):
+ * - DIY: $499.00 Flat Fee (One-time payment)
+ * - Lawyer: $0 Upfront for user (Backend B2B billing)
  */
 export const STRIPE_CONFIG = {
-  // DIY Path - Setup Fee (one-time payment, includes first month)
+  // DIY Path - Flat Fee (one-time payment)
   DIY_SETUP_FEE: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
-    amount: 14999, // $149.99 in cents
+    amount: 49900, // $499.00 in cents
     currency: "usd",
-    description: "RadiantClaims DIY - Setup Fee per Claim (includes month 1)",
+    description: "RadiantClaims DIY - Complete Packet (One-time)",
   },
 
-  // DIY Path - First Claim Monthly (starting month 2)
+  // Legacy/Unused Keys (kept to avoid immediate breaking changes if referenced elsewhere, but should be deprecated)
   DIY_MONTHLY_FIRST_CLAIM: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST || "",
-    amount: 2499, // $24.99 in cents
+    priceId: "",
+    amount: 0,
     currency: "usd",
     interval: "month" as const,
-    description: "RadiantClaims DIY - First Claim Monthly Fee",
+    description: "DEPRECATED",
   },
-
-  // DIY Path - Additional Claim Monthly (each additional claim)
   DIY_MONTHLY_ADDITIONAL: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL || "",
-    amount: 1499, // $14.99 in cents
+    priceId: "",
+    amount: 0,
     currency: "usd",
     interval: "month" as const,
-    description: "RadiantClaims DIY - Additional Claim Monthly Fee",
+    description: "DEPRECATED",
   },
-
-  // Legal Path - Setup Fee (refundable on claim receipt)
   LEGAL_SETUP_FEE: {
-    priceId: process.env.STRIPE_PRICE_ID_LEGAL_SETUP || "",
-    amount: 8999, // $89.99 in cents
+    priceId: "",
+    amount: 0,
     currency: "usd",
-    description: "RadiantClaims Legal - Setup Fee per Claim (refundable)",
+    description: "RadiantClaims Legal - No Upfront Cost",
   },
-
-  // Legal Path - Monthly per Claim (no discount for additional claims)
   LEGAL_MONTHLY_PER_CLAIM: {
-    priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM || "",
-    amount: 2499, // $24.99 in cents
+    priceId: "",
+    amount: 0,
     currency: "usd",
     interval: "month" as const,
-    description: "RadiantClaims Legal - Monthly Fee per Claim",
+    description: "DEPRECATED",
   },
 
   // Webhook configuration

@@ -546,8 +546,8 @@ export default function EligibilityPage() {
                 </Button>
               </Link>
               <p className="mt-4 text-sm text-terracotta-100">
-                DIY: $149.99 + $24.99/mo • Legal: $89.99 setup (refundable) +
-                $24.99/mo + 2% attorney fee (you pay from award)
+                DIY: $499 One-time • Legal: $0 Upfront + 2% attorney fee (paid
+                only if you win)
               </p>
             </div>
           </div>

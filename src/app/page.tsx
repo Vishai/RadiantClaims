@@ -47,7 +47,7 @@ export default function HomePage() {
         <div className="flex flex-col justify-center gap-4 md:flex-row">
           <Link href="/eligibility-check">
             <button className="transform rounded-full bg-[#D65F4D] px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:-translate-y-1 hover:bg-[#c04e3d]">
-              Check Eligibility Free
+              Check My Eligibility
             </button>
           </Link>
           <a href="#how-it-works">
@@ -195,36 +195,36 @@ export default function HomePage() {
             {/* DIY Prep */}
             <div className="group relative overflow-hidden rounded-2xl border border-gray-200 p-8 transition hover:shadow-xl">
               <div className="absolute left-0 top-0 h-1 w-full bg-[#D65F4D]"></div>
-              <h3 className="mb-2 text-xl font-bold text-gray-900">DIY Prep</h3>
+              <h3 className="mb-2 text-xl font-bold text-gray-900">
+                Fast-Track Self-Filing
+              </h3>
               <p className="mb-6 text-sm text-gray-500">
-                Best if you have your records ready.
+                Best for clear medical/work history.
               </p>
               <div className="mb-1 text-4xl font-extrabold text-gray-900">
-                $149
-                <span className="text-lg font-normal text-gray-500">
-                  {" "}
-                  setup
-                </span>
+                $499
               </div>
-              <p className="mb-6 text-sm text-gray-400">
-                + $24.99/mo while processing
+              <p className="mb-6 text-sm font-bold text-[#D65F4D]">
+                One-time Flat Fee
               </p>
 
               <ul className="mb-8 space-y-3 text-left text-sm text-gray-600">
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> We generate DOJ
-                  forms
+                  <span className="text-green-500">✓</span>{" "}
+                  <strong>Keep 100% of your award</strong>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Document checklists
+                  <span className="text-green-500">✓</span> Instant generated
+                  PDF packet
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Secure cloud storage
+                  <span className="text-green-500">✓</span> Pay with Klarna /
+                  Affirm
                 </li>
               </ul>
               <Link href="/service-tiers">
                 <button className="w-full rounded-lg border-2 border-gray-900 py-2 font-bold text-gray-900 transition hover:bg-gray-50">
-                  Select DIY
+                  Get Packet ($499)
                 </button>
               </Link>
             </div>
@@ -232,41 +232,42 @@ export default function HomePage() {
             {/* Legal Representation */}
             <div className="relative rounded-2xl border border-gray-200 bg-gray-50 p-8 transition hover:shadow-xl">
               <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-1 text-xs font-bold text-green-700">
-                Recommended
+                No Risk
               </span>
               <h3 className="mb-2 text-xl font-bold text-gray-900">
-                Legal Representation
+                Full Legal Representation
               </h3>
               <p className="mb-6 text-sm text-gray-500">
                 We partner with Heritage Law.
               </p>
               <div className="mb-1 text-4xl font-extrabold text-gray-900">
-                $89
+                $0
                 <span className="text-lg font-normal text-gray-500">
                   {" "}
-                  setup
+                  Upfront
                 </span>
               </div>
               <p className="mb-6 text-sm text-gray-400">
-                + $14.99/mo + 2% fee (paid from award)
+                2% fee paid on payout
               </p>
 
               <ul className="mb-8 space-y-3 text-left text-sm text-gray-600">
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Full legal review
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Attorney assisted
+                  <span className="text-green-500">✓</span> Full legal review &
                   filing
                 </li>
                 <li className="flex gap-2">
+                  <span className="text-green-500">✓</span> We handle all
+                  paperwork
+                </li>
+                <li className="flex gap-2">
                   <span className="text-green-500">✓</span>
-                  <strong>2% only if you win</strong>
+                  <strong>Zero out-of-pocket cost</strong>
                 </li>
               </ul>
               <Link href="/service-tiers">
                 <button className="w-full rounded-lg bg-[#D65F4D] py-2 font-bold text-white transition hover:bg-[#c04e3d]">
-                  Check Availability
+                  Start Legal Check
                 </button>
               </Link>
             </div>

@@ -46,22 +46,6 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
-    STRIPE_PRICE_ID_DIY_MONTHLY_FIRST:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
-    STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
-    STRIPE_PRICE_ID_LEGAL_SETUP:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
-    STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
     STRIPE_WEBHOOK_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string()
@@ -95,13 +79,6 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_PRICE_ID_DIY_SETUP: process.env.STRIPE_PRICE_ID_DIY_SETUP,
-    STRIPE_PRICE_ID_DIY_MONTHLY_FIRST:
-      process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST,
-    STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL:
-      process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL,
-    STRIPE_PRICE_ID_LEGAL_SETUP: process.env.STRIPE_PRICE_ID_LEGAL_SETUP,
-    STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM:
-      process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   },
   /**

@@ -15,21 +15,21 @@ export const SERVICE_TIERS = {
       "We prepare your RECA claim forms and documents. You file directly with the Department of Justice.",
 
     pricing: {
-      setupFee: 149.99, // Per claim, includes first month
-      monthlyFeeFirstClaim: 24.99, // First claim monthly fee (starting month 2)
-      monthlyFeeAdditional: 14.99, // Each additional claim monthly fee
+      setupFee: 499.0, // One-time flat fee
+      monthlyFeeFirstClaim: 0, // No monthly fee
+      monthlyFeeAdditional: 0, // No monthly fee
       currency: "USD",
-      billingCycle: "monthly",
-      note: "Setup fee includes first month of service. Monthly billing starts month 2.",
+      billingCycle: "one-time",
+      note: "One-time flat fee. Includes full document generation.",
     },
 
     features: [
+      "Keep 100% of your award",
+      "Instant PDF Packet Download",
+      "Step-by-step filing instructions",
       "Document checklist & organization",
-      "Step-by-step document gathering guidance",
-      "Professional RECA form preparation",
-      "Secure portal access for document uploads",
-      "Document tracking & status updates",
-      "Progress tracking through completion",
+      "Secure portal access",
+      "Progress tracking",
     ],
 
     userResponsibilities: [
@@ -49,12 +49,11 @@ export const SERVICE_TIERS = {
     refundPolicy: {
       periodDays: 7,
       conditions: [
-        "Must request refund within 7 days of initial payment",
+        "Must request refund within 7 days of payment",
         "Cannot have downloaded the completed RECA form PDF",
-        "Setup fee is refundable during grace period",
-        "Monthly subscription can be canceled anytime (no refund on partial months)",
+        "Fee is refundable during grace period",
       ],
-      note: "Once you download your completed RECA form PDF, the setup fee is non-refundable.",
+      note: "Once you download your completed RECA form PDF, the fee is non-refundable.",
     },
   },
 
@@ -66,17 +65,17 @@ export const SERVICE_TIERS = {
       "Work with Heritage Law Offices for full legal representation throughout your RECA claim process.",
 
     pricing: {
-      setupFee: 89.99, // Per claim, refundable upon DOJ claim receipt
-      setupFeeRefundable: true,
-      monthlyFeePerClaim: 24.99, // No discount for additional claims on lawyer track
+      setupFee: 0, // No upfront cost
+      setupFeeRefundable: false,
+      monthlyFeePerClaim: 0, // No monthly fee
       currency: "USD",
-      billingCycle: "monthly",
+      billingCycle: "none",
       attorneyFeeAmount: 2000,
       attorneyFeePercentage: 2,
       recaAwardAmount: 100000,
       attorneyFeeNote:
         "Attorney fees are limited to 2% of the $100,000 RECA award ($2,000). The DOJ pays you directly, and you pay the attorney fee from your award. This is governed by federal RECA regulations (42 U.S.C. § 2210 note).",
-      note: "Setup fee refunded when DOJ receives your claim. No monthly discount for additional claims.",
+      note: "No upfront cost. 2% attorney fee paid from award.",
     },
 
     features: [
@@ -100,12 +99,12 @@ export const SERVICE_TIERS = {
     disclaimers: [
       "By selecting legal representation, you will be connected with Heritage Law Offices, a licensed law firm.",
       "Heritage Law will contact you directly to discuss their services and sign a retainer agreement.",
-      "Attorney fees are governed by federal RECA regulations (2% of award, paid only if your claim is successful).",
+      "Attorney fees are governed by federal RECA regulations (2% of award, paid when the DOJ pays out).",
       "RadiantClaims prepares your intake packet; Heritage Law provides legal services.",
     ],
 
     refundPolicy: {
-      note: "Monthly technology fee can be canceled anytime. No setup fee refunds as none is charged.",
+      note: "No upfront fees charged.",
     },
   },
 } as const;
@@ -117,22 +116,21 @@ export const STRIPE_PRODUCTS = {
     priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.setupFee,
     currency: "usd",
-    description:
-      "RadiantClaims DIY - Setup Fee (includes first month, per claim)",
+    description: "RadiantClaims DIY - Complete Packet (One-time)",
   },
   DIY_MONTHLY_FIRST_CLAIM: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST || "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeFirstClaim,
     currency: "usd",
     interval: "month",
-    description: "RadiantClaims DIY - First Claim Monthly Fee",
+    description: "DEPRECATED",
   },
   DIY_MONTHLY_ADDITIONAL: {
     priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL || "",
     amount: SERVICE_TIERS.DIY_PREP.pricing.monthlyFeeAdditional,
     currency: "usd",
     interval: "month",
-    description: "RadiantClaims DIY - Additional Claim Monthly Fee",
+    description: "DEPRECATED",
   },
 
   // Legal Path - Per Claim Products
@@ -140,14 +138,14 @@ export const STRIPE_PRODUCTS = {
     priceId: process.env.STRIPE_PRICE_ID_LEGAL_SETUP || "",
     amount: SERVICE_TIERS.LEGAL_REP.pricing.setupFee,
     currency: "usd",
-    description: "RadiantClaims Legal - Setup Fee (refundable, per claim)",
+    description: "RadiantClaims Legal - No Upfront Cost",
   },
   LEGAL_MONTHLY_PER_CLAIM: {
     priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM || "",
     amount: SERVICE_TIERS.LEGAL_REP.pricing.monthlyFeePerClaim,
     currency: "usd",
     interval: "month",
-    description: "RadiantClaims Legal - Monthly Fee Per Claim",
+    description: "DEPRECATED",
   },
 } as const;
 
