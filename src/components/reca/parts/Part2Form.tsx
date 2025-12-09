@@ -17,6 +17,7 @@ import { Info } from "lucide-react";
 import { useAutofill } from "@/lib/reca/useAutofill";
 import { AutofillInfoBanner } from "@/components/reca/AutofillBadge";
 import { FamilyMemberSelector } from "@/components/reca/FamilyMemberSelector";
+import { DocumentRequirementsInline } from "@/components/reca/DocumentRequirementsInline";
 
 const part2Schema = z.object({
   firstName: z.string().min(1, "First name is required").max(12),
@@ -96,13 +97,13 @@ export function Part2Form({
   };
 
   // Get unique source labels for autofilled fields
-  const autofilledSources = [
-    ...new Set(
+  const autofilledSources = Array.from(
+    new Set(
       autofill.autofilledFields
         .map((field) => autofill.getSource(field)?.label)
-        .filter(Boolean)
-    ),
-  ] as string[];
+        .filter((label): label is string => Boolean(label))
+    )
+  );
 
   // Add "Family Member Cache" to sources if data came from cache
   const allSources = selectedFromCache
@@ -139,6 +140,15 @@ export function Part2Form({
           sources={allSources}
         />
       )}
+
+      {/* Document Requirements Inline */}
+      <DocumentRequirementsInline
+        formData={currentFormData}
+        relatedFormSection="part_2"
+        variant="card"
+        title="Documents You'll Need for the Claimant"
+        description="Based on the deceased individual's information, you'll need to upload these documents"
+      />
 
       {/* Info Card */}
       <Card className="border-2 border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-white">

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Part6SurvivingChild, RECAFormData } from "@/lib/reca/types";
 import { useAutofill } from "@/lib/reca/useAutofill";
 import { AutofillInfoBanner } from "@/components/reca/AutofillBadge";
+import { DocumentRequirementsInline } from "@/components/reca/DocumentRequirementsInline";
 import {
   Card,
   CardContent,
@@ -264,13 +265,13 @@ export default function Part6Form({
   const formErrors = form.formState.errors;
 
   // Get autofill sources for banner
-  const autofilledSources = [
-    ...new Set(
+  const autofilledSources = Array.from(
+    new Set(
       autofill.autofilledFields
         .map((field) => autofill.getSource(field)?.label)
-        .filter(Boolean)
-    ),
-  ] as string[];
+        .filter((label): label is string => Boolean(label))
+    )
+  );
 
   return (
     <div className="space-y-6">
@@ -281,6 +282,15 @@ export default function Part6Form({
           sources={autofilledSources}
         />
       )}
+
+      {/* Document Requirements Inline */}
+      <DocumentRequirementsInline
+        formData={currentFormData}
+        relatedFormSection="part_6"
+        variant="card"
+        title="Documents You'll Need for This Section"
+        description="Based on your answers below, you'll need to upload these documents later in the process"
+      />
 
       {/* Header Information */}
       <Card className="border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white">
