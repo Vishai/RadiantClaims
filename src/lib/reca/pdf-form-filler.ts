@@ -2025,6 +2025,39 @@ export class RECAPDFFormFiller {
       this.drawCheckbox("part6.additionalChildrenAttached");
     }
 
+    // Add notation if there are more than 3 siblings
+    if (
+      part6.siblings &&
+      part6.siblings.length > 3 &&
+      this.pdfPages &&
+      this.pdfPages.length > 0
+    ) {
+      const additionalCount = part6.siblings.length - 3;
+      const notationText = `See Supplemental Sibling Information Document (${additionalCount} additional sibling${additionalCount > 1 ? "s" : ""})`;
+
+      // Draw text overlay on the appropriate page/location
+      // This will appear near the sibling section to alert DOJ reviewers
+      // Coordinates may need adjustment based on actual PDF layout
+      const pageIndex = Math.min(4, this.pdfPages.length - 1); // Use page 5 or last available page
+      const targetPage = this.pdfPages[pageIndex];
+      if (targetPage) {
+        try {
+          targetPage.drawText(notationText, {
+            x: 70,
+            y: 350, // Adjust Y coordinate as needed based on actual form layout
+            size: 9,
+            font: this.font,
+            color: rgb(0, 0, 0),
+          });
+        } catch (error) {
+          console.warn(
+            "Could not add sibling overflow notation to PDF:",
+            error
+          );
+        }
+      }
+    }
+
     // Document requirement checkboxes (Page 5)
     if (part6Any.birthCertificateClaimant) {
       this.drawCheckbox("part6.birthCertificateClaimant");
@@ -2104,7 +2137,10 @@ export class RECAPDFFormFiller {
         if (index === 0) {
           // First entry for each county
           this.drawText(`part8.arizona.${countyKey}.townCity`, county.townCity);
-          this.drawText(`part8.arizona.${countyKey}.timePeriod`, county.timePeriod);
+          this.drawText(
+            `part8.arizona.${countyKey}.timePeriod`,
+            county.timePeriod
+          );
         }
       });
     }
@@ -2126,7 +2162,10 @@ export class RECAPDFFormFiller {
         if (index === 0) {
           // First entry for each county
           this.drawText(`part8.nevada.${countyKey}.townCity`, county.townCity);
-          this.drawText(`part8.nevada.${countyKey}.timePeriod`, county.timePeriod);
+          this.drawText(
+            `part8.nevada.${countyKey}.timePeriod`,
+            county.timePeriod
+          );
         }
       });
     }
@@ -2321,7 +2360,10 @@ export class RECAPDFFormFiller {
         } else {
           // Need to split across two lines
           // Find the last space before the character limit
-          let splitIndex = part15.guardianAddress.lastIndexOf(" ", charsPerLine);
+          let splitIndex = part15.guardianAddress.lastIndexOf(
+            " ",
+            charsPerLine
+          );
           if (splitIndex === -1) {
             // No space found, force break at character limit
             splitIndex = charsPerLine;
@@ -2466,9 +2508,13 @@ export class RECAPDFFormFiller {
     if (!tribalRelease) return;
 
     // Tribal office checkboxes
-    if (tribalRelease.tribalOffice === "Navajo Nation Office of Vital Records") {
+    if (
+      tribalRelease.tribalOffice === "Navajo Nation Office of Vital Records"
+    ) {
       this.drawCheckbox("tribalRelease.navajo");
-    } else if (tribalRelease.tribalOffice === "Hopi Tribe Enrollment Department") {
+    } else if (
+      tribalRelease.tribalOffice === "Hopi Tribe Enrollment Department"
+    ) {
       this.drawCheckbox("tribalRelease.hopi");
     } else if (
       tribalRelease.tribalOffice ===
@@ -2812,7 +2858,6 @@ export class RECAPDFFormFiller {
       color: COLORS.black,
     });
   }
-
 }
 
 /**

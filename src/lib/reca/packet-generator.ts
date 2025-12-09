@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { uploadToR2, getObject } from "@/lib/r2";
 import { fillOfficialRECAPDF } from "./pdf-form-filler";
 import { generateRECAPDF } from "./pdf-generator";
+import { generateSupplementalSiblingsPDF } from "./supplemental-siblings-pdf";
 import type { RECAFormData, RECASupportingForms } from "./types";
 import type { PacketStatus } from "@prisma/client";
 
@@ -162,6 +163,48 @@ export async function generatePacketArchive({
       `RadiantClaims-Summary-${sanitizeFileName(intakeSession.id)}.pdf`,
       Buffer.from(summaryBytes)
     );
+
+  // Generate Supplemental Sibling Information PDF if needed (>3 siblings)
+  if (formData.part_6?.siblings && formData.part_6.siblings.length > 3) {
+    const supplementalSiblings = formData.part_6.siblings.slice(3); // Siblings 4+
+
+    const claimantInfo = formData.part_2 || formData.part_1;
+    if (claimantInfo) {
+      const supplementalBytes = await generateSupplementalSiblingsPDF({
+        siblings: supplementalSiblings,
+        claimantInfo: {
+          firstName: claimantInfo.firstName || "",
+          middleName: claimantInfo.middleName,
+          lastName: claimantInfo.lastName || "",
+          dob: claimantInfo.dob || "",
+          ssn: claimantInfo.ssn,
+        },
+        filerInfo:
+          formData.part_1 && formData.part_2
+            ? {
+                firstName: formData.part_1.firstName || "",
+                middleName: formData.part_1.middleName,
+                lastName: formData.part_1.lastName || "",
+                dob: formData.part_1.dob || "",
+                ssn: formData.part_1.ssn,
+              }
+            : undefined,
+        startingNumber: 4,
+      });
+
+      zip
+        .folder("forms")
+        ?.file(
+          `Supplemental-Sibling-Information-${sanitizeFileName(intakeSession.id)}.pdf`,
+          Buffer.from(supplementalBytes)
+        );
+
+      // Add informational note to README
+      warnings.push(
+        `NOTICE: ${supplementalSiblings.length} additional sibling(s) listed in Supplemental-Sibling-Information.pdf (Part 6 overflow)`
+      );
+    }
+  }
 
   const manifestFiles: PacketManifest["files"] = [];
   const documentsFolder = zip.folder("documents");
