@@ -64,6 +64,59 @@ export default function HomePage() {
       {/* Backlog Race Section */}
       <BacklogRaceSection />
 
+      {/* What is RECA - Clean Explanation */}
+      <section className="bg-gray-50 py-20">
+        <div className="mx-auto max-w-4xl px-4">
+          <h2 className="mb-8 text-center text-3xl font-bold text-gray-900 md:text-4xl">
+            What is RECA?
+          </h2>
+          <div className="rounded-2xl bg-white p-8 shadow-sm md:p-12">
+            <p className="mb-6 text-lg leading-relaxed text-gray-700">
+              The <strong>Radiation Exposure Compensation Act (RECA)</strong> is
+              a federal program that provides{" "}
+              <span className="font-bold text-[#D65F4D]">
+                $100,000 tax-free payments
+              </span>{" "}
+              to individuals exposed to radiation from U.S. nuclear testing
+              between 1951-1962.
+            </p>
+            <p className="mb-8 text-lg leading-relaxed text-gray-700">
+              Recently expanded in July 2025, the program now covers{" "}
+              <strong>all of Utah, Idaho, and New Mexico</strong>, plus
+              specified counties in Arizona and Nevada. Tens of thousands of
+              families may now qualify who didn't before.
+            </p>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="rounded-xl bg-orange-50 p-6 text-center">
+                <div className="mb-2 text-4xl font-extrabold text-[#D65F4D]">
+                  $100,000
+                </div>
+                <div className="text-sm text-gray-600">
+                  Tax-free compensation per eligible claimant
+                </div>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-6 text-center">
+                <div className="mb-2 text-4xl font-extrabold text-gray-900">
+                  Dec 31, 2027
+                </div>
+                <div className="text-sm text-gray-600">
+                  Filing deadline for all claims
+                </div>
+              </div>
+              <div className="rounded-xl bg-orange-50 p-6 text-center">
+                <div className="mb-2 text-4xl font-extrabold text-[#D65F4D]">
+                  2%
+                </div>
+                <div className="text-sm text-gray-600">
+                  Attorney fee cap (federal statute)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Eligibility Section */}
       <section className="mx-auto mb-24 grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
         <div>
@@ -128,59 +181,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* What is RECA - Clean Explanation */}
-      <section className="bg-gray-50 py-20">
-        <div className="mx-auto max-w-4xl px-4">
-          <h2 className="mb-8 text-center text-3xl font-bold text-gray-900 md:text-4xl">
-            What is RECA?
-          </h2>
-          <div className="rounded-2xl bg-white p-8 shadow-sm md:p-12">
-            <p className="mb-6 text-lg leading-relaxed text-gray-700">
-              The <strong>Radiation Exposure Compensation Act (RECA)</strong> is
-              a federal program that provides{" "}
-              <span className="font-bold text-[#D65F4D]">
-                $100,000 tax-free payments
-              </span>{" "}
-              to individuals exposed to radiation from U.S. nuclear testing
-              between 1951-1962.
-            </p>
-            <p className="mb-8 text-lg leading-relaxed text-gray-700">
-              Recently expanded in July 2025, the program now covers{" "}
-              <strong>all of Utah, Idaho, and New Mexico</strong>, plus
-              specified counties in Arizona and Nevada. Tens of thousands of
-              families may now qualify who didn't before.
-            </p>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-xl bg-orange-50 p-6 text-center">
-                <div className="mb-2 text-4xl font-extrabold text-[#D65F4D]">
-                  $100,000
-                </div>
-                <div className="text-sm text-gray-600">
-                  Tax-free compensation per eligible claimant
-                </div>
-              </div>
-              <div className="rounded-xl bg-gray-50 p-6 text-center">
-                <div className="mb-2 text-4xl font-extrabold text-gray-900">
-                  Dec 31, 2027
-                </div>
-                <div className="text-sm text-gray-600">
-                  Filing deadline for all claims
-                </div>
-              </div>
-              <div className="rounded-xl bg-orange-50 p-6 text-center">
-                <div className="mb-2 text-4xl font-extrabold text-[#D65F4D]">
-                  2%
-                </div>
-                <div className="text-sm text-gray-600">
-                  Attorney fee cap (federal statute)
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Two Ways to Claim - Updated Pricing */}
       <section
         className="border-t border-gray-100 bg-white py-20"
@@ -193,9 +193,9 @@ export default function HomePage() {
 
           <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
             {/* DIY Prep */}
-            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 p-8 transition hover:shadow-xl">
+            <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
               <div className="absolute left-0 top-0 h-1 w-full bg-[#D65F4D]"></div>
-              <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+              <span className="absolute right-4 top-4 rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                 Accuracy Guaranteed
               </span>
               <h3 className="mb-2 mt-6 text-xl font-bold text-gray-900">
@@ -211,22 +211,22 @@ export default function HomePage() {
                 One-time Flat Fee
               </p>
 
-              <ul className="mb-8 space-y-3 text-left text-sm text-gray-600">
+              <ul className="mb-8 flex-grow space-y-3 text-left text-sm text-gray-600">
                 <li className="flex gap-2">
                   <span className="text-green-500">✓</span>{" "}
-                  <strong>Keep 100% of your award</strong>
+                  <strong>Keep 100% of your $100k award</strong>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Instant generated
-                  PDF packet
+                  <span className="text-green-500">✓</span> Complete RECA form
+                  auto-filled & ready to sign
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Pay with Klarna /
-                  Affirm
+                  <span className="text-green-500">✓</span> Document checklist &
+                  organization system
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Full Refund if
-                  rejected for errors
+                  <span className="text-green-500">✓</span> Step-by-step filing
+                  instructions for DOJ
                 </li>
                 <li className="flex gap-2">
                   <span className="text-blue-500">↺</span>{" "}
@@ -234,25 +234,24 @@ export default function HomePage() {
                   switch to legal
                 </li>
               </ul>
-              <Link href="/service-tiers">
-                <button className="mb-3 w-full rounded-lg border-2 border-gray-900 py-2 font-bold text-gray-900 transition hover:bg-gray-50">
-                  Get Packet ($499)
+              <Link href="/eligibility-check">
+                <button className="mb-3 w-full rounded-xl border-2 border-gray-900 py-3 font-bold text-gray-900 transition hover:bg-gray-50 hover:text-black">
+                  Start Free Assessment
                 </button>
               </Link>
               <div className="text-center text-xs leading-relaxed text-gray-500">
                 <span className="mr-1 inline-flex h-3 w-3 items-center justify-center rounded-full bg-green-500 text-[8px] font-bold text-white">
                   i
                 </span>
-                <strong>Risk-Free Filing:</strong> Use our packet to file
-                instantly. If denied or you need help later, upgrade to full
-                legal representation and apply your $499 as a credit. You never
-                pay twice.
+                <strong>Risk-Free Filing:</strong> We verify your eligibility
+                before you pay. If denied or you need help later, upgrade to
+                full legal representation and apply your $499 as a credit.
               </div>
             </div>
 
             {/* Legal Representation */}
-            <div className="relative rounded-2xl border border-gray-200 bg-gray-50 p-8 transition hover:shadow-xl">
-              <span className="absolute right-4 top-4 rounded bg-blue-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
+            <div className="relative flex flex-col rounded-3xl border border-gray-200 bg-gray-50 p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+              <span className="absolute right-4 top-4 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
                 $0 Upfront Cost
               </span>
               <h3 className="mb-2 mt-6 text-xl font-bold text-gray-900">
@@ -272,22 +271,30 @@ export default function HomePage() {
                 2% fee paid on payout
               </p>
 
-              <ul className="mb-8 space-y-3 text-left text-sm text-gray-600">
+              <ul className="mb-8 flex-grow space-y-3 text-left text-sm text-gray-600">
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> Full legal review &
-                  filing
+                  <span className="text-green-500">✓</span>{" "}
+                  <strong>Attorney reviews & submits to DOJ</strong>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span> We handle all
-                  paperwork
+                  <span className="text-green-500">✓</span> Full legal
+                  representation throughout claim process
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-500">✓</span>
-                  <strong>Zero out-of-pocket cost</strong>
+                  <span className="text-green-500">✓</span> Resubmission help if
+                  initially denied
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-500">✓</span> Direct communication
+                  with DOJ on your behalf
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-500">✓</span>{" "}
+                  <strong>Pay only 2% when you win</strong> ($2,000 from award)
                 </li>
               </ul>
               <Link href="/service-tiers">
-                <button className="w-full rounded-lg bg-[#D65F4D] py-2 font-bold text-white transition hover:bg-[#c04e3d]">
+                <button className="w-full rounded-xl bg-[#D65F4D] py-3 font-bold text-white transition hover:bg-[#c04e3d]">
                   Start Legal Check
                 </button>
               </Link>
