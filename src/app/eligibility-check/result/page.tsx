@@ -228,7 +228,7 @@ function ResultContent() {
               {!isReferral && eligibility === "likely" ? (
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-xl font-bold text-sage-900">
+                    <h3 className="text-2xl font-bold text-sage-900">
                       Choose Your Path to $100,000
                     </h3>
                     <p className="text-sage-700">
@@ -238,67 +238,76 @@ function ResultContent() {
 
                   <div className="grid gap-6 md:grid-cols-2">
                     {/* Option A: DIY */}
-                    <div className="relative rounded-xl border-2 border-sage-200 bg-white p-6 transition-all hover:border-terracotta-300 hover:shadow-md">
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-sage-100 px-3 py-1 text-xs font-bold text-sage-700">
+                    <div className="group relative flex flex-col rounded-3xl border border-gray-200 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                         Save ~$1,500
                       </div>
-                      <h4 className="mb-2 text-xl font-bold text-sage-900">
+                      <h4 className="mb-2 text-xl font-bold text-gray-900">
                         File Yourself
                       </h4>
-                      <div className="mb-4 text-3xl font-bold text-terracotta-600">
+                      <div className="mb-1 text-4xl font-extrabold text-gray-900">
                         $499
                       </div>
-                      <ul className="mb-6 space-y-2 text-sm text-sage-700">
+                      <p className="mb-6 text-sm font-bold text-[#D65F4D]">
+                        One-time Flat Fee
+                      </p>
+
+                      <ul className="mb-8 flex-grow space-y-3 text-left text-sm text-gray-600">
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
-                          Keep 100% of award
+                          <span className="text-green-500">✓</span>{" "}
+                          <strong>Keep 100% of your $100k award</strong>
                         </li>
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
-                          Instant PDF Download
+                          <span className="text-green-500">✓</span> Auto-filled
+                          RECA form ready to sign
                         </li>
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
-                          Simple Instructions
+                          <span className="text-green-500">✓</span> Document
+                          checklist & filing guide
                         </li>
                       </ul>
                       <Link href="/service-tiers?tier=DIY_PREP">
-                        <Button className="w-full rounded-lg bg-terracotta-500 py-3 font-bold text-white hover:bg-terracotta-600">
+                        <Button className="w-full rounded-xl border-2 border-gray-900 bg-transparent py-3 font-bold text-gray-900 transition hover:bg-gray-50">
                           Buy Packet - $499
                         </Button>
                       </Link>
                     </div>
 
                     {/* Option B: Legal */}
-                    <div className="relative rounded-xl border-2 border-sage-200 bg-white p-6 transition-all hover:border-blue-300 hover:shadow-md">
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                    <div className="relative flex flex-col rounded-3xl border border-gray-200 bg-gray-50 p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
                         No Risk
                       </div>
-                      <h4 className="mb-2 text-xl font-bold text-sage-900">
+                      <h4 className="mb-2 text-xl font-bold text-gray-900">
                         Attorney Review
                       </h4>
-                      <div className="mb-4 text-3xl font-bold text-sage-900">
-                        $0{" "}
-                        <span className="text-sm font-normal text-sage-600">
+                      <div className="mb-1 text-4xl font-extrabold text-gray-900">
+                        $0
+                        <span className="text-lg font-normal text-gray-500">
+                          {" "}
                           Upfront
                         </span>
                       </div>
-                      <ul className="mb-6 space-y-2 text-sm text-sage-700">
+                      <p className="mb-6 text-sm text-gray-400">
+                        2% fee paid on payout
+                      </p>
+
+                      <ul className="mb-8 flex-grow space-y-3 text-left text-sm text-gray-600">
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />{" "}
-                          Full Legal Representation
+                          <span className="text-green-500">✓</span> Full legal
+                          representation
                         </li>
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" /> 2%
-                          Fee paid on payout
+                          <span className="text-green-500">✓</span> Attorney
+                          handles DOJ submission
                         </li>
                         <li className="flex gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-500" /> We
-                          handle everything
+                          <span className="text-green-500">✓</span>{" "}
+                          <strong>Pay only 2% when you win</strong>
                         </li>
                       </ul>
                       <Link href="/service-tiers?tier=LEGAL_REP">
-                        <Button className="w-full rounded-lg bg-sage-700 py-3 font-bold text-white hover:bg-sage-800">
+                        <Button className="w-full rounded-xl bg-[#D65F4D] py-3 font-bold text-white transition hover:bg-[#c04e3d]">
                           Sign with Attorney
                         </Button>
                       </Link>
