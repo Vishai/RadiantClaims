@@ -21,10 +21,9 @@ import {
   Clock,
   AlertCircle,
   Plus,
-  Key,
   Upload,
   BookOpen,
-  CreditCard,
+  Menu,
 } from "lucide-react";
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
@@ -274,26 +273,11 @@ export default function CustomerPortal() {
             </span>
             <Button
               variant="outline"
-              onClick={() => router.push("/portal/subscription")}
-              className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+              onClick={() => router.push("/portal/settings")}
+              className="gap-2 rounded-full border-sage-300 p-2 text-sage-700 hover:bg-sage-50"
+              title="Settings"
             >
-              <CreditCard className="h-4 w-4" />
-              Subscription
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/portal/change-password")}
-              className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-            >
-              <Key className="h-4 w-4" />
-              Change Password
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/signout")}
-              className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-            >
-              Sign Out
+              <Menu className="h-5 w-5" />
             </Button>
           </div>
         </div>

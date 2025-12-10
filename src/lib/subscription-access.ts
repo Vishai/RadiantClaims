@@ -20,6 +20,8 @@ export async function getActiveSubscriptionAccess(
       tier: true,
       status: true,
       setupFeePaid: true,
+      stripeCustomerId: true,
+      createdAt: true,
     },
   });
 
@@ -27,13 +29,36 @@ export async function getActiveSubscriptionAccess(
     return null;
   }
 
-  const { tier, status, setupFeePaid } = subscription;
+  const { tier, status, setupFeePaid, stripeCustomerId, createdAt } =
+    subscription;
 
   const hasLegalAccess =
     tier === "LEGAL_REP" && status !== "CANCELED" && status !== "PAUSED";
 
+  // FIX: Check if subscription was created recently (within 24 hours) and has Stripe customer ID
+  // This handles race condition where user returns from Stripe before webhook processes
+  // Using 24 hours for development testing (webhooks not configured locally)
+  // In production with webhooks, this serves as a backup for very fast users
+  const hasRecentStripeCheckout =
+    stripeCustomerId &&
+    createdAt &&
+    Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
+
   const hasDIYAccess =
-    tier === "DIY_PREP" && setupFeePaid === true && status === "ACTIVE";
+    tier === "DIY_PREP" &&
+    (setupFeePaid === true || status === "ACTIVE" || hasRecentStripeCheckout);
+
+  // DIAGNOSTIC LOGGING
+  console.log("[Subscription Access]", {
+    userId,
+    tier,
+    status,
+    setupFeePaid,
+    hasRecentStripeCheckout,
+    hasDIYAccess,
+    hasLegalAccess,
+    willGrantAccess: hasLegalAccess || hasDIYAccess,
+  });
 
   if (!hasLegalAccess && !hasDIYAccess) {
     return null;

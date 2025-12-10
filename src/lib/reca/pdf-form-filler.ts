@@ -1721,7 +1721,14 @@ export class RECAPDFFormFiller {
     this.drawTextInBoxes("part1.firstName", part1.firstName);
     this.drawTextInBoxes("part1.middleName", part1.middleName);
     this.drawTextInBoxes("part1.lastName", part1.lastName);
-    this.drawTextInBoxes("part1.formerNames", part1.formerNames);
+
+    // Convert former names array to string for PDF
+    const formerNamesString = part1.formerNames
+      ? part1.formerNames
+          .map((fn) => `${fn.name}${fn.year ? ` (${fn.year})` : ""}`)
+          .join(", ")
+      : "";
+    this.drawTextInBoxes("part1.formerNames", formerNamesString);
 
     // Fill SSN in segments (XXX-XX-XXXX)
     this.drawSSN("part1.ssn", part1.ssn);
@@ -1801,7 +1808,14 @@ export class RECAPDFFormFiller {
     this.drawTextInBoxes("part2.firstName", part2.firstName);
     this.drawTextInBoxes("part2.middleName", part2.middleName);
     this.drawTextInBoxes("part2.lastName", part2.lastName);
-    this.drawTextInBoxes("part2.formerNames", part2.formerNames);
+
+    // Convert former names array to string for PDF
+    const part2FormerNamesString = part2.formerNames
+      ? part2.formerNames
+          .map((fn) => `${fn.name}${fn.year ? ` (${fn.year})` : ""}`)
+          .join(", ")
+      : "";
+    this.drawTextInBoxes("part2.formerNames", part2FormerNamesString);
 
     // Fill SSN in segments
     this.drawSSN("part2.ssn", part2.ssn);
@@ -2104,7 +2118,10 @@ export class RECAPDFFormFiller {
         if (index === 0) {
           // First entry for each county
           this.drawText(`part8.arizona.${countyKey}.townCity`, county.townCity);
-          this.drawText(`part8.arizona.${countyKey}.timePeriod`, county.timePeriod);
+          this.drawText(
+            `part8.arizona.${countyKey}.timePeriod`,
+            county.timePeriod
+          );
         }
       });
     }
@@ -2126,7 +2143,10 @@ export class RECAPDFFormFiller {
         if (index === 0) {
           // First entry for each county
           this.drawText(`part8.nevada.${countyKey}.townCity`, county.townCity);
-          this.drawText(`part8.nevada.${countyKey}.timePeriod`, county.timePeriod);
+          this.drawText(
+            `part8.nevada.${countyKey}.timePeriod`,
+            county.timePeriod
+          );
         }
       });
     }
@@ -2321,7 +2341,10 @@ export class RECAPDFFormFiller {
         } else {
           // Need to split across two lines
           // Find the last space before the character limit
-          let splitIndex = part15.guardianAddress.lastIndexOf(" ", charsPerLine);
+          let splitIndex = part15.guardianAddress.lastIndexOf(
+            " ",
+            charsPerLine
+          );
           if (splitIndex === -1) {
             // No space found, force break at character limit
             splitIndex = charsPerLine;
@@ -2466,9 +2489,13 @@ export class RECAPDFFormFiller {
     if (!tribalRelease) return;
 
     // Tribal office checkboxes
-    if (tribalRelease.tribalOffice === "Navajo Nation Office of Vital Records") {
+    if (
+      tribalRelease.tribalOffice === "Navajo Nation Office of Vital Records"
+    ) {
       this.drawCheckbox("tribalRelease.navajo");
-    } else if (tribalRelease.tribalOffice === "Hopi Tribe Enrollment Department") {
+    } else if (
+      tribalRelease.tribalOffice === "Hopi Tribe Enrollment Department"
+    ) {
       this.drawCheckbox("tribalRelease.hopi");
     } else if (
       tribalRelease.tribalOffice ===
@@ -2812,7 +2839,6 @@ export class RECAPDFFormFiller {
       color: COLORS.black,
     });
   }
-
 }
 
 /**

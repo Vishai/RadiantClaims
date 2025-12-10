@@ -54,6 +54,15 @@ function ServiceTiersContent() {
   // const diyPricing = calculateAccountPricing("DIY_PREP", diyClaimCount);
   // const legalPricing = calculateAccountPricing("LEGAL_REP", legalClaimCount);
 
+  // SECURITY: Clean up old sessionStorage keys on mount to prevent cross-user contamination
+  useEffect(() => {
+    // Remove deprecated/unsafe sessionStorage keys
+    sessionStorage.removeItem("pendingServiceTier");
+    sessionStorage.removeItem("selectedServiceTier");
+    // Note: We keep radiant_user_data for form prefilling within the same session
+    // It gets cleared on logout in signout/page.tsx
+  }, []);
+
   const handleSelectTier = async (tierId: "DIY_PREP" | "LEGAL_REP") => {
     try {
       console.log("handleSelectTier called with:", tierId);
@@ -97,26 +106,32 @@ function ServiceTiersContent() {
   };
 
   // Check for pending tier selection after login
+  // SECURITY FIX: Use URL parameter instead of sessionStorage to prevent cross-user contamination
   useEffect(() => {
     if (status === "authenticated") {
-      const pendingTier = sessionStorage.getItem("pendingServiceTier");
+      const pendingTier = searchParams.get("selectedTier");
       if (
         pendingTier &&
         (pendingTier === "DIY_PREP" || pendingTier === "LEGAL_REP")
       ) {
-        sessionStorage.removeItem("pendingServiceTier");
+        // Clear the URL parameter by replacing history
+        const url = new URL(window.location.href);
+        url.searchParams.delete("selectedTier");
+        window.history.replaceState({}, "", url);
+
         handleSelectTier(pendingTier);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, searchParams]);
 
   const handleDIYAccept = async () => {
     setErrorMessage(null);
     setInfoMessage(null);
     setIsLoading(true);
     try {
-      sessionStorage.setItem("selectedServiceTier", "DIY_PREP");
+      // SECURITY: Removed sessionStorage.setItem("selectedServiceTier") to prevent cross-user contamination
+      // Subscription status is now tracked server-side only
       sessionStorage.setItem("diy_terms_accepted", "true");
 
       // Create subscription record via API
@@ -186,7 +201,8 @@ function ServiceTiersContent() {
     setInfoMessage(null);
     setIsLoading(true);
     try {
-      sessionStorage.setItem("selectedServiceTier", "LEGAL_REP");
+      // SECURITY: Removed sessionStorage.setItem("selectedServiceTier") to prevent cross-user contamination
+      // Subscription status is now tracked server-side only
       sessionStorage.setItem("legal_terms_accepted", "true");
 
       // Create subscription record via API
@@ -946,11 +962,13 @@ function ServiceTiersContent() {
             <div className="space-y-3">
               <Button
                 onClick={() => {
-                  // Save selected tier to session storage to restore after login
-                  if (selectedTier) {
-                    sessionStorage.setItem("pendingServiceTier", selectedTier);
-                  }
-                  router.push("/register?callbackUrl=/service-tiers");
+                  // Pass selected tier via URL parameter (more secure than sessionStorage)
+                  const callbackUrl = selectedTier
+                    ? `/service-tiers?selectedTier=${selectedTier}`
+                    : "/service-tiers";
+                  router.push(
+                    `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  );
                 }}
                 className="w-full rounded-full bg-terracotta-500 py-6 text-lg font-semibold hover:bg-terracotta-600"
               >
@@ -960,13 +978,13 @@ function ServiceTiersContent() {
                 Already have an account?{" "}
                 <button
                   onClick={() => {
-                    if (selectedTier) {
-                      sessionStorage.setItem(
-                        "pendingServiceTier",
-                        selectedTier
-                      );
-                    }
-                    router.push("/login?callbackUrl=/service-tiers");
+                    // Pass selected tier via URL parameter (more secure than sessionStorage)
+                    const callbackUrl = selectedTier
+                      ? `/service-tiers?selectedTier=${selectedTier}`
+                      : "/service-tiers";
+                    router.push(
+                      `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+                    );
                   }}
                   className="font-semibold text-terracotta-600 transition-colors hover:text-terracotta-700"
                 >

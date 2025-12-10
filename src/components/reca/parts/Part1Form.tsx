@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Part1FilerInfo } from "@/lib/reca/types";
+import { Part1FilerInfo, FormerName } from "@/lib/reca/types";
 import { FormField } from "@/components/form-field";
 import {
   Card,
@@ -14,8 +14,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Info } from "lucide-react";
+import { Info, Plus, Trash2 } from "lucide-react";
 import SurvivorHierarchyTable from "@/components/reca/SurvivorHierarchyTable";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -70,6 +78,18 @@ const US_STATES = [
   { value: "WY", label: "Wyoming" },
 ];
 
+const formerNameSchema = z.object({
+  name: z.string().min(1, "Name is required").max(50),
+  type: z.enum(["MAIDEN", "MARRIED", "DIVORCED", "LEGAL_CHANGE", "OTHER"], {
+    required_error: "Please select name change type",
+  }),
+  year: z
+    .string()
+    .regex(/^\d{4}$/, "Year must be 4 digits (YYYY)")
+    .optional()
+    .or(z.literal("")),
+});
+
 const part1Schema = z.object({
   filingForSelf: z.boolean({
     required_error: "Please select who is filing this claim",
@@ -77,7 +97,7 @@ const part1Schema = z.object({
   firstName: z.string().min(1, "First name is required").max(12),
   middleName: z.string().max(12).optional(),
   lastName: z.string().min(1, "Last name is required").max(20),
-  formerNames: z.string().max(20).optional(),
+  formerNames: z.array(formerNameSchema).optional(),
   ssn: z
     .string()
     .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
@@ -88,7 +108,12 @@ const part1Schema = z.object({
   zipCode: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
   phoneDay: z.string().optional(),
   phoneEvening: z.string().optional(),
-  email: z.string().email("Invalid email address").max(30).optional().or(z.literal("")),
+  email: z
+    .string()
+    .email("Invalid email address")
+    .max(30)
+    .optional()
+    .or(z.literal("")),
   residenceAddress: z.string().max(60).optional(),
   tribalAffiliation: z.string().max(30).optional(),
   tribalCensusNumber: z.string().max(20).optional(),
@@ -106,6 +131,9 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
   const [hasTribalAffiliation, setHasTribalAffiliation] = useState(
     !!(initialData?.tribalAffiliation || initialData?.tribalCensusNumber)
   );
+  const [formerNames, setFormerNames] = useState<FormerName[]>(
+    initialData?.formerNames || []
+  );
 
   const form = useForm<Part1FormData>({
     resolver: zodResolver(part1Schema),
@@ -114,7 +142,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
       firstName: initialData?.firstName || "",
       middleName: initialData?.middleName || "",
       lastName: initialData?.lastName || "",
-      formerNames: initialData?.formerNames || "",
+      formerNames: initialData?.formerNames || [],
       ssn: initialData?.ssn || "",
       dob: initialData?.dob || "",
       mailingAddress: initialData?.mailingAddress || "",
@@ -132,15 +160,48 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
 
   const filingForSelf = form.watch("filingForSelf");
 
-  const handleSubmit = useCallback(async (data: Part1FormData) => {
-    // Clear tribal fields if checkbox is not checked
-    if (!hasTribalAffiliation) {
-      data.tribalAffiliation = "";
-      data.tribalCensusNumber = "";
-    }
-    await onSubmit(data as Part1FilerInfo);
-    return true; // Validation passed
-  }, [hasTribalAffiliation, onSubmit]);
+  // Helper functions for managing former names array
+  const addFormerName = useCallback(() => {
+    const newEntry: FormerName = { name: "", type: "MAIDEN", year: "" };
+    const newFormerNames: FormerName[] = [...formerNames, newEntry];
+    setFormerNames(newFormerNames);
+    form.setValue("formerNames", newFormerNames as any);
+  }, [formerNames, form]);
+
+  const removeFormerName = useCallback(
+    (index: number) => {
+      const newFormerNames = formerNames.filter((_, i) => i !== index);
+      setFormerNames(newFormerNames);
+      form.setValue("formerNames", newFormerNames as any);
+    },
+    [formerNames, form]
+  );
+
+  const updateFormerName = useCallback(
+    (index: number, field: keyof FormerName, value: string) => {
+      const newFormerNames = [...formerNames];
+      newFormerNames[index] = {
+        ...newFormerNames[index],
+        [field]: value,
+      } as FormerName;
+      setFormerNames(newFormerNames);
+      form.setValue("formerNames", newFormerNames as any);
+    },
+    [formerNames, form]
+  );
+
+  const handleSubmit = useCallback(
+    async (data: Part1FormData) => {
+      // Clear tribal fields if checkbox is not checked
+      if (!hasTribalAffiliation) {
+        data.tribalAffiliation = "";
+        data.tribalCensusNumber = "";
+      }
+      await onSubmit(data as Part1FilerInfo);
+      return true; // Validation passed
+    },
+    [hasTribalAffiliation, onSubmit]
+  );
 
   // Expose form submission to FormWizard
   React.useEffect(() => {
@@ -170,18 +231,21 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-terracotta-600" />
               <div className="flex-1">
-                <p className="font-semibold text-terracotta-900 mb-2">Who is filing this claim?</p>
-                <p className="text-sm text-terracotta-800 mb-4">
-                  Please select one option below. This helps us determine which sections you need to complete.
+                <p className="mb-2 font-semibold text-terracotta-900">
+                  Who is filing this claim?
+                </p>
+                <p className="mb-4 text-sm text-terracotta-800">
+                  Please select one option below. This helps us determine which
+                  sections you need to complete.
                 </p>
               </div>
             </div>
 
             <div className="space-y-3 pl-8">
               {/* Filing for Self */}
-              <div className="flex items-start gap-3 p-4 rounded-lg border-2 border-sage-300 bg-white hover:border-sage-400 transition-colors">
+              <div className="flex items-start gap-3 rounded-lg border-2 border-sage-300 bg-white p-4 transition-colors hover:border-sage-400">
                 <Checkbox
                   id="filingForSelf-yes"
                   checked={filingForSelf === true}
@@ -193,18 +257,18 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
                 <div className="flex-1">
                   <label
                     htmlFor="filingForSelf-yes"
-                    className="font-semibold text-sage-900 cursor-pointer block"
+                    className="block cursor-pointer font-semibold text-sage-900"
                   >
                     I am filing for myself
                   </label>
-                  <p className="text-sm text-sage-600 mt-1">
+                  <p className="mt-1 text-sm text-sage-600">
                     I am the person who became ill from radiation exposure
                   </p>
                 </div>
               </div>
 
               {/* Filing for Someone Else */}
-              <div className="flex items-start gap-3 p-4 rounded-lg border-2 border-sage-300 bg-white hover:border-sage-400 transition-colors">
+              <div className="flex items-start gap-3 rounded-lg border-2 border-sage-300 bg-white p-4 transition-colors hover:border-sage-400">
                 <Checkbox
                   id="filingForSelf-no"
                   checked={filingForSelf === false}
@@ -216,21 +280,23 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
                 <div className="flex-1">
                   <label
                     htmlFor="filingForSelf-no"
-                    className="font-semibold text-sage-900 cursor-pointer block"
+                    className="block cursor-pointer font-semibold text-sage-900"
                   >
                     I am filing on behalf of someone else
                   </label>
-                  <p className="text-sm text-sage-600 mt-1">
-                    I am filing for a family member who became ill (spouse, parent, child, grandparent, etc.)
+                  <p className="mt-1 text-sm text-sage-600">
+                    I am filing for a family member who became ill (spouse,
+                    parent, child, grandparent, etc.)
                   </p>
                 </div>
               </div>
             </div>
 
             {filingForSelf !== undefined && (
-              <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <p className="text-sm text-blue-900">
-                  <strong>Next:</strong> {filingForSelf
+                  <strong>Next:</strong>{" "}
+                  {filingForSelf
                     ? "You'll provide your personal information below, then proceed to specify your exposure and medical details."
                     : "You'll provide your contact information below, then we'll collect information about the person who became ill."}
                 </p>
@@ -258,15 +324,17 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
       <Card className="border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
             <div className="text-sm text-sage-700">
-              <p className="font-semibold mb-1">About Part 1: Your Information</p>
+              <p className="mb-1 font-semibold">
+                About Part 1: Your Information
+              </p>
               <p>
                 {filingForSelf === true
                   ? "Since you're filing for yourself, provide your personal information below. We won't ask you to re-enter this information."
                   : filingForSelf === false
-                  ? "Provide YOUR contact information below (as the person submitting this form). We'll collect information about the person who became ill in Part 2."
-                  : "This section collects information about YOU - the person filling out and submitting this form."}
+                    ? "Provide YOUR contact information below (as the person submitting this form). We'll collect information about the person who became ill in Part 2."
+                    : "This section collects information about YOU - the person filling out and submitting this form."}
               </p>
             </div>
           </div>
@@ -305,14 +373,148 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
             />
           </div>
 
-          <FormField
-            form={form}
-            name="formerNames"
-            label="Former Names or Maiden Name"
-            placeholder="If applicable"
-            maxLength={20}
-            helperText="Include if you've changed your name due to marriage or other reasons"
-          />
+          {/* Former Names Multi-Entry Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-900">
+                  Former Names or Maiden Name
+                </label>
+                <p className="mt-1 text-sm text-gray-500">
+                  Add all previous names in chronological order (most recent
+                  first) to help us identify required documentation and organize
+                  your certificates.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={addFormerName}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Name
+              </Button>
+            </div>
+
+            {formerNames.length > 0 && (
+              <div className="space-y-3">
+                {formerNames.map((formerName, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                  >
+                    <div className="grid flex-1 gap-4 md:grid-cols-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          Former Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formerName.name}
+                          onChange={(e) =>
+                            updateFormerName(index, "name", e.target.value)
+                          }
+                          placeholder="Enter previous name"
+                          maxLength={50}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          Name Change Type
+                        </label>
+                        <Select
+                          value={formerName.type}
+                          onValueChange={(value) =>
+                            updateFormerName(index, "type", value)
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MAIDEN">Maiden Name</SelectItem>
+                            <SelectItem value="MARRIED">
+                              Married Name
+                            </SelectItem>
+                            <SelectItem value="DIVORCED">
+                              Divorced (Reverted Name)
+                            </SelectItem>
+                            <SelectItem value="LEGAL_CHANGE">
+                              Legal Name Change
+                            </SelectItem>
+                            <SelectItem value="OTHER">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Show documentation hint based on type */}
+                        {formerName.type === "MARRIED" && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-terracotta-600">
+                            <Info className="h-3 w-3" />
+                            Marriage certificate required
+                          </p>
+                        )}
+                        {formerName.type === "DIVORCED" && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-terracotta-600">
+                            <Info className="h-3 w-3" />
+                            Divorce certificate required
+                          </p>
+                        )}
+                        {formerName.type === "MAIDEN" && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-terracotta-600">
+                            <Info className="h-3 w-3" />
+                            Birth certificate may be required
+                          </p>
+                        )}
+                        {formerName.type === "LEGAL_CHANGE" && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-terracotta-600">
+                            <Info className="h-3 w-3" />
+                            Court order required
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-700">
+                          Year of Change
+                        </label>
+                        <input
+                          type="text"
+                          value={formerName.year || ""}
+                          onChange={(e) =>
+                            updateFormerName(index, "year", e.target.value)
+                          }
+                          placeholder="YYYY"
+                          maxLength={4}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-terracotta-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Optional - helps us organize your documents
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => removeFormerName(index)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formerNames.length === 0 && (
+              <p className="py-2 text-sm italic text-gray-500">
+                No former names added. Click "Add Name" if you have changed your
+                name due to marriage, divorce, or other reasons.
+              </p>
+            )}
+          </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <FormField
@@ -354,7 +556,13 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
           />
 
           <div className="grid gap-6 md:grid-cols-3">
-            <FormField form={form} name="city" label="City" required maxLength={20} />
+            <FormField
+              form={form}
+              name="city"
+              label="City"
+              required
+              maxLength={20}
+            />
             <FormField
               form={form}
               name="state"
@@ -408,7 +616,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
 
       {/* Tribal Affiliation (Optional - Collapsible) */}
       <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
-        <CardContent className="pt-6 space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <div className="flex items-start gap-3">
             <Checkbox
               id="hasTribalAffiliation"
@@ -419,18 +627,19 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
             <div className="flex-1">
               <label
                 htmlFor="hasTribalAffiliation"
-                className="text-base font-semibold text-sage-900 cursor-pointer"
+                className="cursor-pointer text-base font-semibold text-sage-900"
               >
                 I am a member of an Indian Tribe (Optional)
               </label>
-              <p className="text-sm text-sage-600 mt-1">
-                Check this box if you want the RECA Program to request tribal enrollment information
+              <p className="mt-1 text-sm text-sage-600">
+                Check this box if you want the RECA Program to request tribal
+                enrollment information
               </p>
             </div>
           </div>
 
           {hasTribalAffiliation && (
-            <div className="pl-8 pt-4 space-y-6 border-l-2 border-sage-200">
+            <div className="space-y-6 border-l-2 border-sage-200 pl-8 pt-4">
               <div className="grid gap-6 md:grid-cols-2">
                 <FormField
                   form={form}
@@ -449,7 +658,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               </div>
 
               <div className="rounded-lg bg-cream-50 p-4 text-sm text-sage-700">
-                <p className="font-medium mb-2">Tribal Assistance Available:</p>
+                <p className="mb-2 font-medium">Tribal Assistance Available:</p>
                 <ul className="ml-4 list-disc space-y-1">
                   <li>Navajo Uranium Workers' Program</li>
                   <li>Other tribal organizations (please specify)</li>

@@ -51,6 +51,12 @@ export type RelationshipType =
 // Form Data Types - Part 1: Filer Information
 // ============================================================================
 
+export interface FormerName {
+  name: string;
+  type: "MAIDEN" | "MARRIED" | "DIVORCED" | "LEGAL_CHANGE" | "OTHER";
+  year?: string; // Year of name change (YYYY format)
+}
+
 export interface Part1FilerInfo {
   // Filing status - helps determine workflow
   filingForSelf?: boolean; // true = I am the person who became ill, false = filing for someone else
@@ -58,7 +64,7 @@ export interface Part1FilerInfo {
   firstName: string;
   middleName?: string;
   lastName: string;
-  formerNames?: string;
+  formerNames?: FormerName[];
   ssn: string;
   dob: string; // ISO date string
   mailingAddress: string;
@@ -82,7 +88,7 @@ export interface Part2ClaimantInfo {
   firstName: string;
   middleName?: string;
   lastName: string;
-  formerNames?: string;
+  formerNames?: FormerName[]; // Updated to match Part1 format
   ssn: string;
   dob: string;
   dod?: string; // Date of death

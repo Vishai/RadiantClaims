@@ -18,23 +18,66 @@ export const dynamic = "force-dynamic";
  */
 function preFillPart1FromClaimant(formData: any, claimant: any) {
   if (!formData.part_1 && claimant) {
+    // DIAGNOSTIC: Log claimant data to debug prefill issues
+    console.log("[RECA Prefill] Claimant data:", {
+      firstName: claimant.firstName,
+      lastName: claimant.lastName,
+      email: claimant.email,
+      phone: claimant.phone,
+      address1: claimant.address1,
+      city: claimant.city,
+      state: claimant.state,
+      postalCode: claimant.postalCode,
+      dob: claimant.dob,
+    });
+
+    // Format DOB as YYYY-MM-DD for date input field
+    let dobFormatted = "";
+    if (claimant.dob) {
+      const dobDate = new Date(claimant.dob);
+      dobFormatted = dobDate.toISOString().split("T")[0] || "";
+    }
+
     formData.part_1 = {
       firstName: claimant.firstName,
       middleName: claimant.middleName || "",
       lastName: claimant.lastName,
-      formerNames: "",
+      formerNames: [], // Initialize as empty array for new multi-entry format
       ssn: claimant.ssn || "",
-      dob: claimant.dateOfBirth || "",
-      mailingAddress: claimant.mailingAddress || "",
+      dob: dobFormatted,
+      mailingAddress: claimant.address1 || "",
       city: claimant.city || "",
       state: claimant.state || "",
-      zipCode: claimant.zipCode || "",
-      phoneDay: claimant.phoneNumber || "",
+      zipCode: claimant.postalCode || "",
+      phoneDay: claimant.phone || "",
       phoneEvening: "",
       email: claimant.email || "",
       residenceAddress: "",
       tribalAffiliation: "",
       tribalCensusNumber: "",
+    };
+
+    console.log("[RECA Prefill] Generated Part 1 data:", formData.part_1);
+  }
+  return formData;
+}
+
+/**
+ * Pre-populate Part 3 (Relationship) from Claimant eligibility data
+ * This ensures users don't have to re-select their relationship if they provided it during eligibility
+ */
+function preFillPart3FromClaimant(formData: any, claimant: any) {
+  if (!formData.part_3 && claimant?.relationshipToClaimant) {
+    // Convert database enum format to form format
+    // E.g., "SELF" → "Self", "SPOUSE" → "Spouse"
+    const relationship = claimant.relationshipToClaimant
+      .split("_")
+      .map((word: string) => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(" ");
+
+    formData.part_3 = {
+      relationship,
+      filingForSelf: claimant.relationshipToClaimant === "SELF",
     };
   }
   return formData;
@@ -129,6 +172,7 @@ export async function GET(
     // Get form data and pre-populate from Claimant if empty
     let formData = (intakeSession.recaFormData as any) || {};
     formData = preFillPart1FromClaimant(formData, intakeSession.claimant);
+    formData = preFillPart3FromClaimant(formData, intakeSession.claimant);
 
     // Construct workflow state response
     const workflowState: RECAWorkflowState = {

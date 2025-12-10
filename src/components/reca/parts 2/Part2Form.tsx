@@ -14,11 +14,23 @@ import {
 } from "@/components/ui/card";
 import { Info } from "lucide-react";
 
+const formerNameSchema = z.object({
+  name: z.string().min(1, "Name is required").max(50),
+  type: z.enum(["MAIDEN", "MARRIED", "DIVORCED", "LEGAL_CHANGE", "OTHER"], {
+    required_error: "Please select name change type",
+  }),
+  year: z
+    .string()
+    .regex(/^\d{4}$/, "Year must be 4 digits (YYYY)")
+    .optional()
+    .or(z.literal("")),
+});
+
 const part2Schema = z.object({
   firstName: z.string().min(1, "First name is required").max(12),
   middleName: z.string().max(12).optional(),
   lastName: z.string().min(1, "Last name is required").max(20),
-  formerNames: z.string().max(20).optional(),
+  formerNames: z.array(formerNameSchema).optional(),
   ssn: z
     .string()
     .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
@@ -45,7 +57,7 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
       firstName: initialData?.firstName || "",
       middleName: initialData?.middleName || "",
       lastName: initialData?.lastName || "",
-      formerNames: initialData?.formerNames || "",
+      formerNames: initialData?.formerNames || [],
       ssn: initialData?.ssn || "",
       dob: initialData?.dob || "",
       dod: initialData?.dod || "",

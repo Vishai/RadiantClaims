@@ -103,8 +103,10 @@ export async function POST(request: NextRequest) {
       claimantData.cancerType = cancerType;
     }
 
-    // Add relationship if this is a survivor claim
-    if (intent === "deceased-relative" && relationship) {
+    // Add relationship based on intent
+    if (intent === "self") {
+      claimantData.relationshipToClaimant = "SELF";
+    } else if (intent === "deceased-relative" && relationship) {
       // Map relationship string to enum if needed
       claimantData.relationshipToClaimant = relationship
         .toUpperCase()

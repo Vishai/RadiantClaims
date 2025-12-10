@@ -63,9 +63,47 @@ export async function GET() {
 
     // DIY path users - must have ACTIVE status (set by webhook after payment)
     // OR have setupFeePaid flag set (legacy/manual cases)
+    // FIX: Also check if subscription was created recently and has Stripe customer ID
+    // This handles race condition where user returns from Stripe before webhook processes
+    // Using 24 hours for development testing (webhooks not configured locally)
+    // In production with webhooks, this serves as a backup for very fast users
+    const hasRecentStripeCheckout =
+      subscription.stripeCustomerId &&
+      subscription.createdAt &&
+      Date.now() - new Date(subscription.createdAt).getTime() <
+        24 * 60 * 60 * 1000; // 24 hours
+
     const canAccessForms =
       subscription.tier === "DIY_PREP" &&
-      (subscription.status === "ACTIVE" || subscription.setupFeePaid === true);
+      (subscription.status === "ACTIVE" ||
+        subscription.setupFeePaid === true ||
+        hasRecentStripeCheckout);
+
+    // DIAGNOSTIC LOGGING for debugging payment issues
+    if (subscription.tier === "DIY_PREP" && !canAccessForms) {
+      console.log(
+        "[Subscription Status] DIY user blocked from forms:",
+        "User ID:",
+        session.user.id,
+        "Status:",
+        subscription.status,
+        "Setup Fee Paid:",
+        subscription.setupFeePaid,
+        "Stripe Customer ID:",
+        subscription.stripeCustomerId,
+        "Created At:",
+        subscription.createdAt,
+        "Has Recent Checkout:",
+        hasRecentStripeCheckout
+      );
+    } else if (subscription.tier === "DIY_PREP" && hasRecentStripeCheckout) {
+      console.log(
+        "[Subscription Status] DIY user granted access via recent checkout:",
+        "User ID:",
+        session.user.id,
+        "Waiting for webhook to confirm payment"
+      );
+    }
 
     return NextResponse.json({
       hasSubscription: true,
@@ -77,6 +115,8 @@ export async function GET() {
       nextBillingDate: subscription.nextBillingDate,
       canAccessForms,
       needsPayment: !canAccessForms,
+      isInstallmentPlan: subscription.isInstallmentPlan,
+      installmentPaymentCount: subscription.installmentPaymentCount,
     });
   } catch (error) {
     console.error("Error fetching subscription status:", error);

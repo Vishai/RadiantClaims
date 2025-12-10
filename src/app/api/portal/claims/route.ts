@@ -14,7 +14,9 @@ export async function GET(_req: NextRequest) {
     const session = await getServerAuthSession();
     console.log(
       "[Portal Claims API] Session:",
-      session ? "Found" : "Not found"
+      session
+        ? `Found - User ID: ${session.user?.id}, Email: ${session.user?.email}`
+        : "Not found"
     );
 
     if (!session?.user?.email) {
@@ -29,8 +31,30 @@ export async function GET(_req: NextRequest) {
     });
 
     if (!user) {
-      console.log("[Portal Claims API] User not found in database");
+      console.error(
+        "[Portal Claims API] SECURITY WARNING: User not found in database for session email:",
+        session.user.email,
+        "Session user ID:",
+        session.user.id
+      );
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // SECURITY: Validate that session user ID matches database user ID
+    if (session.user.id !== user.id) {
+      console.error(
+        "[Portal Claims API] CRITICAL SECURITY ERROR: Session user ID mismatch!",
+        "Session ID:",
+        session.user.id,
+        "Database ID:",
+        user.id,
+        "Email:",
+        user.email
+      );
+      return NextResponse.json(
+        { error: "Session validation failed" },
+        { status: 403 }
+      );
     }
 
     console.log("[Portal Claims API] Fetching claims for user:", user.id);

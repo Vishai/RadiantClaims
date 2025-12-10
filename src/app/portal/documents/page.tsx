@@ -141,13 +141,19 @@ export default function DocumentsPortal() {
           let nameChainReason = "";
 
           // Check Filer's Name Changes
-          if (formData?.part_1?.formerNames) {
+          if (
+            formData?.part_1?.formerNames &&
+            formData.part_1.formerNames.length > 0
+          ) {
             nameChainRequired = true;
             nameChainReason = "Filer has former names";
           }
 
           // Check Claimant's Name Changes (if different person)
-          if (formData?.part_2?.formerNames) {
+          if (
+            formData?.part_2?.formerNames &&
+            formData.part_2.formerNames.length > 0
+          ) {
             nameChainRequired = true;
             nameChainReason = "Claimant has former names";
           }

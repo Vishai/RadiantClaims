@@ -20,6 +20,10 @@ export default function SignOutPage() {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
+
+    // SECURITY: Clear all sessionStorage to prevent data leakage between users
+    sessionStorage.clear();
+
     // Redirect to login after sign out
     await signOut({ callbackUrl: "/login" });
   };
