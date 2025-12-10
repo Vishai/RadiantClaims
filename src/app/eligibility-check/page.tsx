@@ -210,6 +210,16 @@ export default function EligibilityCheckPage() {
   const handleSubmit = async () => {
     const eligibility = calculateEligibility();
 
+    // Store user data in sessionStorage for prefilling registration
+    sessionStorage.setItem(
+      "eligibility_user_data",
+      JSON.stringify({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        timestamp: Date.now(),
+      })
+    );
+
     try {
       // Send to API
       const response = await fetch("/api/eligibility-check", {

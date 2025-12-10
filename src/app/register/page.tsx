@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
@@ -39,6 +39,34 @@ function RegisterForm() {
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const callbackUrlParam = searchParams.get("callbackUrl");
+
+  // Prefill data from eligibility check
+  useEffect(() => {
+    const storedData = sessionStorage.getItem("eligibility_user_data");
+    if (storedData) {
+      try {
+        const {
+          name: storedName,
+          email: storedEmail,
+          timestamp,
+        } = JSON.parse(storedData);
+
+        // Only use data if it's less than 24 hours old
+        const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000;
+
+        if (isRecent) {
+          if (storedName && !name) setName(storedName);
+          if (storedEmail && !email) setEmail(storedEmail);
+        } else {
+          // Clear old data
+          sessionStorage.removeItem("eligibility_user_data");
+        }
+      } catch (error) {
+        console.error("Error parsing stored eligibility data:", error);
+        sessionStorage.removeItem("eligibility_user_data");
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
