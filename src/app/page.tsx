@@ -195,7 +195,10 @@ export default function HomePage() {
             {/* DIY Prep */}
             <div className="group relative overflow-hidden rounded-2xl border border-gray-200 p-8 transition hover:shadow-xl">
               <div className="absolute left-0 top-0 h-1 w-full bg-[#D65F4D]"></div>
-              <h3 className="mb-2 text-xl font-bold text-gray-900">
+              <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                Accuracy Guaranteed
+              </span>
+              <h3 className="mb-2 mt-6 text-xl font-bold text-gray-900">
                 Fast-Track Self-Filing
               </h3>
               <p className="mb-6 text-sm text-gray-500">
@@ -221,20 +224,38 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Pay with Klarna /
                   Affirm
                 </li>
+                <li className="flex gap-2">
+                  <span className="text-green-500">✓</span> Full Refund if
+                  rejected for errors
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-500">↺</span>{" "}
+                  <strong>Lifetime Upgrade Credit</strong> — 100% applied if you
+                  switch to legal
+                </li>
               </ul>
               <Link href="/service-tiers">
-                <button className="w-full rounded-lg border-2 border-gray-900 py-2 font-bold text-gray-900 transition hover:bg-gray-50">
+                <button className="mb-3 w-full rounded-lg border-2 border-gray-900 py-2 font-bold text-gray-900 transition hover:bg-gray-50">
                   Get Packet ($499)
                 </button>
               </Link>
+              <div className="text-center text-xs leading-relaxed text-gray-500">
+                <span className="mr-1 inline-flex h-3 w-3 items-center justify-center rounded-full bg-green-500 text-[8px] font-bold text-white">
+                  i
+                </span>
+                <strong>Risk-Free Filing:</strong> Use our packet to file
+                instantly. If denied or you need help later, upgrade to full
+                legal representation and apply your $499 as a credit. You never
+                pay twice.
+              </div>
             </div>
 
             {/* Legal Representation */}
             <div className="relative rounded-2xl border border-gray-200 bg-gray-50 p-8 transition hover:shadow-xl">
-              <span className="absolute right-4 top-4 rounded bg-green-100 px-2 py-1 text-xs font-bold text-green-700">
-                No Risk
+              <span className="absolute right-4 top-4 rounded bg-blue-100 px-2 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
+                $0 Upfront Cost
               </span>
-              <h3 className="mb-2 text-xl font-bold text-gray-900">
+              <h3 className="mb-2 mt-6 text-xl font-bold text-gray-900">
                 Full Legal Representation
               </h3>
               <p className="mb-6 text-sm text-gray-500">
