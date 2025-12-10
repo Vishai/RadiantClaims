@@ -149,12 +149,9 @@ export async function POST(request: NextRequest) {
         const checkoutSession = await stripe.checkout.sessions.create({
           customer: stripeCustomerId,
           mode: isInstallmentPlan ? "subscription" : "payment",
-          payment_method_types: [
-            "card",
-            "klarna",
-            "affirm",
-            "afterpay_clearpay",
-          ],
+          payment_method_types: isInstallmentPlan
+            ? ["card"] // Subscriptions only support card payments
+            : ["card", "klarna", "affirm", "afterpay_clearpay"],
           line_items: [
             {
               price: diyPriceId,
@@ -333,7 +330,9 @@ export async function POST(request: NextRequest) {
       const checkoutSession = await stripe.checkout.sessions.create({
         customer: customer.id,
         mode: isInstallmentPlan ? "subscription" : "payment",
-        payment_method_types: ["card", "klarna", "affirm", "afterpay_clearpay"], // Added BNPL
+        payment_method_types: isInstallmentPlan
+          ? ["card"] // Subscriptions only support card payments
+          : ["card", "klarna", "affirm", "afterpay_clearpay"],
         line_items: [{ price: diyPriceId, quantity: 1 }],
         ...(isInstallmentPlan && {
           subscription_data: {

@@ -341,8 +341,8 @@ function RegisterForm() {
                       Access Code (optional)
                     </Label>
                     <p className="text-xs text-sage-600">
-                      Have an invite from RadiantClaims? Enter it to bypass the
-                      registration freeze.
+                      Have an invite from RadiantClaims? Enter it to for early
+                      access to the platform.
                     </p>
                   </div>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row">

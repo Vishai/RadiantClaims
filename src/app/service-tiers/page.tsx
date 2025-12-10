@@ -516,6 +516,10 @@ function ServiceTiersContent() {
                         $249.99 today, then $249.99 in 30 days • Auto-stops
                         after 2 payments
                       </p>
+                      <p className="mt-1 text-xs text-blue-600">
+                        💳 Card payments only (Affirm/Klarna not available for
+                        installments)
+                      </p>
                     </div>
                   </label>
                 </div>
