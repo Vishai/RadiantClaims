@@ -135,34 +135,35 @@ export const STRIPE_PRODUCTS = {
   },
 
   // DEPRECATED - Legacy per-claim pricing (kept for backwards compatibility)
+  // Note: These are deprecated and should not be used. No env vars required.
   DIY_SETUP_FEE: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_SETUP || "",
+    priceId: "",
     amount: 499.0,
     currency: "usd",
     description: "DEPRECATED: Use DIY_PACKET_FULL instead",
   },
   DIY_MONTHLY_FIRST_CLAIM: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_FIRST || "",
+    priceId: "",
     amount: 0,
     currency: "usd",
     interval: "month",
     description: "DEPRECATED",
   },
   DIY_MONTHLY_ADDITIONAL: {
-    priceId: process.env.STRIPE_PRICE_ID_DIY_MONTHLY_ADDITIONAL || "",
+    priceId: "",
     amount: 0,
     currency: "usd",
     interval: "month",
     description: "DEPRECATED",
   },
   LEGAL_SETUP_FEE: {
-    priceId: process.env.STRIPE_PRICE_ID_LEGAL_SETUP || "",
+    priceId: "",
     amount: SERVICE_TIERS.LEGAL_REP.pricing.setupFee,
     currency: "usd",
     description: "RadiantClaims Legal - No Upfront Cost",
   },
   LEGAL_MONTHLY_PER_CLAIM: {
-    priceId: process.env.STRIPE_PRICE_ID_LEGAL_MONTHLY_PER_CLAIM || "",
+    priceId: "",
     amount: SERVICE_TIERS.LEGAL_REP.pricing.monthlyFeePerClaim,
     currency: "usd",
     interval: "month",
