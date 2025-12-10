@@ -287,8 +287,7 @@ export function DIYTermsAgreement({
               </h4>
               <p>
                 RadiantClaims' total liability to you is limited to the amount
-                you have paid for our services (setup fee + any monthly fees
-                paid). We are not liable for:
+                you have paid for our services. We are not liable for:
               </p>
               <ul className="ml-6 mt-2 list-disc space-y-1">
                 <li>DOJ denial of your claim</li>
@@ -384,10 +383,10 @@ export function DIYTermsAgreement({
             className="cursor-pointer text-sm text-sage-700"
           >
             <span className="font-semibold">
-              I agree to pay $149.99 + $24.99/month
+              I agree to the payment terms ({selectedPlanLabel})
             </span>{" "}
-            – I authorize RadiantClaims to charge my payment method the setup
-            fee now and $24.99 monthly thereafter until I cancel.
+            – I authorize RadiantClaims to charge my payment method according to
+            my selected payment plan.
           </label>
         </div>
 
@@ -407,9 +406,9 @@ export function DIYTermsAgreement({
             <span className="font-semibold">
               I understand the refund policy
             </span>{" "}
-            – I understand that the setup fee is refundable within 7 days ONLY
-            if I have not downloaded my completed RECA form PDF. Once
-            downloaded, the setup fee is non-refundable.
+            – I understand that my payment is refundable within 7 days ONLY if I
+            have not downloaded my completed RECA form PDF. Once downloaded, the
+            payment is non-refundable.
           </label>
         </div>
       </div>

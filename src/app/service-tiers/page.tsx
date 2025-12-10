@@ -889,7 +889,7 @@ function ServiceTiersContent() {
 
       {/* DIY Terms Agreement Dialog */}
       <Dialog open={showDIYAgreement} onOpenChange={setShowDIYAgreement}>
-        <DialogContent className="max-w-4xl rounded-3xl">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-3xl">
           <DIYTermsAgreement
             onAccept={handleDIYAccept}
             onDecline={() => {
@@ -905,7 +905,7 @@ function ServiceTiersContent() {
 
       {/* Legal Representation Agreement Dialog */}
       <Dialog open={showLegalAgreement} onOpenChange={setShowLegalAgreement}>
-        <DialogContent className="max-w-4xl rounded-3xl">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-3xl">
           <LegalRepresentationAgreement
             onAccept={handleLegalAccept}
             onDecline={() => {

@@ -243,7 +243,7 @@ function ResultContent() {
                         Save ~$1,500
                       </div>
                       <h4 className="mb-2 text-xl font-bold text-gray-900">
-                        File Yourself
+                        Fast-Track Filing Kit
                       </h4>
                       <div className="mb-1 text-4xl font-extrabold text-gray-900">
                         $499
@@ -276,7 +276,7 @@ function ResultContent() {
                     {/* Option B: Legal */}
                     <div className="relative flex flex-col rounded-3xl border border-gray-200 bg-gray-50 p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
-                        No Risk
+                        $0 Upfront Cost
                       </div>
                       <h4 className="mb-2 text-xl font-bold text-gray-900">
                         Attorney Review
