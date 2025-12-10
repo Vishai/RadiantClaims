@@ -228,10 +228,20 @@ export default function HomePage() {
                   <span className="text-green-500">✓</span> Step-by-step filing
                   instructions for DOJ
                 </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-500">↺</span>{" "}
-                  <strong>Lifetime Upgrade Credit</strong> — 100% applied if you
-                  switch to legal
+                <li className="flex gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                  <span className="text-xl text-blue-600">↺</span>
+                  <div>
+                    <strong className="text-blue-900">
+                      Lifetime Upgrade Credit
+                    </strong>
+                    <span className="text-gray-700">
+                      {" "}
+                      — <strong className="text-blue-700">
+                        100% applied
+                      </strong>{" "}
+                      if you switch to legal
+                    </span>
+                  </div>
                 </li>
               </ul>
               <Link href="/eligibility-check">
