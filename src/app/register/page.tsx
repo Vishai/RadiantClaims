@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { getPrefillData, saveUserData } from "@/lib/user-data-manager";
 
 const LOGIN_ROUTE = "/login" as Route;
 const DEFAULT_REDIRECT_ROUTE = "/portal" as Route;
@@ -40,31 +41,18 @@ function RegisterForm() {
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
   const callbackUrlParam = searchParams.get("callbackUrl");
 
-  // Prefill data from eligibility check
+  // Prefill data from previous forms
   useEffect(() => {
-    const storedData = sessionStorage.getItem("eligibility_user_data");
-    if (storedData) {
-      try {
-        const {
-          name: storedName,
-          email: storedEmail,
-          timestamp,
-        } = JSON.parse(storedData);
+    const prefillData = getPrefillData();
 
-        // Only use data if it's less than 24 hours old
-        const isRecent = Date.now() - timestamp < 24 * 60 * 60 * 1000;
+    if (prefillData.firstName && prefillData.lastName) {
+      const fullName =
+        `${prefillData.firstName} ${prefillData.lastName}`.trim();
+      if (fullName && !name) setName(fullName);
+    }
 
-        if (isRecent) {
-          if (storedName && !name) setName(storedName);
-          if (storedEmail && !email) setEmail(storedEmail);
-        } else {
-          // Clear old data
-          sessionStorage.removeItem("eligibility_user_data");
-        }
-      } catch (error) {
-        console.error("Error parsing stored eligibility data:", error);
-        sessionStorage.removeItem("eligibility_user_data");
-      }
+    if (prefillData.email && !email) {
+      setEmail(prefillData.email);
     }
   }, []);
 
@@ -88,6 +76,17 @@ function RegisterForm() {
     }
 
     try {
+      // Save user data for future forms
+      const nameParts = name.trim().split(" ");
+      saveUserData(
+        {
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(" "),
+          email,
+        },
+        "registration"
+      );
+
       // Create account
       const response = await fetch("/api/auth/register", {
         method: "POST",

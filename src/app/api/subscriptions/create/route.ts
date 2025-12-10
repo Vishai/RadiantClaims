@@ -10,6 +10,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the base URL from the request (adaptive to current port/host)
+    const baseUrl =
+      request.headers.get("origin") ||
+      process.env.NEXTAUTH_URL ||
+      "http://localhost:3000";
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -168,8 +174,8 @@ export async function POST(request: NextRequest) {
             },
           }),
           allow_promotion_codes: true,
-          success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
-          cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
+          success_url: `${baseUrl}/portal?payment=success`,
+          cancel_url: `${baseUrl}/service-tiers?payment=canceled`,
           metadata: {
             userId: session.user.id,
             subscriptionId: existingSubscription.id,
@@ -344,8 +350,8 @@ export async function POST(request: NextRequest) {
           },
         }),
         allow_promotion_codes: true,
-        success_url: `${process.env.NEXTAUTH_URL}/portal?payment=success`,
-        cancel_url: `${process.env.NEXTAUTH_URL}/service-tiers?payment=canceled`,
+        success_url: `${baseUrl}/portal?payment=success`,
+        cancel_url: `${baseUrl}/service-tiers?payment=canceled`,
         metadata: {
           userId: session.user.id,
           subscriptionId: subscription.id,

@@ -14,9 +14,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { Heart, CheckCircle } from "lucide-react";
+import { getPrefillData, saveUserData } from "@/lib/user-data-manager";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -102,9 +103,43 @@ function IntakeForm() {
     },
   });
 
+  // Prefill data from previous forms
+  useEffect(() => {
+    const prefillData = getPrefillData();
+
+    // Prefill all available fields
+    Object.entries(prefillData).forEach(([key, value]) => {
+      if (
+        value &&
+        typeof value === "string" &&
+        !form.getValues(key as keyof ClaimantFormData)
+      ) {
+        form.setValue(key as keyof ClaimantFormData, value);
+      }
+    });
+  }, [form]);
+
   const onSubmit = async (data: ClaimantFormData) => {
     setIsSubmitting(true);
     setError(null);
+
+    // Save user data for future forms
+    saveUserData(
+      {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        address1: data.address1,
+        address2: data.address2,
+        city: data.city,
+        county: data.county,
+        state: data.state,
+        postalCode: data.postalCode,
+        dob: data.dob,
+      },
+      "intake"
+    );
 
     try {
       const response = await fetch("/api/claimants", {

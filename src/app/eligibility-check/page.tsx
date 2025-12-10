@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { saveUserData } from "@/lib/user-data-manager";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -210,14 +211,15 @@ export default function EligibilityCheckPage() {
   const handleSubmit = async () => {
     const eligibility = calculateEligibility();
 
-    // Store user data in sessionStorage for prefilling registration
-    sessionStorage.setItem(
-      "eligibility_user_data",
-      JSON.stringify({
-        name: `${formData.firstName} ${formData.lastName}`,
+    // Store user data for prefilling other forms
+    saveUserData(
+      {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
-        timestamp: Date.now(),
-      })
+        phone: formData.phone,
+      },
+      "eligibility"
     );
 
     try {
