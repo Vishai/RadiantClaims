@@ -114,20 +114,29 @@ const relationshipOptions: Array<{
   },
 ];
 
-export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormProps) {
+export function Part3Form({
+  initialData,
+  onSubmit,
+  filingForSelf,
+}: Part3FormProps) {
   const form = useForm<Part3FormData>({
     resolver: zodResolver(part3Schema),
     defaultValues: {
-      relationship: initialData?.relationship || (filingForSelf === true ? "Self" : undefined),
+      relationship:
+        initialData?.relationship ||
+        (filingForSelf === true ? "Self" : undefined),
     },
   });
 
   const selectedRelationship = form.watch("relationship");
 
-  const handleSubmit = useCallback(async (data: Part3FormData) => {
-    await onSubmit(data as Part3Relationship);
-    return true;
-  }, [onSubmit]);
+  const handleSubmit = useCallback(
+    async (data: Part3FormData) => {
+      await onSubmit(data as Part3Relationship);
+      return true;
+    },
+    [onSubmit]
+  );
 
   // Expose form submission to FormWizard
   React.useEffect(() => {
@@ -157,12 +166,15 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
         <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
               <div className="text-sm text-blue-700">
-                <p className="font-semibold mb-1">Confirm: Filing for Yourself</p>
+                <p className="mb-1 font-semibold">
+                  Confirm: Filing for Yourself
+                </p>
                 <p>
-                  Based on your selection in Part 1, we've automatically selected "Self" below.
-                  This means you are the person who became ill from radiation exposure.
+                  Based on your selection in Part 1, we've automatically
+                  selected "Self" below. This means you are the person who
+                  became ill from radiation exposure.
                 </p>
               </div>
             </div>
@@ -174,9 +186,9 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
       <Card className="border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
             <div className="text-sm text-sage-700">
-              <p className="font-semibold mb-1">About Part 3</p>
+              <p className="mb-1 font-semibold">About Part 3</p>
               <p>
                 Your relationship to the person who became ill determines which
                 documents you'll need to provide. Select the option that best
@@ -191,11 +203,14 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
       <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-sage-900">
-            Select Your Relationship
+            {initialData?.relationship
+              ? "Your Relationship"
+              : "Select Your Relationship"}
           </CardTitle>
           <CardDescription className="text-sage-600">
-            Choose your relationship to the person who became ill with a
-            compensable disease
+            {initialData?.relationship
+              ? "Your relationship to the person who became ill (based on your earlier selection)"
+              : "Choose your relationship to the person who became ill with a compensable disease"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -213,34 +228,26 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
               return (
                 <div
                   key={option.value}
-                  className={`
-                    relative rounded-2xl border-2 p-6 cursor-pointer transition-all
-                    ${
-                      isSelected
-                        ? "border-terracotta-500 bg-terracotta-50"
-                        : "border-cream-200 bg-white hover:border-sage-300 hover:bg-sage-50"
-                    }
-                  `}
-                  onClick={() =>
-                    form.setValue("relationship", option.value)
-                  }
+                  className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all ${
+                    isSelected
+                      ? "border-terracotta-500 bg-terracotta-50"
+                      : "border-cream-200 bg-white hover:border-sage-300 hover:bg-sage-50"
+                  } `}
+                  onClick={() => form.setValue("relationship", option.value)}
                 >
                   <div className="flex items-start gap-4">
                     <div
-                      className={`
-                      flex h-12 w-12 items-center justify-center rounded-full flex-shrink-0
-                      ${
+                      className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full ${
                         isSelected
                           ? "bg-terracotta-500 text-white"
                           : "bg-sage-100 text-sage-600"
-                      }
-                    `}
+                      } `}
                     >
                       <Icon className="h-6 w-6" />
                     </div>
 
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="mb-2 flex items-center gap-3">
                         <RadioGroupItem
                           value={option.value}
                           id={option.value}
@@ -248,25 +255,25 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
                         />
                         <Label
                           htmlFor={option.value}
-                          className="text-lg font-semibold text-sage-900 cursor-pointer"
+                          className="cursor-pointer text-lg font-semibold text-sage-900"
                         >
                           {option.label}
                         </Label>
                       </div>
 
-                      <p className="text-sm text-sage-700 mb-3">
+                      <p className="mb-3 text-sm text-sage-700">
                         {option.description}
                       </p>
 
                       {isSelected && (
-                        <div className="rounded-lg bg-white border border-terracotta-200 p-3">
-                          <p className="text-xs font-semibold text-terracotta-900 mb-2">
+                        <div className="rounded-lg border border-terracotta-200 bg-white p-3">
+                          <p className="mb-2 text-xs font-semibold text-terracotta-900">
                             Required Documents:
                           </p>
-                          <ul className="text-xs text-sage-700 space-y-1">
+                          <ul className="space-y-1 text-xs text-sage-700">
                             {option.requirements.map((req, idx) => (
                               <li key={idx} className="flex items-start gap-2">
-                                <span className="text-terracotta-500 mt-0.5">
+                                <span className="mt-0.5 text-terracotta-500">
                                   •
                                 </span>
                                 <span>{req}</span>
@@ -295,9 +302,9 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
         <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
               <div className="text-sm text-amber-900">
-                <p className="font-semibold mb-1">Important for Children</p>
+                <p className="mb-1 font-semibold">Important for Children</p>
                 <p className="mb-2">
                   If filing as a surviving child, please note:
                 </p>
@@ -307,9 +314,7 @@ export function Part3Form({ initialData, onSubmit, filingForSelf }: Part3FormPro
                     The $100,000 award is shared equally among all eligible
                     children
                   </li>
-                  <li>
-                    Death certificates required for any deceased siblings
-                  </li>
+                  <li>Death certificates required for any deceased siblings</li>
                 </ul>
               </div>
             </div>

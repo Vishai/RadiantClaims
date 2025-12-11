@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Part2ClaimantInfo } from "@/lib/reca/types";
+import { Part2ClaimantInfo, Part1FilerInfo } from "@/lib/reca/types";
 import { FormField } from "@/components/form-field";
 import {
   Card,
@@ -12,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Info } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const formerNameSchema = z.object({
   name: z.string().min(1, "Name is required").max(50),
@@ -48,9 +49,19 @@ type Part2FormData = z.infer<typeof part2Schema>;
 interface Part2FormProps {
   initialData?: Partial<Part2ClaimantInfo>;
   onSubmit: (data: Part2ClaimantInfo) => void;
+  part1Data?: Partial<Part1FilerInfo>; // Filer information for name matching validation
 }
 
-export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
+export function Part2Form({
+  initialData,
+  onSubmit,
+  part1Data,
+}: Part2FormProps) {
+  const [nameMatchWarning, setNameMatchWarning] = useState<string | null>(null);
+  const [dateConsistencyErrors, setDateConsistencyErrors] = useState<string[]>(
+    []
+  );
+
   const form = useForm<Part2FormData>({
     resolver: zodResolver(part2Schema),
     defaultValues: {
@@ -63,6 +74,94 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
       dod: initialData?.dod || "",
     },
   });
+
+  // Watch the deceased's last name to validate against filer's names
+  const deceasedLastName = form.watch("lastName");
+  const dob = form.watch("dob");
+  const dod = form.watch("dod");
+
+  // Validate date consistency
+  useEffect(() => {
+    const errors: string[] = [];
+
+    if (dob && dod) {
+      const birthDate = new Date(dob);
+      const deathDate = new Date(dod);
+
+      // Check if DOD is before DOB
+      if (deathDate < birthDate) {
+        errors.push("Date of death cannot be before date of birth.");
+      }
+
+      // Check if DOD is in the future
+      const today = new Date();
+      if (deathDate > today) {
+        errors.push("Date of death cannot be in the future.");
+      }
+
+      // Check latency period - must have lived long enough after exposure to develop cancer
+      // RECA downwinder program covers exposure from 1951-1962 and 1964-1980s
+      // Minimum latency for most cancers is typically 2 years, but can be much longer
+      const exposureEndYear = 1992; // Latest possible exposure year
+      const exposureEnd = new Date(`${exposureEndYear}-12-31`);
+
+      // If they died before exposure period ended, they couldn't have developed cancer from it
+      if (deathDate < new Date("1951-01-01")) {
+        errors.push(
+          "Date of death is before the nuclear testing period (1951-1992). Please verify this date."
+        );
+      }
+
+      // Calculate time between end of exposure and death for latency check
+      const yearsBetween = deathDate.getFullYear() - exposureEnd.getFullYear();
+      if (yearsBetween < 0 && deathDate < exposureEnd) {
+        // Died during exposure period - possible but requires latency validation
+        const deathYear = deathDate.getFullYear();
+        if (deathYear < 1953) {
+          errors.push(
+            "Death occurred very early in the exposure period. Please verify this date is correct, as there typically needs to be a latency period between exposure and cancer diagnosis."
+          );
+        }
+      }
+    }
+
+    setDateConsistencyErrors(errors);
+  }, [dob, dod]);
+
+  // Validate name matching when deceased's last name changes
+  useEffect(() => {
+    if (!deceasedLastName || !part1Data) {
+      setNameMatchWarning(null);
+      return;
+    }
+
+    const filerLastName = part1Data.lastName?.toLowerCase();
+    const filerFormerNames = part1Data.formerNames || [];
+    const deceased = deceasedLastName.toLowerCase();
+
+    // Check if deceased's last name matches filer's current last name
+    if (filerLastName === deceased) {
+      setNameMatchWarning(null);
+      return;
+    }
+
+    // Check if deceased's last name matches any of filer's former names
+    const matchesFormerName = filerFormerNames.some(
+      (fn) =>
+        fn.name.toLowerCase().includes(deceased) ||
+        deceased.includes(fn.name.toLowerCase())
+    );
+
+    if (matchesFormerName) {
+      setNameMatchWarning(null);
+      return;
+    }
+
+    // No match found - show warning
+    setNameMatchWarning(
+      `The deceased's last name "${deceasedLastName}" doesn't match your current last name "${part1Data.lastName}"${filerFormerNames.length > 0 ? " or any of your former names" : ""}. You may need to provide additional documentation to establish the relationship (marriage certificate, birth certificate, etc.).`
+    );
+  }, [deceasedLastName, part1Data]);
 
   const handleSubmit = (data: Part2FormData) => {
     onSubmit(data as Part2ClaimantInfo);
@@ -90,6 +189,45 @@ export function Part2Form({ initialData, onSubmit }: Part2FormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Date Consistency Errors */}
+      {dateConsistencyErrors.length > 0 && (
+        <Card className="border-2 border-red-300 bg-gradient-to-br from-red-50 to-white">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+              <div className="text-sm text-red-900">
+                <p className="mb-2 font-semibold">
+                  Date Inconsistency Detected
+                </p>
+                <ul className="list-disc space-y-1 pl-5">
+                  {dateConsistencyErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs">
+                  Please review and correct the dates before continuing.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Name Match Warning */}
+      {nameMatchWarning && (
+        <Card className="border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 to-white">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600" />
+              <div className="text-sm text-yellow-900">
+                <p className="mb-1 font-semibold">Name Mismatch Detected</p>
+                <p>{nameMatchWarning}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Claimant Information */}
       <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">

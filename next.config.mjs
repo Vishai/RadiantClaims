@@ -37,6 +37,11 @@ const nextConfig = {
         'canvas': 'commonjs canvas',
       });
     }
+
+    // Fix for zod vendor chunk resolution issues in dev mode
+    config.optimization = config.optimization || {};
+    config.optimization.moduleIds = 'named';
+
     return config;
   },
 };

@@ -167,6 +167,10 @@ export interface Part6SurvivingChild {
   claimantDeceased: "YES" | "NO";
   claimantEverMarried: "YES" | "NO";
 
+  // Critical eligibility check for surviving spouse
+  survivingSpouseExists?: "YES" | "NO";
+  survivingSpouseMetOneYearRequirement?: "YES" | "NO" | "UNKNOWN";
+
   // Claimant's marriage history (if applicable)
   claimantSpouses?: Array<{
     spouseName: string;

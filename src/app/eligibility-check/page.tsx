@@ -17,6 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Heart,
   ArrowRight,
   ArrowLeft,
@@ -54,7 +61,8 @@ interface FormData {
   lastName: string;
   email: string;
   phone: string;
-  relationship: string; // For deceased or referral
+  relationship: string; // For deceased or referral (now a select)
+  otherRelationship: string; // For "Other" option in relationship
 
   // Deceased relative's name (for deceased-relative and someone-else-relative intents)
   deceasedFirstName: string;
@@ -135,6 +143,7 @@ export default function EligibilityCheckPage() {
     email: "",
     phone: "",
     relationship: "",
+    otherRelationship: "",
     deceasedFirstName: "",
     deceasedLastName: "",
     residenceState: "",
@@ -610,21 +619,64 @@ export default function EligibilityCheckPage() {
                         htmlFor="relationship"
                         className="mb-2 block font-medium text-sage-800"
                       >
-                        Relationship to Deceased
+                        Relationship to Deceased{" "}
+                        <span className="text-red-600">*</span>
                       </Label>
-                      <Input
-                        id="relationship"
+                      <Select
                         value={formData.relationship}
-                        onChange={(e) =>
-                          updateFormData("relationship", e.target.value)
+                        onValueChange={(value) =>
+                          updateFormData("relationship", value)
                         }
-                        placeholder="e.g., Spouse, Child, Grandchild, Parent"
-                        className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400"
-                      />
+                      >
+                        <SelectTrigger className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400">
+                          <SelectValue placeholder="Select relationship..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="surviving-spouse">
+                            Surviving Spouse
+                          </SelectItem>
+                          <SelectItem value="child">Child</SelectItem>
+                          <SelectItem value="parent">Parent</SelectItem>
+                          <SelectItem value="grandchild">Grandchild</SelectItem>
+                          <SelectItem value="grandparent">
+                            Grandparent
+                          </SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <p className="mt-2 text-sm text-sage-600">
                         Only spouse, children, parents, grandchildren, or
                         grandparents can file
                       </p>
+
+                      {/* Other relationship text field - shown when "Other" is selected */}
+                      {formData.relationship === "other" && (
+                        <div className="mt-4">
+                          <Label
+                            htmlFor="otherRelationship"
+                            className="mb-2 block font-medium text-sage-800"
+                          >
+                            Please specify relationship{" "}
+                            <span className="text-red-600">*</span>
+                          </Label>
+                          <Input
+                            id="otherRelationship"
+                            value={formData.otherRelationship}
+                            onChange={(e) =>
+                              updateFormData(
+                                "otherRelationship",
+                                e.target.value
+                              )
+                            }
+                            placeholder="e.g., Sibling, Cousin, etc."
+                            className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400"
+                          />
+                          <p className="mt-2 text-sm font-medium text-amber-700">
+                            Note: Relationships other than those listed may not
+                            be eligible to file claims
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -648,7 +700,11 @@ export default function EligibilityCheckPage() {
                   !formData.email ||
                   ((formData.intent === "deceased-relative" ||
                     formData.intent === "someone-else-relative") &&
-                    (!formData.deceasedFirstName || !formData.deceasedLastName))
+                    (!formData.deceasedFirstName ||
+                      !formData.deceasedLastName ||
+                      !formData.relationship ||
+                      (formData.relationship === "other" &&
+                        !formData.otherRelationship)))
                 }
                 size="lg"
                 className="flex-1 rounded-full bg-gradient-to-r from-terracotta-500 to-terracotta-600 py-6"
@@ -782,21 +838,23 @@ export default function EligibilityCheckPage() {
                     Which Arizona county?{" "}
                     <span className="text-red-600">*</span>
                   </Label>
-                  <select
-                    id="arizonaCounty"
+                  <Select
                     value={formData.arizonaCounty}
-                    onChange={(e) =>
-                      updateFormData("arizonaCounty", e.target.value)
+                    onValueChange={(value) =>
+                      updateFormData("arizonaCounty", value)
                     }
-                    className="h-12 w-full rounded-xl border-2 border-cream-200 bg-white p-3 focus:border-sage-400 focus:outline-none"
                   >
-                    <option value="">Select county...</option>
-                    {ARIZONA_COUNTIES.map((county) => (
-                      <option key={county} value={county}>
-                        {county}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-12 rounded-xl border-2 border-cream-200 bg-white focus:border-sage-400">
+                      <SelectValue placeholder="Select county..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ARIZONA_COUNTIES.map((county) => (
+                        <SelectItem key={county} value={county}>
+                          {county}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -808,21 +866,23 @@ export default function EligibilityCheckPage() {
                   >
                     Which Nevada county? <span className="text-red-600">*</span>
                   </Label>
-                  <select
-                    id="nevadaCounty"
+                  <Select
                     value={formData.nevadaCounty}
-                    onChange={(e) =>
-                      updateFormData("nevadaCounty", e.target.value)
+                    onValueChange={(value) =>
+                      updateFormData("nevadaCounty", value)
                     }
-                    className="h-12 w-full rounded-xl border-2 border-cream-200 bg-white p-3 focus:border-sage-400 focus:outline-none"
                   >
-                    <option value="">Select county...</option>
-                    {NEVADA_COUNTIES.map((county) => (
-                      <option key={county} value={county}>
-                        {county}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-12 rounded-xl border-2 border-cream-200 bg-white focus:border-sage-400">
+                      <SelectValue placeholder="Select county..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NEVADA_COUNTIES.map((county) => (
+                        <SelectItem key={county} value={county}>
+                          {county}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -980,23 +1040,26 @@ export default function EligibilityCheckPage() {
                     htmlFor="cancerType"
                     className="mb-2 block font-medium text-sage-800"
                   >
-                    Type of Cancer (Primary Site)
+                    Type of Cancer (Primary Site){" "}
+                    <span className="text-red-600">*</span>
                   </Label>
-                  <select
-                    id="cancerType"
+                  <Select
                     value={formData.cancerType}
-                    onChange={(e) =>
-                      updateFormData("cancerType", e.target.value)
+                    onValueChange={(value) =>
+                      updateFormData("cancerType", value)
                     }
-                    className="h-12 w-full rounded-xl border-2 border-cream-200 bg-white p-3 focus:border-sage-400 focus:outline-none"
                   >
-                    <option value="">Select cancer type...</option>
-                    {COVERED_CANCERS.map((cancer) => (
-                      <option key={cancer} value={cancer}>
-                        {cancer}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400">
+                      <SelectValue placeholder="Select cancer type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COVERED_CANCERS.map((cancer) => (
+                        <SelectItem key={cancer} value={cancer}>
+                          {cancer}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="mt-2 text-sm text-sage-600">
                     Must be the primary cancer site (not metastatic)
                   </p>

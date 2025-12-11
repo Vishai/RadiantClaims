@@ -204,6 +204,7 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part2Form
             initialData={workflowState.formData.part_2}
             onSubmit={handleSaveSection}
+            part1Data={workflowState.formData.part_1}
           />
         );
 
