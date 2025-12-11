@@ -84,6 +84,36 @@ function preFillPart3FromClaimant(formData: any, claimant: any) {
 }
 
 /**
+ * Pre-populate Part 2 (Deceased Individual's Information) from eligibility data
+ * This ensures users don't have to re-enter deceased individual information from eligibility screening
+ */
+function preFillPart2FromEligibility(formData: any, eligibilityData: any) {
+  if (!formData.part_2 && eligibilityData) {
+    const { deceasedFirstName, deceasedLastName, deceasedDOD } =
+      eligibilityData;
+
+    // Only pre-fill if we have deceased individual data from eligibility
+    if (deceasedFirstName && deceasedLastName && deceasedDOD) {
+      formData.part_2 = {
+        firstName: deceasedFirstName,
+        lastName: deceasedLastName,
+        middleName: "",
+        formerNames: [],
+        ssn: "",
+        dob: "",
+        dod: deceasedDOD,
+      };
+
+      console.log(
+        "[RECA Prefill] Part 2 pre-populated from eligibility:",
+        formData.part_2
+      );
+    }
+  }
+  return formData;
+}
+
+/**
  * Auto-populate Part 2 (Claimant Information) from Part 1 for Self-filers
  * When a user selects "Self" as the relationship, Part 2 should mirror Part 1
  * This maintains data consistency and prevents duplicate data entry
@@ -169,9 +199,13 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Get form data and pre-populate from Claimant if empty
+    // Get form data and pre-populate from Claimant and Eligibility if empty
     let formData = (intakeSession.recaFormData as any) || {};
     formData = preFillPart1FromClaimant(formData, intakeSession.claimant);
+    formData = preFillPart2FromEligibility(
+      formData,
+      intakeSession.recaEligibilityData
+    );
     formData = preFillPart3FromClaimant(formData, intakeSession.claimant);
 
     // Construct workflow state response

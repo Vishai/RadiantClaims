@@ -13,7 +13,11 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { claimType, isGuest = false } = body;
+    const {
+      claimType,
+      isGuest = false,
+      eligibilityData: clientEligibilityData,
+    } = body;
 
     // Require authenticated users – guest access is disabled for paid launch
     const session = await getServerSession(authOptions);
@@ -61,12 +65,19 @@ export async function POST(request: NextRequest) {
     }
 
     let claimantId: string | null = null;
+    let eligibilityDataFromDB: any = null;
 
     // Associate workflow with the caller's claimant profile
     if (session.user.email && session.user.id) {
       let claimant = await db.claimant.findFirst({
         where: {
           OR: [{ email: session.user.email }, { userId: session.user.id }],
+        },
+        select: {
+          id: true,
+          userId: true,
+          email: true,
+          eligibilityData: true, // Retrieve eligibility data from database
         },
       });
 
@@ -87,13 +98,44 @@ export async function POST(request: NextRequest) {
             postalCode: "",
             claimType: claimType || "DOWNWINDER",
           },
+          select: {
+            id: true,
+            userId: true,
+            email: true,
+            eligibilityData: true,
+          },
         });
-      } else if (!claimant.userId) {
-        // If claimant exists but not linked to user, link it now
-        claimant = await db.claimant.update({
-          where: { id: claimant.id },
-          data: { userId: session.user.id },
-        });
+      } else {
+        // Store eligibility data from claimant if it exists
+        eligibilityDataFromDB = claimant.eligibilityData;
+
+        if (!claimant.userId) {
+          // If claimant exists but not linked to user, link it now
+          // LEAD TRACKING: Update conversion stage when user creates account
+          claimant = await db.claimant.update({
+            where: { id: claimant.id },
+            data: {
+              userId: session.user.id,
+              leadStatus: "CONVERTED", // They signed up!
+              conversionStage: "FORM_STARTED", // Starting the RECA form
+            },
+            select: {
+              id: true,
+              userId: true,
+              email: true,
+              eligibilityData: true,
+            },
+          });
+        } else {
+          // User already linked, update conversion stage
+          await db.claimant.update({
+            where: { id: claimant.id },
+            data: {
+              leadStatus: "CONVERTED",
+              conversionStage: "FORM_STARTED",
+            },
+          });
+        }
       }
       claimantId = claimant.id;
     }
@@ -104,6 +146,17 @@ export async function POST(request: NextRequest) {
     // Set expiration (7 days from now)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Use eligibility data from database if available, otherwise use client-provided data
+    // This ensures data persists across sessions even if localStorage is cleared
+    const finalEligibilityData =
+      eligibilityDataFromDB || clientEligibilityData || undefined;
+
+    console.log("[RECA Workflow Create] Eligibility data sources:", {
+      fromDatabase: !!eligibilityDataFromDB,
+      fromClient: !!clientEligibilityData,
+      using: finalEligibilityData ? "database or client" : "none",
+    });
 
     // Create intake session for RECA workflow (claimant linked when available)
     const intakeSession = await db.intakeSession.create({
@@ -117,7 +170,7 @@ export async function POST(request: NextRequest) {
         currentStep: "SCREENING", // IntakeStep enum
         recaFormData: {},
         recaSupportingForms: {},
-        recaEligibilityData: undefined,
+        recaEligibilityData: finalEligibilityData,
         recaWorkflowSection: "part_1", // Fixed field name
         recaWorkflowStage: 1, // Fixed field name
         recaCompletionPercent: 0, // Fixed field name

@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
       email,
       phone,
       relationship,
+      otherRelationship,
+      // Deceased individual's information (for survivor claims)
+      deceasedFirstName,
+      deceasedLastName,
+      deceasedDOD,
       // Step 3: Residence
       residenceState,
       residenceDuration,
@@ -113,6 +118,31 @@ export async function POST(request: NextRequest) {
         .replace(/\s+/g, "_");
     }
 
+    // Store full eligibility data for workflow pre-population
+    const eligibilityDataToStore = {
+      intent,
+      relationship: relationship === "other" ? otherRelationship : relationship,
+      deceasedFirstName,
+      deceasedLastName,
+      deceasedDOD,
+      residenceState,
+      arizonaCounty,
+      nevadaCounty,
+      cancerType,
+      hasCancer,
+      latencyMet,
+    };
+
+    // Add eligibility data to claimant record
+    claimantData.eligibilityData = eligibilityDataToStore;
+
+    // LEAD TRACKING: Set initial lead tracking fields
+    claimantData.leadStatus = "NEW";
+    claimantData.eligibilityStatus = eligibilityStatus;
+    claimantData.conversionStage = "ELIGIBILITY_COMPLETED";
+    // Note: If user is ineligible but we still want to track them, keep leadStatus as NEW
+    // Staff can later mark as INELIGIBLE if they confirm no path forward
+
     const claimant = await db.claimant.create({
       data: claimantData,
     });
@@ -133,6 +163,21 @@ export async function POST(request: NextRequest) {
         intent === "someone-else" || intent === "someone-else-relative"
           ? "Referral submitted successfully. We'll contact them within 1-2 business days."
           : "Thank you for submitting your eligibility check. We'll be in touch soon.",
+      // Include eligibility data for workflow creation
+      eligibilityData: {
+        intent,
+        relationship:
+          relationship === "other" ? otherRelationship : relationship,
+        deceasedFirstName,
+        deceasedLastName,
+        deceasedDOD,
+        residenceState,
+        arizonaCounty,
+        nevadaCounty,
+        cancerType,
+        hasCancer,
+        latencyMet,
+      },
     });
   } catch (error) {
     console.error("Error processing eligibility check:", error);

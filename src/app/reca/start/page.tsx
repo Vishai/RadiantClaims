@@ -89,12 +89,19 @@ function RECAStartContent() {
 
     try {
       if (!sessionId) {
+        // Retrieve eligibility data from localStorage if it exists
+        const eligibilityDataStr = localStorage.getItem("recaEligibilityData");
+        const eligibilityData = eligibilityDataStr
+          ? JSON.parse(eligibilityDataStr)
+          : undefined;
+
         // Create a new RECA workflow session
         const response = await fetch("/api/reca/workflow/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             claimType: "DOWNWINDER",
+            eligibilityData,
           }),
         });
 

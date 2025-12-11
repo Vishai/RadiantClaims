@@ -147,6 +147,14 @@ model Claimant {
   claimType               ClaimType?
   relationshipToClaimant  RelationshipType?
   cancerType              String? // Reference to specific cancer
+  eligibilityData         Json? // Stores eligibility screening data for workflow pre-population
+  // LEAD TRACKING & CONVERSION
+  leadStatus              LeadStatus                       @default(NEW) // Track conversion funnel
+  eligibilityStatus       String? // "likely", "unlikely", "ineligible", "needs-review"
+  lastContactedAt         DateTime? // Last follow-up attempt
+  followUpCount           Int                              @default(0) // Number of follow-up attempts
+  conversionStage         ConversionStage                  @default(ELIGIBILITY_COMPLETED) // Where they are in the funnel
+  teacupReason            String? // Why they didn't complete (if applicable)
   documentStatuses        ClaimantDocumentStatus[]
   chatSessions            ChatSession[]
   privateContextDocuments RecaLibrary[]
@@ -2464,6 +2472,32 @@ enum MetricWindow {
   LAST_30_DAYS
   LAST_60_DAYS
   ALL_TIME
+}
+
+// Lead Status - tracking claimant conversion funnel
+enum LeadStatus {
+  NEW                    // Just completed eligibility
+  CONTACTED              // We've reached out
+  ENGAGED                // They responded to follow-up
+  NURTURING              // In follow-up sequence
+  CONVERTED              // Signed up and started claim
+  CHURNED                // Decided not to proceed
+  INELIGIBLE             // Not eligible for RECA
+  COLD                   // No response after multiple attempts
+}
+
+// Conversion Stage - where in the funnel
+enum ConversionStage {
+  ELIGIBILITY_COMPLETED  // Finished eligibility check
+  ACCOUNT_CREATED        // Signed up but hasn't started form
+  FORM_STARTED           // Started RECA form
+  FORM_IN_PROGRESS       // Working through form sections
+  PAYMENT_PENDING        // Needs to pay for service tier
+  PAYMENT_COMPLETED      // Paid, has active subscription
+  FORM_COMPLETED         // Finished entire form
+  PDF_GENERATED          // PDF created
+  PDF_DOWNLOADED         // Downloaded PDF
+  SUBMITTED_TO_DOJ       // Claim submitted to DOJ
 }
 
 // DOJ Daily Statistics - scraped from justice.gov/civil/awards-date-MMDDYYYY

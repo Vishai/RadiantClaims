@@ -67,6 +67,7 @@ interface FormData {
   // Deceased relative's name (for deceased-relative and someone-else-relative intents)
   deceasedFirstName: string;
   deceasedLastName: string;
+  deceasedDOD: string; // Date of death - CRITICAL for eligibility determination
 
   // Step 3: Residence
   residenceState: ResidenceState | "";
@@ -146,6 +147,7 @@ export default function EligibilityCheckPage() {
     otherRelationship: "",
     deceasedFirstName: "",
     deceasedLastName: "",
+    deceasedDOD: "",
     residenceState: "",
     residenceDuration: "",
     residenceStartYear: "",
@@ -241,6 +243,15 @@ export default function EligibilityCheckPage() {
 
       if (!response.ok) {
         console.error("Failed to submit eligibility check");
+      } else {
+        // Store eligibility data from API response for workflow creation
+        const result = await response.json();
+        if (result.eligibilityData) {
+          localStorage.setItem(
+            "recaEligibilityData",
+            JSON.stringify(result.eligibilityData)
+          );
+        }
       }
     } catch (error) {
       console.error("Error submitting:", error);
@@ -527,6 +538,29 @@ export default function EligibilityCheckPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Date of Death - CRITICAL for eligibility */}
+                    <div className="mt-4">
+                      <Label
+                        htmlFor="deceasedDOD"
+                        className="mb-2 block font-medium text-sage-800"
+                      >
+                        Date of Death <span className="text-red-600">*</span>
+                      </Label>
+                      <Input
+                        id="deceasedDOD"
+                        type="date"
+                        value={formData.deceasedDOD}
+                        onChange={(e) =>
+                          updateFormData("deceasedDOD", e.target.value)
+                        }
+                        className="h-12 rounded-xl border-2 border-cream-200 focus:border-sage-400"
+                      />
+                      <p className="mt-2 text-xs text-sage-600">
+                        Note: If the person is still living, they must file the
+                        claim themselves (not through a survivor)
+                      </p>
+                    </div>
                   </div>
                 </>
               )}
@@ -702,6 +736,7 @@ export default function EligibilityCheckPage() {
                     formData.intent === "someone-else-relative") &&
                     (!formData.deceasedFirstName ||
                       !formData.deceasedLastName ||
+                      !formData.deceasedDOD ||
                       !formData.relationship ||
                       (formData.relationship === "other" &&
                         !formData.otherRelationship)))
