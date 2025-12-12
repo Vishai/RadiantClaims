@@ -481,36 +481,127 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
           {/* Blocking Message if Eligible Spouse Exists */}
           {watchSurvivingSpouseExists === "YES" &&
             watchSurvivingSpouseMetOneYearRequirement === "YES" && (
-              <div className="rounded-lg border-2 border-red-400 bg-red-100 p-4">
-                <div className="flex gap-3">
-                  <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-red-700" />
-                  <div>
-                    <p className="mb-2 text-lg font-bold text-red-900">
-                      You Cannot File This Claim
-                    </p>
-                    <p className="mb-3 text-sm text-red-800">
-                      Based on your responses, an eligible surviving spouse
-                      exists who was married to the deceased for at least one
-                      year before death. Under federal law (42 U.S.C. § 2210),
-                      the surviving spouse is the{" "}
-                      <strong>primary and sole eligible claimant</strong>.
-                    </p>
-                    <p className="mb-3 text-sm text-red-800">
-                      <strong>
-                        The surviving spouse must be the one to file the claim.
-                      </strong>{" "}
-                      Children cannot file when an eligible surviving spouse
-                      exists, even if the spouse is not the biological parent of
-                      the children.
-                    </p>
-                    <p className="text-sm font-semibold text-red-800">
-                      Please contact the surviving spouse and inform them of
-                      their eligibility to file this claim. They are the correct
-                      person to receive the compensation.
-                    </p>
+              <>
+                <div className="rounded-lg border-2 border-red-400 bg-red-100 p-4">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-red-700" />
+                    <div>
+                      <p className="mb-2 text-lg font-bold text-red-900">
+                        You Cannot File This Claim
+                      </p>
+                      <p className="mb-3 text-sm text-red-800">
+                        Based on your responses, an eligible surviving spouse
+                        exists who was married to the deceased for at least one
+                        year before death. Under federal law (42 U.S.C. § 2210),
+                        the surviving spouse is the{" "}
+                        <strong>primary and sole eligible claimant</strong>.
+                      </p>
+                      <p className="mb-3 text-sm text-red-800">
+                        <strong>
+                          The surviving spouse must be the one to file the
+                          claim.
+                        </strong>{" "}
+                        Children cannot file when an eligible surviving spouse
+                        exists, even if the spouse is not the biological parent
+                        of the children.
+                      </p>
+                      <p className="text-sm font-semibold text-red-800">
+                        Please contact the surviving spouse and inform them of
+                        their eligibility to file this claim. They are the
+                        correct person to receive the compensation.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Refund Options Card */}
+                <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-4">
+                  <div className="flex gap-3">
+                    <Info className="mt-0.5 h-6 w-6 flex-shrink-0 text-blue-700" />
+                    <div className="flex-1">
+                      <p className="mb-3 text-base font-bold text-blue-900">
+                        What Happens Next?
+                      </p>
+                      <p className="mb-4 text-sm text-blue-800">
+                        Since you are not eligible to file this claim, you have
+                        the following options:
+                      </p>
+
+                      <div className="mb-4 space-y-3">
+                        <div className="rounded-lg border border-blue-200 bg-white p-3">
+                          <p className="mb-1 font-semibold text-blue-900">
+                            Option 1: Request a Refund
+                          </p>
+                          <p className="mb-2 text-sm text-blue-800">
+                            You may be eligible for a refund of your payment.
+                            Click the button below to initiate a refund request.
+                          </p>
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              (window.location.href =
+                                "/portal/settings?action=request-refund")
+                            }
+                            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            Request Refund
+                          </Button>
+                        </div>
+
+                        <div className="rounded-lg border border-blue-200 bg-white p-3">
+                          <p className="mb-1 font-semibold text-blue-900">
+                            Option 2: Help the Eligible Spouse File
+                          </p>
+                          <p className="text-sm text-blue-800">
+                            You can share this information with the surviving
+                            spouse and help them create an account to file the
+                            claim in their name. They will be the primary
+                            beneficiary as required by law.
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg border border-blue-200 bg-white p-3">
+                          <p className="mb-1 font-semibold text-blue-900">
+                            Option 3: Contact Support
+                          </p>
+                          <p className="mb-2 text-sm text-blue-800">
+                            If you believe this determination is incorrect or
+                            have questions about your specific situation, please
+                            contact our support team.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              (window.location.href =
+                                "mailto:support@radiantclaims.com?subject=Eligibility Question - Part 6")
+                            }
+                            className="rounded-full border-blue-300 text-blue-700"
+                          >
+                            Contact Support
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                        <p className="text-xs text-amber-900">
+                          <strong>Note:</strong> Our refund system is currently
+                          being finalized. If you click "Request Refund" and
+                          encounter any issues, please email{" "}
+                          <a
+                            href="mailto:support@radiantclaims.com"
+                            className="font-semibold underline"
+                          >
+                            support@radiantclaims.com
+                          </a>{" "}
+                          and we will process your refund manually within 1-2
+                          business days.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
           {/* Advisory Message for Unknown Status */}

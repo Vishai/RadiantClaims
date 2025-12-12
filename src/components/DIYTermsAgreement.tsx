@@ -179,28 +179,62 @@ export function DIYTermsAgreement({
               </h4>
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="font-semibold text-blue-900">
-                  7-Day Money-Back Guarantee (Full or Installment Payment)
+                  7-Day Money-Back Guarantee
                 </p>
                 <p className="mt-2 text-blue-900">
-                  You may request a full refund of your initial payment if:
+                  You may request a full refund of your payment if BOTH
+                  conditions are met:
                 </p>
                 <ul className="ml-6 mt-2 list-disc space-y-1 text-blue-900">
-                  <li>
-                    You request the refund within 7 days of initial payment
-                  </li>
+                  <li>You request the refund within 7 days of your payment</li>
                   <li>
                     You have <strong>NOT</strong> downloaded your completed RECA
                     form PDF
                   </li>
                 </ul>
-                <p className="mt-2 font-semibold text-blue-900">
+
+                <p className="mt-3 font-semibold text-blue-900">
                   ⚠️ Non-Refundable After PDF Download
                 </p>
                 <p className="mt-1 text-blue-900">
-                  Once you download your completed RECA form PDF, the fee
+                  Once you download your completed RECA form PDF, your payment
                   becomes <strong>non-refundable</strong>. This is because you
                   have received the primary deliverable of our service.
                 </p>
+
+                {paymentPlan === "installment" ? (
+                  <>
+                    <div className="mt-3 border-t border-blue-300 pt-3">
+                      <p className="font-semibold text-blue-900">
+                        Installment Plan Details:
+                      </p>
+                      <p className="mt-1 text-blue-900">
+                        <strong>Within 7 days (no PDF download):</strong> Full
+                        refund of your 1st payment ($249.99). The 2nd payment
+                        will be waived (not charged).
+                      </p>
+                      <p className="mt-2 text-blue-900">
+                        <strong>After downloading PDF:</strong> Both installment
+                        payments ($249.99 × 2 = $499.98 total) become
+                        non-refundable. The 2nd installment will be charged on
+                        schedule (30 days from initial payment).
+                      </p>
+                      <p className="mt-2 text-blue-900">
+                        <strong>After 7 days (no PDF download):</strong> Your
+                        1st payment ($249.99) is non-refundable, but the 2nd
+                        payment will be waived if you cancel. Your account data
+                        will be retained for 60 days.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-3 text-blue-900">
+                    <strong>After 7 days:</strong> If you have not downloaded
+                    your PDF, your payment ($499.00) remains non-refundable.
+                    Your account data will be retained for 60 days if you choose
+                    to cancel.
+                  </p>
+                )}
               </div>
             </section>
 
@@ -208,18 +242,106 @@ export function DIYTermsAgreement({
               <h4 className="mb-2 font-semibold text-sage-900">
                 5. CANCELLATION POLICY
               </h4>
-              <p>
-                You may cancel your subscription at any time through your
-                account settings. Upon cancellation:
-              </p>
-              <ul className="ml-6 mt-2 list-disc space-y-1">
-                <li>
-                  You retain access until the end of your current billing period
-                </li>
-                <li>No further charges will be made</li>
-                <li>You may re-download any previously generated PDFs</li>
-                <li>Your account data is retained for 30 days, then deleted</li>
-              </ul>
+
+              {paymentPlan === "installment" ? (
+                <>
+                  <div className="mb-3 rounded-lg border-2 border-red-200 bg-red-50 p-4">
+                    <p className="font-semibold text-red-900">
+                      ⚠️ Installment Plan Commitment
+                    </p>
+                    <p className="mt-2 text-red-900">
+                      By selecting the 2-payment installment plan, you
+                      understand that downloading your completed RECA form PDF
+                      locks in your payment commitment.
+                    </p>
+                  </div>
+
+                  <p className="mt-3 font-semibold">
+                    Before Downloading Your RECA Form PDF:
+                  </p>
+                  <ul className="ml-6 mt-2 list-disc space-y-1">
+                    <li>
+                      <strong>Within 7 days of initial payment:</strong> You may
+                      cancel for a full refund of your 1st payment ($249.99).
+                      The 2nd payment will be waived (not charged).
+                    </li>
+                    <li>
+                      <strong>After 7 days (but before PDF download):</strong>{" "}
+                      You may still cancel, but your 1st payment ($249.99) is
+                      non-refundable. The 2nd payment will be waived. Your
+                      account data will be retained for 60 days, then deleted.
+                    </li>
+                  </ul>
+
+                  <p className="mt-3 font-semibold">
+                    After Downloading Your RECA Form PDF:
+                  </p>
+                  <ul className="ml-6 mt-2 list-disc space-y-1">
+                    <li>
+                      <strong>You cannot cancel.</strong> By downloading the
+                      PDF, you have received the primary deliverable of our
+                      service.
+                    </li>
+                    <li>
+                      Both installment payments ($249.99 × 2 = $499.98 total)
+                      are locked in and non-refundable.
+                    </li>
+                    <li>
+                      The 2nd payment will be automatically charged 30 days from
+                      your initial payment date.
+                    </li>
+                    <li>
+                      You retain access to the platform and may re-download your
+                      PDFs.
+                    </li>
+                    <li>
+                      Your account data is retained indefinitely while your
+                      account remains active.
+                    </li>
+                  </ul>
+
+                  <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="font-semibold text-blue-900">
+                      Card Payment Failures
+                    </p>
+                    <p className="mt-1 text-blue-900">
+                      If your 2nd installment payment fails (card declined,
+                      expired, etc.), we will retry the charge automatically.
+                      You remain responsible for the outstanding balance
+                      according to the payment schedule you agreed to.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    You may cancel your account at any time. Upon cancellation:
+                  </p>
+                  <ul className="ml-6 mt-2 list-disc space-y-1">
+                    <li>
+                      <strong>Within 7 days (before PDF download):</strong> Full
+                      refund of $499.00 available
+                    </li>
+                    <li>
+                      <strong>After 7 days or after PDF download:</strong>{" "}
+                      Payment is non-refundable
+                    </li>
+                    <li>
+                      You retain access to the platform and may re-download your
+                      completed forms
+                    </li>
+                    <li>
+                      Your account data is retained while your account remains
+                      active
+                    </li>
+                    <li>
+                      If you cancel after 7 days without downloading your PDF,
+                      your account data will be retained for 60 days before
+                      permanent deletion
+                    </li>
+                  </ul>
+                </>
+              )}
             </section>
 
             <section>

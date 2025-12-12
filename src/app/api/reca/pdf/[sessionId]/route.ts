@@ -24,28 +24,52 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Confirm active subscription before allowing download
+    // Check if user has paid for access (one-time $499 or installment plan)
     const subscription = await db.serviceSubscription.findUnique({
       where: { userId: session.user.id },
       select: {
         tier: true,
         status: true,
         setupFeePaid: true,
+        isInstallmentPlan: true,
+        installmentPaymentCount: true,
+        installmentCompleted: true,
       },
     });
 
-    const isLegalTier =
-      subscription?.tier === "LEGAL_REP" && subscription.status !== "CANCELED";
-    const isActiveDIY =
-      subscription?.tier === "DIY_PREP" &&
-      subscription.setupFeePaid === true &&
-      subscription.status === "ACTIVE";
+    // User has access if they've paid anything:
+    // - Full payment: setupFeePaid = true
+    // - Installment plan: installmentPaymentCount > 0
+    const hasPaid =
+      subscription?.setupFeePaid ||
+      (subscription?.installmentPaymentCount ?? 0) > 0;
 
-    if (!subscription || (!isLegalTier && !isActiveDIY)) {
+    // DIAGNOSTIC: Log payment details for debugging
+    console.log("[PDF Download] Payment check:", {
+      userId: session.user.id,
+      hasSub: !!subscription,
+      tier: subscription?.tier,
+      status: subscription?.status,
+      setupFeePaid: subscription?.setupFeePaid,
+      isInstallmentPlan: subscription?.isInstallmentPlan,
+      installmentPaymentCount: subscription?.installmentPaymentCount,
+      installmentCompleted: subscription?.installmentCompleted,
+      hasPaid,
+      hasAccess: subscription && hasPaid,
+    });
+
+    if (!subscription || !hasPaid) {
       return NextResponse.json(
         {
           error:
-            "An active RadiantClaims subscription is required to download completed RECA documents.",
+            "Payment is required to download completed RECA documents. Please complete your payment to access your form.",
+          debug: {
+            tier: subscription?.tier,
+            status: subscription?.status,
+            setupFeePaid: subscription?.setupFeePaid,
+            installmentPaymentCount: subscription?.installmentPaymentCount,
+            hasPaid,
+          },
         },
         { status: 403 }
       );
@@ -151,21 +175,28 @@ export async function POST(
         tier: true,
         status: true,
         setupFeePaid: true,
+        isInstallmentPlan: true,
+        installmentPaymentCount: true,
+        installmentCompleted: true,
       },
     });
 
-    const isLegalTier =
-      subscription?.tier === "LEGAL_REP" && subscription.status !== "CANCELED";
-    const isActiveDIY =
-      subscription?.tier === "DIY_PREP" &&
-      subscription.setupFeePaid === true &&
-      subscription.status === "ACTIVE";
+    // User has access if they've paid anything
+    const hasPaid =
+      subscription?.setupFeePaid ||
+      (subscription?.installmentPaymentCount ?? 0) > 0;
 
-    if (!subscription || (!isLegalTier && !isActiveDIY)) {
+    if (!subscription || !hasPaid) {
       return NextResponse.json(
         {
           error:
-            "An active RadiantClaims subscription is required to download completed RECA documents.",
+            "Payment is required to download completed RECA documents. Please complete your payment to access your form.",
+          debug: {
+            tier: subscription?.tier,
+            setupFeePaid: subscription?.setupFeePaid,
+            installmentPaymentCount: subscription?.installmentPaymentCount,
+            hasPaid,
+          },
         },
         { status: 403 }
       );

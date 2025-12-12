@@ -45,20 +45,21 @@ export async function POST(request: NextRequest) {
         tier: true,
         status: true,
         setupFeePaid: true,
+        isInstallmentPlan: true,
+        installmentPaymentCount: true,
       },
     });
 
-    const isLegalTier = subscription?.tier === "LEGAL_REP";
-    const isActiveDIY =
-      subscription?.tier === "DIY_PREP" &&
-      subscription?.setupFeePaid === true &&
-      subscription?.status === "ACTIVE";
+    // User has access if they've paid anything (full $499 or started installments)
+    const hasPaid =
+      subscription?.setupFeePaid ||
+      (subscription?.installmentPaymentCount ?? 0) > 0;
 
-    if (!subscription || (!isLegalTier && !isActiveDIY)) {
+    if (!subscription || !hasPaid) {
       return NextResponse.json(
         {
           error:
-            "An active RadiantClaims subscription is required to access the RECA form.",
+            "Payment is required to access the RECA form. Please complete your payment to continue.",
         },
         { status: 403 }
       );

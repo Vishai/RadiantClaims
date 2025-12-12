@@ -1961,6 +1961,10 @@ model PromoCodeUsage {
   @@index([usedAt])
 }
 
+// ServiceSubscription - LEGACY NAME (kept for backwards compatibility)
+// This is now a ONE-TIME SERVICE FEE, not a recurring subscription:
+// - $499.99 one-time payment OR 2 installments of $249.99 each
+// - No monthly recurring charges (old subscription model deprecated Dec 2024)
 model ServiceSubscription {
   id     String @id @default(cuid())
   userId String @unique
@@ -1969,9 +1973,9 @@ model ServiceSubscription {
   tier   ServiceTier        @default(DIY_PREP)
   status SubscriptionStatus @default(ACTIVE)
 
-  // DIY Path Pricing - NEW (Dec 2024): $499.99 one-time or 2 payments of $249.99
-  setupFeePaid   Boolean   @default(false)
-  setupFeeAmount Float? // 499.99
+  // One-Time Service Fee - $499.99 (or 2 installments of $249.99)
+  setupFeePaid   Boolean   @default(false) // "setupFee" is legacy name, means "service fee paid"
+  setupFeeAmount Float? // 499.99 one-time service fee
   setupFeePaidAt DateTime?
 
   // Installment Plan Support (2 payments of $249.99)
@@ -1979,6 +1983,7 @@ model ServiceSubscription {
   installmentPaymentCount Int   @default(0) // Track number of payments made (max 2)
   installmentCompleted  Boolean @default(false) // True when all installments paid
 
+  // DEPRECATED: Old monthly subscription fields (no longer used as of Dec 2024)
   monthlyFeeAmount Float? // DEPRECATED: No longer used (was $24.99)
   billingCycleDay  Int? // DEPRECATED
   nextBillingDate  DateTime?

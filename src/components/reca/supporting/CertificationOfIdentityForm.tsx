@@ -59,26 +59,56 @@ type CertificationFormData = z.infer<typeof certificationSchema>;
 interface CertificationOfIdentityFormProps {
   initialData?: Partial<CertificationOfIdentity>;
   onSubmit: (data: CertificationOfIdentity) => void;
+  part1Data?: {
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    ssn?: string;
+    dob?: string;
+    mailingAddress?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
 }
 
 export default function CertificationOfIdentityForm({
   initialData,
   onSubmit,
+  part1Data,
 }: CertificationOfIdentityFormProps) {
   const [includeSection2, setIncludeSection2] = useState(
     !!(initialData?.authorizedPersonName || initialData?.authorizedSignature)
   );
 
+  // Auto-populate from Part 1 data if available
+  const autoFullName = part1Data
+    ? [part1Data.firstName, part1Data.middleName, part1Data.lastName]
+        .filter(Boolean)
+        .join(" ")
+    : "";
+
+  const autoAddress = part1Data
+    ? [
+        part1Data.mailingAddress,
+        part1Data.city,
+        part1Data.state,
+        part1Data.zipCode,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
   const form = useForm<CertificationFormData>({
     resolver: zodResolver(certificationSchema),
     defaultValues: {
-      fullName: initialData?.fullName || "",
+      fullName: initialData?.fullName || autoFullName,
       citizenshipStatus: initialData?.citizenshipStatus || undefined,
-      ssn: initialData?.ssn || "",
-      currentAddress: initialData?.currentAddress || "",
-      dob: initialData?.dob || "",
+      ssn: initialData?.ssn || part1Data?.ssn || "",
+      currentAddress: initialData?.currentAddress || autoAddress,
+      dob: initialData?.dob || part1Data?.dob || "",
       placeOfBirth: initialData?.placeOfBirth || "",
-      signature: initialData?.signature || "",
+      signature: initialData?.signature || autoFullName,
       signatureDate: initialData?.signatureDate || "",
       authorizedPersonName: initialData?.authorizedPersonName || "",
       relationshipToRequester: initialData?.relationshipToRequester || "",
@@ -118,7 +148,6 @@ export default function CertificationOfIdentityForm({
     return () => subscription.unsubscribe();
   }, [form, onSubmit]);
 
-
   // Auto-format phone number
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -144,16 +173,39 @@ export default function CertificationOfIdentityForm({
           <CardDescription>Required for all RECA claims</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Auto-populated Notice */}
+          {part1Data && autoFullName && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <div className="flex gap-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" />
+                <div>
+                  <p className="mb-2 font-semibold text-green-900">
+                    ✓ Information Pre-Filled from Part 1
+                  </p>
+                  <p className="text-sm text-green-800">
+                    We've automatically filled in your name, address, date of
+                    birth, and SSN from Part 1 of your claim form. Please review
+                    all information for accuracy and complete any remaining
+                    fields.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Purpose */}
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
               <div>
-                <p className="font-semibold text-blue-900 mb-2">Purpose of This Form</p>
+                <p className="mb-2 font-semibold text-blue-900">
+                  Purpose of This Form
+                </p>
                 <p className="text-sm text-blue-800">
-                  This form certifies your identity and authorizes the release of information under
-                  the Privacy Act. It helps the Department of Justice verify your identity and
-                  process your claim efficiently.
+                  This form certifies your identity and authorizes the release
+                  of information under the Privacy Act. It helps the Department
+                  of Justice verify your identity and process your claim
+                  efficiently.
                 </p>
               </div>
             </div>
@@ -165,7 +217,7 @@ export default function CertificationOfIdentityForm({
               <h3 className="text-base font-semibold text-sage-900">
                 Section 1: Certification of Identity
               </h3>
-              <p className="text-sm text-sage-600 mt-1">All fields required</p>
+              <p className="mt-1 text-sm text-sage-600">All fields required</p>
             </div>
 
             {/* Full Name */}
@@ -180,7 +232,9 @@ export default function CertificationOfIdentityForm({
                 className={formErrors.fullName ? "border-red-300" : ""}
               />
               {formErrors.fullName && (
-                <p className="text-sm text-red-600">{formErrors.fullName.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.fullName.message}
+                </p>
               )}
             </div>
 
@@ -199,7 +253,9 @@ export default function CertificationOfIdentityForm({
                 }
               >
                 <SelectTrigger
-                  className={formErrors.citizenshipStatus ? "border-red-300" : ""}
+                  className={
+                    formErrors.citizenshipStatus ? "border-red-300" : ""
+                  }
                 >
                   <SelectValue placeholder="Select citizenship status" />
                 </SelectTrigger>
@@ -211,10 +267,13 @@ export default function CertificationOfIdentityForm({
                 </SelectContent>
               </Select>
               {formErrors.citizenshipStatus && (
-                <p className="text-sm text-red-600">{formErrors.citizenshipStatus.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.citizenshipStatus.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
-                Note: Non-citizens will be processed under the Freedom of Information Act (FOIA)
+                Note: Non-citizens will be processed under the Freedom of
+                Information Act (FOIA)
               </p>
             </div>
 
@@ -241,7 +300,9 @@ export default function CertificationOfIdentityForm({
                 className={formErrors.currentAddress ? "border-red-300" : ""}
               />
               {formErrors.currentAddress && (
-                <p className="text-sm text-red-600">{formErrors.currentAddress.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.currentAddress.message}
+                </p>
               )}
             </div>
 
@@ -256,7 +317,9 @@ export default function CertificationOfIdentityForm({
                 type="date"
                 className={formErrors.dob ? "border-red-300" : ""}
               />
-              {formErrors.dob && <p className="text-sm text-red-600">{formErrors.dob.message}</p>}
+              {formErrors.dob && (
+                <p className="text-sm text-red-600">{formErrors.dob.message}</p>
+              )}
             </div>
 
             {/* Place of Birth */}
@@ -271,7 +334,9 @@ export default function CertificationOfIdentityForm({
                 className={formErrors.placeOfBirth ? "border-red-300" : ""}
               />
               {formErrors.placeOfBirth && (
-                <p className="text-sm text-red-600">{formErrors.placeOfBirth.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.placeOfBirth.message}
+                </p>
               )}
             </div>
 
@@ -287,7 +352,9 @@ export default function CertificationOfIdentityForm({
                 className={`text-lg ${formErrors.signature ? "border-red-300" : ""}`}
               />
               {formErrors.signature && (
-                <p className="text-sm text-red-600">{formErrors.signature.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signature.message}
+                </p>
               )}
             </div>
 
@@ -303,31 +370,36 @@ export default function CertificationOfIdentityForm({
                 className={formErrors.signatureDate ? "border-red-300" : ""}
               />
               {formErrors.signatureDate && (
-                <p className="text-sm text-red-600">{formErrors.signatureDate.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signatureDate.message}
+                </p>
               )}
             </div>
           </div>
 
           {/* Section 2 Toggle */}
-          <div className="pt-4 border-t">
+          <div className="border-t pt-4">
             <div className="flex items-start gap-3 rounded-lg border border-sage-300 bg-sage-50 p-4">
               <Checkbox
                 id="includeSection2"
                 checked={includeSection2}
-                onCheckedChange={(checked) => setIncludeSection2(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setIncludeSection2(checked as boolean)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
                 <label
                   htmlFor="includeSection2"
-                  className="text-sm font-medium leading-snug cursor-pointer"
+                  className="cursor-pointer text-sm font-medium leading-snug"
                 >
-                  <UserPlus className="h-4 w-4 inline mr-1" />
-                  Add Section 2: Authorization to Release Information to Another Person (OPTIONAL)
+                  <UserPlus className="mr-1 inline h-4 w-4" />
+                  Add Section 2: Authorization to Release Information to Another
+                  Person (OPTIONAL)
                 </label>
-                <p className="text-xs text-sage-600 mt-1">
-                  Check this box if you want to authorize someone else to receive information about
-                  your claim on your behalf
+                <p className="mt-1 text-xs text-sage-600">
+                  Check this box if you want to authorize someone else to
+                  receive information about your claim on your behalf
                 </p>
               </div>
             </div>
@@ -335,24 +407,26 @@ export default function CertificationOfIdentityForm({
 
           {/* Section 2: Authorization to Release Information (Optional) */}
           {includeSection2 && (
-            <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-4 border-t pt-4">
               <div className="border-b pb-2">
                 <h3 className="text-base font-semibold text-sage-900">
-                  Section 2: Authorization to Release Information to Another Person
+                  Section 2: Authorization to Release Information to Another
+                  Person
                 </h3>
-                <p className="text-sm text-sage-600 mt-1">
+                <p className="mt-1 text-sm text-sage-600">
                   Optional - Complete only if authorizing another person
                 </p>
               </div>
 
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <div className="flex gap-3">
-                  <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
                   <div>
                     <p className="text-sm text-amber-900">
-                      By completing this section, you authorize the Department of Justice to share
-                      information about your claim with the person listed below. This person will be
-                      able to discuss your claim status and receive updates on your behalf.
+                      By completing this section, you authorize the Department
+                      of Justice to share information about your claim with the
+                      person listed below. This person will be able to discuss
+                      your claim status and receive updates on your behalf.
                     </p>
                   </div>
                 </div>
@@ -360,7 +434,9 @@ export default function CertificationOfIdentityForm({
 
               {/* Authorized Person Name */}
               <div className="space-y-2">
-                <Label htmlFor="authorizedPersonName">Name of Authorized Person</Label>
+                <Label htmlFor="authorizedPersonName">
+                  Name of Authorized Person
+                </Label>
                 <Input
                   id="authorizedPersonName"
                   {...form.register("authorizedPersonName")}
@@ -370,7 +446,9 @@ export default function CertificationOfIdentityForm({
 
               {/* Relationship */}
               <div className="space-y-2">
-                <Label htmlFor="relationshipToRequester">Relationship to You</Label>
+                <Label htmlFor="relationshipToRequester">
+                  Relationship to You
+                </Label>
                 <Input
                   id="relationshipToRequester"
                   {...form.register("relationshipToRequester")}
@@ -391,7 +469,9 @@ export default function CertificationOfIdentityForm({
 
               {/* Current Address */}
               <div className="space-y-2">
-                <Label htmlFor="authorizedCurrentAddress">Mailing Address</Label>
+                <Label htmlFor="authorizedCurrentAddress">
+                  Mailing Address
+                </Label>
                 <Textarea
                   id="authorizedCurrentAddress"
                   {...form.register("authorizedCurrentAddress")}
@@ -402,7 +482,9 @@ export default function CertificationOfIdentityForm({
 
               {/* Authorized Person Signature */}
               <div className="space-y-2">
-                <Label htmlFor="authorizedSignature">Authorized Person's Signature</Label>
+                <Label htmlFor="authorizedSignature">
+                  Authorized Person's Signature
+                </Label>
                 <Input
                   id="authorizedSignature"
                   {...form.register("authorizedSignature")}
@@ -410,7 +492,8 @@ export default function CertificationOfIdentityForm({
                   className="text-lg"
                 />
                 <p className="text-xs text-sage-600">
-                  The authorized person must sign to acknowledge this authorization
+                  The authorized person must sign to acknowledge this
+                  authorization
                 </p>
               </div>
 
@@ -427,27 +510,32 @@ export default function CertificationOfIdentityForm({
           )}
 
           {/* Privacy Act Statement */}
-          <div className="rounded-lg bg-sage-50 border border-sage-200 p-4">
+          <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
               <div>
-                <p className="font-semibold text-sage-900 mb-2">Privacy Act Statement</p>
-                <p className="text-sm text-sage-800 mb-2">
-                  The Privacy Act of 1974 (5 U.S.C. § 552a) requires that you be informed of the
-                  following:
+                <p className="mb-2 font-semibold text-sage-900">
+                  Privacy Act Statement
                 </p>
-                <ul className="text-sm text-sage-800 space-y-1 list-disc list-inside ml-2">
+                <p className="mb-2 text-sm text-sage-800">
+                  The Privacy Act of 1974 (5 U.S.C. § 552a) requires that you be
+                  informed of the following:
+                </p>
+                <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-sage-800">
                   <li>
-                    Authority: Radiation Exposure Compensation Act, 42 U.S.C. § 2210 note (2000)
+                    Authority: Radiation Exposure Compensation Act, 42 U.S.C. §
+                    2210 note (2000)
                   </li>
-                  <li>Purpose: To verify your identity and process your RECA claim</li>
                   <li>
-                    Routine Uses: May be shared with other federal agencies as needed to process
-                    your claim
+                    Purpose: To verify your identity and process your RECA claim
                   </li>
                   <li>
-                    Disclosure: Voluntary, but failure to provide may delay or prevent claim
-                    processing
+                    Routine Uses: May be shared with other federal agencies as
+                    needed to process your claim
+                  </li>
+                  <li>
+                    Disclosure: Voluntary, but failure to provide may delay or
+                    prevent claim processing
                   </li>
                 </ul>
               </div>

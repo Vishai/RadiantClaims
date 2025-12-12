@@ -45,6 +45,9 @@ export default function RECAFormPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean>(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [userTier, setUserTier] = useState<"DIY_PREP" | "LEGAL_REP" | null>(
+    null
+  );
 
   const currentSection =
     (searchParams.get("section") as RECAWorkflowSection) || "part_1";
@@ -89,14 +92,16 @@ export default function RECAFormPage({ params }: PageProps) {
               return;
             }
 
+            // Store user's tier for conditional rendering
+            setUserTier(data.tier);
             setHasAccess(true);
           } else {
-            // Error checking subscription - redirect to service tiers
-            push("/service-tiers?error=subscription_check_failed");
+            // Error checking payment status - redirect to service tiers
+            push("/service-tiers?error=payment_check_failed");
           }
         } catch (error) {
-          console.error("Error checking subscription:", error);
-          push("/service-tiers?error=subscription_check_failed");
+          console.error("Error checking payment:", error);
+          push("/service-tiers?error=payment_check_failed");
         } finally {
           setCheckingAccess(false);
         }
@@ -296,6 +301,7 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part13Form
             initialData={workflowState.formData.part_13}
             onSubmit={handleSaveSection}
+            userTier={userTier}
           />
         );
 
@@ -320,6 +326,14 @@ export default function RECAFormPage({ params }: PageProps) {
           <Part16Form
             initialData={workflowState.formData.part_16}
             onSubmit={handleSaveSection}
+            claimantName={
+              workflowState.formData.part_1
+                ? {
+                    firstName: workflowState.formData.part_1.firstName || "",
+                    lastName: workflowState.formData.part_1.lastName || "",
+                  }
+                : undefined
+            }
           />
         );
 
@@ -345,7 +359,7 @@ export default function RECAFormPage({ params }: PageProps) {
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-terracotta-500 border-t-transparent"></div>
           <p className="text-sage-700">
-            {checkingAccess ? "Verifying subscription..." : "Loading form..."}
+            {checkingAccess ? "Verifying payment..." : "Loading form..."}
           </p>
         </div>
       </div>

@@ -34,6 +34,22 @@ export async function GET() {
       },
     });
 
+    // Check if user has any intake session with PDF downloaded
+    // This is used for installment plan commitment tracking
+    const hasDownloadedPDF = await prisma.intakeSession
+      .findFirst({
+        where: {
+          claimant: {
+            userId: session.user.id,
+          },
+          recaFormPdfDownloaded: true,
+        },
+        select: {
+          id: true,
+        },
+      })
+      .then((result) => !!result);
+
     // No subscription = needs to select a tier
     if (!subscription) {
       return NextResponse.json({
@@ -117,6 +133,7 @@ export async function GET() {
       needsPayment: !canAccessForms,
       isInstallmentPlan: subscription.isInstallmentPlan,
       installmentPaymentCount: subscription.installmentPaymentCount,
+      hasDownloadedPDF,
     });
   } catch (error) {
     console.error("Error fetching subscription status:", error);

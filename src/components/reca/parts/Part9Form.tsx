@@ -453,17 +453,37 @@ export default function Part9Form({
 
           {/* Document Upload */}
           <div className="space-y-4 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold text-sage-900">
-                Upload Proof of Presence Documents
-              </Label>
-              {successfulUploads > 0 && (
-                <span className="flex items-center gap-1 text-sm font-medium text-green-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {successfulUploads} document
-                  {successfulUploads !== 1 ? "s" : ""} uploaded
-                </span>
-              )}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold text-sage-900">
+                  Upload Proof of Presence Documents
+                </Label>
+                {successfulUploads > 0 && (
+                  <span className="flex items-center gap-1 text-sm font-medium text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {successfulUploads} document
+                    {successfulUploads !== 1 ? "s" : ""} uploaded
+                  </span>
+                )}
+              </div>
+
+              {/* Info card about document upload timing */}
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex gap-3">
+                  <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                  <div className="text-sm text-blue-800">
+                    <p className="mb-2">
+                      <strong>Have documents ready now?</strong> Upload them
+                      here to attach them to your claim.
+                    </p>
+                    <p>
+                      <strong>Don't have them yet?</strong> That's okay! You can
+                      continue with the form and upload documents later from
+                      your dashboard's document section.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <DocumentUpload
@@ -568,11 +588,12 @@ export default function Part9Form({
                   <FileText className="h-8 w-8 text-blue-600" />
                 </div>
                 <p className="mb-1 font-medium text-sage-800">
-                  Ready to upload documents
+                  No documents uploaded yet
                 </p>
                 <p className="text-sm text-sage-600">
-                  Use the upload section above to add proof of presence
-                  documents. They will be automatically saved to your claim.
+                  If you have proof of presence documents ready, use the upload
+                  section above to add them now. Otherwise, you can upload
+                  documents anytime from your dashboard.
                 </p>
               </div>
             )}

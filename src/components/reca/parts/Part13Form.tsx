@@ -5,7 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Part13Attorney } from "@/lib/reca/types";
-import { DEFAULT_ATTORNEY_INFO, ATTORNEY_INFO_EDITABLE } from "@/lib/reca/attorney-info";
+import {
+  DEFAULT_ATTORNEY_INFO,
+  ATTORNEY_INFO_EDITABLE,
+} from "@/lib/reca/attorney-info";
 import {
   Card,
   CardContent,
@@ -19,82 +22,183 @@ import { Briefcase, Info, AlertCircle, Lock } from "lucide-react";
 
 // US States for dropdown
 const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
-  "DC"
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+  "DC",
 ];
 
 // Validation schema
-const part13Schema = z.object({
-  hasAttorney: z.enum(["YES", "NO"], {
-    required_error: "Please indicate whether you have hired an attorney",
-  }),
-  attorneyFirstName: z.string().optional(),
-  attorneyLastName: z.string().optional(),
-  attorneyFirm: z.string().optional(),
-  attorneyAddress: z.string().optional(),
-  attorneyCity: z.string().optional(),
-  attorneyState: z.string().optional(),
-  attorneyZip: z.string().optional(),
-  attorneyPhone: z.string().optional(),
-  attorneyFax: z.string().optional(),
-  attorneyEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
-}).refine(
-  (data) => {
-    // If hasAttorney is YES, all attorney fields are required
-    if (data.hasAttorney === "YES") {
-      return (
-        data.attorneyFirstName && data.attorneyFirstName.trim().length > 0 &&
-        data.attorneyLastName && data.attorneyLastName.trim().length > 0 &&
-        data.attorneyAddress && data.attorneyAddress.trim().length > 0 &&
-        data.attorneyCity && data.attorneyCity.trim().length > 0 &&
-        data.attorneyState && data.attorneyState.trim().length > 0 &&
-        data.attorneyZip && data.attorneyZip.trim().length > 0 &&
-        data.attorneyPhone && data.attorneyPhone.trim().length > 0
-      );
+const part13Schema = z
+  .object({
+    hasAttorney: z.enum(["YES", "NO"], {
+      required_error: "Please indicate whether you have hired an attorney",
+    }),
+    attorneyFirstName: z.string().optional(),
+    attorneyLastName: z.string().optional(),
+    attorneyFirm: z.string().optional(),
+    attorneyAddress: z.string().optional(),
+    attorneyCity: z.string().optional(),
+    attorneyState: z.string().optional(),
+    attorneyZip: z.string().optional(),
+    attorneyPhone: z.string().optional(),
+    attorneyFax: z.string().optional(),
+    attorneyEmail: z
+      .string()
+      .email("Invalid email address")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine(
+    (data) => {
+      // If hasAttorney is YES, all attorney fields are required
+      if (data.hasAttorney === "YES") {
+        return (
+          data.attorneyFirstName &&
+          data.attorneyFirstName.trim().length > 0 &&
+          data.attorneyLastName &&
+          data.attorneyLastName.trim().length > 0 &&
+          data.attorneyAddress &&
+          data.attorneyAddress.trim().length > 0 &&
+          data.attorneyCity &&
+          data.attorneyCity.trim().length > 0 &&
+          data.attorneyState &&
+          data.attorneyState.trim().length > 0 &&
+          data.attorneyZip &&
+          data.attorneyZip.trim().length > 0 &&
+          data.attorneyPhone &&
+          data.attorneyPhone.trim().length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message:
+        "All required attorney fields must be completed when attorney is hired",
+      path: ["attorneyFirstName"],
     }
-    return true;
-  },
-  {
-    message: "All required attorney fields must be completed when attorney is hired",
-    path: ["attorneyFirstName"],
-  }
-);
+  );
 
 type Part13FormData = z.infer<typeof part13Schema>;
 
 interface Part13FormProps {
   initialData?: Partial<Part13Attorney>;
   onSubmit: (data: Part13Attorney) => void;
+  userTier?: "DIY_PREP" | "LEGAL_REP" | null;
 }
 
-export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
+export default function Part13Form({
+  initialData,
+  onSubmit,
+  userTier,
+}: Part13FormProps) {
+  // For DIY users, default to NO attorney representation
+  const isDIYUser = userTier === "DIY_PREP";
+
   const form = useForm<Part13FormData>({
     resolver: zodResolver(part13Schema),
     defaultValues: {
-      // Use initialData if exists, otherwise pre-fill with default attorney info
-      hasAttorney: initialData?.hasAttorney || DEFAULT_ATTORNEY_INFO.hasAttorney,
-      attorneyFirstName: initialData?.attorneyFirstName || DEFAULT_ATTORNEY_INFO.attorneyFirstName,
-      attorneyLastName: initialData?.attorneyLastName || DEFAULT_ATTORNEY_INFO.attorneyLastName,
-      attorneyFirm: initialData?.attorneyFirm || DEFAULT_ATTORNEY_INFO.attorneyFirm,
-      attorneyAddress: initialData?.attorneyAddress || DEFAULT_ATTORNEY_INFO.attorneyAddress,
-      attorneyCity: initialData?.attorneyCity || DEFAULT_ATTORNEY_INFO.attorneyCity,
-      attorneyState: initialData?.attorneyState || DEFAULT_ATTORNEY_INFO.attorneyState,
-      attorneyZip: initialData?.attorneyZip || DEFAULT_ATTORNEY_INFO.attorneyZip,
-      attorneyPhone: initialData?.attorneyPhone || DEFAULT_ATTORNEY_INFO.attorneyPhone,
-      attorneyFax: initialData?.attorneyFax || DEFAULT_ATTORNEY_INFO.attorneyFax || "",
-      attorneyEmail: initialData?.attorneyEmail || DEFAULT_ATTORNEY_INFO.attorneyEmail || "",
+      // DIY users: default to NO, Legal users: default to YES with attorney info
+      hasAttorney:
+        initialData?.hasAttorney ||
+        (isDIYUser ? "NO" : DEFAULT_ATTORNEY_INFO.hasAttorney),
+      attorneyFirstName:
+        initialData?.attorneyFirstName ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyFirstName),
+      attorneyLastName:
+        initialData?.attorneyLastName ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyLastName),
+      attorneyFirm:
+        initialData?.attorneyFirm ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyFirm),
+      attorneyAddress:
+        initialData?.attorneyAddress ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyAddress),
+      attorneyCity:
+        initialData?.attorneyCity ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyCity),
+      attorneyState:
+        initialData?.attorneyState ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyState),
+      attorneyZip:
+        initialData?.attorneyZip ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyZip),
+      attorneyPhone:
+        initialData?.attorneyPhone ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyPhone),
+      attorneyFax:
+        initialData?.attorneyFax ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyFax) ||
+        "",
+      attorneyEmail:
+        initialData?.attorneyEmail ||
+        (isDIYUser ? "" : DEFAULT_ATTORNEY_INFO.attorneyEmail) ||
+        "",
     },
   });
 
   // const hasAttorney = form.watch("hasAttorney");
   const formErrors = form.formState.errors;
 
-  // Auto-submit when form data changes (with validation)
+  // Auto-submit for DIY users on mount
   useEffect(() => {
+    if (isDIYUser) {
+      const values = form.getValues();
+      onSubmit(values as Part13Attorney);
+    }
+  }, [isDIYUser, form, onSubmit]);
+
+  // Auto-submit when form data changes (with validation) - only for LEGAL_REP users
+  useEffect(() => {
+    if (isDIYUser) return; // DIY users already submitted
+
     const subscription = form.watch(() => {
       const values = form.getValues();
       // Only submit if hasAttorney is selected
@@ -105,21 +209,127 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
         }
         // If YES, only submit when all required fields are filled
         else if (
-          values.attorneyFirstName && values.attorneyFirstName.trim().length > 0 &&
-          values.attorneyLastName && values.attorneyLastName.trim().length > 0 &&
-          values.attorneyAddress && values.attorneyAddress.trim().length > 0 &&
-          values.attorneyCity && values.attorneyCity.trim().length > 0 &&
-          values.attorneyState && values.attorneyState.trim().length > 0 &&
-          values.attorneyZip && values.attorneyZip.trim().length > 0 &&
-          values.attorneyPhone && values.attorneyPhone.trim().length > 0
+          values.attorneyFirstName &&
+          values.attorneyFirstName.trim().length > 0 &&
+          values.attorneyLastName &&
+          values.attorneyLastName.trim().length > 0 &&
+          values.attorneyAddress &&
+          values.attorneyAddress.trim().length > 0 &&
+          values.attorneyCity &&
+          values.attorneyCity.trim().length > 0 &&
+          values.attorneyState &&
+          values.attorneyState.trim().length > 0 &&
+          values.attorneyZip &&
+          values.attorneyZip.trim().length > 0 &&
+          values.attorneyPhone &&
+          values.attorneyPhone.trim().length > 0
         ) {
           onSubmit(values as Part13Attorney);
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, onSubmit]);
+  }, [form, onSubmit, isDIYUser]);
 
+  // Render simplified form for DIY users
+  if (isDIYUser) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sage-900">
+              <Briefcase className="h-5 w-5 text-terracotta-500" />
+              Part 13: Attorney Representation
+            </CardTitle>
+            <CardDescription>
+              Confirmation of self-representation status
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* DIY Service Confirmation */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="flex gap-3">
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                <div>
+                  <p className="mb-2 font-semibold text-blue-900">
+                    DIY Document Preparation Service
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    You selected RadiantClaims' DIY service tier, which provides
+                    document preparation assistance without legal
+                    representation. You will be filing this claim on your own
+                    behalf.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Self-Representation Confirmation */}
+            <div className="space-y-4">
+              <Label className="text-base font-semibold text-sage-900">
+                Self-Representation Confirmation
+              </Label>
+
+              <div className="rounded-md border-2 border-sage-300 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-sage-600">
+                    <span className="text-sm text-white">✓</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="mb-2 font-semibold text-sage-900">
+                      Filing Without Attorney Representation
+                    </p>
+                    <p className="text-sm text-sage-700">
+                      You have confirmed that you do not have an attorney
+                      representing you for this RECA claim. All correspondence
+                      from the RECA Program will be sent directly to you at the
+                      address provided in Part 1 of this form.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Notice */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                <div>
+                  <p className="mb-2 font-semibold text-amber-900">
+                    All Communications Will Come Directly to You
+                  </p>
+                  <p className="text-sm text-amber-800">
+                    The RECA Program will send all correspondence, requests for
+                    additional information, and claim decisions directly to the
+                    mailing address you provided in Part 1. Make sure to check
+                    your mail regularly and respond promptly to any requests.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Next Steps */}
+        <Card className="border-sage-200">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
+              <div>
+                <p className="text-sm text-sage-700">
+                  <strong>Next Step:</strong> After completing this section, you
+                  will move on to Part 16 where you will sign and certify your
+                  RECA claim application.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render full attorney information form for LEGAL_REP users
   return (
     <div className="space-y-6">
       <Card>
@@ -129,50 +339,54 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
             Part 13: Attorney Representation
           </CardTitle>
           <CardDescription>
-            Optional attorney representation (not required to file claim)
+            Legal representation included with your service
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* RadiantClaims Service Notice */}
-          <div className="rounded-lg bg-terracotta-50 border border-terracotta-200 p-4">
+          <div className="rounded-lg border border-terracotta-200 bg-terracotta-50 p-4">
             <div className="flex gap-3">
-              <Briefcase className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
+              <Briefcase className="mt-0.5 h-5 w-5 flex-shrink-0 text-terracotta-600" />
               <div>
-                <p className="font-semibold text-terracotta-900 mb-2">
+                <p className="mb-2 font-semibold text-terracotta-900">
                   Attorney Representation Included with RadiantClaims Service
                 </p>
-                <p className="text-sm text-terracotta-800 mb-2">
-                  By using RadiantClaims to prepare your RECA claim, you are automatically working with
-                  our partner law firm for legal representation. This is part of our service to help
-                  maximize your chances of approval.
+                <p className="mb-2 text-sm text-terracotta-800">
+                  By using RadiantClaims to prepare your RECA claim, you are
+                  automatically working with our partner law firm for legal
+                  representation. This is part of our service to help maximize
+                  your chances of approval.
                 </p>
                 <p className="text-sm text-terracotta-800">
-                  <strong>Important:</strong> The RECA Program will communicate with your attorney on
-                  all matters related to your claim. You will receive copies of all correspondence.
+                  <strong>Important:</strong> The RECA Program will communicate
+                  with your attorney on all matters related to your claim. You
+                  will receive copies of all correspondence.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Attorney Fee Limits */}
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
               <div>
-                <p className="font-semibold text-amber-900 mb-2">
+                <p className="mb-2 font-semibold text-amber-900">
                   Attorney Fee Limitations
                 </p>
-                <div className="text-sm text-amber-800 space-y-2">
+                <div className="space-y-2 text-sm text-amber-800">
                   <p>
-                    <strong>2% for initial claims:</strong> If filing a new claim for the first time
+                    <strong>2% for initial claims:</strong> If filing a new
+                    claim for the first time
                   </p>
                   <p>
-                    <strong>10% for resubmissions:</strong> If resubmitting a previously denied claim
-                    OR if the representation contract was made before July 10, 2000
+                    <strong>10% for resubmissions:</strong> If resubmitting a
+                    previously denied claim OR if the representation contract
+                    was made before July 10, 2000
                   </p>
                   <p className="mt-2">
-                    These fee limits are set by federal law. Attorneys who charge more than these
-                    amounts are subject to penalties.
+                    These fee limits are set by federal law. Attorneys who
+                    charge more than these amounts are subject to penalties.
                   </p>
                 </div>
               </div>
@@ -192,10 +406,12 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-terracotta-900">
-                    ✓ Legal representation included with your RadiantClaims service
+                    ✓ Legal representation included with your RadiantClaims
+                    service
                   </p>
-                  <p className="text-sm text-terracotta-700 mt-1">
-                    Our partner law firm will handle all legal aspects of your RECA claim filing
+                  <p className="mt-1 text-sm text-terracotta-700">
+                    Our partner law firm will handle all legal aspects of your
+                    RECA claim filing
                   </p>
                 </div>
               </div>
@@ -203,28 +419,31 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
           </div>
 
           {/* Attorney Information (Always Show Since hasAttorney is Always YES) */}
-          <div className="space-y-6 pl-4 border-l-2 border-terracotta-300">
+          <div className="space-y-6 border-l-2 border-terracotta-300 pl-4">
             <div>
-              <h3 className="text-base font-semibold text-sage-900 mb-2">
+              <h3 className="mb-2 text-base font-semibold text-sage-900">
                 Partner Attorney Information
               </h3>
-              <p className="text-sm text-sage-600 mb-4">
-                The information below shows the partner law firm handling your RECA claim. This
-                information will be included in your claim submission.
+              <p className="mb-4 text-sm text-sage-600">
+                The information below shows the partner law firm handling your
+                RECA claim. This information will be included in your claim
+                submission.
               </p>
 
               {formErrors.attorneyFirstName && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-3 mb-4">
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
                   <div className="flex gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800">{formErrors.attorneyFirstName.message}</p>
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+                    <p className="text-sm text-red-800">
+                      {formErrors.attorneyFirstName.message}
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Attorney Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="attorneyFirstName">First Name</Label>
                 <Input
@@ -268,7 +487,7 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
             </div>
 
             {/* City, State, Zip */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="attorneyCity">City</Label>
                 <Input
@@ -307,7 +526,7 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
             </div>
 
             {/* Phone and Fax */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="attorneyPhone">Phone Number</Label>
                 <Input
@@ -341,22 +560,25 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
                 type="email"
               />
               {formErrors.attorneyEmail && (
-                <p className="text-sm text-red-600">{formErrors.attorneyEmail.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.attorneyEmail.message}
+                </p>
               )}
             </div>
 
             {/* Note about attorney info */}
             {!ATTORNEY_INFO_EDITABLE && (
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="flex gap-3">
-                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
                   <div>
-                    <p className="text-sm font-semibold text-blue-900 mb-1">
+                    <p className="mb-1 text-sm font-semibold text-blue-900">
                       Attorney Information Pre-Configured
                     </p>
                     <p className="text-sm text-blue-800">
-                      This information is managed by RadiantClaims and our partner law firm. If you
-                      need to update any details, please contact support.
+                      This information is managed by RadiantClaims and our
+                      partner law firm. If you need to update any details,
+                      please contact support.
                     </p>
                   </div>
                 </div>
@@ -364,17 +586,18 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
             )}
 
             {/* Communication Notice */}
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
               <div className="flex gap-3">
-                <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-900 mb-1">
+                  <p className="mb-1 text-sm font-semibold text-amber-900">
                     All Communications Will Go to Your Attorney
                   </p>
                   <p className="text-sm text-amber-800">
-                    The RECA Program will send all correspondence, updates, and decisions to your
-                    attorney's address. RadiantClaims and the partner law firm will keep you informed
-                    throughout the process.
+                    The RECA Program will send all correspondence, updates, and
+                    decisions to your attorney's address. RadiantClaims and the
+                    partner law firm will keep you informed throughout the
+                    process.
                   </p>
                 </div>
               </div>
@@ -387,12 +610,13 @@ export default function Part13Form({ initialData, onSubmit }: Part13FormProps) {
       <Card className="border-sage-200">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
             <div>
               <p className="text-sm text-sage-700">
-                <strong>Next Step:</strong> After completing this section, you will move on to Part
-                14 where the partner attorney will sign an acknowledgment of the 2% fee limitation
-                under RECA for initial claims.
+                <strong>Next Step:</strong> After completing this section, you
+                will move on to Part 14 where the partner attorney will sign an
+                acknowledgment of the 2% fee limitation under RECA for initial
+                claims.
               </p>
             </div>
           </div>
