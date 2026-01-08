@@ -1036,8 +1036,13 @@ export default function EligibilityCheckPage() {
 
             <div className="rounded-2xl border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white p-5">
               <Label className="mb-4 block text-lg font-medium text-sage-900">
-                {formData.intent === "self" ? "Have you" : "Did they"} been
-                diagnosed with cancer?
+                {formData.intent === "self"
+                  ? "Have you"
+                  : formData.intent === "deceased-relative" ||
+                      formData.intent === "someone-else-relative"
+                    ? "Had they"
+                    : "Have they"}{" "}
+                been diagnosed with cancer?
               </Label>
               <RadioGroup
                 value={formData.hasCancer}
