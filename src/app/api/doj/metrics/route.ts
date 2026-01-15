@@ -21,9 +21,16 @@ export async function GET(_req: NextRequest) {
     const insights = await generateInsightsSummary("DOWNWINDER");
 
     if (!insights) {
+      // Return a more helpful error with 503 (Service Unavailable) instead of 404
+      // This indicates the service exists but data isn't ready yet
       return NextResponse.json(
-        { error: "No DOJ data available" },
-        { status: 404 }
+        {
+          error: "DOJ metrics not available",
+          message:
+            "Metrics haven't been calculated yet. Please run: npx tsx scripts/calculate-doj-metrics.ts",
+          requiresData: true,
+        },
+        { status: 503 }
       );
     }
 

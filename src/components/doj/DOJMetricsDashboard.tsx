@@ -124,14 +124,30 @@ export function DOJMetricsDashboard() {
       const response = await fetch("/api/doj/metrics");
 
       if (!response.ok) {
-        throw new Error("Failed to fetch DOJ metrics");
+        const errorData = await response.json();
+
+        // Handle specific error cases
+        if (response.status === 503) {
+          throw new Error(
+            errorData.message ||
+              "DOJ metrics are not available yet. Please check back later."
+          );
+        } else if (response.status === 401) {
+          throw new Error("You must be logged in to view DOJ metrics");
+        } else {
+          throw new Error("Failed to fetch DOJ metrics");
+        }
       }
 
       const result = await response.json();
       setMetrics(result.data);
     } catch (err) {
       console.error("Error fetching DOJ metrics:", err);
-      setError("Failed to load DOJ processing metrics");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load DOJ processing metrics"
+      );
     } finally {
       setLoading(false);
     }
