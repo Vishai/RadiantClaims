@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       await db.auditLog.create({
         data: {
           userId: session.user.id,
-          action: "REFERRAL_CODE_CREATED",
+          action: "USER_UPDATED",
           resourceType: "Referral",
           resourceId: referralRecord.id,
           ipAddress: req.headers.get("x-forwarded-for") || "unknown",
@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
             promoCode: normalizedCode,
             referralCode: referralRecord.code,
             method: "auto-generated",
+            description: "Referral code created for user",
           }),
         },
       });
