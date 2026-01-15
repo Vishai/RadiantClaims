@@ -10,12 +10,14 @@ interface LegalRepresentationAgreementProps {
   onAccept: () => void;
   onDecline: () => void;
   isLoading?: boolean;
+  errorMessage?: string | null;
 }
 
 export function LegalRepresentationAgreement({
   onAccept,
   onDecline,
   isLoading = false,
+  errorMessage = null,
 }: LegalRepresentationAgreementProps) {
   const [hasRead, setHasRead] = useState(false);
   const [hasAgreed, setHasAgreed] = useState(false);
@@ -312,6 +314,19 @@ export function LegalRepresentationAgreement({
           </div>
         </ScrollArea>
       </div>
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4">
+          <div className="flex gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+            <div className="text-sm text-red-900">
+              <p className="font-semibold">Error</p>
+              <p className="mt-1">{errorMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Acknowledgment Checkboxes */}
       <div className="space-y-4">

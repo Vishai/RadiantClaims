@@ -12,7 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   CheckCircle,
   Heart,
@@ -910,15 +915,24 @@ function ServiceTiersContent() {
       {/* DIY Terms Agreement Dialog */}
       <Dialog open={showDIYAgreement} onOpenChange={setShowDIYAgreement}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-3xl">
+          <DialogTitle className="sr-only">
+            DIY Document Preparation - Terms of Service
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Please review and accept the terms of service to proceed with DIY
+            document preparation
+          </DialogDescription>
           <DIYTermsAgreement
             onAccept={handleDIYAccept}
             onDecline={() => {
               setShowDIYAgreement(false);
               setSelectedTier(null);
               setIsLoading(false);
+              setErrorMessage(null);
             }}
             isLoading={isLoading}
             paymentPlan={paymentPlan}
+            errorMessage={errorMessage}
           />
         </DialogContent>
       </Dialog>
@@ -926,14 +940,23 @@ function ServiceTiersContent() {
       {/* Legal Representation Agreement Dialog */}
       <Dialog open={showLegalAgreement} onOpenChange={setShowLegalAgreement}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-3xl">
+          <DialogTitle className="sr-only">
+            Legal Representation Agreement
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Please review and accept the legal representation agreement to
+            proceed
+          </DialogDescription>
           <LegalRepresentationAgreement
             onAccept={handleLegalAccept}
             onDecline={() => {
               setShowLegalAgreement(false);
               setSelectedTier(null);
               setIsLoading(false);
+              setErrorMessage(null);
             }}
             isLoading={isLoading}
+            errorMessage={errorMessage}
           />
         </DialogContent>
       </Dialog>
