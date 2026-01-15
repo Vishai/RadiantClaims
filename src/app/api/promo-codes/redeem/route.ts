@@ -87,7 +87,8 @@ export async function POST(req: NextRequest) {
     // Generate referral code if they don't have one
     if (!referralRecord) {
       // Create a memorable referral code based on user's name or email
-      const userName = session.user.name || session.user.email.split("@")[0];
+      const userName =
+        session.user.name || session.user.email?.split("@")[0] || "USER";
       const cleanName = userName
         .replace(/[^a-zA-Z0-9]/g, "")
         .toUpperCase()
