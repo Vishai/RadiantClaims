@@ -171,7 +171,11 @@ function ServiceTiersContent() {
         }
 
         if (data.error) {
-          setErrorMessage(data.error);
+          // Include details if available for better debugging
+          const fullError = data.details
+            ? `${data.error}: ${data.details}`
+            : data.error;
+          setErrorMessage(fullError);
           setIsLoading(false);
           return;
         }
@@ -241,7 +245,11 @@ function ServiceTiersContent() {
         }
 
         if (data.error) {
-          setErrorMessage(data.error);
+          // Include details if available for better debugging
+          const fullError = data.details
+            ? `${data.error}: ${data.details}`
+            : data.error;
+          setErrorMessage(fullError);
           setIsLoading(false);
           return;
         }
