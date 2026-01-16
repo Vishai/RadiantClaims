@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ResourceFeedbackType } from "@prisma/client";
+import { scrapeDOJDailyData } from "@/lib/doj-scraper-puppeteer";
+import { subDays } from "date-fns";
 
 /**
- * API endpoint to aggregate ResourceFeedback into ResourceStats
- * This should be called by a cron job daily to update stats
+ * Combined Early Morning Cron Job
+ *
+ * Runs daily at 2 AM UTC to:
+ * 1. Scrape latest DOJ claim data from justice.gov
+ * 2. Aggregate ResourceFeedback into ResourceStats
  */
 export async function POST(request: NextRequest) {
   try {
@@ -18,8 +23,32 @@ export async function POST(request: NextRequest) {
 
     const results = {
       resourcesUpdated: 0,
+      dojScrapingSuccess: false,
       errors: [] as string[],
     };
+
+    // SCRAPE DOJ DATA
+    console.log("\n🌐 Scraping latest DOJ claim data...");
+    try {
+      // Scrape yesterday's data (today's might not be available yet)
+      const yesterday = subDays(new Date(), 1);
+      const dojResult = await scrapeDOJDailyData(yesterday);
+
+      if (dojResult.success) {
+        results.dojScrapingSuccess = true;
+        console.log(`✅ Successfully scraped DOJ data for yesterday`);
+      } else {
+        throw new Error(dojResult.error || "Unknown scraping error");
+      }
+    } catch (dojError) {
+      const errorMsg = `Failed to scrape DOJ data: ${dojError}`;
+      console.error(errorMsg);
+      results.errors.push(errorMsg);
+      // Don't fail the entire job if DOJ scraping fails
+    }
+
+    // AGGREGATE RESOURCE STATS
+    console.log("\n📊 Aggregating resource feedback stats...");
 
     // Get all resources that have feedback or interactions
     const resourcesWithActivity = await prisma.documentResource.findMany({
