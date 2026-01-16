@@ -198,7 +198,7 @@ export default function CustomerPortal() {
     }
   };
 
-  const handleDeleteClaim = async (claimId: string, claimantName: string) => {
+  const handleDeleteClaim = async (claimId: string) => {
     const claim = claims.find((c) => c.id === claimId);
     if (!claim) return;
 
@@ -677,12 +677,8 @@ export default function CustomerPortal() {
                 </Button>
                 <Button
                   onClick={() => {
-                    const claim = claims.find((c) => c.id === claimToDelete);
-                    if (claim) {
-                      handleDeleteClaim(
-                        claimToDelete,
-                        `${claim.firstName} ${claim.lastName}`
-                      );
+                    if (claimToDelete) {
+                      handleDeleteClaim(claimToDelete);
                     }
                   }}
                   disabled={isDeleting}
