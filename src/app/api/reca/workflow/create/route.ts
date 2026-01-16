@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
       claimType,
       isGuest = false,
       eligibilityData: clientEligibilityData,
+      claimantId: providedClaimantId, // NEW: Allow providing claimant ID from subscription flow
     } = body;
 
     // Require authenticated users – guest access is disabled for paid launch
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
     const subscription = await db.serviceSubscription.findUnique({
       where: { userId: session.user.id },
       select: {
+        id: true,
         tier: true,
         status: true,
         setupFeePaid: true,
@@ -65,39 +67,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check existing claims count
+    const existingClaims = await db.claimant.findMany({
+      where: { userId: session.user.id },
+    });
+
     let claimantId: string | null = null;
     let eligibilityDataFromDB: any = null;
 
-    // Associate workflow with the caller's claimant profile
-    if (session.user.email && session.user.id) {
-      let claimant = await db.claimant.findFirst({
-        where: {
-          OR: [{ email: session.user.email }, { userId: session.user.id }],
-        },
-        select: {
-          id: true,
-          userId: true,
-          email: true,
-          eligibilityData: true, // Retrieve eligibility data from database
-        },
+    // If this is a subsequent claim (2nd+), require claim subscription
+    if (existingClaims.length > 0) {
+      // Subsequent claim - must have claimantId from subscription flow
+      if (!providedClaimantId) {
+        return NextResponse.json(
+          {
+            error: "SUBSEQUENT_CLAIM_REQUIRES_SUBSCRIPTION",
+            message:
+              "This is your 2nd or additional claim. Please complete payment for this claim before starting the form.",
+            existingClaimCount: existingClaims.length,
+            nextClaimOrder: existingClaims.length + 1,
+          },
+          { status: 402 } // 402 Payment Required
+        );
+      }
+
+      // Verify claimant exists and has subscription
+      const claimant = await db.claimant.findUnique({
+        where: { id: providedClaimantId },
+        include: { claimSubscription: true },
       });
 
-      if (!claimant) {
-        // Create a new claimant record for authenticated user
-        claimant = await db.claimant.create({
-          data: {
-            userId: session.user.id, // Link to user account
-            email: session.user.email,
-            firstName: session.user.name?.split(" ")[0] || "",
-            lastName: session.user.name?.split(" ").slice(1).join(" ") || "",
-            phone: "",
-            dob: new Date().toISOString(),
-            address1: "",
-            city: "",
-            county: "",
-            state: "",
-            postalCode: "",
-            claimType: claimType || "DOWNWINDER",
+      if (!claimant || claimant.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: "Invalid claimant ID" },
+          { status: 400 }
+        );
+      }
+
+      // Verify claim subscription is paid
+      if (
+        !claimant.claimSubscription ||
+        !claimant.claimSubscription.setupFeePaid
+      ) {
+        return NextResponse.json(
+          {
+            error: "CLAIM_SUBSCRIPTION_NOT_PAID",
+            message:
+              "Payment is required for this claim before you can start the form.",
+            claimantId: providedClaimantId,
+          },
+          { status: 402 }
+        );
+      }
+
+      claimantId = claimant.id;
+      eligibilityDataFromDB = claimant.eligibilityData;
+    } else {
+      // First claim - covered by initial service subscription
+      // Associate workflow with the caller's claimant profile
+      if (session.user.email && session.user.id) {
+        let claimant = await db.claimant.findFirst({
+          where: {
+            OR: [{ email: session.user.email }, { userId: session.user.id }],
           },
           select: {
             id: true,
@@ -106,19 +137,23 @@ export async function POST(request: NextRequest) {
             eligibilityData: true,
           },
         });
-      } else {
-        // Store eligibility data from claimant if it exists
-        eligibilityDataFromDB = claimant.eligibilityData;
 
-        if (!claimant.userId) {
-          // If claimant exists but not linked to user, link it now
-          // LEAD TRACKING: Update conversion stage when user creates account
-          claimant = await db.claimant.update({
-            where: { id: claimant.id },
+        if (!claimant) {
+          // Create a new claimant record for authenticated user (first claim)
+          claimant = await db.claimant.create({
             data: {
               userId: session.user.id,
-              leadStatus: "CONVERTED", // They signed up!
-              conversionStage: "FORM_STARTED", // Starting the RECA form
+              email: session.user.email,
+              firstName: session.user.name?.split(" ")[0] || "",
+              lastName: session.user.name?.split(" ").slice(1).join(" ") || "",
+              phone: "",
+              dob: new Date().toISOString(),
+              address1: "",
+              city: "",
+              county: "",
+              state: "",
+              postalCode: "",
+              claimType: claimType || "DOWNWINDER",
             },
             select: {
               id: true,
@@ -128,17 +163,38 @@ export async function POST(request: NextRequest) {
             },
           });
         } else {
-          // User already linked, update conversion stage
-          await db.claimant.update({
-            where: { id: claimant.id },
-            data: {
-              leadStatus: "CONVERTED",
-              conversionStage: "FORM_STARTED",
-            },
-          });
+          // Store eligibility data from claimant if it exists
+          eligibilityDataFromDB = claimant.eligibilityData;
+
+          if (!claimant.userId) {
+            // If claimant exists but not linked to user, link it now
+            claimant = await db.claimant.update({
+              where: { id: claimant.id },
+              data: {
+                userId: session.user.id,
+                leadStatus: "CONVERTED",
+                conversionStage: "FORM_STARTED",
+              },
+              select: {
+                id: true,
+                userId: true,
+                email: true,
+                eligibilityData: true,
+              },
+            });
+          } else {
+            // User already linked, update conversion stage
+            await db.claimant.update({
+              where: { id: claimant.id },
+              data: {
+                leadStatus: "CONVERTED",
+                conversionStage: "FORM_STARTED",
+              },
+            });
+          }
         }
+        claimantId = claimant.id;
       }
-      claimantId = claimant.id;
     }
 
     // Generate resume token so the user can resume progress
