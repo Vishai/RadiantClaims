@@ -47,12 +47,13 @@ export async function POST(request: NextRequest) {
     const claimOrder = existingClaims.length + 1;
 
     // Create placeholder claimant
+    // Note: Name will be filled in during RECA form when user identifies the exposed individual
     const claimant = await db.claimant.create({
       data: {
         userId: session.user.id,
         email: session.user.email!,
-        firstName: `Claim ${claimOrder}`, // Placeholder - will be filled in during form
-        lastName: session.user.name || "",
+        firstName: "Pending", // Will be filled in during form with actual exposed individual's name
+        lastName: `Claim ${claimOrder}`, // Will be filled in during form
         phone: "",
         dob: new Date().toISOString(),
         address1: "",

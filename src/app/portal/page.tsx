@@ -202,9 +202,19 @@ export default function CustomerPortal() {
     const claim = claims.find((c) => c.id === claimId);
     if (!claim) return;
 
-    // Require exact name match for safety
-    if (deleteConfirmName !== `${claim.firstName} ${claim.lastName}`) {
-      alert("Name does not match. Please type the full name exactly.");
+    // For pending claims, require "DELETE" confirmation
+    // For named claims, require exact name match
+    const expectedConfirmation =
+      claim.firstName === "Pending"
+        ? "DELETE"
+        : `${claim.firstName} ${claim.lastName}`;
+
+    if (deleteConfirmName !== expectedConfirmation) {
+      const message =
+        claim.firstName === "Pending"
+          ? 'Please type "DELETE" exactly to confirm.'
+          : "Name does not match. Please type the full name exactly.";
+      alert(message);
       return;
     }
 
@@ -397,7 +407,9 @@ export default function CustomerPortal() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-sage-900">
-                          {claim.firstName} {claim.lastName}
+                          {claim.firstName === "Pending"
+                            ? `Claim #${claims.indexOf(claim) + 1} (Name Pending)`
+                            : `${claim.firstName} ${claim.lastName}`}
                         </CardTitle>
                         <CardDescription className="text-sage-600">
                           Started on{" "}
@@ -653,13 +665,23 @@ export default function CustomerPortal() {
             <CardContent className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-sage-700">
-                  Type the claimant's full name to confirm:
+                  {(() => {
+                    const claim = claims.find((c) => c.id === claimToDelete);
+                    return claim?.firstName === "Pending"
+                      ? `Type "DELETE" to confirm:`
+                      : `Type the claimant's full name to confirm:`;
+                  })()}
                 </label>
                 <input
                   type="text"
                   value={deleteConfirmName}
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
-                  placeholder={`${claims.find((c) => c.id === claimToDelete)?.firstName} ${claims.find((c) => c.id === claimToDelete)?.lastName}`}
+                  placeholder={(() => {
+                    const claim = claims.find((c) => c.id === claimToDelete);
+                    return claim?.firstName === "Pending"
+                      ? "DELETE"
+                      : `${claim?.firstName} ${claim?.lastName}`;
+                  })()}
                   className="w-full rounded-lg border border-sage-300 px-4 py-2 text-sage-900 focus:border-terracotta-500 focus:outline-none focus:ring-2 focus:ring-terracotta-500/20"
                 />
               </div>
