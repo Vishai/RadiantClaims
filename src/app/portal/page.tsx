@@ -24,10 +24,12 @@ import {
   Upload,
   BookOpen,
   Menu,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
+import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 
 interface Claimant {
   id: string;
@@ -101,6 +103,10 @@ export default function CustomerPortal() {
   const [packetActionError, setPacketActionError] = useState<string | null>(
     null
   );
+  const [showNewClaimDialog, setShowNewClaimDialog] = useState(false);
+  const [claimToDelete, setClaimToDelete] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadClaims = useCallback(async () => {
     try {
@@ -189,6 +195,37 @@ export default function CustomerPortal() {
       );
     } finally {
       setPacketAction(sessionId, null);
+    }
+  };
+
+  const handleDeleteClaim = async (claimId: string, claimantName: string) => {
+    const claim = claims.find((c) => c.id === claimId);
+    if (!claim) return;
+
+    // Require exact name match for safety
+    if (deleteConfirmName !== `${claim.firstName} ${claim.lastName}`) {
+      alert("Name does not match. Please type the full name exactly.");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/claimants/${claimId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to delete claim");
+      }
+
+      await loadClaims();
+      setClaimToDelete(null);
+      setDeleteConfirmName("");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to delete claim");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -310,14 +347,14 @@ export default function CustomerPortal() {
                 No claims yet
               </h3>
               <p className="mb-6 text-center text-sage-600">
-                Start your claim packet to begin the process
+                Start your first claim to begin the process
               </p>
               <Button
                 onClick={() => router.push("/intake")}
                 className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
               >
                 <Plus className="h-4 w-4" />
-                Start New Claim
+                Start First Claim
               </Button>
             </CardContent>
           </Card>
@@ -487,6 +524,16 @@ export default function CustomerPortal() {
                           <BookOpen className="h-4 w-4" />
                           Resources
                         </Button>
+
+                        {/* Delete Claim Button */}
+                        <Button
+                          variant="outline"
+                          onClick={() => setClaimToDelete(claim.id)}
+                          className="gap-2 rounded-full border-rose-300 text-rose-700 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
                       </div>
                       <p className="text-xs text-sage-600">
                         Finish the RECA application first. Then complete the
@@ -501,7 +548,7 @@ export default function CustomerPortal() {
 
             {/* Add New Claim */}
             <Button
-              onClick={() => router.push("/intake")}
+              onClick={() => setShowNewClaimDialog(true)}
               variant="outline"
               className="w-full gap-2 rounded-full border-2 border-dashed border-sage-300 py-6 text-sage-700 hover:border-terracotta-400 hover:bg-terracotta-50 hover:text-terracotta-700"
             >
@@ -578,6 +625,76 @@ export default function CustomerPortal() {
           </div>
         )}
       </main>
+
+      {/* New Claim Dialog */}
+      <NewClaimDialog
+        open={showNewClaimDialog}
+        onOpenChange={(open) => {
+          setShowNewClaimDialog(open);
+          if (!open) {
+            // Reload claims when dialog closes (in case they completed payment)
+            loadClaims();
+          }
+        }}
+        existingClaimCount={claims.length}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      {claimToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md rounded-3xl border-2 border-rose-200 bg-white shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-rose-900">Delete Claim?</CardTitle>
+              <CardDescription className="text-rose-700">
+                This action cannot be undone. This will permanently delete the
+                claim and all associated data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-sage-700">
+                  Type the claimant's full name to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder={`${claims.find((c) => c.id === claimToDelete)?.firstName} ${claims.find((c) => c.id === claimToDelete)?.lastName}`}
+                  className="w-full rounded-lg border border-sage-300 px-4 py-2 text-sage-900 focus:border-terracotta-500 focus:outline-none focus:ring-2 focus:ring-terracotta-500/20"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setClaimToDelete(null);
+                    setDeleteConfirmName("");
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    const claim = claims.find((c) => c.id === claimToDelete);
+                    if (claim) {
+                      handleDeleteClaim(
+                        claimToDelete,
+                        `${claim.firstName} ${claim.lastName}`
+                      );
+                    }
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 rounded-full bg-rose-600 hover:bg-rose-700"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Claim"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export async function GET(
@@ -28,6 +30,76 @@ export async function GET(
     console.error("Failed to fetch claimant:", error);
     return NextResponse.json(
       { error: "Failed to fetch claimant" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify claimant belongs to user
+    const claimant = await db.claimant.findUnique({
+      where: { id: params.id },
+      include: {
+        claimSubscription: true,
+        intakeSessions: true,
+      },
+    });
+
+    if (!claimant) {
+      return NextResponse.json(
+        { error: "Claimant not found" },
+        { status: 404 }
+      );
+    }
+
+    if (claimant.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "You don't have permission to delete this claim" },
+        { status: 403 }
+      );
+    }
+
+    // Delete related data first (cascade should handle most, but be explicit)
+    // Delete claim subscription if exists
+    if (claimant.claimSubscription) {
+      await db.claimSubscription.delete({
+        where: { id: claimant.claimSubscription.id },
+      });
+    }
+
+    // Delete intake sessions
+    if (claimant.intakeSessions && claimant.intakeSessions.length > 0) {
+      await db.intakeSession.deleteMany({
+        where: { claimantId: params.id },
+      });
+    }
+
+    // Delete the claimant
+    await db.claimant.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Claim deleted successfully",
+    });
+  } catch (error) {
+    console.error("Failed to delete claimant:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to delete claim",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
