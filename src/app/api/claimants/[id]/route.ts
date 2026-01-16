@@ -51,7 +51,7 @@ export async function DELETE(
       where: { id: params.id },
       include: {
         claimSubscription: true,
-        intakeSessions: true,
+        intakeSession: true,
       },
     });
 
@@ -77,10 +77,10 @@ export async function DELETE(
       });
     }
 
-    // Delete intake sessions
-    if (claimant.intakeSessions && claimant.intakeSessions.length > 0) {
-      await db.intakeSession.deleteMany({
-        where: { claimantId: params.id },
+    // Delete intake session if exists
+    if (claimant.intakeSession) {
+      await db.intakeSession.delete({
+        where: { id: claimant.intakeSession.id },
       });
     }
 
