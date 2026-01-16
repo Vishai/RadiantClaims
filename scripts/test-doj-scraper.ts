@@ -8,12 +8,16 @@
 import { scrapeDOJDailyData } from "../src/lib/doj-scraper-puppeteer";
 
 async function main() {
-  console.log("🧪 Testing DOJ scraper with today's date...\n");
+  console.log("🧪 Testing DOJ scraper with yesterday's date...\n");
 
-  // Test with Dec 5, 2024 (we know this exists)
-  const testDate = new Date("2024-12-05");
+  // Test with yesterday (today's data might not be published yet)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(7, 0, 0, 0); // Set to 7 AM to match scraper
 
-  const result = await scrapeDOJDailyData(testDate);
+  console.log(`Testing date: ${yesterday.toLocaleDateString()}\n`);
+
+  const result = await scrapeDOJDailyData(yesterday);
 
   if (result.success) {
     console.log("\n✅ Test successful!");

@@ -127,9 +127,10 @@ function parseDOJAwardsPage(html: string) {
     },
   };
 
-  // Look for Downwinder section
+  // Look for Downwinder section (table format)
+  // The HTML has table rows where each cell contains a <p> tag with the number
   const downwinderMatch = html.match(
-    /Downwinder[\s\S]{0,800}?Pending[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approved[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approval\s*%[:\s]*([\d.]+)[\s\S]{0,150}?\$\s*Approved[:\s]*\$?([\d,]+)[\s\S]{0,150}?Denied[:\s]*(\d+,?\d*)[\s\S]{0,150}?Total(?:\s+Claims)?[:\s]*(\d+,?\d*)/i
+    /Downwinder[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d.]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>[\s\S]{0,50}?\$([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)/i
   );
 
   if (downwinderMatch) {
@@ -143,9 +144,9 @@ function parseDOJAwardsPage(html: string) {
     };
   }
 
-  // Look for Onsite Participant
+  // Look for Onsite Participant (table format)
   const onsiteMatch = html.match(
-    /Onsite\s+Participant[\s\S]{0,800}?Pending[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approved[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approval\s*%[:\s]*([\d.]+)[\s\S]{0,150}?\$\s*Approved[:\s]*\$?([\d,]+)[\s\S]{0,150}?Denied[:\s]*(\d+,?\d*)[\s\S]{0,150}?Total(?:\s+Claims)?[:\s]*(\d+,?\d*)/i
+    /Onsite\s+Participant[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d.]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>[\s\S]{0,50}?\$([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)/i
   );
 
   if (onsiteMatch) {
@@ -159,9 +160,9 @@ function parseDOJAwardsPage(html: string) {
     };
   }
 
-  // Look for Manhattan Project Waste
+  // Look for Manhattan Project Waste (table format)
   const manhattanMatch = html.match(
-    /Manhattan\s+Project\s+Waste[\s\S]{0,800}?Pending[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approved[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approval\s*%[:\s]*([\d.]+)[\s\S]{0,150}?\$\s*Approved[:\s]*\$?([\d,]+)[\s\S]{0,150}?Denied[:\s]*(\d+,?\d*)[\s\S]{0,150}?Total(?:\s+Claims)?[:\s]*(\d+,?\d*)/i
+    /Manhattan\s+Project\s+Waste[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d.]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>[\s\S]{0,50}?\$([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)/i
   );
 
   if (manhattanMatch) {
@@ -175,9 +176,9 @@ function parseDOJAwardsPage(html: string) {
     };
   }
 
-  // Look for Uranium Worker
+  // Look for Uranium Worker (table format)
   const uraniumMatch = html.match(
-    /Uranium\s+Worker[\s\S]{0,800}?Pending[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approved[:\s]*(\d+,?\d*)[\s\S]{0,150}?Approval\s*%[:\s]*([\d.]+)[\s\S]{0,150}?\$\s*Approved[:\s]*\$?([\d,]+)[\s\S]{0,150}?Denied[:\s]*(\d+,?\d*)[\s\S]{0,150}?Total(?:\s+Claims)?[:\s]*(\d+,?\d*)/i
+    /Uranium\s+Worker[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d.]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>[\s\S]{0,50}?\$([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)/i
   );
 
   if (uraniumMatch) {

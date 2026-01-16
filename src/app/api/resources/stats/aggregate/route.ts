@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ResourceFeedbackType } from "@prisma/client";
-import { scrapeDOJDailyData } from "@/lib/doj-scraper-puppeteer";
-import { subDays } from "date-fns";
+import { db } from "@/lib/db";
+import { subDays, format } from "date-fns";
 
 /**
  * Combined Early Morning Cron Job
@@ -32,13 +32,120 @@ export async function POST(request: NextRequest) {
     try {
       // Scrape yesterday's data (today's might not be available yet)
       const yesterday = subDays(new Date(), 1);
-      const dojResult = await scrapeDOJDailyData(yesterday);
+      yesterday.setHours(7, 0, 0, 0); // Set to 7 AM to match data timestamp
 
-      if (dojResult.success) {
+      const dateStr = format(yesterday, "MMddyyyy");
+      const url = `https://www.justice.gov/civil/awards-date-${dateStr}`;
+
+      // Fetch with simple HTTP (works better than Puppeteer - no bot detection)
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const html = await response.text();
+
+      // Parse the HTML using the same function as /api/doj/scrape
+      const downwinderMatch = html.match(
+        /Downwinder[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d.]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>[\s\S]{0,50}?\$([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)[\s\S]{0,200}?<td[\s\S]{0,200}?>([\d,]+)/i
+      );
+
+      if (downwinderMatch) {
+        const extractNumber = (text: string | undefined): number => {
+          if (!text) return 0;
+          return parseInt(text.replace(/,/g, ""), 10);
+        };
+
+        const extractPercent = (text: string | undefined): number => {
+          if (!text) return 0;
+          return parseFloat(text);
+        };
+
+        const stats = {
+          pending: extractNumber(downwinderMatch[1]),
+          approved: extractNumber(downwinderMatch[2]),
+          approvalPercent: extractPercent(downwinderMatch[3]),
+          dollarsApproved: extractNumber(downwinderMatch[4]),
+          denied: extractNumber(downwinderMatch[5]),
+          totalClaims: extractNumber(downwinderMatch[6]),
+        };
+
+        // Get yesterday's data for calculating deltas
+        const dayBefore = subDays(yesterday, 1);
+        const yesterdayData = await db.dOJDailyStats.findUnique({
+          where: {
+            reportDate_claimCategory: {
+              reportDate: dayBefore,
+              claimCategory: "DOWNWINDER",
+            },
+          },
+        });
+
+        const dailyApproved = yesterdayData
+          ? stats.approved - yesterdayData.approved
+          : null;
+        const dailyDenied = yesterdayData
+          ? stats.denied - yesterdayData.denied
+          : null;
+        const dailySubmitted =
+          yesterdayData && dailyApproved !== null && dailyDenied !== null
+            ? stats.pending +
+              dailyApproved +
+              dailyDenied -
+              yesterdayData.pending
+            : null;
+
+        // Store in database
+        await db.dOJDailyStats.upsert({
+          where: {
+            reportDate_claimCategory: {
+              reportDate: yesterday,
+              claimCategory: "DOWNWINDER",
+            },
+          },
+          create: {
+            reportDate: yesterday,
+            claimCategory: "DOWNWINDER",
+            pending: stats.pending,
+            approved: stats.approved,
+            approvalPercent: stats.approvalPercent,
+            dollarsApproved: stats.dollarsApproved,
+            denied: stats.denied,
+            totalClaims: stats.totalClaims,
+            dailyApproved,
+            dailyDenied,
+            dailySubmitted,
+            scrapingSuccess: true,
+            dataSource: "http_scraper",
+          },
+          update: {
+            pending: stats.pending,
+            approved: stats.approved,
+            approvalPercent: stats.approvalPercent,
+            dollarsApproved: stats.dollarsApproved,
+            denied: stats.denied,
+            totalClaims: stats.totalClaims,
+            dailyApproved,
+            dailyDenied,
+            dailySubmitted,
+            scrapingSuccess: true,
+            dataSource: "http_scraper",
+            scrapingError: null,
+          },
+        });
+
         results.dojScrapingSuccess = true;
-        console.log(`✅ Successfully scraped DOJ data for yesterday`);
+        console.log(
+          `✅ Successfully scraped DOJ data for ${format(yesterday, "MM/dd/yyyy")}`
+        );
       } else {
-        throw new Error(dojResult.error || "Unknown scraping error");
+        throw new Error("Could not parse Downwinder data from HTML");
       }
     } catch (dojError) {
       const errorMsg = `Failed to scrape DOJ data: ${dojError}`;
