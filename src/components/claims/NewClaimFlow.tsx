@@ -151,7 +151,7 @@ export function NewClaimFlow({
         }
 
         // Redirect to RECA form
-        router.push(`/reca?session=${data.sessionId}`);
+        router.push(`/reca?session=${data.sessionId}` as any);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to start form");
       }
