@@ -4,12 +4,16 @@ import {
   sendResourceFollowUpEmail,
   sendResourceAlternativesEmail,
 } from "@/lib/email";
+import { calculateAllMetrics } from "@/lib/doj-metrics-calculator";
 
 /**
- * API endpoint to send follow-up emails for pending ResourceInteractions
- * This should be called by a cron job (e.g., Vercel Cron or cron-job.org)
+ * Combined Daily Cron Job
  *
- * Runs every day to check:
+ * Runs daily at 10 AM EST (3 PM UTC) to:
+ * 1. Send follow-up emails for pending ResourceInteractions
+ * 2. Calculate DOJ processing metrics
+ *
+ * Follow-up emails check:
  * - First follow-up: followUpScheduledFor <= NOW && followUpSentAt IS NULL
  * - Second follow-up: followUpSentAt + 7 days <= NOW && followUpReminderSent = false && no feedback
  */
@@ -159,13 +163,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // CALCULATE DOJ METRICS
+    console.log("\n🚀 Calculating DOJ processing metrics...");
+    let dojMetricsCalculated = 0;
+    try {
+      const metrics = await calculateAllMetrics("DOWNWINDER");
+      dojMetricsCalculated = metrics.length;
+      console.log(
+        `✅ Successfully calculated metrics for ${dojMetricsCalculated} time windows`
+      );
+    } catch (dojError) {
+      const errorMsg = `Failed to calculate DOJ metrics: ${dojError}`;
+      console.error(errorMsg);
+      results.errors.push(errorMsg);
+    }
+
     return NextResponse.json({
       success: true,
       ...results,
+      dojMetricsCalculated,
       processedAt: now.toISOString(),
     });
   } catch (error) {
-    console.error("Error in follow-up cron job:", error);
+    console.error("Error in daily cron job:", error);
     return NextResponse.json(
       {
         success: false,
