@@ -25,11 +25,16 @@ export async function GET() {
 
     if (!latestData) {
       // Fallback data for Beta Launch / Empty DB
+      // Based on DOJ data from January 2026 (PL 119-21):
+      // - Pending: 2,214 Downwinder claims
+      // - Approved: 509 (100% approval rate)
+      // - Total: 2,723
+      // Estimated ~39 new applications/day, ~9 processed/day
       return NextResponse.json({
-        queueSize: 45230,
-        estimatedWaitDays: 240,
-        applicationsPerDay: 18.5,
-        approvalsPerDay: 4.2,
+        queueSize: 2214,
+        estimatedWaitDays: 246, // 2214 pending / 9 approvals per day = ~246 days (~8 months)
+        applicationsPerDay: 39.3,
+        approvalsPerDay: 9.0,
         ratio: 4.4,
         asOfDate: new Date().toISOString(),
         isFallback: true,

@@ -63,6 +63,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // SECURITY FIX: Check if payment was already refunded
+    if (setupFeePayment.status === "REFUNDED") {
+      return NextResponse.json(
+        { error: "This payment has already been refunded" },
+        { status: 400 }
+      );
+    }
+
     if (!setupFeePayment.paidAt) {
       return NextResponse.json(
         { error: "Payment date not found" },
@@ -147,6 +155,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // FIX: Use actual payment amount instead of hardcoded value
+    const refundAmount = setupFeePayment.amount;
+
     // Create audit log
     await prisma.auditLog.create({
       data: {
@@ -157,7 +168,7 @@ export async function POST(req: NextRequest) {
         ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || undefined,
         metadata: JSON.stringify({
-          amount: 149.99,
+          amount: refundAmount,
           refundId: refund.id,
           daysSincePurchase,
         }),
@@ -167,9 +178,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       refundId: refund.id,
-      amount: 149.99,
-      message:
-        "Refund processed successfully. You will receive $149.99 back to your original payment method within 5-10 business days.",
+      amount: refundAmount,
+      message: `Refund processed successfully. You will receive $${refundAmount.toFixed(2)} back to your original payment method within 5-10 business days.`,
     });
   } catch (error) {
     console.error("Error processing refund:", error);
@@ -232,6 +242,14 @@ export async function GET(_req: NextRequest) {
       });
     }
 
+    // SECURITY FIX: Check if payment was already refunded
+    if (setupFeePayment.status === "REFUNDED") {
+      return NextResponse.json({
+        eligible: false,
+        reason: "This payment has already been refunded",
+      });
+    }
+
     // Check 7-day window
     const daysSincePurchase = differenceInDays(
       new Date(),
@@ -258,10 +276,10 @@ export async function GET(_req: NextRequest) {
       });
     }
 
-    // Eligible for refund
+    // Eligible for refund - FIX: Use actual payment amount
     return NextResponse.json({
       eligible: true,
-      amount: 149.99,
+      amount: setupFeePayment.amount,
       daysRemaining: 7 - daysSincePurchase,
       paidAt: setupFeePayment.paidAt,
     });

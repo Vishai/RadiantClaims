@@ -33,6 +33,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // SECURITY FIX: Validate webhook secret is configured
+  if (!STRIPE_CONFIG.WEBHOOK_SECRET) {
+    console.error("⚠️  STRIPE_WEBHOOK_SECRET is not configured!");
+    return NextResponse.json(
+      { error: "Server misconfiguration" },
+      { status: 500 }
+    );
+  }
+
   let event: Stripe.Event;
 
   try {
@@ -147,9 +156,36 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // IDEMPOTENCY CHECK: Prevent duplicate processing if webhook is retried
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  if (paymentIntentId) {
+    const existingPayment = await prisma.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntentId },
+    });
+
+    if (existingPayment) {
+      console.log(
+        `⏭️  Skipping duplicate checkout webhook for payment intent ${paymentIntentId}`
+      );
+      return;
+    }
+  }
+
   const subscription = await prisma.serviceSubscription.findUnique({
     where: { id: subscriptionId },
   });
+
+  // SECURITY FIX: Don't process payments for canceled subscriptions
+  if (subscription?.status === "CANCELED") {
+    console.log(
+      `⚠️  Ignoring checkout for canceled subscription ${subscriptionId}`
+    );
+    return;
+  }
 
   const tier = metadata.tier || subscription?.tier;
 
@@ -341,6 +377,29 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     `💰 Invoice payment succeeded for subscription ${subscriptionId}`
   );
 
+  // SECURITY FIX: Don't process payments for canceled subscriptions
+  if (subscription.status === "CANCELED") {
+    console.log(
+      `⚠️  Ignoring payment for canceled subscription ${subscriptionId}`
+    );
+    return;
+  }
+
+  // IDEMPOTENCY CHECK: Prevent duplicate processing if webhook is retried
+  const invoicePaymentIntentId = getPaymentIntentId(invoice);
+  if (invoicePaymentIntentId) {
+    const existingPayment = await prisma.payment.findFirst({
+      where: { stripePaymentIntentId: invoicePaymentIntentId },
+    });
+
+    if (existingPayment) {
+      console.log(
+        `⏭️  Skipping duplicate invoice webhook for payment intent ${invoicePaymentIntentId}`
+      );
+      return;
+    }
+  }
+
   // Check if this is a pilot account that has expired
   if (
     subscription?.isPilotAccount &&
@@ -363,19 +422,51 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const amountPaid = (invoice.amount_paid || 0) / 100;
 
   if (subscription.isInstallmentPlan) {
-    const newCount = (subscription.installmentPaymentCount || 0) + 1;
-    const updates: Record<string, unknown> = {
-      installmentPaymentCount: newCount,
-      status: "ACTIVE",
-      lastBillingDate: new Date(),
-    };
+    // SECURITY FIX: Validate installment payment amount
+    const expectedInstallmentAmount = 249.99;
+    const amountTolerance = 1.0; // Allow $1 tolerance for rounding
 
+    if (Math.abs(amountPaid - expectedInstallmentAmount) > amountTolerance) {
+      console.error(
+        `⚠️  Unexpected installment amount for subscription ${subscriptionId}: ` +
+          `expected ~$${expectedInstallmentAmount}, got $${amountPaid}`
+      );
+      // Still process but log the discrepancy for investigation
+    }
+
+    const currentCount = subscription.installmentPaymentCount || 0;
+    const newCount = currentCount + 1;
+
+    // IDEMPOTENCY FIX: Use conditional update to prevent race conditions on retry
+    const updateResult = await prisma.serviceSubscription.updateMany({
+      where: {
+        id: subscriptionId,
+        installmentPaymentCount: currentCount, // Only update if count hasn't changed
+      },
+      data: {
+        installmentPaymentCount: newCount,
+        status: "ACTIVE",
+        lastBillingDate: new Date(),
+      },
+    });
+
+    if (updateResult.count === 0) {
+      console.log(
+        `⏭️  Installment count already incremented for ${subscriptionId}, skipping duplicate`
+      );
+      return;
+    }
+
+    // Handle final installment (2nd payment) - mark as fully paid
     if (newCount >= 2) {
-      Object.assign(updates, {
-        setupFeePaid: true,
-        setupFeePaidAt: new Date(),
-        installmentCompleted: true,
-        nextBillingDate: null,
+      await prisma.serviceSubscription.update({
+        where: { id: subscriptionId },
+        data: {
+          setupFeePaid: true,
+          setupFeePaidAt: new Date(),
+          installmentCompleted: true,
+          nextBillingDate: null,
+        },
       });
 
       if (stripeSubscriptionId) {
@@ -391,17 +482,16 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         }
       }
     } else if (stripeSubscriptionId) {
+      // First installment - update next billing date
       const subscriptionResponse =
         await stripe.subscriptions.retrieve(stripeSubscriptionId);
       const stripeSubscription = subscriptionResponse as Stripe.Subscription;
       const nextBillingDate = getNextBillingDate(stripeSubscription);
-      Object.assign(updates, { nextBillingDate });
+      await prisma.serviceSubscription.update({
+        where: { id: subscriptionId },
+        data: { nextBillingDate },
+      });
     }
-
-    await prisma.serviceSubscription.update({
-      where: { id: subscriptionId },
-      data: updates,
-    });
 
     await prisma.payment.create({
       data: {

@@ -48,25 +48,16 @@ export async function getActiveSubscriptionAccess(
     isInstallmentPlan,
     installmentPaymentCount,
     installmentCompleted,
-    stripeCustomerId,
-    createdAt,
   } = subscription;
 
-  // Check if subscription was created recently (within 24 hours) and has Stripe customer ID
-  // This handles race condition where user returns from Stripe before webhook processes
-  const hasRecentStripeCheckout =
-    stripeCustomerId &&
-    createdAt &&
-    Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000; // 24 hours
+  // SECURITY FIX: Removed 24-hour grace period that allowed access before payment confirmation.
+  // Access is now ONLY granted when webhook confirms payment (setupFeePaid=true or installmentPaymentCount>0).
+  // This prevents users from accessing paid content without completing payment.
 
   // User has paid if:
   // - Full payment made (setupFeePaid = true)
   // - Any installment payment made (installmentPaymentCount > 0)
-  // - Recent Stripe checkout (webhook pending)
-  const hasPaid =
-    setupFeePaid === true ||
-    (installmentPaymentCount ?? 0) > 0 ||
-    hasRecentStripeCheckout === true;
+  const hasPaid = setupFeePaid === true || (installmentPaymentCount ?? 0) > 0;
 
   // DIAGNOSTIC LOGGING
   console.log("[Payment Access Check]", {
@@ -76,7 +67,6 @@ export async function getActiveSubscriptionAccess(
     isInstallmentPlan,
     installmentPaymentCount,
     installmentCompleted,
-    hasRecentStripeCheckout,
     hasPaid,
     accessGranted: hasPaid,
   });
