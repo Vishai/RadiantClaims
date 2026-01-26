@@ -74,6 +74,7 @@ async function main() {
     data: {
       code,
       type: "PILOT_ACCOUNT", // Reuse pilot type for free accounts
+      isActive: true, // Explicitly set active (required for validation)
       description: `Lifetime free access - 100% off forever`,
       duration: "FOREVER", // Lifetime discount
       durationInMonths: null, // Not applicable for FOREVER

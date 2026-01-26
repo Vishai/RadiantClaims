@@ -14,6 +14,7 @@ A modern, full-stack RECA claims preparation platform built with Next.js 14, Typ
 **Essential Guides:**
 - 🔒 **[Database Safety Guide](./DATABASE_SAFETY_GUIDE.md)** - Never touch production accidentally
 - ⚡ **[Quick Start](./QUICK_START.md)** - Fast setup guide
+- 🧪 **[TESTBETA Mock Users](./TESTBETA_MOCK_USERS.md)** - 20 test users for production beta testing
 - [PDF Form Progress](./docs/PROJECT_PROGRESS_TRACKER.md)
 - [Test Credentials](./TEST_CREDENTIALS.md)
 - [Email Setup](./EMAIL_INTEGRATION.md)

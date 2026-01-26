@@ -1,6 +1,6 @@
 # RadiantClaims Documentation Index
 
-**Last Updated:** November 8, 2025
+**Last Updated:** January 26, 2026
 
 This is your guide to all documentation. Start here when looking for information.
 
@@ -27,6 +27,7 @@ This is your guide to all documentation. Start here when looking for information
 - **`STRIPE_SETUP.md`** - Payment integration setup
 - **`RAILWAY_SETUP.md`** - Database deployment
 - **`TEST_CREDENTIALS.md`** - Test account credentials
+- **`TESTBETA_MOCK_USERS.md`** - ⭐ 20 production test users for beta testing
 
 ### Feature Documentation
 - **`EMAIL_INTEGRATION.md`** - Email system (Resend)
@@ -157,7 +158,7 @@ These docs are no longer accurate:
 → `EMAIL_INTEGRATION.md`
 
 #### ...create test accounts
-→ `TEST_CREDENTIALS.md` → `ADMIN_ACCESS.md`
+→ `TEST_CREDENTIALS.md` (dev/local) or `TESTBETA_MOCK_USERS.md` (production beta)
 
 #### ...understand payment flow
 → `PAYMENT_FLOW_IMPLEMENTATION.md`

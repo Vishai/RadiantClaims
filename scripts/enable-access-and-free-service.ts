@@ -69,6 +69,7 @@ async function main() {
   const updated = await prisma.promoCode.update({
     where: { id: promo.id },
     data: {
+      isActive: true, // FIX: Ensure code is active (required for validation)
       accessOverrideEnabled: true,
       accessSeatsTotal: seats,
       // Ensure it's set up for lifetime free if not already

@@ -37,7 +37,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tier, policyType, policyVersion, ipAddress, paymentPlan } = body;
+    const {
+      tier,
+      policyType,
+      policyVersion,
+      ipAddress,
+      paymentPlan,
+      promoCode,
+    } = body;
 
     if (!tier || !["DIY_PREP", "LEGAL_REP"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -59,6 +66,80 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate promo code if provided, or auto-apply from registration
+    let promoCodeRecord = null;
+    const normalizedPromoCode =
+      typeof promoCode === "string" ? promoCode.trim().toUpperCase() : null;
+
+    if (normalizedPromoCode) {
+      promoCodeRecord = await db.promoCode.findUnique({
+        where: { code: normalizedPromoCode },
+      });
+
+      if (!promoCodeRecord) {
+        return NextResponse.json(
+          { error: "Invalid promo code" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Auto-apply promo code if user registered with one
+      const accessGrant = await db.promoCodeAccessGrant.findFirst({
+        where: {
+          userId: session.user.id,
+        },
+        include: {
+          promoCode: true,
+        },
+        orderBy: {
+          grantedAt: "desc", // Get the most recent one
+        },
+      });
+
+      if (accessGrant && accessGrant.promoCode) {
+        promoCodeRecord = accessGrant.promoCode;
+      }
+    }
+
+    if (promoCodeRecord) {
+      if (!promoCodeRecord.isActive) {
+        return NextResponse.json(
+          { error: "This promo code is no longer active" },
+          { status: 400 }
+        );
+      }
+
+      if (promoCodeRecord.expiresAt && promoCodeRecord.expiresAt < new Date()) {
+        return NextResponse.json(
+          { error: "This promo code has expired" },
+          { status: 400 }
+        );
+      }
+
+      if (
+        promoCodeRecord.maxUses &&
+        promoCodeRecord.currentUses >= promoCodeRecord.maxUses
+      ) {
+        return NextResponse.json(
+          { error: "This promo code has reached its usage limit" },
+          { status: 400 }
+        );
+      }
+
+      // Check tier restrictions
+      if (
+        promoCodeRecord.allowedTiers.length > 0 &&
+        !promoCodeRecord.allowedTiers.includes(tier)
+      ) {
+        return NextResponse.json(
+          {
+            error: `This promo code is not valid for the ${tier === "DIY_PREP" ? "DIY" : "Legal"} path`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if user already has a subscription
     const existingSubscription = await db.serviceSubscription.findUnique({
       where: { userId: session.user.id },
@@ -66,6 +147,71 @@ export async function POST(request: NextRequest) {
 
     if (existingSubscription) {
       if (tier === "DIY_PREP") {
+        // SPECIAL CASE: 100% off lifetime promo codes bypass Stripe entirely
+        const isFreeCode =
+          promoCodeRecord &&
+          promoCodeRecord.percentOff === 100 &&
+          promoCodeRecord.duration === "FOREVER";
+
+        if (isFreeCode && promoCodeRecord) {
+          const updated = await db.serviceSubscription.update({
+            where: { id: existingSubscription.id },
+            data: {
+              status: "ACTIVE",
+              setupFeePaid: true,
+              setupFeeAmount: 499.0,
+              monthlyFeeAmount: 0,
+              isInstallmentPlan: false,
+              installmentPaymentCount: 0,
+              installmentCompleted: false,
+              promoCodeId: promoCodeRecord.id,
+              stripeCouponId: promoCodeRecord.stripeCouponId ?? null,
+              discountPercent: 100,
+              isPilotAccount:
+                promoCodeRecord.type === "PILOT_ACCOUNT" ? true : false,
+              pilotExpiresAt:
+                promoCodeRecord.type === "PILOT_ACCOUNT"
+                  ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                  : null,
+            },
+          });
+
+          // Increment promo code usage only the first time we attach it
+          if (!existingSubscription.promoCodeId) {
+            await db.promoCode.update({
+              where: { id: promoCodeRecord.id },
+              data: {
+                currentUses: {
+                  increment: 1,
+                },
+              },
+            });
+          }
+
+          await createAuditLog({
+            userId: session.user.id,
+            action: "SUBSCRIPTION_CREATED",
+            resourceType: "ServiceSubscription",
+            resourceId: updated.id,
+            ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+            userAgent: request.headers.get("user-agent") || undefined,
+            metadata: {
+              tier: "DIY_PREP",
+              promoCode: promoCodeRecord.code,
+              percentOff: 100,
+              note: "100% off lifetime code - bypassed Stripe checkout (existing subscription)",
+            },
+          });
+
+          return NextResponse.json({
+            success: true,
+            subscription: updated,
+            redirectTo: "/portal",
+            message:
+              "Congratulations! Your lifetime free access is now active.",
+          });
+        }
+
         // Record policy acceptance for audit/compliance even on re-attempt
         const policyAcceptance = await db.policyAcceptance.create({
           data: {
@@ -287,6 +433,73 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // DIY PATH: $499.00 One-time OR 2-Payment Installment Plan
+      // SPECIAL CASE: 100% off lifetime promo codes bypass Stripe entirely
+      const isFreeCode =
+        promoCodeRecord &&
+        promoCodeRecord.percentOff === 100 &&
+        promoCodeRecord.duration === "FOREVER";
+
+      if (isFreeCode && promoCodeRecord) {
+        // Bypass Stripe - activate immediately for 100% off lifetime codes
+        const subscription = await db.serviceSubscription.create({
+          data: {
+            userId: session.user.id,
+            tier: "DIY_PREP",
+            status: "ACTIVE", // Active immediately (100% off)
+            setupFeePaid: true, // Considered paid (100% discount)
+            setupFeeAmount: 499.0,
+            monthlyFeeAmount: 0,
+            isInstallmentPlan: false,
+            installmentPaymentCount: 0,
+            installmentCompleted: false,
+            promoCodeId: promoCodeRecord.id,
+            stripeCouponId: promoCodeRecord.stripeCouponId ?? null,
+            discountPercent: 100,
+            isPilotAccount:
+              promoCodeRecord.type === "PILOT_ACCOUNT" ? true : false,
+            pilotExpiresAt:
+              promoCodeRecord.type === "PILOT_ACCOUNT"
+                ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+                : null,
+          },
+        });
+
+        // Increment promo code usage
+        await db.promoCode.update({
+          where: { id: promoCodeRecord.id },
+          data: {
+            currentUses: {
+              increment: 1,
+            },
+          },
+        });
+
+        // Audit log
+        await createAuditLog({
+          userId: session.user.id,
+          action: "SUBSCRIPTION_CREATED",
+          resourceType: "ServiceSubscription",
+          resourceId: subscription.id,
+          ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+          userAgent: request.headers.get("user-agent") || undefined,
+          metadata: {
+            tier: "DIY_PREP",
+            promoCode: promoCodeRecord.code,
+            percentOff: 100,
+            note: "100% off lifetime code - bypassed Stripe checkout",
+            policyAcceptanceId: policyAcceptance.id,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          subscription,
+          redirectTo: "/portal",
+          message: "Congratulations! Your lifetime free access is now active.",
+        });
+      }
+
+      // Normal DIY path with payment required
       const diyPriceId = isInstallmentPlan
         ? STRIPE_CONFIG.DIY_PACKET_INSTALLMENT.priceId
         : STRIPE_CONFIG.DIY_PACKET_FULL.priceId;
@@ -313,6 +526,9 @@ export async function POST(request: NextRequest) {
           isInstallmentPlan,
           installmentPaymentCount: 0,
           installmentCompleted: false,
+          promoCodeId: promoCodeRecord?.id,
+          stripeCouponId: promoCodeRecord?.stripeCouponId,
+          discountPercent: promoCodeRecord?.percentOff,
         },
       });
 
@@ -349,7 +565,11 @@ export async function POST(request: NextRequest) {
             },
           },
         }),
-        allow_promotion_codes: true,
+        // Apply promo code discount automatically if provided
+        ...(promoCodeRecord?.stripeCouponId && {
+          discounts: [{ coupon: promoCodeRecord.stripeCouponId }],
+        }),
+        allow_promotion_codes: true, // Still allow manual promo code entry
         success_url: `${baseUrl}/portal?payment=success`,
         cancel_url: `${baseUrl}/service-tiers?payment=canceled`,
         metadata: {
@@ -359,8 +579,21 @@ export async function POST(request: NextRequest) {
           tier: "DIY_PREP",
           type: isInstallmentPlan ? "INSTALLMENT_PAYMENT" : "ONE_TIME_PAYMENT",
           paymentPlan: normalizedPaymentPlan,
+          promoCode: promoCodeRecord?.code || "",
         },
       });
+
+      // Increment promo code usage if provided
+      if (promoCodeRecord) {
+        await db.promoCode.update({
+          where: { id: promoCodeRecord.id },
+          data: {
+            currentUses: {
+              increment: 1,
+            },
+          },
+        });
+      }
 
       // Audit log
       await createAuditLog({
@@ -376,6 +609,8 @@ export async function POST(request: NextRequest) {
           policyAcceptanceId: policyAcceptance.id,
           paymentPlan: normalizedPaymentPlan,
           isInstallmentPlan,
+          promoCode: promoCodeRecord?.code || null,
+          discountPercent: promoCodeRecord?.percentOff || null,
         },
       });
 
