@@ -5,20 +5,20 @@
  * for RECA claims. Users of the service automatically opt-in to attorney representation.
  */
 
-export const DEFAULT_ATTORNEY_INFO = {
-  hasAttorney: "YES" as const,
-  // TODO: Update with actual partner attorney information
-  attorneyFirstName: "[Partner Attorney First Name]",
-  attorneyLastName: "[Partner Attorney Last Name]",
-  attorneyFirm: "[Partner Law Firm Name]",
-  attorneyAddress: "[Law Firm Street Address]",
-  attorneyCity: "[City]",
-  attorneyState: "[State]",
-  attorneyZip: "[Zip Code]",
-  attorneyPhone: "[Phone Number]",
-  attorneyFax: "[Fax Number]", // Optional
-  attorneyEmail: "[Email Address]", // Optional
-};
+ export const DEFAULT_ATTORNEY_INFO = {
+   hasAttorney: "YES" as const,
+   // TODO: Update with actual partner attorney information
+   attorneyFirstName: "Ryan",
+   attorneyLastName: "Taylor",
+   attorneyFirm: "Heritage Law Offices",
+   attorneyAddress: "898 South State St, Suite 100",
+   attorneyCity: "Orem",
+   attorneyState: "Utah",
+   attorneyZip: "84097",
+   attorneyPhone: "(801) 609-8182",
+   attorneyFax: "", // Optional
+   attorneyEmail: "heritagelaw@radiantclaims.com", // Optional
+ };
 
 /**
  * Attorney fee type for RECA claims
