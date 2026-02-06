@@ -100,12 +100,7 @@ const part1Schema = z.object({
   zipCode: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
   phoneDay: z.string().optional(),
   phoneEvening: z.string().optional(),
-  email: z
-    .string()
-    .email("Invalid email address")
-    .max(30)
-    .optional()
-    .or(z.literal("")),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   residenceAddress: z.string().max(60).optional(),
   tribalAffiliation: z.string().max(30).optional(),
   tribalCensusNumber: z.string().max(20).optional(),
