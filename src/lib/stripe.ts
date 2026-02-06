@@ -1,17 +1,35 @@
 /**
  * Stripe Configuration
  * Server-side Stripe client initialization
+ *
+ * Supports test/live mode toggle via STRIPE_TEST_MODE env var.
+ * When STRIPE_TEST_MODE=true, uses test keys, test price IDs, and test webhook secret.
+ * This allows safe payment testing without swapping env vars.
  */
 
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
+/**
+ * Test mode flag - set STRIPE_TEST_MODE=true in env to use test keys
+ */
+export const isStripeTestMode =
+  process.env.STRIPE_TEST_MODE === "true" ||
+  process.env.STRIPE_TEST_MODE === "1";
+
+// Resolve the correct secret key based on mode
+const stripeSecretKey = isStripeTestMode
+  ? process.env.STRIPE_SECRET_TEST_KEY
+  : process.env.STRIPE_SECRET_KEY;
+
+if (!stripeSecretKey) {
   throw new Error(
-    "STRIPE_SECRET_KEY is not set. Please add it to your .env file."
+    isStripeTestMode
+      ? "STRIPE_SECRET_TEST_KEY is not set. Add it to your .env for test mode."
+      : "STRIPE_SECRET_KEY is not set. Please add it to your .env file."
   );
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2024-06-20" as Stripe.LatestApiVersion,
   typescript: true,
   appInfo: {
@@ -20,31 +38,39 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   },
 });
 
+if (isStripeTestMode) {
+  console.log(
+    "⚠️  Stripe is running in TEST MODE — no real charges will be made"
+  );
+}
+
 /**
  * Stripe Product & Price IDs
- * These will be set after creating products in Stripe Dashboard
  *
  * NEW PRICING STRUCTURE (Dec 2024):
  * - DIY: $499.00 one-time OR 2 payments of $249.99
  * - Lawyer: $0 Upfront for user (Backend B2B billing)
+ *
+ * In test mode, uses STRIPE_TEST_PRICE_ID_* env vars instead.
  */
 export const STRIPE_CONFIG = {
   // DIY Path - NEW PRICING
   DIY_PACKET_FULL: {
-    // Fallback to legacy env var if new one is missing
-    priceId:
-      process.env.STRIPE_PRICE_ID_DIY_PACKET ||
-      process.env.STRIPE_PRICE_ID_DIY_SETUP ||
-      "",
+    priceId: isStripeTestMode
+      ? process.env.STRIPE_TEST_PRICE_ID_DIY_PACKET || ""
+      : process.env.STRIPE_PRICE_ID_DIY_PACKET ||
+        process.env.STRIPE_PRICE_ID_DIY_SETUP ||
+        "",
     amount: 49900, // $499.00 in cents
     currency: "usd",
     description: "RadiantClaims DIY - Complete Packet (One-time $499.00)",
   },
   DIY_PACKET_INSTALLMENT: {
-    priceId:
-      process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT ||
-      process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS ||
-      "",
+    priceId: isStripeTestMode
+      ? process.env.STRIPE_TEST_PRICE_ID_DIY_INSTALLMENT || ""
+      : process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT ||
+        process.env.STRIPE_PRICE_ID_PACKET_2_PAYMENTS ||
+        "",
     amount: 24999, // $249.99 per payment in cents
     currency: "usd",
     interval: "month" as const,
@@ -87,8 +113,10 @@ export const STRIPE_CONFIG = {
     description: "DEPRECATED",
   },
 
-  // Webhook configuration
-  WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
+  // Webhook configuration - uses test secret in test mode
+  WEBHOOK_SECRET: isStripeTestMode
+    ? process.env.STRIPE_TEST_WEBHOOK_SECRET || ""
+    : process.env.STRIPE_WEBHOOK_SECRET || "",
 } as const;
 
 /**

@@ -54,6 +54,12 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
+    // Stripe Test Mode — set STRIPE_TEST_MODE=true to use test keys
+    STRIPE_TEST_MODE: z.string().optional(),
+    STRIPE_SECRET_TEST_KEY: z.string().optional(),
+    STRIPE_TEST_PRICE_ID_DIY_PACKET: z.string().optional(),
+    STRIPE_TEST_PRICE_ID_DIY_INSTALLMENT: z.string().optional(),
+    STRIPE_TEST_WEBHOOK_SECRET: z.string().optional(),
   },
 
   /**
@@ -86,6 +92,12 @@ export const env = createEnv({
     STRIPE_PRICE_ID_DIY_PACKET: process.env.STRIPE_PRICE_ID_DIY_PACKET,
     STRIPE_PRICE_ID_DIY_INSTALLMENT: process.env.STRIPE_PRICE_ID_DIY_INSTALLMENT,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    // Stripe Test Mode
+    STRIPE_TEST_MODE: process.env.STRIPE_TEST_MODE,
+    STRIPE_SECRET_TEST_KEY: process.env.STRIPE_SECRET_TEST_KEY,
+    STRIPE_TEST_PRICE_ID_DIY_PACKET: process.env.STRIPE_TEST_PRICE_ID_DIY_PACKET,
+    STRIPE_TEST_PRICE_ID_DIY_INSTALLMENT: process.env.STRIPE_TEST_PRICE_ID_DIY_INSTALLMENT,
+    STRIPE_TEST_WEBHOOK_SECRET: process.env.STRIPE_TEST_WEBHOOK_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

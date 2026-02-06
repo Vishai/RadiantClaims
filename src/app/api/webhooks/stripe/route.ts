@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
+import { stripe, STRIPE_CONFIG, isStripeTestMode } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import {
   handleClaimSetupFeePayment,
@@ -58,7 +58,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  console.log(`✅ Webhook received: ${event.type}`);
+  console.log(
+    `✅ Webhook received: ${event.type}${isStripeTestMode ? " [TEST MODE]" : ""}`
+  );
 
   try {
     switch (event.type) {
