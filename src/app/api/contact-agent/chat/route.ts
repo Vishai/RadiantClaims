@@ -256,13 +256,21 @@ Be conversational, helpful, and guide users step-by-step.`;
       );
 
       const fallbackUserText = lastUserMessage?.content || "";
-      const fallbackContacts = fallbackUserText
-        ? await suggestContacts(fallbackUserText, {
+      let fallbackContacts: any[] = [];
+      if (fallbackUserText) {
+        try {
+          fallbackContacts = await suggestContacts(fallbackUserText, {
             claimType: sessionContext?.claimType,
             state: sessionContext?.state,
             county: sessionContext?.county,
-          })
-        : [];
+          });
+        } catch (fallbackSearchError) {
+          console.error(
+            "[Contact Agent] Fallback database search failed:",
+            fallbackSearchError
+          );
+        }
+      }
       const fallbackText = buildFallbackMessage(
         fallbackUserText,
         fallbackContacts.length
@@ -354,19 +362,60 @@ Be conversational, helpful, and guide users step-by-step.`;
     ];
 
     // Call OpenAI with function calling
-    const response = await openAIClient.chat.completions.create({
-      model: contactAgentModel,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...openAIMessages, // Use DB history instead of client messages
-      ],
-      functions,
-      function_call: "auto",
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let assistantMessage: any;
+    try {
+      const response = await openAIClient.chat.completions.create({
+        model: contactAgentModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...openAIMessages, // Use DB history instead of client messages
+        ],
+        functions,
+        function_call: "auto",
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+      assistantMessage = response.choices[0]?.message;
+    } catch (openAIRequestError) {
+      console.error(
+        "[Contact Agent] OpenAI request failed, returning safe fallback:",
+        openAIRequestError
+      );
 
-    const assistantMessage = response.choices[0]?.message;
+      const fallbackText =
+        "I'm having trouble reaching the AI assistant right now. Please try again in a minute.";
+
+      if (canPersistChatHistory && chatSessionId) {
+        try {
+          await prisma.chatMessage.create({
+            data: {
+              sessionId: chatSessionId,
+              role: "assistant",
+              content: fallbackText,
+              metadata: {
+                mode: "fallback_openai_request_error",
+              },
+            },
+          });
+        } catch (persistError) {
+          console.error(
+            "[Contact Agent] Could not persist OpenAI error fallback message:",
+            persistError
+          );
+        }
+      }
+
+      return NextResponse.json({
+        chatSessionId,
+        message: fallbackText,
+        contacts: [],
+        interactions: [],
+        functionCalled: "fallback_openai_request_error",
+        searchSource: "none",
+        webSearchPerformed: false,
+      });
+    }
+
     if (!assistantMessage) {
       throw new Error("No message returned from OpenAI");
     }
@@ -378,15 +427,25 @@ Be conversational, helpful, and guide users step-by-step.`;
 
       if (functionName === "search_contacts") {
         // Execute the contact search in database
-        let contacts = await searchContacts({
-          state: functionArgs.state,
-          county: functionArgs.county,
-          searchQuery: functionArgs.searchQuery, // Add searchQuery parameter
-          resourceTypes: functionArgs.resourceTypes as ResourceType[],
-          documentTypes: functionArgs.documentTypes,
-        });
+        let contacts: any[] = [];
+        let dbSearchFailed = false;
+        try {
+          contacts = await searchContacts({
+            state: functionArgs.state,
+            county: functionArgs.county,
+            searchQuery: functionArgs.searchQuery, // Add searchQuery parameter
+            resourceTypes: functionArgs.resourceTypes as ResourceType[],
+            documentTypes: functionArgs.documentTypes,
+          });
+        } catch (dbSearchError) {
+          dbSearchFailed = true;
+          console.error(
+            "[Contact Agent] Database search failed, trying web-only fallback:",
+            dbSearchError
+          );
+        }
 
-        let searchSource = "database";
+        let searchSource = dbSearchFailed ? "database_unavailable" : "database";
         let webSearchPerformed = false;
 
         // Fallback to web search if no results found
@@ -528,31 +587,44 @@ Be conversational, helpful, and guide users step-by-step.`;
                 ? wasDeduplicated
                   ? `Found ${originalResultCount} search results, which were consolidated into ${contacts.length} unique contact(s). Results found via web search and may need verification.`
                   : "Results found via web search. Information may need verification."
-                : contacts.length > 0
-                  ? "Results from verified database."
-                  : "No results found in database or web search.",
+                : dbSearchFailed
+                  ? "Database is temporarily unavailable and no web results were found."
+                  : contacts.length > 0
+                    ? "Results from verified database."
+                    : "No results found in database or web search.",
             }),
           },
         ];
 
         // Get AI's response with the search results
-        const finalResponse = await openAIClient.chat.completions.create({
-          model: contactAgentModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...updatedMessages.map((msg: any) => ({
-              role: msg.role,
-              content: msg.content,
-              ...(msg.function_call && { function_call: msg.function_call }),
-              ...(msg.name && { name: msg.name }),
-            })),
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        });
-
-        const finalText =
-          finalResponse.choices[0]?.message?.content || "No response";
+        let finalText = "No response";
+        try {
+          const finalResponse = await openAIClient.chat.completions.create({
+            model: contactAgentModel,
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...updatedMessages.map((msg: any) => ({
+                role: msg.role,
+                content: msg.content,
+                ...(msg.function_call && { function_call: msg.function_call }),
+                ...(msg.name && { name: msg.name }),
+              })),
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
+          });
+          finalText =
+            finalResponse.choices[0]?.message?.content || "No response";
+        } catch (openAIFinalError) {
+          console.error(
+            "[Contact Agent] OpenAI final response failed; returning contacts without narrative:",
+            openAIFinalError
+          );
+          finalText =
+            contacts.length > 0
+              ? `I found ${contacts.length} potential resource${contacts.length === 1 ? "" : "s"} below.`
+              : "I couldn't generate a full response right now. Please try again.";
+        }
 
         // Save Assistant Message (best effort)
         if (canPersistChatHistory && chatSessionId && finalText) {
@@ -736,10 +808,13 @@ Be conversational, helpful, and guide users step-by-step.`;
     console.error("Contact agent error:", error);
     return NextResponse.json(
       {
-        error: "Failed to process chat request",
-        details: error instanceof Error ? error.message : "Unknown error",
+        message:
+          "I'm having trouble processing that request right now. Please try again in a moment.",
+        contacts: [],
+        interactions: [],
+        error: "temporarily_unavailable",
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }

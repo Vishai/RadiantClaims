@@ -93,26 +93,42 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    let dbUnavailable = false;
+
     // Search for resources (we'll sort after attaching stats)
-    const resources = await prisma.documentResource.findMany({
-      where,
-    });
+    let resources: any[] = [];
+    try {
+      resources = await prisma.documentResource.findMany({
+        where,
+      });
+    } catch (dbError) {
+      dbUnavailable = true;
+      console.error("[API Search] Database query failed:", dbError);
+    }
 
     // Fetch stats for all resources
-    const resourceIds = resources.map((r) => r.id);
-    const stats = await prisma.resourceStats.findMany({
-      where: {
-        resourceId: { in: resourceIds },
-      },
-      select: {
-        resourceId: true,
-        totalFeedback: true,
-        successCount: true,
-        contactedCount: true,
-        successRate: true,
-        avgRating: true,
-      },
-    });
+    let stats: any[] = [];
+    if (resources.length > 0) {
+      try {
+        const resourceIds = resources.map((r) => r.id);
+        stats = await prisma.resourceStats.findMany({
+          where: {
+            resourceId: { in: resourceIds },
+          },
+          select: {
+            resourceId: true,
+            totalFeedback: true,
+            successCount: true,
+            contactedCount: true,
+            successRate: true,
+            avgRating: true,
+          },
+        });
+      } catch (statsError) {
+        dbUnavailable = true;
+        console.error("[API Search] Resource stats query failed:", statsError);
+      }
+    }
 
     // Create stats map
     const statsMap = new Map(stats.map((s) => [s.resourceId, s]));
@@ -188,13 +204,28 @@ export async function GET(req: NextRequest) {
     );
     const normalizedQuery = (query || "").trim();
 
-    if (resourcesWithStats.length === 0 && normalizedQuery.length >= 3) {
+    const shouldTryWebSearch =
+      resourcesWithStats.length === 0 &&
+      (normalizedQuery.length >= 3 || dbUnavailable);
+
+    if (shouldTryWebSearch) {
       console.log(
         `No internal resources found for "${normalizedQuery}". Falling back to AI web search (Google).`
       );
 
       // Perform web search using Google (via Serper) + OpenAI Parsing
-      const searchQuery = `${normalizedQuery} ${city || ""} Hospital`;
+      const documentPhrase = documentType
+        ? documentType.toLowerCase().replace(/_/g, " ")
+        : "document records";
+      const resourcePhrase = resourceType
+        ? resourceType.toLowerCase().replace(/_/g, " ")
+        : "office";
+      const searchQuery =
+        normalizedQuery.length >= 3
+          ? `${normalizedQuery} ${city || ""} Hospital`
+          : [documentPhrase, resourcePhrase, normalizedCounty, normalizedState]
+              .filter(Boolean)
+              .join(" ") + " contact phone address";
       console.log(`[Web Search] Executing search with query: "${searchQuery}"`);
 
       const webContacts = await searchContactsWithAI({
@@ -246,16 +277,28 @@ export async function GET(req: NextRequest) {
           resources: webResources,
           resultsType: "web_search",
           count: webResources.length,
-          message: "Found results via web search.",
+          message: dbUnavailable
+            ? "Database temporarily unavailable. Showing web search results."
+            : "Found results via web search.",
         });
       }
+    }
+
+    if (dbUnavailable && resourcesWithStats.length === 0) {
+      return NextResponse.json({
+        resources: [],
+        resultsType: "unavailable",
+        count: 0,
+        message:
+          "Resource database is temporarily unavailable. Please try again in a few minutes.",
+      });
     }
 
     // If no county-specific results and county was specified (and no web results), also get state-level resources
     console.log(
       `[API Search] Checking county fallback: resources.length=${resources.length}, county="${county}"`
     );
-    if (resources.length === 0 && normalizedCounty) {
+    if (!dbUnavailable && resources.length === 0 && normalizedCounty) {
       console.log(
         `[API Search] Falling back to state-wide resources (county was specified but no results)`
       );
@@ -342,8 +385,14 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Error searching resources:", error);
     return NextResponse.json(
-      { error: "Failed to search resources" },
-      { status: 500 }
+      {
+        resources: [],
+        resultsType: "error",
+        count: 0,
+        message:
+          "Resource search is temporarily unavailable. Please try again shortly.",
+      },
+      { status: 200 }
     );
   }
 }
