@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { ResourceType } from "@prisma/client";
+import {
+  normalizeCountyInput,
+  normalizeStateInput,
+} from "@/lib/contact-agent/location-normalization";
 
 export interface ContactSearchParams {
   state?: string;
@@ -47,13 +51,17 @@ export async function searchContacts(
 
   // State filter
   if (params.state) {
-    where.state = params.state.toUpperCase();
+    const normalizedState = normalizeStateInput(params.state);
+    if (normalizedState) {
+      where.state = normalizedState;
+    }
   }
 
   // County filter (case insensitive)
   if (params.county) {
+    const normalizedCounty = normalizeCountyInput(params.county);
     where.county = {
-      equals: params.county,
+      contains: normalizedCounty || params.county,
       mode: "insensitive" as const,
     };
   }

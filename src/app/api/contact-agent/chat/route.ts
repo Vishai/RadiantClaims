@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
-import { searchContacts } from "@/lib/contact-agent/search";
+import { searchContacts, suggestContacts } from "@/lib/contact-agent/search";
 import {
   searchContactsWeb,
   searchContactsWithAI,
@@ -42,6 +41,17 @@ function calculateFollowUpDate(documentType?: string): Date {
   return new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
 }
 
+function buildFallbackMessage(
+  userMessage: string,
+  contactsCount: number
+): string {
+  if (contactsCount === 0) {
+    return `I can help with that, but our AI chat service is temporarily unavailable right now.\n\nI searched our internal resource database for "${userMessage}" and did not find a direct match. Try specifying state/county and document type (for example: "birth certificate in Salt Lake County, Utah").`;
+  }
+
+  return `I searched our internal resource database and found ${contactsCount} potential contact${contactsCount === 1 ? "" : "s"}.\n\nOur AI chat service is temporarily unavailable right now, but you can still use these results below.`;
+}
+
 /**
  * POST /api/contact-agent/chat
  *
@@ -69,78 +79,90 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. User/Session Resolution
-    const cookieSessionId = req.cookies.get("session_id")?.value;
-    let userId: string | undefined;
-    let claimantId: string | undefined;
-
-    if (cookieSessionId) {
-      const session = await prisma.session.findUnique({
-        where: { sessionToken: cookieSessionId },
-        include: { user: { include: { claimants: true } } },
-      });
-      if (session) {
-        userId = session.userId;
-        claimantId = session.user.claimants[0]?.id;
-      }
-    }
-
-    // 2. Get or Create ChatSession
-    let chatSessionId = providedChatSessionId;
-    let chatSession;
-
-    if (chatSessionId) {
-      chatSession = await prisma.chatSession.findUnique({
-        where: { id: chatSessionId },
-      });
-    }
-
-    if (!chatSession) {
-      chatSession = await prisma.chatSession.create({
-        data: {
-          userId,
-          claimantId,
-          title:
-            messages[messages.length - 1]?.content?.substring(0, 50) ||
-            "New Chat",
-        },
-      });
-      chatSessionId = chatSession.id;
-    }
-
-    // 3. Save User Message
     const lastUserMessage = messages
       .filter((m: any) => m.role === "user")
       .pop();
+    const cookieSessionId = req.cookies.get("session_id")?.value;
+    let userId: string | undefined;
+    let claimantId: string | undefined;
+    let chatSessionId = providedChatSessionId;
+    let canPersistChatHistory = true;
 
-    if (lastUserMessage && lastUserMessage.content) {
-      await prisma.chatMessage.create({
-        data: {
-          sessionId: chatSessionId,
-          role: "user",
-          content: lastUserMessage.content,
-        },
+    // Start with client-provided message history; replace with DB history if available.
+    let openAIMessages = messages
+      .filter((m: any) => typeof m?.content === "string" && m?.role)
+      .slice(-10)
+      .map((m: any) => ({
+        role: m.role as "user" | "assistant" | "system",
+        content: m.content,
+      }));
+
+    try {
+      // 1. User/Session Resolution
+      if (cookieSessionId) {
+        const session = await prisma.session.findUnique({
+          where: { sessionToken: cookieSessionId },
+          include: { user: { include: { claimants: true } } },
+        });
+        if (session) {
+          userId = session.userId;
+          claimantId = session.user.claimants[0]?.id;
+        }
+      }
+
+      // 2. Get or Create ChatSession
+      let chatSession;
+      if (chatSessionId) {
+        chatSession = await prisma.chatSession.findUnique({
+          where: { id: chatSessionId },
+        });
+      }
+
+      if (!chatSession) {
+        chatSession = await prisma.chatSession.create({
+          data: {
+            userId,
+            claimantId,
+            title:
+              messages[messages.length - 1]?.content?.substring(0, 50) ||
+              "New Chat",
+          },
+        });
+        chatSessionId = chatSession.id;
+      }
+
+      // 3. Save latest user message
+      if (lastUserMessage && lastUserMessage.content) {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSessionId,
+            role: "user",
+            content: lastUserMessage.content,
+          },
+        });
+      }
+
+      // 4. Load persisted history
+      const historyMessages = await prisma.chatMessage.findMany({
+        where: { sessionId: chatSessionId },
+        orderBy: { createdAt: "asc" },
+        take: 10,
       });
+
+      openAIMessages = historyMessages.map((m) => ({
+        role: m.role as "user" | "assistant" | "system",
+        content: m.content,
+      }));
+    } catch (historyError) {
+      canPersistChatHistory = false;
+      if (!chatSessionId) {
+        chatSessionId = `ephemeral-${Date.now()}`;
+      }
+      console.error(
+        "[Contact Agent] Chat history persistence unavailable, continuing without it:",
+        historyError
+      );
     }
-
-    // 4. Load History (Last 10 messages)
-    // We ignore the 'messages' array from the client for history to ensure consistency with DB,
-    // but we still use the last message from it as the trigger.
-    // Actually, standard practice is to use the client's array for immediate UI feedback
-    // but relying on DB is safer. Let's load from DB.
-    const historyMessages = await prisma.chatMessage.findMany({
-      where: { sessionId: chatSessionId },
-      orderBy: { createdAt: "asc" },
-      take: 10, // Context window limit
-    });
-
-    // Format history for OpenAI
-    // Exclude the very last message we just saved, as we might append it manually or rely on 'messages'
-    // Let's just construct the prompt array from DB history entirely.
-    const openAIMessages = historyMessages.map((m) => ({
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content,
-    }));
 
     // RAG: Search for relevant context based on the latest user message
     let ragContextString = "";
@@ -221,6 +243,62 @@ ${
 
 Be conversational, helpful, and guide users step-by-step.`;
 
+    let openAIClient: any;
+    let contactAgentModel: string;
+    try {
+      const openAIModule = await import("@/lib/openai");
+      openAIClient = openAIModule.openai;
+      contactAgentModel = openAIModule.CONTACT_AGENT_MODEL;
+    } catch (openAIError) {
+      console.error(
+        "[Contact Agent] OpenAI unavailable, falling back to database-only mode:",
+        openAIError
+      );
+
+      const fallbackUserText = lastUserMessage?.content || "";
+      const fallbackContacts = fallbackUserText
+        ? await suggestContacts(fallbackUserText, {
+            claimType: sessionContext?.claimType,
+            state: sessionContext?.state,
+            county: sessionContext?.county,
+          })
+        : [];
+      const fallbackText = buildFallbackMessage(
+        fallbackUserText,
+        fallbackContacts.length
+      );
+
+      if (canPersistChatHistory && chatSessionId && fallbackText) {
+        try {
+          await prisma.chatMessage.create({
+            data: {
+              sessionId: chatSessionId,
+              role: "assistant",
+              content: fallbackText,
+              metadata: {
+                mode: "fallback_no_openai",
+              },
+            },
+          });
+        } catch (persistError) {
+          console.error(
+            "[Contact Agent] Could not persist fallback assistant message:",
+            persistError
+          );
+        }
+      }
+
+      return NextResponse.json({
+        chatSessionId,
+        message: fallbackText,
+        contacts: fallbackContacts,
+        interactions: [],
+        functionCalled: "fallback_search_contacts",
+        searchSource: "database",
+        webSearchPerformed: false,
+      });
+    }
+
     // Define the function for searching contacts
     const functions = [
       {
@@ -276,8 +354,8 @@ Be conversational, helpful, and guide users step-by-step.`;
     ];
 
     // Call OpenAI with function calling
-    const response = await openai.chat.completions.create({
-      model: CONTACT_AGENT_MODEL,
+    const response = await openAIClient.chat.completions.create({
+      model: contactAgentModel,
       messages: [
         { role: "system", content: systemPrompt },
         ...openAIMessages, // Use DB history instead of client messages
@@ -458,8 +536,8 @@ Be conversational, helpful, and guide users step-by-step.`;
         ];
 
         // Get AI's response with the search results
-        const finalResponse = await openai.chat.completions.create({
-          model: CONTACT_AGENT_MODEL,
+        const finalResponse = await openAIClient.chat.completions.create({
+          model: contactAgentModel,
           messages: [
             { role: "system", content: systemPrompt },
             ...updatedMessages.map((msg: any) => ({
@@ -476,18 +554,27 @@ Be conversational, helpful, and guide users step-by-step.`;
         const finalText =
           finalResponse.choices[0]?.message?.content || "No response";
 
-        // Save Assistant Message
-        await prisma.chatMessage.create({
-          data: {
-            sessionId: chatSessionId,
-            role: "assistant",
-            content: finalText,
-            metadata: {
-              functionCalled: functionName,
-              searchSource,
-            },
-          },
-        });
+        // Save Assistant Message (best effort)
+        if (canPersistChatHistory && chatSessionId && finalText) {
+          try {
+            await prisma.chatMessage.create({
+              data: {
+                sessionId: chatSessionId,
+                role: "assistant",
+                content: finalText,
+                metadata: {
+                  functionCalled: functionName,
+                  searchSource,
+                },
+              },
+            });
+          } catch (persistError) {
+            console.error(
+              "[Contact Agent] Failed to persist assistant message:",
+              persistError
+            );
+          }
+        }
 
         // Create ResourceInteraction records for tracking and follow-up
         const interactions: { resourceId: string; interactionId: string }[] =
@@ -622,15 +709,22 @@ Be conversational, helpful, and guide users step-by-step.`;
     // Regular text response (no function call)
     const finalText = assistantMessage.content || "";
 
-    // Save Assistant Message
-    if (finalText) {
-      await prisma.chatMessage.create({
-        data: {
-          sessionId: chatSessionId,
-          role: "assistant",
-          content: finalText,
-        },
-      });
+    // Save Assistant Message (best effort)
+    if (canPersistChatHistory && chatSessionId && finalText) {
+      try {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSessionId,
+            role: "assistant",
+            content: finalText,
+          },
+        });
+      } catch (persistError) {
+        console.error(
+          "[Contact Agent] Failed to persist assistant message:",
+          persistError
+        );
+      }
     }
 
     return NextResponse.json({

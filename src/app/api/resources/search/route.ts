@@ -6,6 +6,10 @@ import { authOptions } from "@/lib/auth";
 import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/audit";
 import { searchContactsWithAI } from "@/lib/contact-agent/web-search";
+import {
+  normalizeCountyInput,
+  normalizeStateInput,
+} from "@/lib/contact-agent/location-normalization";
 
 /**
  * GET /api/resources/search
@@ -48,6 +52,9 @@ export async function GET(req: NextRequest) {
       `[API Search] Parameters: query="${query}", state="${state}", county="${county}", city="${city}", resourceType="${resourceType}"`
     );
 
+    const normalizedState = normalizeStateInput(state);
+    const normalizedCounty = normalizeCountyInput(county);
+
     // Build query filters
     const where: any = {};
 
@@ -65,13 +72,13 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    if (state) {
-      where.state = state.toUpperCase();
+    if (normalizedState) {
+      where.state = normalizedState;
     }
 
-    if (county) {
+    if (normalizedCounty) {
       where.county = {
-        equals: county,
+        contains: normalizedCounty,
         mode: "insensitive" as const,
       };
     }
@@ -192,8 +199,8 @@ export async function GET(req: NextRequest) {
 
       const webContacts = await searchContactsWithAI({
         query: searchQuery,
-        state: state || undefined,
-        county: county || undefined,
+        state: normalizedState || undefined,
+        county: normalizedCounty || undefined,
       });
 
       console.log(`[Web Search] Found ${webContacts.length} contacts from AI`);
@@ -248,7 +255,7 @@ export async function GET(req: NextRequest) {
     console.log(
       `[API Search] Checking county fallback: resources.length=${resources.length}, county="${county}"`
     );
-    if (resources.length === 0 && county) {
+    if (resources.length === 0 && normalizedCounty) {
       console.log(
         `[API Search] Falling back to state-wide resources (county was specified but no results)`
       );
@@ -323,7 +330,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         resources: stateWideWithStats,
         resultsType: "state_wide",
-        message: `No ${county} County resources found. Showing state-wide options.`,
+        message: `No ${normalizedCounty} County resources found. Showing state-wide options.`,
       });
     }
 
