@@ -236,6 +236,41 @@ export interface Part6SurvivingChild {
 
 export interface Part7OtherRelatives {
   relationshipType: "PARENT" | "GRANDCHILD" | "GRANDPARENT";
+
+  // Claimant info (the person who became ill)
+  claimantDeceased?: "YES" | "NO";
+  dateOfDeath?: string;
+
+  // Relationship chain info
+  claimantFullName?: string;
+  claimantDateOfBirth?: string;
+  claimantDateOfDeath?: string;
+
+  // For Parent filing: info about the child who became ill
+  // For Grandchild filing: info about the grandparent who became ill
+  // For Grandparent filing: info about the grandchild who became ill
+  intermediaryRelatives?: Array<{
+    name?: string;
+    relationship?: string;
+    dateOfBirth?: string;
+    dateOfDeath?: string;
+    isDeceased?: "YES" | "NO";
+  }>;
+
+  // Eligibility checks
+  survivingSpouseExists?: "YES" | "NO" | "UNKNOWN";
+  survivingChildExists?: "YES" | "NO" | "UNKNOWN";
+
+  // Special circumstances
+  specialCircumstances?: string;
+
+  // Document awareness (non-blocking)
+  documentsIdentified?: {
+    deathCertificateNeeded: boolean;
+    birthCertificatesNeeded: number;
+    marriageCertificatesNeeded: number;
+    additionalDocumentsNote: string;
+  };
 }
 
 // ============================================================================

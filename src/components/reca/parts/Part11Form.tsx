@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -146,6 +146,48 @@ export default function Part11Form({
       onSubmit(submissionData);
     }
   }, [uploadedDocuments, form, onSubmit]);
+
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      const submissionData: Part11ProofOfDisease = {
+        ...data,
+        uploadedDocuments: uploadedDocuments
+          .filter((doc) => doc.status === "success")
+          .map((doc) => ({
+            id: doc.id,
+            fileName: doc.fileName,
+            fileKey: doc.fileKey,
+            documentType: doc.documentType,
+            uploadedAt: doc.uploadedAt.toISOString(),
+            fileSize: doc.fileSize,
+          })),
+      };
+      onSubmit(submissionData);
+    },
+    [onSubmit, uploadedDocuments]
+  );
+
+  useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      return new Promise<boolean>((resolve) => {
+        form.handleSubmit(
+          async (data) => {
+            await handlePartialSubmit(data);
+            resolve(true);
+          },
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
+          }
+        )();
+      });
+    };
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form, handlePartialSubmit]);
 
   return (
     <div className="space-y-6">

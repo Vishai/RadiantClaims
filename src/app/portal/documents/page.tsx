@@ -58,6 +58,8 @@ export default function DocumentsPortal() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
+  const [cachedClaimType, setCachedClaimType] = useState<string | undefined>();
+  const [cachedFormData, setCachedFormData] = useState<any>(null);
 
   // Request Dialog State
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
@@ -238,6 +240,96 @@ export default function DocumentsPortal() {
             });
           }
 
+          // Part 5: Surviving Spouse - Divorce/Marriage Docs
+          if (formData?.part_5?.documentsIdentified) {
+            const part5Docs = formData.part_5.documentsIdentified;
+            if (part5Docs.divorcePapersNeeded) {
+              requirements.push({
+                category: "OTHER",
+                label: "Divorce Decree(s)",
+                description:
+                  "Divorce decrees for previous marriages (yours or the person who became ill)",
+                uploaded: uploadedFiles.some(
+                  (f: any) =>
+                    f.category === "OTHER" &&
+                    f.originalFilename?.toLowerCase().includes("divorce")
+                ),
+                required: true,
+                helpText:
+                  "Contact the court where the divorce was finalized to obtain certified copies",
+              });
+            }
+            if (part5Docs.previousMarriageCertsNeeded > 0) {
+              requirements.push({
+                category: "MARRIAGE_CERTIFICATE",
+                label: `Previous Marriage Certificate(s) (${part5Docs.previousMarriageCertsNeeded})`,
+                description:
+                  "Marriage certificates for prior marriages to establish complete marital history",
+                uploaded:
+                  countUploaded("MARRIAGE_CERTIFICATE") >=
+                  part5Docs.previousMarriageCertsNeeded + 1, // +1 for the current marriage cert
+                required: true,
+                helpText:
+                  "Contact the county clerk where each marriage took place",
+              });
+            }
+          }
+
+          // Part 7: Other Relatives - Relationship Chain Docs
+          if (
+            formData?.part_7?.documentsIdentified &&
+            relationship !== "Self" &&
+            relationship !== "Spouse" &&
+            relationship !== "Child"
+          ) {
+            const part7Docs = formData.part_7.documentsIdentified;
+            if (part7Docs.birthCertificatesNeeded > 1) {
+              requirements.push({
+                category: "BIRTH_CERTIFICATE",
+                label: `Relationship Chain Birth Certificates (${part7Docs.birthCertificatesNeeded} needed)`,
+                description:
+                  "Birth certificates establishing the family chain between you and the person who became ill",
+                uploaded:
+                  countUploaded("BIRTH_CERTIFICATE") >=
+                  part7Docs.birthCertificatesNeeded,
+                required: true,
+                helpText:
+                  "Contact the vital records office in each state of birth. Each link in the family chain needs a birth certificate.",
+              });
+            }
+          }
+
+          // Part 7: Intermediary Death Certificates
+          if (
+            formData?.part_7?.intermediaryRelatives &&
+            Array.isArray(formData.part_7.intermediaryRelatives)
+          ) {
+            const deceasedIntermediaries =
+              formData.part_7.intermediaryRelatives.filter(
+                (r: any) => r.isDeceased === "YES"
+              );
+            if (deceasedIntermediaries.length > 0) {
+              deceasedIntermediaries.forEach((rel: any) => {
+                const relName = rel.name || "Family Member";
+                requirements.push({
+                  category: "DEATH_CERTIFICATE",
+                  label: `${relName} - Death Certificate`,
+                  description: `Death certificate for ${relName} (relationship chain member)`,
+                  uploaded: uploadedFiles.some(
+                    (f: any) =>
+                      f.category === "DEATH_CERTIFICATE" &&
+                      f.originalFilename
+                        ?.toLowerCase()
+                        .includes(relName.split(" ")[0].toLowerCase())
+                  ),
+                  required: true,
+                  helpText:
+                    "Contact the vital records office in the state where death occurred",
+                });
+              });
+            }
+          }
+
           // 2. Proof of Presence
           requirements.push({
             category: "PROOF_OF_RESIDENCE",
@@ -331,6 +423,8 @@ export default function DocumentsPortal() {
           const firstClaim = data.claims[0];
           if (firstClaim.intakeSession) {
             setSessionId(firstClaim.intakeSession.id);
+            setCachedClaimType(firstClaim.claimType);
+            setCachedFormData(firstClaim.intakeSession.recaFormData);
             await loadDocumentRequirements(
               firstClaim.intakeSession.id,
               firstClaim.claimType,
@@ -359,16 +453,24 @@ export default function DocumentsPortal() {
   const handleUploadComplete = () => {
     // Refresh the dashboard
     setRefreshKey((prev) => prev + 1);
-    // Reload requirements to update checklist
+    // Reload requirements to update checklist - pass cached form data
     if (sessionId) {
-      loadDocumentRequirements(sessionId, "DOWNWINDER");
+      loadDocumentRequirements(
+        sessionId,
+        cachedClaimType || "DOWNWINDER",
+        cachedFormData
+      );
     }
   };
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
     if (sessionId) {
-      loadDocumentRequirements(sessionId, "DOWNWINDER");
+      loadDocumentRequirements(
+        sessionId,
+        cachedClaimType || "DOWNWINDER",
+        cachedFormData
+      );
     }
   };
 
