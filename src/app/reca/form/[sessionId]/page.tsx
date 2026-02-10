@@ -20,6 +20,7 @@ import Part13Form from "@/components/reca/parts/Part13Form";
 import Part14Form from "@/components/reca/parts/Part14Form";
 import Part15Form from "@/components/reca/parts/Part15Form";
 import Part16Form from "@/components/reca/parts/Part16Form";
+import ReviewSection from "@/components/reca/parts/ReviewSection";
 import { RECAWorkflowState, RECAWorkflowSection } from "@/lib/reca/types";
 
 interface PageProps {
@@ -337,7 +338,14 @@ export default function RECAFormPage({ params }: PageProps) {
           />
         );
 
-      // Add more cases as we implement them
+      case "review":
+        return (
+          <ReviewSection
+            workflowState={workflowState}
+            sessionId={params.sessionId}
+          />
+        );
+
       default:
         return (
           <div className="py-12 text-center">

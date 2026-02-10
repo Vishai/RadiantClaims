@@ -160,7 +160,7 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
   };
 
   const handleNavigateToReview = () => {
-    router.push(`/reca/review/${params.sessionId}`);
+    router.push(`/reca/form/${params.sessionId}?section=review` as any);
   };
 
   const handleNavigateBack = () => {

@@ -610,6 +610,9 @@ enum AuditAction {
   PROMO_CODE_UPDATED
   PROMO_CODE_ARCHIVED
   PROMO_CODE_UNARCHIVED
+  // Admin Application Editor Actions
+  ADMIN_EDITED_FORM
+  ADMIN_REGENERATED_PACKET
 }
 
 enum AuditSeverity {
@@ -1598,6 +1601,8 @@ enum StaffActionType {
   REJECTED_CLAIM
   ASSIGNED_CLAIM
   CONTACTED_CLAIMANT
+  EDITED_FORM_DATA
+  REGENERATED_PACKET
 }
 
 // Store AI agent validation results for each document

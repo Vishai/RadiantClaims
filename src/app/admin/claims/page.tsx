@@ -26,6 +26,7 @@ import {
   Files,
   X,
   Filter,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { DocumentViewer } from "@/components/admin/DocumentViewer";
@@ -528,10 +529,20 @@ export default function ClaimsAdminPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => viewSession(session)}
-                            title="View details"
+                            title="Quick view"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          <Link href={`/admin/claims/${session.id}` as any}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="View & Edit"
+                              className="border-terracotta-200 text-terracotta-600 hover:bg-terracotta-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           {session._count.uploadedFiles > 0 && (
                             <Button
                               size="sm"

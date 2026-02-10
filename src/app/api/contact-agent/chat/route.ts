@@ -588,10 +588,10 @@ Be conversational, helpful, and guide users step-by-step.`;
                   ? `Found ${originalResultCount} search results, which were consolidated into ${contacts.length} unique contact(s). Results found via web search and may need verification.`
                   : "Results found via web search. Information may need verification."
                 : dbSearchFailed
-                  ? "Database is temporarily unavailable and no web results were found."
+                  ? "Database is temporarily unavailable and no web results were found. Use your general knowledge to suggest the most likely office for this request (e.g. state vital records office) with a disclaimer to verify."
                   : contacts.length > 0
                     ? "Results from verified database."
-                    : "No results found in database or web search.",
+                    : `No results found in our database for this search. Use your general knowledge to suggest the most likely institution. For vital records in ${functionArgs.state || "the requested state"}, suggest the state's Office of Vital Records or Department of Health with their commonly known contact details, and advise the user to verify by searching online or calling the state office.`,
             }),
           },
         ];

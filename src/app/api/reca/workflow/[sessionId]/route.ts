@@ -8,6 +8,7 @@ import {
   SaveWorkflowRequest,
   SaveWorkflowResponse,
 } from "@/lib/reca/types";
+import { calculateCompletionPercentage } from "@/lib/reca/workflow";
 import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 
 export const dynamic = "force-dynamic";
@@ -339,48 +340,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
-
-/**
- * Calculate completion percentage based on filled sections
- */
-function calculateCompletionPercentage(
-  formData: any,
-  supportingForms: any,
-  eligibilityData: any
-): number {
-  const sections = [
-    "part_1",
-    "part_2",
-    "part_3",
-    "part_8",
-    "part_9",
-    "part_10",
-    "part_11",
-    "part_12",
-    "part_13",
-    "part_16",
-  ];
-
-  let completedSections = 0;
-  const totalSections = sections.length;
-
-  // Check each section
-  sections.forEach((section) => {
-    if (formData[section] && Object.keys(formData[section]).length > 0) {
-      completedSections++;
-    }
-  });
-
-  // Add eligibility if completed
-  if (eligibilityData?.isEligible !== undefined) {
-    completedSections += 0.5;
-  }
-
-  // Add supporting forms if any exist
-  if (supportingForms && Object.keys(supportingForms).length > 0) {
-    completedSections += 1;
-  }
-
-  return Math.round((completedSections / (totalSections + 1.5)) * 100);
 }

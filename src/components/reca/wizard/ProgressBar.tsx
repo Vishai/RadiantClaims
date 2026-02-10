@@ -39,17 +39,17 @@ export function ProgressBar({
     },
     { stage: 3, name: "Supporting Forms", sections: ["supporting_forms"] },
     { stage: 4, name: "Documents", sections: ["document_checklist"] },
-    { stage: 5, name: "Review", sections: ["final_review"] },
+    { stage: 5, name: "Review", sections: ["review", "final_review"] },
   ];
 
   const currentStage = getSectionStage(currentSection);
 
   return (
-    <div className="w-full bg-white border-b border-cream-200 sticky top-0 z-10">
+    <div className="sticky top-0 z-10 w-full border-b border-cream-200 bg-white">
       <div className="container mx-auto px-6 py-4">
         {/* Progress Bar */}
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-sage-700">
               Progress: {completionPercentage}%
             </span>
@@ -57,7 +57,7 @@ export function ProgressBar({
               {getSectionDisplayName(currentSection)}
             </span>
           </div>
-          <div className="h-2 bg-cream-100 rounded-full overflow-hidden">
+          <div className="h-2 overflow-hidden rounded-full bg-cream-100">
             <div
               className="h-full bg-gradient-to-r from-terracotta-400 to-terracotta-600 transition-all duration-500 ease-out"
               style={{ width: `${completionPercentage}%` }}
@@ -73,28 +73,23 @@ export function ProgressBar({
             const isUpcoming = stage.stage > currentStage;
 
             return (
-              <div key={stage.stage} className="flex items-center flex-1">
+              <div key={stage.stage} className="flex flex-1 items-center">
                 <div className="flex flex-col items-center">
                   {/* Circle */}
                   <div
-                    className={`
-                      flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300
-                      ${
-                        isCompleted
-                          ? "bg-terracotta-500 border-terracotta-500 text-white"
-                          : ""
-                      }
-                      ${
-                        isCurrent
-                          ? "bg-white border-terracotta-500 text-terracotta-600 ring-4 ring-terracotta-100"
-                          : ""
-                      }
-                      ${
-                        isUpcoming
-                          ? "bg-white border-cream-300 text-sage-400"
-                          : ""
-                      }
-                    `}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                      isCompleted
+                        ? "border-terracotta-500 bg-terracotta-500 text-white"
+                        : ""
+                    } ${
+                      isCurrent
+                        ? "border-terracotta-500 bg-white text-terracotta-600 ring-4 ring-terracotta-100"
+                        : ""
+                    } ${
+                      isUpcoming
+                        ? "border-cream-300 bg-white text-sage-400"
+                        : ""
+                    } `}
                   >
                     {isCompleted ? (
                       <Check className="h-5 w-5" />
@@ -107,12 +102,7 @@ export function ProgressBar({
 
                   {/* Label */}
                   <span
-                    className={`
-                      mt-2 text-xs font-medium text-center
-                      ${isCurrent ? "text-terracotta-700" : ""}
-                      ${isCompleted ? "text-sage-700" : ""}
-                      ${isUpcoming ? "text-sage-400" : ""}
-                    `}
+                    className={`mt-2 text-center text-xs font-medium ${isCurrent ? "text-terracotta-700" : ""} ${isCompleted ? "text-sage-700" : ""} ${isUpcoming ? "text-sage-400" : ""} `}
                   >
                     {stage.name}
                   </span>
@@ -121,10 +111,7 @@ export function ProgressBar({
                 {/* Connector Line */}
                 {index < stages.length - 1 && (
                   <div
-                    className={`
-                      flex-1 h-0.5 mx-2 transition-all duration-300
-                      ${isCompleted ? "bg-terracotta-500" : "bg-cream-200"}
-                    `}
+                    className={`mx-2 h-0.5 flex-1 transition-all duration-300 ${isCompleted ? "bg-terracotta-500" : "bg-cream-200"} `}
                   />
                 )}
               </div>

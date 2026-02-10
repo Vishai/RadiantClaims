@@ -13,7 +13,9 @@ import {
 /**
  * Get the sequence of sections to complete based on relationship type
  */
-export function getSectionSequence(relationship: RelationshipType): RECAWorkflowSection[] {
+export function getSectionSequence(
+  relationship: RelationshipType
+): RECAWorkflowSection[] {
   const baseSections: RECAWorkflowSection[] = [
     "part_1", // Filer information (always required)
   ];
@@ -71,8 +73,10 @@ export function shouldSkipSection(
     case "part_2":
       // Skip Part 2 if user selected "filing for myself" in Part 1
       // OR if they selected "Self" relationship in Part 3
-      return formData.part_1?.filingForSelf === true ||
-             formData.part_3?.relationship === "Self";
+      return (
+        formData.part_1?.filingForSelf === true ||
+        formData.part_3?.relationship === "Self"
+      );
 
     case "part_4":
       return formData.part_3?.relationship !== "Self";
@@ -113,9 +117,14 @@ export function getNextSection(
     return "supporting_forms";
   }
 
-  // Special case: After supporting forms, navigate to document checklist
+  // Special case: After supporting forms, navigate to review
   if (currentSection === "supporting_forms") {
-    return "document_checklist";
+    return "review";
+  }
+
+  // Special case: After review, navigate to final review
+  if (currentSection === "review") {
+    return "final_review";
   }
 
   // Special case: After document checklist, navigate to final review
@@ -172,7 +181,9 @@ export function getPreviousSection(
 /**
  * Calculate which workflow stage a section belongs to
  */
-export function getSectionStage(section: RECAWorkflowSection): RECAWorkflowStage {
+export function getSectionStage(
+  section: RECAWorkflowSection
+): RECAWorkflowStage {
   if (section === "eligibility") {
     return WORKFLOW_STAGES.ELIGIBILITY;
   }
@@ -189,7 +200,7 @@ export function getSectionStage(section: RECAWorkflowSection): RECAWorkflowStage
     return WORKFLOW_STAGES.DOCUMENT_PREPARATION;
   }
 
-  if (section === "final_review") {
+  if (section === "review" || section === "final_review") {
     return WORKFLOW_STAGES.REVIEW_SUBMIT;
   }
 
@@ -351,10 +362,52 @@ export function getSectionDisplayName(section: RECAWorkflowSection): string {
     part_16: "Signature",
     supporting_forms: "Supporting Forms",
     document_checklist: "Document Checklist",
+    review: "Review Your Application",
     final_review: "Final Review",
   };
 
   return names[section] || section;
+}
+
+/**
+ * Calculate completion percentage based on filled sections
+ */
+export function calculateCompletionPercentage(
+  formData: any,
+  supportingForms: any,
+  eligibilityData: any
+): number {
+  const sections = [
+    "part_1",
+    "part_2",
+    "part_3",
+    "part_8",
+    "part_9",
+    "part_10",
+    "part_11",
+    "part_12",
+    "part_13",
+    "part_16",
+  ];
+
+  let completedSections = 0;
+  const totalSections = sections.length;
+
+  sections.forEach((section) => {
+    if (formData[section] && Object.keys(formData[section]).length > 0) {
+      completedSections++;
+    }
+  });
+
+  if (eligibilityData?.isEligible !== undefined) {
+    completedSections += 0.5;
+  }
+
+  if (supportingForms && Object.keys(supportingForms).length > 0) {
+    completedSections += 1;
+  }
+
+  return Math.round((completedSections / (totalSections + 1.5)) * 100);
 }
 
 /**

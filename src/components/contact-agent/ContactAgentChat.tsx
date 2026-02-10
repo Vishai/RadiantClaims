@@ -85,6 +85,7 @@ export function ContactAgentChat({
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -117,6 +118,7 @@ export function ContactAgentChat({
             content: m.content,
           })),
           sessionContext,
+          chatSessionId,
         }),
       });
 
@@ -125,6 +127,11 @@ export function ContactAgentChat({
       }
 
       const data = await response.json();
+
+      // Persist the session ID so subsequent messages have memory
+      if (data.chatSessionId && !chatSessionId) {
+        setChatSessionId(data.chatSessionId);
+      }
 
       const assistantMessage: Message = {
         role: "assistant",

@@ -37,6 +37,7 @@ export type RECAWorkflowSection =
   | "part_16"
   | "supporting_forms"
   | "document_checklist"
+  | "review"
   | "final_review";
 
 export type RelationshipType =
