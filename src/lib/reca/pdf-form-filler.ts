@@ -1743,19 +1743,172 @@ export class RECAPDFFormFiller {
     this.drawText("part1.mailingAddress", part1.mailingAddress);
     this.drawText("part1.mailingAddress2", part1Any.mailingAddress2);
     this.drawText("part1.city", part1.city);
-    this.drawText("part1.state", part1.state);
+    // Convert state to 2-letter abbreviation to prevent overflow
+    this.drawTextInBoxes("part1.state", this.getStateAbbreviation(part1.state));
     this.drawText("part1.zipCode", part1.zipCode);
 
     // Fill phone numbers in segments
     this.drawPhone("part1.phoneDay", part1.phoneDay);
     this.drawPhone("part1.phoneEvening", part1.phoneEvening);
 
-    // Fill email
-    this.drawText("part1.email", part1.email);
+    // Fill email with overflow handling
+    // The email field has characterSpacing, so it uses boxes
+    // We have approximately 26 boxes available (490 width / 18 spacing ≈ 27 boxes)
+    const emailMaxChars = 26;
+    if (part1.email) {
+      if (part1.email.length <= emailMaxChars) {
+        // Fits in boxes - use normal character spacing
+        this.drawTextInBoxes("part1.email", part1.email);
+      } else {
+        // Too long - truncate for boxes and add full email below
+        const truncatedEmail = part1.email.substring(0, emailMaxChars);
+        this.drawTextInBoxes("part1.email", truncatedEmail);
 
-    // Fill residence address if different
-    this.drawText("part1.residenceAddress", part1.residenceAddress);
-    this.drawText("part1.residenceAddress2", part1Any.residenceAddress2);
+        // Add full email as supplemental text below the boxes
+        // Position it slightly below the email boxes (y - 20)
+        const coords = FIELD_COORDINATES["part1.email"];
+        if (coords) {
+          const page = this.pages[coords.page];
+          if (page) {
+            page.drawText(`Full email: ${part1.email}`, {
+              x: coords.x,
+              y: coords.y - 20, // Position below the boxes
+              size: 10, // Slightly smaller font
+              font: this.font,
+              color: COLORS.black,
+            });
+          }
+        }
+      }
+    }
+
+    // Fill residence address with intelligent overflow handling
+    // Each line has 26 boxes, total of 52 boxes across two lines
+    const addressMaxCharsPerLine = 26;
+    const totalAddressBoxes = 52;
+
+    if (part1.residenceAddress) {
+      let fullAddress = part1.residenceAddress;
+
+      // Parse address components
+      const addressMatch = fullAddress.match(
+        /^([^,]+)(?:,\s*)?([^,]+)?(?:,\s*)?([A-Za-z\s]+)?(?:\s+)?(\d{5}(?:-\d{4})?)?$/
+      );
+      let streetPart = "";
+      let cityPart = "";
+      let statePart = "";
+      let zipPart = "";
+
+      if (addressMatch) {
+        streetPart = addressMatch[1]?.trim() || "";
+
+        // Check if we have city, state, zip pattern
+        const remainingParts = fullAddress
+          .substring(streetPart.length)
+          .replace(/^,\s*/, "");
+        const cityStateZipMatch = remainingParts.match(
+          /^([^,]+)(?:,\s*)?([A-Za-z\s]+)?(?:\s+)?(\d{5}(?:-\d{4})?)?$/
+        );
+
+        if (cityStateZipMatch) {
+          cityPart = cityStateZipMatch[1]?.trim() || "";
+          // Extract state - could be full name or abbreviation
+          const stateAndZip = remainingParts
+            .substring(cityPart.length)
+            .replace(/^,\s*/, "")
+            .trim();
+          const stateZipMatch = stateAndZip.match(
+            /^([A-Za-z\s]+?)(?:\s+)?(\d{5}(?:-\d{4})?)?$/
+          );
+          if (stateZipMatch) {
+            statePart = stateZipMatch[1]?.trim() || "";
+            zipPart = stateZipMatch[2]?.trim() || "";
+          }
+        }
+      } else {
+        streetPart = fullAddress;
+      }
+
+      // Convert state to abbreviation for the boxes
+      const stateAbbr = this.getStateAbbreviation(statePart);
+
+      // Reconstruct address with abbreviated state for boxes
+      let addressForBoxes = streetPart;
+      if (cityPart || stateAbbr || zipPart) {
+        addressForBoxes = streetPart;
+        const cityStateZipForBoxes = [cityPart, stateAbbr, zipPart]
+          .filter((p) => p)
+          .join(" ");
+
+        if (addressForBoxes.length <= addressMaxCharsPerLine) {
+          // Street fits on line 1
+          if (cityStateZipForBoxes.length <= addressMaxCharsPerLine) {
+            // Both parts fit perfectly
+            this.drawTextInBoxes("part1.residenceAddress", streetPart);
+            this.drawTextInBoxes(
+              "part1.residenceAddress2",
+              cityStateZipForBoxes
+            );
+          } else if (
+            (addressForBoxes + ", " + cityStateZipForBoxes).length <=
+            totalAddressBoxes
+          ) {
+            // Combined length fits in 52 chars, but city/state/zip too long for line 2
+            // Put street on line 1, truncate city/state/zip on line 2
+            this.drawTextInBoxes("part1.residenceAddress", streetPart);
+
+            // Intelligently truncate - try to at least get city and state abbr
+            const minCityStateZip = [cityPart, stateAbbr]
+              .filter((p) => p)
+              .join(", ");
+            if (minCityStateZip.length <= addressMaxCharsPerLine) {
+              this.drawTextInBoxes("part1.residenceAddress2", minCityStateZip);
+            } else {
+              this.drawTextInBoxes(
+                "part1.residenceAddress2",
+                cityStateZipForBoxes.substring(0, addressMaxCharsPerLine)
+              );
+            }
+
+            // Add supplemental text for complete address
+            this.addResidenceSupplementalText(
+              fullAddress,
+              streetPart,
+              minCityStateZip.length <= addressMaxCharsPerLine
+                ? minCityStateZip
+                : cityStateZipForBoxes.substring(0, addressMaxCharsPerLine)
+            );
+          } else {
+            // Too long even with abbreviation
+            this.fillLongResidenceAddress(fullAddress);
+          }
+        } else {
+          // Street alone is too long for line 1
+          this.fillLongResidenceAddress(fullAddress);
+        }
+      } else {
+        // No city/state/zip detected, treat as simple address
+        if (addressForBoxes.length <= addressMaxCharsPerLine) {
+          this.drawTextInBoxes("part1.residenceAddress", addressForBoxes);
+        } else if (addressForBoxes.length <= totalAddressBoxes) {
+          const line1 = addressForBoxes.substring(0, addressMaxCharsPerLine);
+          const line2 = addressForBoxes.substring(
+            addressMaxCharsPerLine,
+            totalAddressBoxes
+          );
+          this.drawTextInBoxes("part1.residenceAddress", line1);
+          this.drawTextInBoxes("part1.residenceAddress2", line2);
+        } else {
+          this.fillLongResidenceAddress(fullAddress);
+        }
+      }
+    } else if (part1Any.residenceAddress2) {
+      // If only second line is provided (unlikely but handle it)
+      this.drawTextInBoxes(
+        "part1.residenceAddress2",
+        part1Any.residenceAddress2
+      );
+    }
 
     // Fill tribal information
     this.drawText("part1.tribe", part1.tribalAffiliation);
@@ -2655,6 +2808,205 @@ export class RECAPDFFormFiller {
   }
 
   // Helper methods
+
+  /**
+   * Fill long residence address that exceeds box capacity
+   */
+  private fillLongResidenceAddress(fullAddress: string) {
+    const addressMaxCharsPerLine = 26;
+    const totalAddressBoxes = 52;
+
+    // Smart split that doesn't break words
+    let line1 = "";
+    let line2 = "";
+    let remainder = "";
+
+    // Try to fit first line without breaking words
+    if (fullAddress.length <= addressMaxCharsPerLine) {
+      line1 = fullAddress;
+    } else {
+      // Find last space before character limit
+      let splitIndex = fullAddress.lastIndexOf(" ", addressMaxCharsPerLine);
+      if (splitIndex === -1 || splitIndex < addressMaxCharsPerLine * 0.5) {
+        // If no good split point or would waste too much space, use the limit
+        splitIndex = addressMaxCharsPerLine;
+      }
+      line1 = fullAddress.substring(0, splitIndex).trim();
+
+      // Get what's left for line 2
+      const remainingText = fullAddress.substring(splitIndex).trim();
+
+      if (remainingText.length <= addressMaxCharsPerLine) {
+        line2 = remainingText;
+      } else {
+        // Find split point for line 2
+        let split2Index = remainingText.lastIndexOf(
+          " ",
+          addressMaxCharsPerLine
+        );
+        if (split2Index === -1 || split2Index < addressMaxCharsPerLine * 0.5) {
+          split2Index = addressMaxCharsPerLine;
+        }
+        line2 = remainingText.substring(0, split2Index).trim();
+        remainder = remainingText.substring(split2Index).trim();
+      }
+    }
+
+    // Fill the boxes
+    this.drawTextInBoxes("part1.residenceAddress", line1);
+    if (line2) {
+      this.drawTextInBoxes("part1.residenceAddress2", line2);
+    }
+
+    // Add supplemental text for what didn't fit
+    if (remainder) {
+      this.addResidenceSupplementalText(fullAddress, line1, line2);
+    }
+  }
+
+  /**
+   * Add supplemental text for residence address below the boxes
+   */
+  private addResidenceSupplementalText(
+    fullAddress: string,
+    line1?: string,
+    line2?: string
+  ) {
+    const coords = FIELD_COORDINATES["part1.residenceAddress2"];
+    if (!coords) return;
+
+    const page = this.pages[coords.page];
+    if (!page) return;
+
+    // Determine what was already shown in boxes
+    const shownInBoxes = ((line1 || "") + " " + (line2 || "")).trim();
+
+    // Calculate what wasn't shown
+    const shownLength = (line1 || "").length + (line2 || "").length;
+    const notShownText = fullAddress.substring(shownLength).trim();
+
+    if (!notShownText) return; // Everything fit, no supplemental needed
+
+    // Check if the unshown portion contains city/state/zip pattern
+    const remainderHasCityStateZip =
+      /[A-Za-z\s]+,?\s*[A-Z]{2}\s+\d{5}/.test(notShownText) ||
+      /[A-Za-z\s]+,?\s*[A-Za-z]+\s+\d{5}/.test(notShownText);
+
+    // Parse the full address to see if we can identify city/state/zip
+    const cityStateZipMatch = fullAddress.match(
+      /,?\s*([^,]+),?\s*([A-Za-z\s]+)\s*(\d{5}(?:-\d{4})?)$/
+    );
+
+    if (cityStateZipMatch && remainderHasCityStateZip) {
+      const cityPart = cityStateZipMatch[1].trim();
+      const statePart = cityStateZipMatch[2].trim();
+      const zipPart = cityStateZipMatch[3];
+      const stateAbbr = this.getStateAbbreviation(statePart);
+
+      // Check if city name is completely in the shown text
+      const cityCompletelyShown = shownInBoxes
+        .toUpperCase()
+        .includes(cityPart.toUpperCase());
+
+      if (!cityCompletelyShown) {
+        // City is not completely shown, use City/State/Zip label
+        page.drawText(`City/State/Zip: ${cityPart}, ${stateAbbr} ${zipPart}`, {
+          x: coords.x,
+          y: coords.y - 25,
+          size: 10,
+          font: this.font,
+          color: COLORS.black,
+        });
+      } else {
+        // City is shown but something else is missing
+        page.drawText(`Continued: ${notShownText}`, {
+          x: coords.x,
+          y: coords.y - 25,
+          size: 10,
+          font: this.font,
+          color: COLORS.black,
+        });
+      }
+    } else {
+      // No clear city/state/zip structure or everything after boxes - show as continuation
+      page.drawText(`Continued: ${notShownText}`, {
+        x: coords.x,
+        y: coords.y - 25,
+        size: 10,
+        font: this.font,
+        color: COLORS.black,
+      });
+    }
+  }
+
+  /**
+   * Convert state name to 2-letter abbreviation
+   */
+  private getStateAbbreviation(state?: string | null): string {
+    if (!state) return "";
+
+    // If already 2 characters, return as-is (uppercase)
+    if (state.length === 2) return state.toUpperCase();
+
+    // Common state name to abbreviation mappings
+    const stateAbbreviations: Record<string, string> = {
+      ALABAMA: "AL",
+      ALASKA: "AK",
+      ARIZONA: "AZ",
+      ARKANSAS: "AR",
+      CALIFORNIA: "CA",
+      COLORADO: "CO",
+      CONNECTICUT: "CT",
+      DELAWARE: "DE",
+      FLORIDA: "FL",
+      GEORGIA: "GA",
+      HAWAII: "HI",
+      IDAHO: "ID",
+      ILLINOIS: "IL",
+      INDIANA: "IN",
+      IOWA: "IA",
+      KANSAS: "KS",
+      KENTUCKY: "KY",
+      LOUISIANA: "LA",
+      MAINE: "ME",
+      MARYLAND: "MD",
+      MASSACHUSETTS: "MA",
+      MICHIGAN: "MI",
+      MINNESOTA: "MN",
+      MISSISSIPPI: "MS",
+      MISSOURI: "MO",
+      MONTANA: "MT",
+      NEBRASKA: "NE",
+      NEVADA: "NV",
+      "NEW HAMPSHIRE": "NH",
+      "NEW JERSEY": "NJ",
+      "NEW MEXICO": "NM",
+      "NEW YORK": "NY",
+      "NORTH CAROLINA": "NC",
+      "NORTH DAKOTA": "ND",
+      OHIO: "OH",
+      OKLAHOMA: "OK",
+      OREGON: "OR",
+      PENNSYLVANIA: "PA",
+      "RHODE ISLAND": "RI",
+      "SOUTH CAROLINA": "SC",
+      "SOUTH DAKOTA": "SD",
+      TENNESSEE: "TN",
+      TEXAS: "TX",
+      UTAH: "UT",
+      VERMONT: "VT",
+      VIRGINIA: "VA",
+      WASHINGTON: "WA",
+      "WEST VIRGINIA": "WV",
+      WISCONSIN: "WI",
+      WYOMING: "WY",
+    };
+
+    const upperState = state.toUpperCase().trim();
+    return (
+      stateAbbreviations[upperState] || state.substring(0, 2).toUpperCase()
+    );
+  }
 
   /**
    * Draw text at specified coordinates
