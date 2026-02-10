@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ExternalLink,
+  FileInput,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -73,6 +74,11 @@ export default function AdminLayout({
       name: "AI Review Queue",
       href: "/admin/ai-review",
       icon: CheckCircle2,
+    },
+    {
+      name: "PDF Field Mapping",
+      href: "/admin/pdf-mapping",
+      icon: FileInput,
     },
     {
       name: "Promo Codes",
