@@ -8,23 +8,29 @@ interface Part4FormProps {
   onSubmit: (data: Part4SelfFiler) => void;
 }
 
-export default function Part4Form({ onSubmit }: Part4FormProps) {
-  // Auto-submit empty data since Part 4 has no fields
+export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
+  // Auto-submit with default data for backwards compatibility
   useEffect(() => {
-    onSubmit({});
-  }, [onSubmit]);
+    onSubmit({
+      hasNameChanges: false,
+      ...initialData,
+    });
+  }, [onSubmit, initialData]);
 
   // Expose form submission to FormWizard (always valid for Part 4)
   useEffect(() => {
     (window as any).__currentFormSubmit = async () => {
-      await onSubmit({});
+      await onSubmit({
+        hasNameChanges: false,
+        ...initialData,
+      });
       return true; // Always valid
     };
 
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [onSubmit]);
+  }, [onSubmit, initialData]);
 
   return (
     <div className="space-y-6">

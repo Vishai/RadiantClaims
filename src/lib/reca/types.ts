@@ -107,7 +107,27 @@ export interface Part3Relationship {
 // ============================================================================
 
 export interface Part4SelfFiler {
-  // No additional fields - just document requirements
+  // Information gathering (can be filled anytime)
+  hasNameChanges: boolean;
+  numberOfMarriages?: number;
+
+  // Name change details for marriages (informational)
+  marriageNameChanges?: Array<{
+    marriageNumber: number;
+    previousName: string;
+    marriedName: string;
+    marriageDate: string;
+  }>;
+
+  // Notes about special circumstances
+  specialCircumstances?: string;
+
+  // Document awareness (not blocking form progression)
+  documentsIdentified?: {
+    birthCertificateNeeded: boolean;
+    marriageCertificatesNeeded: boolean;
+    marriageCertificatesCount: number;
+  };
 }
 
 // ============================================================================
@@ -115,20 +135,43 @@ export interface Part4SelfFiler {
 // ============================================================================
 
 export interface Part5SurvivingSpouse {
-  claimantDeceased: "YES" | "NO";
-  marriedOneYear: "YES" | "NO";
-  claimantPreviousMarriages: "YES" | "NO";
+  // Basic information (all optional for progression)
+  claimantDeceased?: "YES" | "NO";
+  dateOfDeath?: string;
+  marriageDate?: string;
+  marriedOneYear?: "YES" | "NO";
+
+  // Name information
+  nameAtMarriage?: string;
+  currentNameIfDifferent?: string;
+
+  // Previous marriages info
+  claimantPreviousMarriages?: "YES" | "NO";
   claimantPreviousSpouses?: Array<{
-    spouseName: string;
-    marriageStart: string;
-    marriageEnd: string;
+    spouseName?: string;
+    marriageStart?: string;
+    marriageEnd?: string;
+    endReason?: "DIVORCE" | "DEATH";
   }>;
-  filerOtherMarriages: "YES" | "NO";
+
+  filerOtherMarriages?: "YES" | "NO";
   filerOtherSpouses?: Array<{
-    spouseName: string;
-    marriageStart: string;
-    marriageEnd: string;
+    spouseName?: string;
+    marriageStart?: string;
+    marriageEnd?: string;
+    endReason?: "DIVORCE" | "DEATH";
   }>;
+
+  // Special circumstances
+  specialCircumstances?: string;
+
+  // Document awareness (non-blocking)
+  documentsIdentified?: {
+    deathCertificateNeeded: boolean;
+    marriageCertificateNeeded: boolean;
+    divorcePapersNeeded: boolean;
+    previousMarriageCertsNeeded: number;
+  };
 }
 
 // ============================================================================
@@ -525,6 +568,37 @@ export interface RECAWorkflowState {
     filename: string;
     uploadedAt: string;
   }>;
+  // Document tracking - separate from form completion
+  documentTracking?: {
+    requirements: Array<{
+      id: string;
+      name: string;
+      status:
+        | "not_needed"
+        | "needed"
+        | "in_progress"
+        | "confirmed"
+        | "uploaded"
+        | "verified";
+      required: boolean;
+    }>;
+    lastUpdated: string;
+    readyForSubmission: boolean;
+  };
+  // Review tracking - tracks incomplete sections
+  reviewTracking?: {
+    sections: Array<{
+      sectionId: RECAWorkflowSection;
+      sectionName: string;
+      status: "complete" | "partial" | "incomplete" | "not_started";
+      acknowledged: boolean;
+      missingRequired: number;
+      missingRecommended: number;
+    }>;
+    overallCompletion: number;
+    canSubmitToDOJ: boolean;
+    lastReviewDate: string;
+  };
 }
 
 // ============================================================================
