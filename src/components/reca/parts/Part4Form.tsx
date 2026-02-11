@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -132,7 +132,7 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
             await handleSubmit(data);
             resolve(true); // Always allow progression
           },
-          async (errors) => {
+          async () => {
             // Even with errors, save what we have and allow progression
             const formData = form.getValues();
             await handleSubmit(formData);
@@ -191,18 +191,22 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
                   }
                 }}
               />
-              <Label htmlFor="name-changes" className="cursor-pointer text-sm">
+              <FieldLabel
+                htmlFor="name-changes"
+                importance="recommended"
+                className="cursor-pointer text-sm"
+              >
                 I have changed my name due to marriage, divorce, or other
                 reasons
-              </Label>
+              </FieldLabel>
             </div>
 
             {hasNameChanges && (
               <div className="ml-6 space-y-4 rounded-lg border border-sage-200 bg-sage-50 p-4">
                 <div>
-                  <Label htmlFor="num-marriages">
+                  <FieldLabel htmlFor="num-marriages" importance="recommended">
                     How many times have you been married?
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="num-marriages"
                     type="number"
@@ -247,9 +251,12 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
 
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <div>
-                              <Label htmlFor={`previous-name-${index}`}>
+                              <FieldLabel
+                                htmlFor={`previous-name-${index}`}
+                                importance="optional"
+                              >
                                 Name Before Marriage (Optional)
-                              </Label>
+                              </FieldLabel>
                               <Input
                                 id={`previous-name-${index}`}
                                 {...form.register(
@@ -260,9 +267,12 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
                             </div>
 
                             <div>
-                              <Label htmlFor={`married-name-${index}`}>
+                              <FieldLabel
+                                htmlFor={`married-name-${index}`}
+                                importance="optional"
+                              >
                                 Name After Marriage (Optional)
-                              </Label>
+                              </FieldLabel>
                               <Input
                                 id={`married-name-${index}`}
                                 {...form.register(
@@ -273,9 +283,12 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
                             </div>
 
                             <div>
-                              <Label htmlFor={`marriage-date-${index}`}>
+                              <FieldLabel
+                                htmlFor={`marriage-date-${index}`}
+                                importance="optional"
+                              >
                                 Marriage Date (Optional)
-                              </Label>
+                              </FieldLabel>
                               <Input
                                 id={`marriage-date-${index}`}
                                 type="date"
@@ -296,9 +309,9 @@ export default function Part4Form({ initialData, onSubmit }: Part4FormProps) {
 
           {/* Special Circumstances */}
           <div>
-            <Label htmlFor="circumstances">
+            <FieldLabel htmlFor="circumstances" importance="optional">
               Special Circumstances or Notes (Optional)
-            </Label>
+            </FieldLabel>
             <Textarea
               id="circumstances"
               {...form.register("specialCircumstances")}

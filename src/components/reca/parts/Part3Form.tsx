@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,17 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Info, Users, UserCircle, Heart, Baby, User } from "lucide-react";
 
 const part3Schema = z.object({
-  relationship: z.enum(
-    ["Self", "Spouse", "Child", "Parent", "Grandchild", "Grandparent"],
-    {
+  relationship: z
+    .enum(["Self", "Spouse", "Child", "Parent", "Grandchild", "Grandparent"], {
       required_error: "Please select your relationship",
-    }
-  ),
+    })
+    .optional(),
 });
 
 type Part3FormData = z.infer<typeof part3Schema>;
@@ -150,17 +149,27 @@ export function Part3Form({
     [onSubmit]
   );
 
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      onSubmit(data as Part3Relationship);
+    },
+    [onSubmit]
+  );
+
   // Expose form submission to FormWizard
-  React.useEffect(() => {
+  useEffect(() => {
     (window as any).__currentFormSubmit = async () => {
-      return new Promise((resolve) => {
+      return new Promise<boolean>((resolve) => {
         form.handleSubmit(
           async (data) => {
-            await handleSubmit(data);
+            await handlePartialSubmit(data);
             resolve(true);
           },
-          () => {
-            resolve(false); // Validation failed
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
           }
         )();
       });
@@ -169,7 +178,7 @@ export function Part3Form({
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [form, handleSubmit]);
+  }, [form, handlePartialSubmit]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -266,12 +275,13 @@ export function Part3Form({
                           id={option.value}
                           className="border-2"
                         />
-                        <Label
+                        <FieldLabel
                           htmlFor={option.value}
+                          importance="required"
                           className="cursor-pointer text-lg font-semibold text-sage-900"
                         >
                           {option.label}
-                        </Label>
+                        </FieldLabel>
                       </div>
 
                       <p className="mb-3 text-sm text-sage-700">

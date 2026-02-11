@@ -6,10 +6,6 @@ import {
   Save,
   RefreshCw,
   TestTube,
-  Upload,
-  Download,
-  Eye,
-  Settings,
   Plus,
   Trash2,
   Edit2,
@@ -52,8 +48,7 @@ export default function PDFMappingPage() {
   const [isTestMode, setIsTestMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [testData, setTestData] = useState<Record<string, any>>({});
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [testData] = useState<Record<string, any>>({});
 
   // Load templates on mount
   useEffect(() => {
@@ -317,7 +312,6 @@ export default function PDFMappingPage() {
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
 
         // Open in new tab
         window.open(url, "_blank");

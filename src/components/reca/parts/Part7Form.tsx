@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -257,9 +258,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="required"
+              className="text-sm font-medium text-sage-800"
+            >
               Select your relationship
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchRelationshipType}
               onValueChange={(value) =>
@@ -362,12 +366,13 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label
+              <FieldLabel
                 htmlFor="claimantFullName"
+                importance="recommended"
                 className="text-sm font-medium text-sage-800"
               >
                 Full Legal Name
-              </Label>
+              </FieldLabel>
               <Input
                 id="claimantFullName"
                 placeholder="Full legal name"
@@ -375,12 +380,13 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label
+              <FieldLabel
                 htmlFor="claimantDateOfBirth"
+                importance="recommended"
                 className="text-sm font-medium text-sage-800"
               >
                 Date of Birth
-              </Label>
+              </FieldLabel>
               <Input
                 id="claimantDateOfBirth"
                 type="date"
@@ -391,9 +397,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
 
           {/* Deceased */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="recommended"
+              className="text-sm font-medium text-sage-800"
+            >
               Has {config.claimantLabel} passed away?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchClaimantDeceased || ""}
               onValueChange={(value) =>
@@ -426,12 +435,13 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
 
           {watchClaimantDeceased === "YES" && (
             <div className="space-y-2">
-              <Label
+              <FieldLabel
                 htmlFor="claimantDateOfDeath"
+                importance="required"
                 className="text-sm font-medium text-sage-800"
               >
                 Date of Death
-              </Label>
+              </FieldLabel>
               <Input
                 id="claimantDateOfDeath"
                 type="date"
@@ -463,9 +473,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
         <CardContent className="space-y-6">
           {/* Surviving Spouse */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="recommended"
+              className="text-sm font-medium text-sage-800"
+            >
               Does {config.claimantLabel} have a surviving spouse?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchSurvivingSpouse || ""}
               onValueChange={(value) =>
@@ -519,9 +532,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
           {/* Surviving Children (shown for grandparents and parents) */}
           {watchRelationshipType !== "PARENT" && (
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-sage-800">
+              <FieldLabel
+                importance="recommended"
+                className="text-sm font-medium text-sage-800"
+              >
                 Does {config.claimantLabel} have any surviving children?
-              </Label>
+              </FieldLabel>
               <RadioGroup
                 value={watchSurvivingChild || ""}
                 onValueChange={(value) =>
@@ -618,16 +634,24 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="text-xs text-sage-700">Full Name</Label>
+                  <FieldLabel
+                    importance="recommended"
+                    className="text-xs text-sage-700"
+                  >
+                    Full Name
+                  </FieldLabel>
                   <Input
                     placeholder="Full legal name"
                     {...form.register(`intermediaryRelatives.${index}.name`)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-sage-700">
+                  <FieldLabel
+                    importance="recommended"
+                    className="text-xs text-sage-700"
+                  >
                     Relationship to Person Who Became Ill
-                  </Label>
+                  </FieldLabel>
                   <Input
                     placeholder="e.g., Son, Daughter, Parent"
                     {...form.register(
@@ -636,7 +660,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-sage-700">Date of Birth</Label>
+                  <FieldLabel
+                    importance="recommended"
+                    className="text-xs text-sage-700"
+                  >
+                    Date of Birth
+                  </FieldLabel>
                   <Input
                     type="date"
                     {...form.register(
@@ -645,9 +674,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-xs text-sage-700">
+                  <FieldLabel
+                    importance="recommended"
+                    className="text-xs text-sage-700"
+                  >
                     Is this person deceased?
-                  </Label>
+                  </FieldLabel>
                   <RadioGroup
                     value={
                       form.watch(`intermediaryRelatives.${index}.isDeceased`) ||
@@ -692,7 +724,12 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
               {form.watch(`intermediaryRelatives.${index}.isDeceased`) ===
                 "YES" && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-sage-700">Date of Death</Label>
+                  <FieldLabel
+                    importance="recommended"
+                    className="text-xs text-sage-700"
+                  >
+                    Date of Death
+                  </FieldLabel>
                   <Input
                     type="date"
                     {...form.register(
@@ -736,12 +773,13 @@ export default function Part7Form({ initialData, onSubmit }: Part7FormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label
+            <FieldLabel
               htmlFor="specialCircumstances"
+              importance="optional"
               className="text-sm font-medium text-sage-800"
             >
               Are there any special circumstances? (Optional)
-            </Label>
+            </FieldLabel>
             <Textarea
               id="specialCircumstances"
               placeholder="For example: adopted family members, complex family relationships, missing documents, etc."

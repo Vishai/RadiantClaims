@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { templateId, testData } = body;
+    const { testData } = body;
 
     // Generate sample form data for testing
     const sampleFormData = {
@@ -104,7 +104,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Return the PDF as a response
-    return new NextResponse(filledPdfBytes, {
+    const pdfBytes = new Uint8Array(filledPdfBytes);
+    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+
+    return new NextResponse(pdfBlob, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

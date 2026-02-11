@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -383,10 +384,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
 
           {/* Question 1: Does a surviving spouse exist? */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold text-red-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-red-900"
+            >
               Does a surviving spouse of the deceased person exist?{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <p className="text-sm text-sage-700">
               This refers to a spouse who was married to the deceased at the
               time of death and is still alive.
@@ -427,10 +431,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
           {/* Question 2: Did the spouse meet the 1-year requirement? */}
           {watchSurvivingSpouseExists === "YES" && (
             <div className="space-y-3 border-t border-red-200 pt-4">
-              <Label className="text-base font-semibold text-red-900">
+              <FieldLabel
+                importance="required"
+                className="text-base font-semibold text-red-900"
+              >
                 Was that spouse married to the deceased for at least one year
                 before death? <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
               <p className="text-sm text-sage-700">
                 To be eligible, the marriage must have lasted at least one
                 continuous year prior to the deceased's death.
@@ -643,10 +650,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
         <CardContent className="space-y-6">
           {/* Claimant Deceased */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold"
+            >
               Is the person who became ill deceased?{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={form.watch("claimantDeceased")}
               onValueChange={(value) =>
@@ -677,10 +687,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
 
           {/* Claimant Ever Married */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold"
+            >
               Was the person who became ill ever married?{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={form.watch("claimantEverMarried")}
               onValueChange={(value) =>
@@ -753,9 +766,12 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={`claimantSpouses.${index}.spouseName`}>
+                      <FieldLabel
+                        htmlFor={`claimantSpouses.${index}.spouseName`}
+                        importance="required"
+                      >
                         Spouse Name <span className="text-red-600">*</span>
-                      </Label>
+                      </FieldLabel>
                       <Input
                         id={`claimantSpouses.${index}.spouseName`}
                         {...form.register(
@@ -767,11 +783,12 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label
+                        <FieldLabel
                           htmlFor={`claimantSpouses.${index}.marriageStart`}
+                          importance="required"
                         >
                           Marriage Start <span className="text-red-600">*</span>
-                        </Label>
+                        </FieldLabel>
                         <Input
                           id={`claimantSpouses.${index}.marriageStart`}
                           {...form.register(
@@ -781,9 +798,12 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`claimantSpouses.${index}.marriageEnd`}>
+                        <FieldLabel
+                          htmlFor={`claimantSpouses.${index}.marriageEnd`}
+                          importance="required"
+                        >
                           Marriage End <span className="text-red-600">*</span>
-                        </Label>
+                        </FieldLabel>
                         <Input
                           id={`claimantSpouses.${index}.marriageEnd`}
                           {...form.register(
@@ -801,10 +821,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
 
           {/* Child Type */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold"
+            >
               Your relationship to the person who became ill{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <Select
               value={form.watch("childType")}
               onValueChange={(value) =>
@@ -838,10 +861,13 @@ export default function Part6Form({ initialData, onSubmit }: Part6FormProps) {
         <CardContent className="space-y-6">
           {/* Do other children exist */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold"
+            >
               Did the person who became ill have other children?{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={form.watch("otherChildrenExist")}
               onValueChange={(value) =>
@@ -1084,9 +1110,9 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
 
         {/* Name */}
         <div className="space-y-2">
-          <Label htmlFor={`siblings.${index}.name`}>
+          <FieldLabel htmlFor={`siblings.${index}.name`} importance="required">
             Full Name <span className="text-red-600">*</span>
-          </Label>
+          </FieldLabel>
           <Input
             id={`siblings.${index}.name`}
             {...form.register(`siblings.${index}.name`)}
@@ -1104,9 +1130,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
 
         {/* Date of Birth */}
         <div className="space-y-2">
-          <Label htmlFor={`siblings.${index}.dateOfBirth`}>
+          <FieldLabel
+            htmlFor={`siblings.${index}.dateOfBirth`}
+            importance="required"
+          >
             Date of Birth <span className="text-red-600">*</span>
-          </Label>
+          </FieldLabel>
           <Input
             id={`siblings.${index}.dateOfBirth`}
             {...form.register(`siblings.${index}.dateOfBirth`)}
@@ -1125,9 +1154,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
         {/* City and State of Birth */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor={`siblings.${index}.cityOfBirth`}>
+            <FieldLabel
+              htmlFor={`siblings.${index}.cityOfBirth`}
+              importance="required"
+            >
               City of Birth <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id={`siblings.${index}.cityOfBirth`}
               {...form.register(`siblings.${index}.cityOfBirth`)}
@@ -1146,9 +1178,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`siblings.${index}.stateOfBirth`}>
+            <FieldLabel
+              htmlFor={`siblings.${index}.stateOfBirth`}
+              importance="required"
+            >
               State of Birth <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id={`siblings.${index}.stateOfBirth`}
               {...form.register(`siblings.${index}.stateOfBirth`)}
@@ -1169,10 +1204,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
 
         {/* Name Change Section */}
         <div className="space-y-3 border-t border-sage-200 pt-4">
-          <Label className="flex items-center gap-2 text-base font-semibold">
+          <FieldLabel
+            importance="recommended"
+            className="flex items-center gap-2 text-base font-semibold"
+          >
             <UserPlus className="h-4 w-4 text-terracotta-500" />
             Has this person ever changed their name?
-          </Label>
+          </FieldLabel>
           <RadioGroup
             value={form.watch(`siblings.${index}.hadNameChange`) || "NO"}
             onValueChange={(value) =>
@@ -1213,10 +1251,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
             <div className="space-y-4 pt-3">
               {/* Original Last Name */}
               <div className="space-y-2">
-                <Label htmlFor={`siblings.${index}.originalLastName`}>
+                <FieldLabel
+                  htmlFor={`siblings.${index}.originalLastName`}
+                  importance="required"
+                >
                   Original Last Name (at birth){" "}
                   <span className="text-red-600">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id={`siblings.${index}.originalLastName`}
                   {...form.register(`siblings.${index}.originalLastName`)}
@@ -1279,12 +1320,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label
+                      <FieldLabel
                         htmlFor={`siblings.${index}.nameChangeHistory.${nameIndex}.previousName`}
+                        importance="required"
                         className="text-xs"
                       >
                         Previous Name <span className="text-red-600">*</span>
-                      </Label>
+                      </FieldLabel>
                       <Input
                         id={`siblings.${index}.nameChangeHistory.${nameIndex}.previousName`}
                         {...form.register(
@@ -1296,12 +1338,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label
+                      <FieldLabel
                         htmlFor={`siblings.${index}.nameChangeHistory.${nameIndex}.dateOfChange`}
+                        importance="required"
                         className="text-xs"
                       >
                         Date of Change <span className="text-red-600">*</span>
-                      </Label>
+                      </FieldLabel>
                       <Input
                         id={`siblings.${index}.nameChangeHistory.${nameIndex}.dateOfChange`}
                         {...form.register(
@@ -1313,12 +1356,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label
+                      <FieldLabel
                         htmlFor={`siblings.${index}.nameChangeHistory.${nameIndex}.reasonForChange`}
+                        importance="required"
                         className="text-xs"
                       >
                         Reason <span className="text-red-600">*</span>
-                      </Label>
+                      </FieldLabel>
                       <Select
                         value={form.watch(
                           `siblings.${index}.nameChangeHistory.${nameIndex}.reasonForChange`
@@ -1348,12 +1392,13 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
                       `siblings.${index}.nameChangeHistory.${nameIndex}.reasonForChange`
                     ) === "OTHER" && (
                       <div className="space-y-2">
-                        <Label
+                        <FieldLabel
                           htmlFor={`siblings.${index}.nameChangeHistory.${nameIndex}.otherReason`}
+                          importance="required"
                           className="text-xs"
                         >
                           Please Specify <span className="text-red-600">*</span>
-                        </Label>
+                        </FieldLabel>
                         <Input
                           id={`siblings.${index}.nameChangeHistory.${nameIndex}.otherReason`}
                           {...form.register(
@@ -1382,9 +1427,9 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
 
         {/* Is Deceased */}
         <div className="space-y-3 border-t border-sage-200 pt-4">
-          <Label className="text-base font-semibold">
+          <FieldLabel importance="required" className="text-base font-semibold">
             Is this sibling deceased? <span className="text-red-600">*</span>
-          </Label>
+          </FieldLabel>
           <RadioGroup
             value={form.watch(`siblings.${index}.isDeceased`)}
             onValueChange={(value) =>
@@ -1423,9 +1468,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
         {watchIsDeceased === "YES" && (
           <div className="space-y-4 border-t border-sage-200 pt-4">
             <div className="space-y-2">
-              <Label htmlFor={`siblings.${index}.dateOfDeath`}>
+              <FieldLabel
+                htmlFor={`siblings.${index}.dateOfDeath`}
+                importance="required"
+              >
                 Date of Death <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
               <Input
                 id={`siblings.${index}.dateOfDeath`}
                 {...form.register(`siblings.${index}.dateOfDeath`)}
@@ -1446,9 +1494,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
             {/* City and State of Death */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor={`siblings.${index}.cityOfDeath`}>
+                <FieldLabel
+                  htmlFor={`siblings.${index}.cityOfDeath`}
+                  importance="required"
+                >
                   City of Death <span className="text-red-600">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id={`siblings.${index}.cityOfDeath`}
                   {...form.register(`siblings.${index}.cityOfDeath`)}
@@ -1467,9 +1518,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`siblings.${index}.stateOfDeath`}>
+                <FieldLabel
+                  htmlFor={`siblings.${index}.stateOfDeath`}
+                  importance="required"
+                >
                   State of Death <span className="text-red-600">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id={`siblings.${index}.stateOfDeath`}
                   {...form.register(`siblings.${index}.stateOfDeath`)}
@@ -1489,9 +1543,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
             </div>
 
             <div className="space-y-3">
-              <Label className="text-base font-semibold">
+              <FieldLabel
+                importance="required"
+                className="text-base font-semibold"
+              >
                 Death Certificate Status <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
               <Select
                 value={form.watch(`siblings.${index}.hasDeathCertificate`)}
                 onValueChange={(value) =>
@@ -1570,9 +1627,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
         {watchIsDeceased === "NO" && (
           <div className="space-y-4 border-t border-sage-200 pt-4">
             <div className="space-y-2">
-              <Label htmlFor={`siblings.${index}.currentAddress`}>
+              <FieldLabel
+                htmlFor={`siblings.${index}.currentAddress`}
+                importance="required"
+              >
                 Current Address <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
               <Input
                 id={`siblings.${index}.currentAddress`}
                 {...form.register(`siblings.${index}.currentAddress`)}
@@ -1591,9 +1651,12 @@ function SiblingCard({ index, form, onRemove, formErrors }: SiblingCardProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`siblings.${index}.phoneNumber`}>
+              <FieldLabel
+                htmlFor={`siblings.${index}.phoneNumber`}
+                importance="required"
+              >
                 Phone Number <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
               <Input
                 id={`siblings.${index}.phoneNumber`}
                 {...form.register(`siblings.${index}.phoneNumber`)}

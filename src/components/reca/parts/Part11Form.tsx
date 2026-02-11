@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
@@ -268,10 +269,13 @@ export default function Part11Form({
 
           {/* Required: Medical Records Submitted Checkbox */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Medical Records Confirmation{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
 
             <div
               className={`flex items-start gap-3 rounded-md border p-4 ${
@@ -293,13 +297,14 @@ export default function Part11Form({
                 className="mt-1"
               />
               <div className="flex-1">
-                <label
+                <FieldLabel
                   htmlFor="medicalRecordsSubmitted"
+                  importance="required"
                   className="cursor-pointer text-sm font-semibold uppercase leading-none"
                 >
                   I have submitted certified medical records showing a diagnosis
                   of a compensable cancer
-                </label>
+                </FieldLabel>
                 <p className="mt-2 text-xs text-sage-600">
                   This confirmation is required. You must provide medical
                   documentation that proves the diagnosis of at least one
@@ -322,9 +327,12 @@ export default function Part11Form({
 
           {/* Optional: Cancer Registry Authorization */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="optional"
+              className="text-base font-semibold text-sage-900"
+            >
               State Cancer Registry (Optional)
-            </Label>
+            </FieldLabel>
 
             <div
               className={`flex items-start gap-3 rounded-md border p-4 ${
@@ -345,13 +353,14 @@ export default function Part11Form({
                 className="mt-1"
               />
               <div className="flex-1">
-                <label
+                <FieldLabel
                   htmlFor="cancerRegistryAuthorization"
+                  importance="optional"
                   className="cursor-pointer text-sm font-semibold uppercase leading-none"
                 >
                   I authorize the Department of Justice to contact a state
                   cancer registry on my behalf
-                </label>
+                </FieldLabel>
                 <p className="mt-2 text-xs text-sage-600">
                   If you check this box, you must also complete the
                   "Authorization to Release Medical Information" form.{" "}
@@ -400,9 +409,12 @@ export default function Part11Form({
 
           {/* RESEP Assistance Section */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="optional"
+              className="text-base font-semibold text-sage-900"
+            >
               Radiation Exposure Screening and Education Program (RESEP)
-            </Label>
+            </FieldLabel>
 
             <p className="text-sm text-sage-600">
               RESEP clinics provide free medical screening and education to
@@ -411,9 +423,13 @@ export default function Part11Form({
             </p>
 
             <div className="space-y-4">
-              <Label htmlFor="resepAssistance" className="text-sm font-medium">
+              <FieldLabel
+                htmlFor="resepAssistance"
+                importance="recommended"
+                className="text-sm font-medium"
+              >
                 Have you received assistance from a RESEP clinic?
-              </Label>
+              </FieldLabel>
 
               <RadioGroup
                 value={resepAssistance}
@@ -446,13 +462,14 @@ export default function Part11Form({
               {/* Conditional: RESEP Clinic Name Input */}
               {resepAssistance === "YES" && (
                 <div className="space-y-2 border-l-2 border-terracotta-300 pl-4">
-                  <Label
+                  <FieldLabel
                     htmlFor="resepClinicName"
+                    importance="required"
                     className="text-sm font-medium"
                   >
                     Specify clinic name or location{" "}
                     <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="resepClinicName"
                     {...form.register("resepClinicName")}

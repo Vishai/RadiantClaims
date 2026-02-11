@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import {
   FileText,
   Info,
@@ -398,14 +399,15 @@ export default function Part9Form({
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <label
+                      <FieldLabel
                         htmlFor="ldsChurchAssistance"
+                        importance="optional"
                         className="cursor-pointer text-sm font-semibold uppercase leading-none text-sage-900"
                       >
                         I have contacted the Church of Jesus Christ of
                         Latter-day Saints and requested information regarding my
                         claim
-                      </label>
+                      </FieldLabel>
                     </div>
                   </div>
 

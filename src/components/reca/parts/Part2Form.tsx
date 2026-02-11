@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Info, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const formerNameSchema = z.object({
   name: z.string().min(1, "Name is required").max(50),
@@ -28,20 +28,17 @@ const formerNameSchema = z.object({
 });
 
 const part2Schema = z.object({
-  firstName: z.string().min(1, "First name is required").max(12),
+  firstName: z.string().max(12).optional(),
   middleName: z.string().max(12).optional(),
-  lastName: z.string().min(1, "Last name is required").max(20),
+  lastName: z.string().max(20).optional(),
   formerNames: z.array(formerNameSchema).optional(),
   ssn: z
     .string()
-    .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
-  dob: z.string().min(1, "Date of birth is required"),
-  dod: z
-    .string()
-    .min(
-      1,
-      "Date of death is required - only survivors can file on behalf of deceased individuals"
-    ),
+    .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX")
+    .optional()
+    .or(z.literal("")),
+  dob: z.string().optional(),
+  dod: z.string().optional(),
 });
 
 type Part2FormData = z.infer<typeof part2Schema>;
@@ -167,6 +164,35 @@ export function Part2Form({
     onSubmit(data as Part2ClaimantInfo);
   };
 
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      onSubmit(data as Part2ClaimantInfo);
+    },
+    [onSubmit]
+  );
+
+  useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      return new Promise<boolean>((resolve) => {
+        form.handleSubmit(
+          async (data) => {
+            await handlePartialSubmit(data);
+            resolve(true);
+          },
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
+          }
+        )();
+      });
+    };
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form, handlePartialSubmit]);
+
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
       {/* Info Card */}
@@ -246,6 +272,7 @@ export function Part2Form({
               form={form}
               name="firstName"
               label="First Name"
+              importance="required"
               required
               maxLength={12}
             />
@@ -253,12 +280,14 @@ export function Part2Form({
               form={form}
               name="middleName"
               label="Middle Name"
+              importance="optional"
               maxLength={12}
             />
             <FormField
               form={form}
               name="lastName"
               label="Last Name"
+              importance="required"
               required
               maxLength={20}
             />
@@ -298,6 +327,7 @@ export function Part2Form({
               name="ssn"
               label="Social Security Number"
               type="ssn"
+              importance="required"
               required
               placeholder="XXX-XX-XXXX"
               helperText="Format: XXX-XX-XXXX"
@@ -307,6 +337,7 @@ export function Part2Form({
               name="dob"
               label="Date of Birth"
               type="date"
+              importance="required"
               required
             />
           </div>
@@ -316,6 +347,7 @@ export function Part2Form({
             name="dod"
             label="Date of Death"
             type="date"
+            importance="required"
             required
             helperText="Required - Only survivors of deceased individuals can file claims on their behalf"
           />

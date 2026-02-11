@@ -26,7 +26,26 @@ import {
   ChevronRight,
   Clock,
   ArrowLeft,
+  HelpCircle,
+  ExternalLink,
+  Phone,
+  FolderSearch,
 } from "lucide-react";
+import {
+  generateDocumentRequirements,
+  getDocumentAssistance,
+  createDocumentTaskList,
+  type DocumentAssistance,
+} from "@/lib/reca/document-tracking";
+import {
+  initializeReviewTracking,
+  updateSectionReview,
+  generateReviewChecklist,
+  getPriorityReviewItems,
+  type CompletionStatus,
+  type IncompleteItem,
+  type ReviewTrackingState,
+} from "@/lib/reca/review-tracking";
 import {
   Dialog,
   DialogContent,
@@ -180,6 +199,486 @@ interface CompletionAnalysis {
   emptySections: SectionStatus[];
   overallPercentage: number;
   isFormComplete: boolean;
+}
+
+interface ReviewFieldDefinition {
+  path: string;
+  label: string;
+  importance: IncompleteItem["importance"];
+  appliesWhen?: (formData: any) => boolean;
+  isComplete?: (value: any, formData: any) => boolean;
+}
+
+const REVIEW_SECTION_FIELDS: Partial<
+  Record<RECAWorkflowSection, ReviewFieldDefinition[]>
+> = {
+  part_1: [
+    { path: "firstName", label: "First name", importance: "required" },
+    { path: "lastName", label: "Last name", importance: "required" },
+    { path: "ssn", label: "Social Security Number", importance: "required" },
+    { path: "dob", label: "Date of birth", importance: "required" },
+    {
+      path: "mailingAddress",
+      label: "Mailing address",
+      importance: "required",
+    },
+    { path: "city", label: "City", importance: "required" },
+    { path: "state", label: "State", importance: "required" },
+    { path: "zipCode", label: "ZIP code", importance: "required" },
+    {
+      path: "phoneDay",
+      label: "Daytime phone number",
+      importance: "recommended",
+    },
+    { path: "email", label: "Email address", importance: "recommended" },
+  ],
+  part_2: [
+    { path: "firstName", label: "Claimant first name", importance: "required" },
+    { path: "lastName", label: "Claimant last name", importance: "required" },
+    { path: "ssn", label: "Claimant SSN", importance: "required" },
+    { path: "dob", label: "Claimant date of birth", importance: "required" },
+    { path: "dod", label: "Claimant date of death", importance: "required" },
+  ],
+  part_3: [
+    {
+      path: "relationship",
+      label: "Relationship to claimant",
+      importance: "required",
+    },
+  ],
+  part_4: [
+    {
+      path: "hasNameChanges",
+      label: "Name change history",
+      importance: "recommended",
+      isComplete: (value) => typeof value === "boolean",
+    },
+    {
+      path: "numberOfMarriages",
+      label: "Number of marriages",
+      importance: "recommended",
+      appliesWhen: (fd) => fd?.part_4?.hasNameChanges === true,
+      isComplete: (value) => typeof value === "number" && value >= 0,
+    },
+    {
+      path: "specialCircumstances",
+      label: "Special circumstances notes",
+      importance: "optional",
+    },
+  ],
+  part_5: [
+    {
+      path: "claimantDeceased",
+      label: "Whether claimant is deceased",
+      importance: "required",
+    },
+    {
+      path: "dateOfDeath",
+      label: "Date of death",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_5?.claimantDeceased === "YES",
+    },
+    { path: "marriageDate", label: "Date of marriage", importance: "required" },
+    {
+      path: "marriedOneYear",
+      label: "One-year marriage requirement",
+      importance: "required",
+    },
+    {
+      path: "nameAtMarriage",
+      label: "Name at time of marriage",
+      importance: "recommended",
+    },
+    {
+      path: "claimantPreviousMarriages",
+      label: "Claimant prior marriages",
+      importance: "recommended",
+    },
+    {
+      path: "filerOtherMarriages",
+      label: "Filer other marriages",
+      importance: "recommended",
+    },
+    {
+      path: "specialCircumstances",
+      label: "Special circumstances",
+      importance: "optional",
+    },
+  ],
+  part_6: [
+    {
+      path: "survivingSpouseExists",
+      label: "Surviving spouse exists",
+      importance: "required",
+    },
+    {
+      path: "survivingSpouseMetOneYearRequirement",
+      label: "Spouse one-year eligibility",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_6?.survivingSpouseExists === "YES",
+    },
+    {
+      path: "claimantDeceased",
+      label: "Claimant deceased",
+      importance: "required",
+    },
+    {
+      path: "claimantEverMarried",
+      label: "Claimant ever married",
+      importance: "required",
+    },
+    {
+      path: "claimantSpouses",
+      label: "Claimant marriage history entries",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_6?.claimantEverMarried === "YES",
+      isComplete: (value) => Array.isArray(value) && value.length > 0,
+    },
+    {
+      path: "childType",
+      label: "Child relationship type",
+      importance: "required",
+    },
+    {
+      path: "otherChildrenExist",
+      label: "Other children exist",
+      importance: "required",
+    },
+    {
+      path: "siblings",
+      label: "Sibling list",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_6?.otherChildrenExist === "YES",
+      isComplete: (value) => Array.isArray(value) && value.length > 0,
+    },
+  ],
+  part_7: [
+    {
+      path: "relationshipType",
+      label: "Relationship type",
+      importance: "required",
+    },
+    {
+      path: "claimantFullName",
+      label: "Claimant full name",
+      importance: "recommended",
+    },
+    {
+      path: "claimantDateOfBirth",
+      label: "Claimant date of birth",
+      importance: "recommended",
+    },
+    {
+      path: "claimantDeceased",
+      label: "Claimant deceased",
+      importance: "recommended",
+    },
+    {
+      path: "claimantDateOfDeath",
+      label: "Claimant date of death",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_7?.claimantDeceased === "YES",
+    },
+    {
+      path: "survivingSpouseExists",
+      label: "Surviving spouse status",
+      importance: "recommended",
+    },
+    {
+      path: "survivingChildExists",
+      label: "Surviving child status",
+      importance: "recommended",
+      appliesWhen: (fd) => fd?.part_7?.relationshipType !== "PARENT",
+    },
+    {
+      path: "specialCircumstances",
+      label: "Special circumstances",
+      importance: "optional",
+    },
+  ],
+  part_8: [
+    {
+      path: "exposureOptions",
+      label: "Exposure time period selection",
+      importance: "required",
+      isComplete: (value) => Array.isArray(value) && value.length > 0,
+    },
+    {
+      path: "affectedAreas",
+      label: "At least one affected area location",
+      importance: "required",
+      isComplete: (value, fd) => {
+        const a = Array.isArray(value) && value.length > 0;
+        const b =
+          Array.isArray(fd?.part_8?.arizonaCounties) &&
+          fd.part_8.arizonaCounties.length > 0;
+        const c =
+          Array.isArray(fd?.part_8?.nevadaCounties) &&
+          fd.part_8.nevadaCounties.length > 0;
+        return a || b || c;
+      },
+    },
+  ],
+  part_9: [
+    {
+      path: "uploadedDocuments",
+      label: "Proof of presence documents",
+      importance: "recommended",
+      isComplete: (value) => Array.isArray(value) && value.length > 0,
+    },
+    {
+      path: "ldsChurchAssistance",
+      label: "LDS records assistance status",
+      importance: "optional",
+      isComplete: (value) => typeof value === "boolean",
+    },
+  ],
+  part_10: [
+    {
+      path: "diseases",
+      label: "Compensable disease selection",
+      importance: "required",
+      isComplete: (value) => Array.isArray(value) && value.length > 0,
+    },
+  ],
+  part_11: [
+    {
+      path: "medicalRecordsSubmitted",
+      label: "Medical records confirmation",
+      importance: "required",
+      isComplete: (value) => value === true,
+    },
+    {
+      path: "resepAssistance",
+      label: "RESEP assistance status",
+      importance: "recommended",
+    },
+    {
+      path: "resepClinicName",
+      label: "RESEP clinic name",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_11?.resepAssistance === "YES",
+    },
+    {
+      path: "cancerRegistryAuthorization",
+      label: "Cancer registry authorization",
+      importance: "optional",
+      isComplete: (value) => typeof value === "boolean",
+    },
+  ],
+  part_12: [
+    {
+      path: "receivedPayment",
+      label: "Previous payment disclosure",
+      importance: "required",
+    },
+    {
+      path: "paymentDetails",
+      label: "Payment details",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_12?.receivedPayment === "YES",
+    },
+    {
+      path: "eeoicpaClaim",
+      label: "EEOICPA claim disclosure",
+      importance: "required",
+    },
+  ],
+  part_13: [
+    {
+      path: "hasAttorney",
+      label: "Attorney representation status",
+      importance: "required",
+    },
+    {
+      path: "attorneyFirstName",
+      label: "Attorney first name",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyLastName",
+      label: "Attorney last name",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyAddress",
+      label: "Attorney mailing address",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyCity",
+      label: "Attorney city",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyState",
+      label: "Attorney state",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyZip",
+      label: "Attorney ZIP code",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+    {
+      path: "attorneyPhone",
+      label: "Attorney phone number",
+      importance: "required",
+      appliesWhen: (fd) => fd?.part_13?.hasAttorney === "YES",
+    },
+  ],
+  part_14: [
+    { path: "feeType", label: "Attorney fee type", importance: "required" },
+    {
+      path: "attorneySignature",
+      label: "Attorney signature",
+      importance: "required",
+    },
+    {
+      path: "attorneySignatureDate",
+      label: "Attorney signature date",
+      importance: "required",
+    },
+  ],
+  part_15: [
+    {
+      path: "guardianFirstName",
+      label: "Guardian first name",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+    {
+      path: "guardianLastName",
+      label: "Guardian last name",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+    {
+      path: "guardianAddress",
+      label: "Guardian mailing address",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+    {
+      path: "guardianCity",
+      label: "Guardian city",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+    {
+      path: "guardianState",
+      label: "Guardian state",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+    {
+      path: "guardianZip",
+      label: "Guardian ZIP code",
+      importance: "required",
+      appliesWhen: (fd) => hasAnyGuardianData(fd?.part_15),
+    },
+  ],
+  part_16: [
+    {
+      path: "authorizationAcknowledgment",
+      label: "Authorization acknowledgment",
+      importance: "required",
+      isComplete: (value) => value === true,
+    },
+    { path: "signature", label: "Signature", importance: "required" },
+    {
+      path: "signatureDate",
+      label: "Signature date",
+      importance: "required",
+    },
+  ],
+};
+
+function hasAnyGuardianData(part15: any): boolean {
+  if (!part15 || typeof part15 !== "object") return false;
+
+  return Object.values(part15).some((value) => {
+    if (typeof value === "string") return value.trim().length > 0;
+    return value !== undefined && value !== null;
+  });
+}
+
+function getValueByPath(obj: any, path: string): any {
+  return path.split(".").reduce((acc: any, key: string) => acc?.[key], obj);
+}
+
+function hasData(value: any): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "boolean") return true;
+  if (typeof value === "number") return !Number.isNaN(value);
+  if (typeof value === "string") return value.trim().length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return value !== undefined && value !== null;
+}
+
+function buildReviewTracking(
+  workflowState: RECAWorkflowState
+): ReviewTrackingState {
+  const formData = workflowState.formData || {};
+  let tracking = initializeReviewTracking();
+
+  for (const section of SECTION_DEFINITIONS) {
+    const sectionFields = REVIEW_SECTION_FIELDS[section.id] || [];
+    if (sectionFields.length === 0) continue;
+
+    const sectionData = (formData as any)?.[section.id] || {};
+    const incompleteItems: IncompleteItem[] = [];
+    let completedFieldCount = 0;
+    let applicableFieldCount = 0;
+
+    for (const field of sectionFields) {
+      if (field.appliesWhen && !field.appliesWhen(formData)) continue;
+
+      applicableFieldCount++;
+      const value = getValueByPath(sectionData, field.path);
+      const isComplete = field.isComplete
+        ? field.isComplete(value, formData)
+        : hasData(value);
+
+      if (isComplete) {
+        completedFieldCount++;
+        continue;
+      }
+
+      incompleteItems.push({
+        sectionId: section.id,
+        sectionName: section.name,
+        fieldName: field.path,
+        fieldLabel: field.label,
+        importance: field.importance,
+        acknowledged: false,
+      });
+    }
+
+    let status: CompletionStatus = "not_started";
+    if (applicableFieldCount === 0 || incompleteItems.length === 0) {
+      status = "complete";
+    } else if (completedFieldCount > 0) {
+      status = "partial";
+    } else if (hasData(sectionData)) {
+      status = "partial";
+    } else {
+      status = "incomplete";
+    }
+
+    tracking = updateSectionReview(tracking, section.id, {
+      status,
+      incompleteItems,
+    });
+  }
+
+  return tracking;
 }
 
 // ============================================================================
@@ -344,6 +843,45 @@ export default function RECAReviewPage({ params }: PageProps) {
   const completion = useMemo<CompletionAnalysis | null>(() => {
     if (!workflowState) return null;
     return analyzeFormCompletion(workflowState);
+  }, [workflowState]);
+
+  const reviewTracking = useMemo<ReviewTrackingState | null>(() => {
+    if (!workflowState) return null;
+    return buildReviewTracking(workflowState);
+  }, [workflowState]);
+
+  const reviewChecklist = useMemo(() => {
+    if (!reviewTracking) return null;
+    return generateReviewChecklist(reviewTracking);
+  }, [reviewTracking]);
+
+  const priorityMissingCount = useMemo(() => {
+    if (!reviewTracking) return 0;
+    return getPriorityReviewItems(reviewTracking).length;
+  }, [reviewTracking]);
+
+  // Document requirements & assistance
+  const documentHelp = useMemo(() => {
+    if (!workflowState?.formData) return null;
+
+    const relationship = workflowState.formData.part_3?.relationship;
+    if (!relationship) return null;
+
+    const requirements = generateDocumentRequirements(
+      relationship,
+      workflowState.formData.part_1,
+      workflowState.formData.part_4
+    );
+
+    const taskList = createDocumentTaskList(requirements);
+
+    // Build assistance map for each requirement
+    const assistanceByDoc: Record<string, DocumentAssistance> = {};
+    for (const req of requirements) {
+      assistanceByDoc[req.id] = getDocumentAssistance(req.id);
+    }
+
+    return { requirements, taskList, assistanceByDoc };
   }, [workflowState]);
 
   const loadWorkflowState = useCallback(async () => {
@@ -642,6 +1180,136 @@ export default function RECAReviewPage({ params }: PageProps) {
         )}
 
         {/* ================================================================ */}
+        {/* Importance Checklist (review-tracking.ts) */}
+        {/* ================================================================ */}
+        {reviewChecklist && (
+          <Card className="mb-6 border-2 border-sage-200 bg-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sage-900">
+                <AlertCircle className="h-5 w-5 text-terracotta-500" />
+                Missing Information Checklist
+              </CardTitle>
+              <CardDescription>
+                Importance-based review generated from your form data. Required
+                items should be completed first.
+                {priorityMissingCount > 0 && (
+                  <span className="ml-1 font-medium text-red-700">
+                    {priorityMissingCount} required item
+                    {priorityMissingCount !== 1 ? "s" : ""} missing.
+                  </span>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {reviewChecklist.required.length === 0 &&
+              reviewChecklist.recommended.length === 0 &&
+              reviewChecklist.optional.length === 0 ? (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                  Great work - no missing checklist items were detected.
+                </div>
+              ) : (
+                <>
+                  {reviewChecklist.required.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-red-800">
+                        Required for submission
+                      </h3>
+                      {reviewChecklist.required.map((group) => (
+                        <div
+                          key={`required-${group.section}`}
+                          className="rounded-lg border border-red-200 bg-red-50 p-3"
+                        >
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-semibold text-red-900">
+                              {group.section}
+                            </p>
+                            <Button
+                              size="sm"
+                              className="h-7 rounded-full bg-red-600 text-xs hover:bg-red-700"
+                              onClick={() =>
+                                navigateToSection(
+                                  group.items[0]?.sectionId || "part_1"
+                                )
+                              }
+                            >
+                              Fix
+                              <ChevronRight className="ml-1 h-3 w-3" />
+                            </Button>
+                          </div>
+                          <ul className="space-y-1 text-sm text-red-800">
+                            {group.items.map((item) => (
+                              <li
+                                key={`required-${group.section}-${item.fieldName}`}
+                              >
+                                • {item.fieldLabel}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {reviewChecklist.recommended.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-amber-800">
+                        Recommended for faster processing
+                      </h3>
+                      {reviewChecklist.recommended.map((group) => (
+                        <div
+                          key={`recommended-${group.section}`}
+                          className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+                        >
+                          <p className="mb-2 text-sm font-semibold text-amber-900">
+                            {group.section}
+                          </p>
+                          <ul className="space-y-1 text-sm text-amber-800">
+                            {group.items.map((item) => (
+                              <li
+                                key={`recommended-${group.section}-${item.fieldName}`}
+                              >
+                                • {item.fieldLabel}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {reviewChecklist.optional.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-sage-700">
+                        Optional additions
+                      </h3>
+                      {reviewChecklist.optional.map((group) => (
+                        <div
+                          key={`optional-${group.section}`}
+                          className="rounded-lg border border-sage-200 bg-sage-50 p-3"
+                        >
+                          <p className="mb-2 text-sm font-semibold text-sage-900">
+                            {group.section}
+                          </p>
+                          <ul className="space-y-1 text-sm text-sage-700">
+                            {group.items.map((item) => (
+                              <li
+                                key={`optional-${group.section}-${item.fieldName}`}
+                              >
+                                • {item.fieldLabel}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ================================================================ */}
         {/* Section-by-Section Breakdown (always shown) */}
         {/* ================================================================ */}
         <Card className="mb-6">
@@ -792,6 +1460,120 @@ export default function RECAReviewPage({ params }: PageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* ================================================================ */}
+        {/* Document Help — where to obtain missing documents */}
+        {/* ================================================================ */}
+        {documentHelp && documentHelp.requirements.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sage-900">
+                <FolderSearch className="h-5 w-5 text-terracotta-500" />
+                Documents You&apos;ll Need
+              </CardTitle>
+              <CardDescription>
+                Based on your claim details, here are the documents required for
+                submission and where to get them
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Task summary */}
+              {documentHelp.taskList.urgentTasks.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900">
+                    <AlertCircle className="h-4 w-4" />
+                    Required Documents (
+                    {documentHelp.taskList.urgentTasks.length})
+                  </h3>
+                  <ul className="space-y-1 text-sm text-amber-800">
+                    {documentHelp.taskList.urgentTasks.map((task, idx) => (
+                      <li key={idx}>{task}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Document-by-document assistance */}
+              <div className="space-y-3">
+                {documentHelp.requirements.map((req) => {
+                  const assistance = documentHelp.assistanceByDoc[req.id];
+                  const hasResources =
+                    assistance?.resources && assistance.resources.length > 0;
+
+                  return (
+                    <div
+                      key={req.id}
+                      className="rounded-lg border border-sage-200 bg-white p-4"
+                    >
+                      <div className="mb-2 flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-sage-900">
+                            {req.name}
+                            {req.quantity && req.quantity > 1 && (
+                              <span className="ml-1 text-sm text-sage-500">
+                                ({req.quantity} copies needed)
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-sage-600">
+                            {req.description}
+                          </p>
+                        </div>
+                        {req.required && (
+                          <Badge
+                            variant="secondary"
+                            className="flex-shrink-0 bg-terracotta-100 text-terracotta-800"
+                          >
+                            Required
+                          </Badge>
+                        )}
+                      </div>
+
+                      {hasResources && (
+                        <div className="mt-3 rounded-md border border-blue-100 bg-blue-50 p-3">
+                          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-blue-900">
+                            <HelpCircle className="h-3.5 w-3.5" />
+                            Where to obtain this document:
+                          </p>
+                          <ul className="space-y-1.5">
+                            {assistance.resources.map((resource, rIdx) => (
+                              <li
+                                key={rIdx}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                {resource.url ? (
+                                  <ExternalLink className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-600" />
+                                ) : resource.phone ? (
+                                  <Phone className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-600" />
+                                ) : (
+                                  <HelpCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-600" />
+                                )}
+                                <div>
+                                  <span className="font-medium text-blue-900">
+                                    {resource.title}
+                                  </span>
+                                  <span className="text-blue-700">
+                                    {" "}
+                                    — {resource.description}
+                                  </span>
+                                  {resource.phone && (
+                                    <span className="ml-1 text-blue-600">
+                                      ({resource.phone})
+                                    </span>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ================================================================ */}
         {/* Important Clarification (always shown) */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Briefcase, Info, AlertCircle, Lock } from "lucide-react";
 
@@ -231,6 +231,35 @@ export default function Part13Form({
     return () => subscription.unsubscribe();
   }, [form, onSubmit, isDIYUser]);
 
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      onSubmit(data as Part13Attorney);
+    },
+    [onSubmit]
+  );
+
+  useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      return new Promise<boolean>((resolve) => {
+        form.handleSubmit(
+          async (data) => {
+            await handlePartialSubmit(data);
+            resolve(true);
+          },
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
+          }
+        )();
+      });
+    };
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form, handlePartialSubmit]);
+
   // Render simplified form for DIY users
   if (isDIYUser) {
     return (
@@ -266,9 +295,12 @@ export default function Part13Form({
 
             {/* Self-Representation Confirmation */}
             <div className="space-y-4">
-              <Label className="text-base font-semibold text-sage-900">
+              <FieldLabel
+                importance="required"
+                className="text-base font-semibold text-sage-900"
+              >
                 Self-Representation Confirmation
-              </Label>
+              </FieldLabel>
 
               <div className="rounded-md border-2 border-sage-300 bg-white p-4">
                 <div className="flex items-start gap-3">
@@ -395,9 +427,12 @@ export default function Part13Form({
 
           {/* Attorney Representation Status */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Attorney Representation Status
-            </Label>
+            </FieldLabel>
 
             <div className="rounded-md border-2 border-terracotta-300 bg-terracotta-50 p-4">
               <div className="flex items-center gap-3">
@@ -445,7 +480,9 @@ export default function Part13Form({
             {/* Attorney Name */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="attorneyFirstName">First Name</Label>
+                <FieldLabel htmlFor="attorneyFirstName" importance="required">
+                  First Name
+                </FieldLabel>
                 <Input
                   id="attorneyFirstName"
                   {...form.register("attorneyFirstName")}
@@ -454,7 +491,9 @@ export default function Part13Form({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="attorneyLastName">Last Name</Label>
+                <FieldLabel htmlFor="attorneyLastName" importance="required">
+                  Last Name
+                </FieldLabel>
                 <Input
                   id="attorneyLastName"
                   {...form.register("attorneyLastName")}
@@ -466,7 +505,9 @@ export default function Part13Form({
 
             {/* Firm */}
             <div className="space-y-2">
-              <Label htmlFor="attorneyFirm">Law Firm</Label>
+              <FieldLabel htmlFor="attorneyFirm" importance="optional">
+                Law Firm
+              </FieldLabel>
               <Input
                 id="attorneyFirm"
                 {...form.register("attorneyFirm")}
@@ -477,7 +518,9 @@ export default function Part13Form({
 
             {/* Address */}
             <div className="space-y-2">
-              <Label htmlFor="attorneyAddress">Mailing Address</Label>
+              <FieldLabel htmlFor="attorneyAddress" importance="required">
+                Mailing Address
+              </FieldLabel>
               <Input
                 id="attorneyAddress"
                 {...form.register("attorneyAddress")}
@@ -489,7 +532,9 @@ export default function Part13Form({
             {/* City, State, Zip */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="attorneyCity">City</Label>
+                <FieldLabel htmlFor="attorneyCity" importance="required">
+                  City
+                </FieldLabel>
                 <Input
                   id="attorneyCity"
                   {...form.register("attorneyCity")}
@@ -498,7 +543,9 @@ export default function Part13Form({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="attorneyState">State</Label>
+                <FieldLabel htmlFor="attorneyState" importance="required">
+                  State
+                </FieldLabel>
                 <select
                   id="attorneyState"
                   {...form.register("attorneyState")}
@@ -514,7 +561,9 @@ export default function Part13Form({
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="attorneyZip">Zip Code</Label>
+                <FieldLabel htmlFor="attorneyZip" importance="required">
+                  Zip Code
+                </FieldLabel>
                 <Input
                   id="attorneyZip"
                   {...form.register("attorneyZip")}
@@ -528,7 +577,9 @@ export default function Part13Form({
             {/* Phone and Fax */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="attorneyPhone">Phone Number</Label>
+                <FieldLabel htmlFor="attorneyPhone" importance="required">
+                  Phone Number
+                </FieldLabel>
                 <Input
                   id="attorneyPhone"
                   {...form.register("attorneyPhone")}
@@ -538,7 +589,9 @@ export default function Part13Form({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="attorneyFax">Fax Number</Label>
+                <FieldLabel htmlFor="attorneyFax" importance="optional">
+                  Fax Number
+                </FieldLabel>
                 <Input
                   id="attorneyFax"
                   {...form.register("attorneyFax")}
@@ -551,7 +604,9 @@ export default function Part13Form({
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="attorneyEmail">Email Address</Label>
+              <FieldLabel htmlFor="attorneyEmail" importance="optional">
+                Email Address
+              </FieldLabel>
               <Input
                 id="attorneyEmail"
                 {...form.register("attorneyEmail")}

@@ -49,9 +49,6 @@ export function IncompleteFieldsAcknowledgment({
   const recommendedFields = missingFields.filter(
     (f) => f.importance === "recommended"
   );
-  const optionalFields = missingFields.filter(
-    (f) => f.importance === "optional"
-  );
 
   useEffect(() => {
     onAcknowledge(acknowledged);

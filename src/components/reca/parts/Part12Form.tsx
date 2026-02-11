@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { DollarSign, Info, AlertCircle } from "lucide-react";
@@ -153,11 +154,14 @@ export default function Part12Form({ initialData, onSubmit }: Part12FormProps) {
 
           {/* Question 1: Received Payment */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Have you or anyone else received payment pursuant to final award
               or settlement based on this illness?{" "}
               <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
 
             <p className="text-sm text-sage-600">
               Check YES if you or anyone else has already received a RECA award
@@ -207,12 +211,13 @@ export default function Part12Form({ initialData, onSubmit }: Part12FormProps) {
           {/* Conditional: Payment Details */}
           {receivedPayment === "YES" && (
             <div className="space-y-4 border-l-2 border-terracotta-300 pl-4">
-              <Label
+              <FieldLabel
                 htmlFor="paymentDetails"
+                importance="required"
                 className="text-base font-semibold text-sage-900"
               >
                 Payment Details <span className="text-red-600">*</span>
-              </Label>
+              </FieldLabel>
 
               <p className="text-sm text-sage-600">
                 Identify the date, amount, and person/organization for EACH
@@ -259,11 +264,14 @@ export default function Part12Form({ initialData, onSubmit }: Part12FormProps) {
 
           {/* Question 2: EEOICPA Claim */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Have you or anyone else filed a claim under the Department of
               Labor's Energy Employees Occupational Illness Compensation Program
               Act (EEOICPA)? <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
               <div className="flex gap-3">

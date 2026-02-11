@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -234,9 +235,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
         <CardContent className="space-y-6">
           {/* Claimant Deceased */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="required"
+              className="text-sm font-medium text-sage-800"
+            >
               Has your spouse (the person who became ill) passed away?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchClaimantDeceased || ""}
               onValueChange={(value) =>
@@ -264,12 +268,13 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
           {/* Date of Death - conditional */}
           {watchClaimantDeceased === "YES" && (
             <div className="space-y-2">
-              <Label
+              <FieldLabel
                 htmlFor="dateOfDeath"
+                importance="required"
                 className="text-sm font-medium text-sage-800"
               >
                 Date of Death
-              </Label>
+              </FieldLabel>
               <Input
                 id="dateOfDeath"
                 type="date"
@@ -314,12 +319,13 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
         <CardContent className="space-y-6">
           {/* Marriage Date */}
           <div className="space-y-2">
-            <Label
+            <FieldLabel
               htmlFor="marriageDate"
+              importance="required"
               className="text-sm font-medium text-sage-800"
             >
               Date of Marriage
-            </Label>
+            </FieldLabel>
             <Input
               id="marriageDate"
               type="date"
@@ -336,10 +342,13 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
 
           {/* Married One Year */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="required"
+              className="text-sm font-medium text-sage-800"
+            >
               Were you married for at least one year before the death or onset
               of illness?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchMarriedOneYear || ""}
               onValueChange={(value) =>
@@ -384,12 +393,13 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
 
           {/* Name at Marriage */}
           <div className="space-y-2">
-            <Label
+            <FieldLabel
               htmlFor="nameAtMarriage"
+              importance="recommended"
               className="text-sm font-medium text-sage-800"
             >
               Your Name at the Time of Marriage
-            </Label>
+            </FieldLabel>
             <Input
               id="nameAtMarriage"
               placeholder="Full legal name at time of marriage"
@@ -400,12 +410,13 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
 
           {/* Current Name if Different */}
           <div className="space-y-2">
-            <Label
+            <FieldLabel
               htmlFor="currentNameIfDifferent"
+              importance="optional"
               className="text-sm font-medium text-sage-800"
             >
               Current Name (if different from name at marriage)
-            </Label>
+            </FieldLabel>
             <Input
               id="currentNameIfDifferent"
               placeholder="Leave blank if your name hasn't changed"
@@ -432,9 +443,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="recommended"
+              className="text-sm font-medium text-sage-800"
+            >
               Did the person who became ill have any previous marriages?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchClaimantPreviousMarriages || ""}
               onValueChange={(value) => {
@@ -498,9 +512,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Spouse Name
-                      </Label>
+                      </FieldLabel>
                       <Input
                         placeholder="Full legal name"
                         {...form.register(
@@ -509,9 +526,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         How Did This Marriage End?
-                      </Label>
+                      </FieldLabel>
                       <Select
                         value={
                           form.watch(
@@ -535,9 +555,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Marriage Start Date
-                      </Label>
+                      </FieldLabel>
                       <Input
                         type="date"
                         {...form.register(
@@ -546,9 +569,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Marriage End Date
-                      </Label>
+                      </FieldLabel>
                       <Input
                         type="date"
                         {...form.register(
@@ -593,9 +619,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-sage-800">
+            <FieldLabel
+              importance="recommended"
+              className="text-sm font-medium text-sage-800"
+            >
               Do you have any other previous or current marriages?
-            </Label>
+            </FieldLabel>
             <RadioGroup
               value={watchFilerOtherMarriages || ""}
               onValueChange={(value) => {
@@ -656,9 +685,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Spouse Name
-                      </Label>
+                      </FieldLabel>
                       <Input
                         placeholder="Full legal name"
                         {...form.register(
@@ -667,9 +699,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         How Did This Marriage End?
-                      </Label>
+                      </FieldLabel>
                       <Select
                         value={
                           form.watch(`filerOtherSpouses.${index}.endReason`) ||
@@ -692,9 +727,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Marriage Start Date
-                      </Label>
+                      </FieldLabel>
                       <Input
                         type="date"
                         {...form.register(
@@ -703,9 +741,12 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-sage-700">
+                      <FieldLabel
+                        importance="recommended"
+                        className="text-xs text-sage-700"
+                      >
                         Marriage End Date
-                      </Label>
+                      </FieldLabel>
                       <Input
                         type="date"
                         {...form.register(
@@ -749,13 +790,14 @@ export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label
+            <FieldLabel
               htmlFor="specialCircumstances"
+              importance="optional"
               className="text-sm font-medium text-sage-800"
             >
               Are there any special circumstances regarding your marriage or
               eligibility? (Optional)
-            </Label>
+            </FieldLabel>
             <Textarea
               id="specialCircumstances"
               placeholder="For example: common-law marriage, marriage occurred outside the U.S., name changes due to reasons other than marriage, etc."

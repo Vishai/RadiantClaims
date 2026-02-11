@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,18 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PenTool, Info, AlertCircle, CheckCircle2, Shield } from "lucide-react";
 
-// Validation schema
+// Validation schema — relaxed for non-blocking navigation (review page flags these as required for submission)
 const part16Schema = z.object({
-  signature: z.string().min(1, "Signature is required"),
-  signatureDate: z.string().min(1, "Signature date is required"),
-  authorizationAcknowledgment: z.boolean().refine((val) => val === true, {
-    message: "You must acknowledge the authorization to proceed",
-  }),
+  signature: z.string().optional(),
+  signatureDate: z.string().optional(),
+  authorizationAcknowledgment: z.boolean().optional(),
 });
 
 type Part16FormData = z.infer<typeof part16Schema>;
@@ -61,7 +59,7 @@ export default function Part16Form({
   const expectedFullName = claimantName
     ? `${claimantName.firstName} ${claimantName.lastName}`.trim().toLowerCase()
     : "";
-  const signatureLower = signature.trim().toLowerCase();
+  const signatureLower = (signature || "").trim().toLowerCase();
   const isNameMismatch =
     expectedFullName &&
     signatureLower &&
@@ -86,6 +84,35 @@ export default function Part16Form({
     });
     return () => subscription.unsubscribe();
   }, [form, onSubmit]);
+
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      onSubmit(data as Part16Signature);
+    },
+    [onSubmit]
+  );
+
+  useEffect(() => {
+    (window as any).__currentFormSubmit = async () => {
+      return new Promise<boolean>((resolve) => {
+        form.handleSubmit(
+          async (data) => {
+            await handlePartialSubmit(data);
+            resolve(true);
+          },
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
+          }
+        )();
+      });
+    };
+    return () => {
+      delete (window as any).__currentFormSubmit;
+    };
+  }, [form, handlePartialSubmit]);
 
   return (
     <div className="space-y-6">
@@ -153,9 +180,12 @@ export default function Part16Form({
 
           {/* Authorization Checkbox */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Authorization <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
 
             <div
               className={`flex items-start gap-3 rounded-md border p-4 ${
@@ -181,8 +211,9 @@ export default function Part16Form({
                 className="mt-1"
               />
               <div className="flex-1">
-                <label
+                <FieldLabel
                   htmlFor="authorizationAcknowledgment"
+                  importance="required"
                   className="cursor-pointer text-sm font-medium leading-snug"
                 >
                   I authorize the Department of Justice to share information
@@ -190,7 +221,7 @@ export default function Part16Form({
                   physician, hospital, or other person or agency to furnish
                   information to the Department of Justice for the purpose of
                   determining my RECA claim.
-                </label>
+                </FieldLabel>
                 {authorizationAcknowledgment && (
                   <div className="mt-2 flex items-center gap-2 text-sm text-terracotta-700">
                     <CheckCircle2 className="h-4 w-4" />
@@ -216,9 +247,12 @@ export default function Part16Form({
 
           {/* Signature Section */}
           <div className="space-y-4 border-t pt-4">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Your Signature <span className="text-red-600">*</span>
-            </Label>
+            </FieldLabel>
 
             {/* Important signature matching notice */}
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -250,9 +284,9 @@ export default function Part16Form({
             <div className="space-y-4">
               {/* Signature Input */}
               <div className="space-y-2">
-                <Label htmlFor="signature">
+                <FieldLabel htmlFor="signature" importance="required">
                   Signature <span className="text-red-600">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id="signature"
                   {...form.register("signature")}
@@ -316,9 +350,9 @@ export default function Part16Form({
 
               {/* Date Input */}
               <div className="space-y-2">
-                <Label htmlFor="signatureDate">
+                <FieldLabel htmlFor="signatureDate" importance="required">
                   Date <span className="text-red-600">*</span>
-                </Label>
+                </FieldLabel>
                 <Input
                   id="signatureDate"
                   {...form.register("signatureDate")}

@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Activity, Info } from "lucide-react";
 
@@ -197,10 +197,13 @@ export default function Part10Form({ initialData, onSubmit }: Part10FormProps) {
 
           {/* Disease Selection by Category */}
           <div className="space-y-6">
-            <Label className="text-base font-semibold text-sage-900">
+            <FieldLabel
+              importance="required"
+              className="text-base font-semibold text-sage-900"
+            >
               Check all diseases that apply ({selectedDiseases?.length || 0}{" "}
               selected)
-            </Label>
+            </FieldLabel>
 
             {diseaseCategories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="space-y-3">
@@ -224,12 +227,13 @@ export default function Part10Form({ initialData, onSubmit }: Part10FormProps) {
                         className="mt-1"
                       />
                       <div className="flex-1">
-                        <label
+                        <FieldLabel
                           htmlFor={disease.id}
+                          importance="required"
                           className="cursor-pointer text-sm font-medium leading-snug"
                         >
                           {disease.label}
-                        </label>
+                        </FieldLabel>
                       </div>
                     </div>
                   ))}

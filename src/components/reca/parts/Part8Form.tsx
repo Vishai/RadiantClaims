@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Info, MapPin } from "lucide-react";
 
@@ -244,12 +245,13 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <label
+                  <FieldLabel
                     htmlFor="option_1a"
+                    importance="required"
                     className="cursor-pointer text-sm font-medium leading-none"
                   >
                     Designated affected area - at least one year
-                  </label>
+                  </FieldLabel>
                   <p className="mt-1 text-sm text-sage-600">
                     January 21, 1951 - November 6, 1962
                   </p>
@@ -266,12 +268,13 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <label
+                  <FieldLabel
                     htmlFor="option_1b"
+                    importance="required"
                     className="cursor-pointer text-sm font-medium leading-none"
                   >
                     Designated affected area - entire period
-                  </label>
+                  </FieldLabel>
                   <p className="mt-1 text-sm text-sage-600">
                     June 30, 1962 - July 31, 1962
                   </p>
@@ -288,12 +291,13 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <label
+                  <FieldLabel
                     htmlFor="option_2"
+                    importance="required"
                     className="cursor-pointer text-sm font-medium leading-none"
                   >
                     State of New Mexico - at least one year
-                  </label>
+                  </FieldLabel>
                   <p className="mt-1 text-sm text-sage-600">
                     September 24, 1944 - November 6, 1962
                   </p>
@@ -356,9 +360,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`affectedAreas.${index}.state`}>
+                  <FieldLabel
+                    htmlFor={`affectedAreas.${index}.state`}
+                    importance="required"
+                  >
                     State <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <select
                     id={`affectedAreas.${index}.state`}
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
@@ -380,9 +387,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`affectedAreas.${index}.townCity`}>
+                  <FieldLabel
+                    htmlFor={`affectedAreas.${index}.townCity`}
+                    importance="required"
+                  >
                     Town or City <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`affectedAreas.${index}.townCity`}
                     type="text"
@@ -400,9 +410,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`affectedAreas.${index}.timePeriod`}>
+                  <FieldLabel
+                    htmlFor={`affectedAreas.${index}.timePeriod`}
+                    importance="required"
+                  >
                     Time Period <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`affectedAreas.${index}.timePeriod`}
                     type="text"
@@ -481,9 +494,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`arizonaCounties.${index}.county`}>
+                  <FieldLabel
+                    htmlFor={`arizonaCounties.${index}.county`}
+                    importance="required"
+                  >
                     County <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <select
                     id={`arizonaCounties.${index}.county`}
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
@@ -508,9 +524,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`arizonaCounties.${index}.townCity`}>
+                  <FieldLabel
+                    htmlFor={`arizonaCounties.${index}.townCity`}
+                    importance="required"
+                  >
                     Town or City <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`arizonaCounties.${index}.townCity`}
                     type="text"
@@ -528,9 +547,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`arizonaCounties.${index}.timePeriod`}>
+                  <FieldLabel
+                    htmlFor={`arizonaCounties.${index}.timePeriod`}
+                    importance="required"
+                  >
                     Time Period <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`arizonaCounties.${index}.timePeriod`}
                     type="text"
@@ -610,9 +632,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`nevadaCounties.${index}.county`}>
+                  <FieldLabel
+                    htmlFor={`nevadaCounties.${index}.county`}
+                    importance="required"
+                  >
                     County <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <select
                     id={`nevadaCounties.${index}.county`}
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
@@ -639,9 +664,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`nevadaCounties.${index}.townCity`}>
+                  <FieldLabel
+                    htmlFor={`nevadaCounties.${index}.townCity`}
+                    importance="required"
+                  >
                     Town or City <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`nevadaCounties.${index}.townCity`}
                     type="text"
@@ -659,9 +687,12 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`nevadaCounties.${index}.timePeriod`}>
+                  <FieldLabel
+                    htmlFor={`nevadaCounties.${index}.timePeriod`}
+                    importance="required"
+                  >
                     Time Period <span className="text-red-600">*</span>
-                  </Label>
+                  </FieldLabel>
                   <input
                     id={`nevadaCounties.${index}.timePeriod`}
                     type="text"

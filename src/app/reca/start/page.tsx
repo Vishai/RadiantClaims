@@ -166,58 +166,54 @@ function RECAStartContent() {
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-terracotta-400"></div>
         </div>
 
-        {/* Overview Card */}
+        {/* Overview Card — "Guide, Don't Gate" philosophy */}
         <Card className="mb-8 rounded-3xl border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-sage-900">What to Expect</CardTitle>
+            <CardTitle className="text-sage-900">
+              Here&apos;s How This Works
+            </CardTitle>
             <CardDescription className="text-sage-600">
-              This guided form will help you complete your RECA claim accurately
-              and efficiently
+              We&apos;ll guide you through 16 short sections. Fill in what you
+              know — skip what you don&apos;t.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-lg font-bold text-white">
-                1
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-sage-900">
-                  Provide Your Information
-                </h3>
-                <p className="text-sm text-sage-700">
-                  We'll collect information about you and the person who became
-                  ill, along with your relationship to them.
-                </p>
-              </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+              <p className="text-sm text-sage-700">
+                <strong className="text-sage-900">
+                  Fill in what you have available
+                </strong>{" "}
+                — don&apos;t worry about finding every document right now
+              </p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-lg font-bold text-white">
-                2
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-sage-900">
-                  Document Exposure & Disease
-                </h3>
-                <p className="text-sm text-sage-700">
-                  Confirm physical presence in affected areas during eligible
-                  time periods and identify the compensable disease.
-                </p>
-              </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+              <p className="text-sm text-sage-700">
+                <strong className="text-sage-900">
+                  Skip anything you can&apos;t answer yet
+                </strong>{" "}
+                — you can always come back to complete sections later
+              </p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sage-600 text-lg font-bold text-white">
-                3
-              </div>
-              <div>
-                <h3 className="mb-1 font-semibold text-sage-900">
-                  Review & Generate PDF
-                </h3>
-                <p className="text-sm text-sage-700">
-                  We'll generate a pre-filled PDF of the official RECA form that
-                  you can download, print, sign, and mail to the Department of
-                  Justice.
-                </p>
-              </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+              <p className="text-sm text-sage-700">
+                <strong className="text-sage-900">
+                  Your progress saves automatically
+                </strong>{" "}
+                — close the browser and pick up right where you left off
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+              <p className="text-sm text-sage-700">
+                <strong className="text-sage-900">
+                  Get a personalized checklist at the end
+                </strong>{" "}
+                — we&apos;ll tell you exactly what&apos;s still needed and help
+                you obtain missing documents
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -311,23 +307,26 @@ function RECAStartContent() {
           </>
         )}
 
-        {/* Time Estimate */}
+        {/* Time Estimate — encouraging, not intimidating */}
         <Card className="mb-8 rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
               <div className="text-sm text-sage-700">
-                <p className="mb-1 font-semibold">Time Estimate</p>
-                <p>
-                  Plan for approximately 45-60 minutes to complete the form.
-                  Have the following ready:
+                <p className="mb-1 font-semibold text-sage-900">
+                  About 30 Minutes for Most People
                 </p>
-                <ul className="ml-4 mt-2 list-disc space-y-1">
-                  <li>Birth certificates and Social Security numbers</li>
-                  <li>Information about exposure locations and dates</li>
-                  <li>Medical records or diagnosis information</li>
-                  <li>Marriage certificates (if applicable)</li>
-                </ul>
+                <p>
+                  Many sections are quick multiple-choice questions. If you have
+                  some basic information handy (names, dates, locations), you
+                  can get through most of the form in one sitting.
+                </p>
+                <p className="mt-2">
+                  <strong>Don&apos;t have everything?</strong> That&apos;s
+                  perfectly fine. Complete what you can now and we&apos;ll show
+                  you exactly what&apos;s missing at the end, along with
+                  step-by-step help to obtain any documents you need.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -347,7 +346,8 @@ function RECAStartContent() {
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <p className="mt-4 text-sm text-sage-600">
-                Estimated time: 45-60 minutes • Auto-saves your progress
+                ~30 minutes for most people • Auto-saves your progress • Skip
+                anything you don&apos;t know yet
               </p>
               {subscriptionStatus?.tier === "LEGAL_REP" &&
                 subscriptionStatus?.referredToFirm && (

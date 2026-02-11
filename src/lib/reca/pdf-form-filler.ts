@@ -2814,7 +2814,6 @@ export class RECAPDFFormFiller {
    */
   private fillLongResidenceAddress(fullAddress: string) {
     const addressMaxCharsPerLine = 26;
-    const totalAddressBoxes = 52;
 
     // Smart split that doesn't break words
     let line1 = "";
@@ -2898,9 +2897,21 @@ export class RECAPDFFormFiller {
     );
 
     if (cityStateZipMatch && remainderHasCityStateZip) {
-      const cityPart = cityStateZipMatch[1].trim();
-      const statePart = cityStateZipMatch[2].trim();
+      const cityPart = cityStateZipMatch[1]?.trim();
+      const statePart = cityStateZipMatch[2]?.trim();
       const zipPart = cityStateZipMatch[3];
+
+      if (!cityPart || !statePart || !zipPart) {
+        page.drawText(`Continued: ${notShownText}`, {
+          x: coords.x,
+          y: coords.y - 25,
+          size: 10,
+          font: this.font,
+          color: COLORS.black,
+        });
+        return;
+      }
+
       const stateAbbr = this.getStateAbbreviation(statePart);
 
       // Check if city name is completely in the shown text

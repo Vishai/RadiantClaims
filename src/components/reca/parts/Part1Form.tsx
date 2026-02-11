@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,21 +91,25 @@ const formerNameSchema = z.object({
 });
 
 const part1Schema = z.object({
-  filingForSelf: z.boolean({
-    required_error: "Please select who is filing this claim",
-  }),
-  firstName: z.string().min(1, "First name is required").max(12),
+  filingForSelf: z.boolean().optional(),
+  firstName: z.string().max(12).optional(),
   middleName: z.string().max(12).optional(),
-  lastName: z.string().min(1, "Last name is required").max(20),
+  lastName: z.string().max(20).optional(),
   formerNames: z.array(formerNameSchema).optional(),
   ssn: z
     .string()
-    .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX"),
-  dob: z.string().min(1, "Date of birth is required"),
-  mailingAddress: z.string().min(1, "Mailing address is required").max(60),
-  city: z.string().min(1, "City is required").max(20),
-  state: z.string().min(1, "State is required"),
-  zipCode: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
+    .regex(/^\d{3}-\d{2}-\d{4}$/, "SSN must be in format XXX-XX-XXXX")
+    .optional()
+    .or(z.literal("")),
+  dob: z.string().optional(),
+  mailingAddress: z.string().max(60).optional(),
+  city: z.string().max(20).optional(),
+  state: z.string().optional(),
+  zipCode: z
+    .string()
+    .regex(/^\d{5}$/, "ZIP code must be 5 digits")
+    .optional()
+    .or(z.literal("")),
   phoneDay: z.string().optional(),
   phoneEvening: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
@@ -198,17 +202,31 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
     [hasTribalAffiliation, onSubmit]
   );
 
+  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  const handlePartialSubmit = useCallback(
+    async (data: any) => {
+      if (!hasTribalAffiliation) {
+        data.tribalAffiliation = "";
+        data.tribalCensusNumber = "";
+      }
+      onSubmit(data as Part1FilerInfo);
+    },
+    [hasTribalAffiliation, onSubmit]
+  );
+
   // Expose form submission to FormWizard
-  React.useEffect(() => {
+  useEffect(() => {
     (window as any).__currentFormSubmit = async () => {
-      return new Promise((resolve) => {
+      return new Promise<boolean>((resolve) => {
         form.handleSubmit(
           async (data) => {
-            await handleSubmit(data);
+            await handlePartialSubmit(data);
             resolve(true);
           },
-          () => {
-            resolve(false); // Validation failed
+          async () => {
+            const formData = form.getValues();
+            await handlePartialSubmit(formData);
+            resolve(true); // Always allow progression
           }
         )();
       });
@@ -217,7 +235,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [form, hasTribalAffiliation, handleSubmit]);
+  }, [form, handlePartialSubmit]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -350,20 +368,21 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               form={form}
               name="firstName"
               label="First Name"
-              required
+              importance="required"
               maxLength={12}
             />
             <FormField
               form={form}
               name="middleName"
               label="Middle Name"
+              importance="optional"
               maxLength={12}
             />
             <FormField
               form={form}
               name="lastName"
               label="Last Name"
-              required
+              importance="required"
               maxLength={20}
             />
           </div>
@@ -517,7 +536,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               name="ssn"
               label="Social Security Number"
               type="ssn"
-              required
+              importance="required"
               placeholder="XXX-XX-XXXX"
               helperText="Format: XXX-XX-XXXX"
             />
@@ -526,7 +545,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               name="dob"
               label="Date of Birth"
               type="date"
-              required
+              importance="required"
             />
           </div>
         </CardContent>
@@ -545,7 +564,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
             form={form}
             name="mailingAddress"
             label="Mailing Address"
-            required
+            importance="required"
             maxLength={60}
             helperText="Street address where you receive mail"
           />
@@ -555,7 +574,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               form={form}
               name="city"
               label="City"
-              required
+              importance="required"
               maxLength={20}
             />
             <FormField
@@ -564,13 +583,13 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               label="State"
               type="select"
               options={US_STATES}
-              required
+              importance="required"
             />
             <FormField
               form={form}
               name="zipCode"
               label="ZIP Code"
-              required
+              importance="required"
               placeholder="12345"
             />
           </div>
@@ -581,6 +600,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               name="phoneDay"
               label="Phone (Daytime)"
               type="tel"
+              importance="recommended"
               placeholder="(XXX) XXX-XXXX"
             />
             <FormField
@@ -588,6 +608,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               name="phoneEvening"
               label="Phone (Evening)"
               type="tel"
+              importance="optional"
               placeholder="(XXX) XXX-XXXX"
             />
             <FormField
@@ -595,6 +616,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               name="email"
               label="Email Address"
               type="email"
+              importance="recommended"
               maxLength={30}
             />
           </div>
@@ -603,6 +625,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
             form={form}
             name="residenceAddress"
             label="Residence Address (if different)"
+            importance="optional"
             maxLength={60}
             helperText="Only fill if different from mailing address"
           />

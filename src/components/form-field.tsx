@@ -1,6 +1,7 @@
 import * as React from "react";
 import { UseFormReturn, FieldPath, FieldValues } from "react-hook-form";
 import { Label } from "@/components/ui/label";
+import { FieldLabel, type FieldImportance } from "@/components/reca/FieldLabel";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,6 +20,7 @@ interface FormFieldProps<T extends FieldValues> {
   placeholder?: string;
   options?: { value: string; label: string }[];
   required?: boolean;
+  importance?: FieldImportance;
   maxLength?: number;
   helperText?: string;
 }
@@ -31,17 +33,28 @@ export function FormField<T extends FieldValues>({
   placeholder,
   options,
   required = false,
+  importance,
   maxLength,
   helperText,
 }: FormFieldProps<T>) {
   const error = form.formState.errors[name];
 
+  // Render the label — use FieldLabel when importance is set, otherwise plain Label
+  const renderLabel = () =>
+    importance ? (
+      <FieldLabel htmlFor={name} importance={importance}>
+        {label}
+      </FieldLabel>
+    ) : (
+      <Label htmlFor={name}>
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
+    );
+
   if (type === "select" && options) {
     return (
       <div className="space-y-2">
-        <Label htmlFor={name}>
-          {label} {required && <span className="text-destructive">*</span>}
-        </Label>
+        {renderLabel()}
         <Select
           onValueChange={(value) => form.setValue(name, value as any)}
           defaultValue={form.getValues(name)}
@@ -61,9 +74,7 @@ export function FormField<T extends FieldValues>({
           <p className="text-xs text-sage-600">{helperText}</p>
         )}
         {error && (
-          <p className="text-sm text-destructive">
-            {error.message as string}
-          </p>
+          <p className="text-sm text-destructive">{error.message as string}</p>
         )}
       </div>
     );
@@ -73,9 +84,7 @@ export function FormField<T extends FieldValues>({
   if (type === "ssn") {
     return (
       <div className="space-y-2">
-        <Label htmlFor={name}>
-          {label} {required && <span className="text-destructive">*</span>}
-        </Label>
+        {renderLabel()}
         <Input
           id={name}
           type="text"
@@ -100,9 +109,7 @@ export function FormField<T extends FieldValues>({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={name}>
-        {label} {required && <span className="text-destructive">*</span>}
-      </Label>
+      {renderLabel()}
       <Input
         id={name}
         type={type}
