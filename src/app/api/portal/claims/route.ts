@@ -86,6 +86,7 @@ export async function GET(_req: NextRequest) {
                 },
               },
             },
+            updatedAt: true,
             // RECA workflow fields
             recaWorkflowStage: true,
             recaWorkflowSection: true,

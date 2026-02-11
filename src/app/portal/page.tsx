@@ -45,6 +45,7 @@ interface Claimant {
     resumeToken: string;
     currentStep: string;
     status: string;
+    updatedAt: string;
     uploadedFiles: any[];
     packetSubmission: PacketSubmissionMeta | null;
     recaWorkflowStage?: number | null;
@@ -91,6 +92,44 @@ const mapPacketStatus = (status?: string | null): PacketStatus => {
       return "UNKNOWN";
   }
 };
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function getPartLabel(section: string): string {
+  const partNum = section.replace("part_", "");
+  const labels: Record<string, string> = {
+    "1": "Filer Info",
+    "2": "Deceased Info",
+    "3": "Relationship",
+    "4": "Self-Filer",
+    "5": "Surviving Spouse",
+    "6": "Surviving Child",
+    "7": "Other Relatives",
+    "8": "Exposure Info",
+    "9": "Proof of Presence",
+    "10": "Diseases",
+    "11": "Proof of Disease",
+    "12": "Previous Payments",
+    "13": "Attorney",
+    "14": "Attorney Ack.",
+    "15": "Legal Guardian",
+    "16": "Signature",
+  };
+  return labels[partNum] || section.replace(/_/g, " ");
+}
 
 export default function CustomerPortal() {
   const { data: session, status } = useSession();
@@ -425,21 +464,74 @@ export default function CustomerPortal() {
                       {/* Progress Info */}
                       {intakeSession && (
                         <>
-                          <div className="rounded-2xl bg-cream-50 p-4">
-                            <div className="mb-2 flex items-center justify-between text-sm">
-                              <span className="font-medium text-sage-700">
-                                Current Step
+                          <div className="space-y-3 rounded-2xl bg-cream-50 p-4">
+                            {/* Completion Progress Bar */}
+                            {intakeSession.recaWorkflowStage != null && (
+                              <div>
+                                <div className="mb-1.5 flex items-center justify-between text-sm">
+                                  <span className="font-medium text-sage-700">
+                                    Application Progress
+                                  </span>
+                                  <span className="font-semibold text-sage-900">
+                                    {intakeSession.recaCompletionPercent ?? 0}%
+                                  </span>
+                                </div>
+                                <div className="h-2.5 w-full overflow-hidden rounded-full bg-sage-200">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-to-r from-terracotta-400 to-terracotta-500 transition-all duration-500"
+                                    style={{
+                                      width: `${Math.min(100, Math.max(0, intakeSession.recaCompletionPercent ?? 0))}%`,
+                                    }}
+                                  />
+                                </div>
+                                {intakeSession.recaWorkflowSection && (
+                                  <p className="mt-1 text-xs text-sage-500">
+                                    Currently on: Part{" "}
+                                    {intakeSession.recaWorkflowSection.replace(
+                                      "part_",
+                                      ""
+                                    )}{" "}
+                                    &mdash;{" "}
+                                    {getPartLabel(
+                                      intakeSession.recaWorkflowSection
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Last Saved */}
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="flex items-center gap-1.5 font-medium text-sage-700">
+                                <Clock className="h-3.5 w-3.5" />
+                                Last Saved
                               </span>
-                              <span className="text-sage-900">
-                                {intakeSession.currentStep.replace(/_/g, " ")}
+                              <span
+                                className="text-sage-600"
+                                title={new Date(
+                                  intakeSession.updatedAt
+                                ).toLocaleString()}
+                              >
+                                {formatTimeAgo(intakeSession.updatedAt)}
                               </span>
                             </div>
+
+                            {/* Documents Uploaded */}
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium text-sage-700">
+                              <span className="flex items-center gap-1.5 font-medium text-sage-700">
+                                <Upload className="h-3.5 w-3.5" />
                                 Documents Uploaded
                               </span>
-                              <span className="text-sage-900">
-                                {intakeSession.uploadedFiles.length}
+                              <span
+                                className={
+                                  intakeSession.uploadedFiles.length > 0
+                                    ? "font-medium text-emerald-700"
+                                    : "text-sage-500"
+                                }
+                              >
+                                {intakeSession.uploadedFiles.length > 0
+                                  ? `${intakeSession.uploadedFiles.length} file${intakeSession.uploadedFiles.length !== 1 ? "s" : ""}`
+                                  : "None yet"}
                               </span>
                             </div>
                           </div>
@@ -491,10 +583,15 @@ export default function CustomerPortal() {
                             </Button>
                           )}
 
-                        {/* Upload Documents (Optional) */}
+                        {/* Upload Documents (Session-specific) */}
                         <Button
                           variant="outline"
-                          onClick={() => router.push("/portal/documents")}
+                          onClick={() => {
+                            const docsPath = intakeSession
+                              ? `/reca/documents/${intakeSession.id}`
+                              : "/portal/documents";
+                            router.push(docsPath as Route);
+                          }}
                           className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                         >
                           <Upload className="h-4 w-4" />

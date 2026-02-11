@@ -273,7 +273,6 @@ export function Part2Form({
               name="firstName"
               label="First Name"
               importance="required"
-              required
               maxLength={12}
             />
             <FormField
@@ -288,7 +287,6 @@ export function Part2Form({
               name="lastName"
               label="Last Name"
               importance="required"
-              required
               maxLength={20}
             />
           </div>
@@ -328,7 +326,6 @@ export function Part2Form({
               label="Social Security Number"
               type="ssn"
               importance="required"
-              required
               placeholder="XXX-XX-XXXX"
               helperText="Format: XXX-XX-XXXX"
             />
@@ -338,7 +335,6 @@ export function Part2Form({
               label="Date of Birth"
               type="date"
               importance="required"
-              required
             />
           </div>
 
@@ -348,7 +344,6 @@ export function Part2Form({
             label="Date of Death"
             type="date"
             importance="required"
-            required
             helperText="Required - Only survivors of deceased individuals can file claims on their behalf"
           />
         </CardContent>

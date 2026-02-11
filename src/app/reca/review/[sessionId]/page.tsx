@@ -42,6 +42,7 @@ import {
   updateSectionReview,
   generateReviewChecklist,
   getPriorityReviewItems,
+  acknowledgeIncompleteItems,
   type CompletionStatus,
   type IncompleteItem,
   type ReviewTrackingState,
@@ -845,10 +846,18 @@ export default function RECAReviewPage({ params }: PageProps) {
     return analyzeFormCompletion(workflowState);
   }, [workflowState]);
 
-  const reviewTracking = useMemo<ReviewTrackingState | null>(() => {
+  const initialReviewTracking = useMemo<ReviewTrackingState | null>(() => {
     if (!workflowState) return null;
     return buildReviewTracking(workflowState);
   }, [workflowState]);
+
+  const [reviewTracking, setReviewTracking] =
+    useState<ReviewTrackingState | null>(null);
+
+  // Sync review tracking when workflow data loads/changes
+  useEffect(() => {
+    setReviewTracking(initialReviewTracking);
+  }, [initialReviewTracking]);
 
   const reviewChecklist = useMemo(() => {
     if (!reviewTracking) return null;
@@ -1033,6 +1042,11 @@ export default function RECAReviewPage({ params }: PageProps) {
     await performDownload();
   };
 
+  const handleAcknowledgeSection = (sectionId: RECAWorkflowSection) => {
+    if (!reviewTracking) return;
+    setReviewTracking(acknowledgeIncompleteItems(reviewTracking, sectionId));
+  };
+
   const navigateToSection = (sectionId: string) => {
     router.push(`/reca/form/${params.sessionId}?section=${sectionId}`);
   };
@@ -1192,15 +1206,32 @@ export default function RECAReviewPage({ params }: PageProps) {
               <CardDescription>
                 Importance-based review generated from your form data. Required
                 items should be completed first.
-                {priorityMissingCount > 0 && (
+                {priorityMissingCount > 0 ? (
                   <span className="ml-1 font-medium text-red-700">
                     {priorityMissingCount} required item
                     {priorityMissingCount !== 1 ? "s" : ""} missing.
                   </span>
-                )}
+                ) : reviewChecklist &&
+                  (reviewChecklist.required.length > 0 ||
+                    reviewChecklist.recommended.length > 0) ? (
+                  <span className="ml-1 font-medium text-green-700">
+                    All required items resolved.
+                  </span>
+                ) : null}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Submission Readiness Banner */}
+              {reviewTracking?.canSubmitToDOJ && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-green-800">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Ready for submission &mdash; all required items are complete
+                    or acknowledged
+                  </div>
+                </div>
+              )}
+
               {reviewChecklist.required.length === 0 &&
               reviewChecklist.recommended.length === 0 &&
               reviewChecklist.optional.length === 0 ? (
@@ -1214,39 +1245,71 @@ export default function RECAReviewPage({ params }: PageProps) {
                       <h3 className="text-sm font-semibold text-red-800">
                         Required for submission
                       </h3>
-                      {reviewChecklist.required.map((group) => (
-                        <div
-                          key={`required-${group.section}`}
-                          className="rounded-lg border border-red-200 bg-red-50 p-3"
-                        >
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-red-900">
-                              {group.section}
-                            </p>
-                            <Button
-                              size="sm"
-                              className="h-7 rounded-full bg-red-600 text-xs hover:bg-red-700"
-                              onClick={() =>
-                                navigateToSection(
-                                  group.items[0]?.sectionId || "part_1"
-                                )
-                              }
-                            >
-                              Fix
-                              <ChevronRight className="ml-1 h-3 w-3" />
-                            </Button>
-                          </div>
-                          <ul className="space-y-1 text-sm text-red-800">
-                            {group.items.map((item) => (
-                              <li
-                                key={`required-${group.section}-${item.fieldName}`}
+                      {reviewChecklist.required.map((group) => {
+                        const allAcknowledged = group.items.every(
+                          (i) => i.acknowledged
+                        );
+                        return (
+                          <div
+                            key={`required-${group.section}`}
+                            className={`rounded-lg border p-3 ${allAcknowledged ? "border-sage-200 bg-sage-50" : "border-red-200 bg-red-50"}`}
+                          >
+                            <div className="mb-2 flex items-center justify-between">
+                              <p
+                                className={`text-sm font-semibold ${allAcknowledged ? "text-sage-700 line-through" : "text-red-900"}`}
                               >
-                                • {item.fieldLabel}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
+                                {group.section}
+                                {allAcknowledged && (
+                                  <span className="ml-2 text-xs font-normal text-sage-500 no-underline">
+                                    (acknowledged)
+                                  </span>
+                                )}
+                              </p>
+                              <div className="flex gap-1.5">
+                                {!allAcknowledged && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 rounded-full border-sage-300 text-xs text-sage-700 hover:bg-sage-50"
+                                    onClick={() =>
+                                      handleAcknowledgeSection(
+                                        group.items[0]
+                                          ?.sectionId as RECAWorkflowSection
+                                      )
+                                    }
+                                    title="Mark as intentionally incomplete"
+                                  >
+                                    Skip
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  className={`h-7 rounded-full text-xs ${allAcknowledged ? "bg-sage-600 hover:bg-sage-700" : "bg-red-600 hover:bg-red-700"}`}
+                                  onClick={() =>
+                                    navigateToSection(
+                                      group.items[0]?.sectionId || "part_1"
+                                    )
+                                  }
+                                >
+                                  {allAcknowledged ? "Edit" : "Fix"}
+                                  <ChevronRight className="ml-1 h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <ul
+                              className={`space-y-1 text-sm ${allAcknowledged ? "text-sage-500" : "text-red-800"}`}
+                            >
+                              {group.items.map((item) => (
+                                <li
+                                  key={`required-${group.section}-${item.fieldName}`}
+                                >
+                                  • {item.fieldLabel}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
