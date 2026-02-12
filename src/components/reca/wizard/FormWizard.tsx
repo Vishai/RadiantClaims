@@ -1,7 +1,14 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import {
+  ReactNode,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Save, AlertCircle } from "lucide-react";
@@ -28,6 +35,25 @@ interface FormWizardProps {
   hideNavigation?: boolean;
 }
 
+const RESOLVE_SECTION_ORDER: RECAWorkflowSection[] = [
+  "part_1",
+  "part_2",
+  "part_3",
+  "part_4",
+  "part_5",
+  "part_6",
+  "part_7",
+  "part_8",
+  "part_9",
+  "part_10",
+  "part_11",
+  "part_12",
+  "part_13",
+  "part_14",
+  "part_15",
+  "part_16",
+];
+
 export function FormWizard({
   sessionId,
   initialState,
@@ -38,6 +64,7 @@ export function FormWizard({
   hideNavigation = false,
 }: FormWizardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { status } = useSession();
   const [workflowState, setWorkflowState] =
     useState<RECAWorkflowState>(initialState);
@@ -50,6 +77,62 @@ export function FormWizard({
   // Use refs to access latest state in callbacks without recreating them
   const workflowStateRef = useRef(workflowState);
   const isSavingRef = useRef(isSaving);
+  const resolveMode = searchParams.get("mode") === "resolve";
+  const resolveQueueParam = searchParams.get("resolveQueue");
+  const returnToParam = searchParams.get("returnTo");
+  const resolveReturnTo = useMemo(() => {
+    const fallback = `/reca/review/${sessionId}`;
+    if (!returnToParam) return fallback;
+    return returnToParam.startsWith("/") ? returnToParam : fallback;
+  }, [returnToParam, sessionId]);
+  const resolveQueue = useMemo(() => {
+    if (resolveQueueParam === null) return [];
+    const requestedSections = new Set(
+      resolveQueueParam
+        .split(",")
+        .map((section) => section.trim())
+        .filter(Boolean)
+    );
+    return RESOLVE_SECTION_ORDER.filter((section) =>
+      requestedSections.has(section)
+    );
+  }, [resolveQueueParam]);
+  const resolveSearchParams = useMemo(() => {
+    if (!resolveMode) return null;
+    const params = new URLSearchParams();
+    params.set("mode", "resolve");
+    params.set("returnTo", resolveReturnTo);
+    if (resolveQueueParam !== null) {
+      params.set("resolveQueue", resolveQueue.join(","));
+    }
+    return params;
+  }, [resolveMode, resolveReturnTo, resolveQueueParam, resolveQueue]);
+  const buildFormUrl = useCallback(
+    (sectionId: RECAWorkflowSection) => {
+      if (!resolveSearchParams) {
+        return `/reca/form/${sessionId}?section=${sectionId}`;
+      }
+      const params = new URLSearchParams(resolveSearchParams);
+      params.set("section", sectionId);
+      return `/reca/form/${sessionId}?${params.toString()}`;
+    },
+    [resolveSearchParams, sessionId]
+  );
+  const getNextResolveSection = useCallback(
+    (sectionId: RECAWorkflowSection) => {
+      if (resolveQueue.length === 0) return null;
+      const currentIndex = RESOLVE_SECTION_ORDER.indexOf(sectionId);
+      if (currentIndex === -1) return resolveQueue[0] || null;
+      for (const queuedSection of resolveQueue) {
+        const queuedIndex = RESOLVE_SECTION_ORDER.indexOf(queuedSection);
+        if (queuedIndex > currentIndex) {
+          return queuedSection;
+        }
+      }
+      return null;
+    },
+    [resolveQueue]
+  );
 
   // Keep refs updated
   useEffect(() => {
@@ -165,6 +248,16 @@ export function FormWizard({
       // Continue with existing state
     }
 
+    if (resolveMode) {
+      const nextResolveSection = getNextResolveSection(currentSection);
+      if (nextResolveSection) {
+        router.push(buildFormUrl(nextResolveSection));
+      } else {
+        router.push(resolveReturnTo);
+      }
+      return;
+    }
+
     if (onNext) {
       onNext();
       return;
@@ -178,15 +271,15 @@ export function FormWizard({
       // If filing for self, skip Part 2 and go straight to Part 3
       const filingForSelf = latestState.formData.part_1?.filingForSelf;
       if (filingForSelf === true) {
-        router.push(`/reca/form/${sessionId}?section=part_3`);
+        router.push(buildFormUrl("part_3"));
       } else {
-        router.push(`/reca/form/${sessionId}?section=part_2`);
+        router.push(buildFormUrl("part_2"));
       }
       return;
     }
 
     if (currentSection === "part_2") {
-      router.push(`/reca/form/${sessionId}?section=part_3`);
+      router.push(buildFormUrl("part_3"));
       return;
     }
 
@@ -206,14 +299,14 @@ export function FormWizard({
 
       // Navigate to relationship-specific section
       if (effectiveRelationship === "Self") {
-        router.push(`/reca/form/${sessionId}?section=part_4`);
+        router.push(buildFormUrl("part_4"));
       } else if (effectiveRelationship === "Spouse") {
-        router.push(`/reca/form/${sessionId}?section=part_5`);
+        router.push(buildFormUrl("part_5"));
       } else if (effectiveRelationship === "Child") {
-        router.push(`/reca/form/${sessionId}?section=part_6`);
+        router.push(buildFormUrl("part_6"));
       } else {
         // Parent, Grandchild, Grandparent
-        router.push(`/reca/form/${sessionId}?section=part_7`);
+        router.push(buildFormUrl("part_7"));
       }
       return;
     }
@@ -241,7 +334,7 @@ export function FormWizard({
       } else if (nextSection === "final_review") {
         router.push(`/reca/review/${sessionId}`);
       } else {
-        router.push(`/reca/form/${sessionId}?section=${nextSection}`);
+        router.push(buildFormUrl(nextSection));
       }
     } else {
       // No more sections - go to review
@@ -268,7 +361,7 @@ export function FormWizard({
       }
 
       if (currentSection === "part_2") {
-        router.push(`/reca/form/${sessionId}?section=part_1`);
+        router.push(buildFormUrl("part_1"));
         return;
       }
 
@@ -276,9 +369,9 @@ export function FormWizard({
         // If filing for self, skip back to Part 1 (Part 2 was skipped)
         const filingForSelf = workflowState.formData.part_1?.filingForSelf;
         if (filingForSelf === true) {
-          router.push(`/reca/form/${sessionId}?section=part_1`);
+          router.push(buildFormUrl("part_1"));
         } else {
-          router.push(`/reca/form/${sessionId}?section=part_2`);
+          router.push(buildFormUrl("part_2"));
         }
         return;
       }
@@ -296,12 +389,16 @@ export function FormWizard({
       );
 
       if (prevSection) {
-        router.push(`/reca/form/${sessionId}?section=${prevSection}`);
+        router.push(buildFormUrl(prevSection));
       } else {
         router.push(`/reca/start?sessionId=${sessionId}`);
       }
     }
   };
+
+  const handleBackToReview = useCallback(() => {
+    router.push(resolveReturnTo);
+  }, [router, resolveReturnTo]);
 
   return (
     <div className="flex min-h-screen flex-col bg-cream-50">
@@ -360,14 +457,25 @@ export function FormWizard({
         {/* Navigation Buttons */}
         {!hideNavigation && (
           <div className="mx-auto mt-8 flex max-w-4xl items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
+            <div className="flex items-center gap-2">
+              {resolveMode && (
+                <Button
+                  variant="outline"
+                  onClick={handleBackToReview}
+                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                >
+                  Back to Review
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={handlePrevious}
+                className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+            </div>
             <Button
               onClick={handleNext}
               className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"

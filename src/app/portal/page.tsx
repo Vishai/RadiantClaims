@@ -436,6 +436,28 @@ export default function CustomerPortal() {
               const currentAction = intakeSession
                 ? packetActions[intakeSession.id]
                 : null;
+              const completionPercent =
+                intakeSession?.recaCompletionPercent ?? 0;
+              const reviewPreferredStatuses = [
+                "READY_FOR_REVIEW",
+                "UNDER_REVIEW",
+                "APPROVED",
+                "SUBMITTED",
+              ];
+              const shouldPreferReview = intakeSession
+                ? completionPercent >= 95 ||
+                  reviewPreferredStatuses.includes(intakeSession.status)
+                : false;
+              const reviewRoute = intakeSession
+                ? (`/reca/review/${intakeSession.id}` as Route)
+                : null;
+              const formRoute = intakeSession
+                ? intakeSession.recaWorkflowStage
+                  ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
+                  : `/reca/start?sessionId=${intakeSession.id}`
+                : null;
+              const showEditButton =
+                Boolean(intakeSession) && shouldPreferReview;
 
               return (
                 <Card
@@ -562,26 +584,62 @@ export default function CustomerPortal() {
 
                       {/* Actions */}
                       <div className="flex flex-wrap gap-3">
-                        {/* Primary Action: Fill Out Application */}
-                        {intakeSession &&
-                          intakeSession.status !== "SUBMITTED" && (
-                            <Button
-                              onClick={() => {
-                                // Always route to RECA application form as primary action
-                                router.push(
-                                  intakeSession.recaWorkflowStage
-                                    ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
-                                    : `/reca/start?sessionId=${intakeSession.id}`
-                                );
-                              }}
-                              className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                            >
-                              <FileText className="h-4 w-4" />
-                              {intakeSession.recaWorkflowStage
-                                ? "Continue Application"
-                                : "Start Application"}
-                            </Button>
-                          )}
+                        {intakeSession && (
+                          <>
+                            {shouldPreferReview ? (
+                              <>
+                                <Button
+                                  onClick={() =>
+                                    reviewRoute && router.push(reviewRoute)
+                                  }
+                                  className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  Review Application
+                                </Button>
+
+                                {showEditButton && (
+                                  <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                      formRoute &&
+                                      router.push(formRoute as Route)
+                                    }
+                                    className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                    Edit Application
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  onClick={() =>
+                                    formRoute && router.push(formRoute as Route)
+                                  }
+                                  className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  {intakeSession.recaWorkflowStage
+                                    ? "Continue Application"
+                                    : "Start Application"}
+                                </Button>
+
+                                <Button
+                                  variant="outline"
+                                  onClick={() =>
+                                    reviewRoute && router.push(reviewRoute)
+                                  }
+                                  className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  Review Application
+                                </Button>
+                              </>
+                            )}
+                          </>
+                        )}
 
                         {/* Upload Documents (Session-specific) */}
                         <Button

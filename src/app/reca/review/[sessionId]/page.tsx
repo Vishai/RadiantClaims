@@ -891,6 +891,23 @@ export default function RECAReviewPage({ params }: PageProps) {
     if (!reviewTracking) return 0;
     return getPriorityReviewItems(reviewTracking).length;
   }, [reviewTracking]);
+  const resolveQueue = useMemo(() => {
+    if (!reviewTracking || !workflowState) return [];
+    const formData = workflowState.formData;
+    return reviewTracking.sections
+      .filter((section) => {
+        const definition = SECTION_DEFINITIONS.find(
+          (def) => def.id === section.sectionId
+        );
+        if (definition?.conditional && !definition.conditional(formData)) {
+          return false;
+        }
+        return section.incompleteItems.some(
+          (item) => item.importance === "required" && !item.acknowledged
+        );
+      })
+      .map((section) => section.sectionId);
+  }, [reviewTracking, workflowState]);
 
   // Document requirements & assistance
   const documentHelp = useMemo(() => {
@@ -1070,7 +1087,20 @@ export default function RECAReviewPage({ params }: PageProps) {
     setReviewTracking(acknowledgeIncompleteItems(reviewTracking, sectionId));
   };
 
-  const navigateToSection = (sectionId: string) => {
+  const resolveReturnTo = `/reca/review/${params.sessionId}`;
+  const buildResolveLink = (sectionId: string) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("section", sectionId);
+    searchParams.set("mode", "resolve");
+    searchParams.set("returnTo", resolveReturnTo);
+    searchParams.set("resolveQueue", resolveQueue.join(","));
+    return `/reca/form/${params.sessionId}?${searchParams.toString()}`;
+  };
+  const navigateToSection = (sectionId: string, resolveMode = false) => {
+    if (resolveMode) {
+      router.push(buildResolveLink(sectionId));
+      return;
+    }
     router.push(`/reca/form/${params.sessionId}?section=${sectionId}`);
   };
 
@@ -1325,7 +1355,8 @@ export default function RECAReviewPage({ params }: PageProps) {
                                   className={`h-7 rounded-full text-xs ${allAcknowledged ? "bg-sage-600 hover:bg-sage-700" : "bg-red-600 hover:bg-red-700"}`}
                                   onClick={() =>
                                     navigateToSection(
-                                      group.items[0]?.sectionId || "part_1"
+                                      group.items[0]?.sectionId || "part_1",
+                                      true
                                     )
                                   }
                                 >
@@ -1450,7 +1481,7 @@ export default function RECAReviewPage({ params }: PageProps) {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs text-green-700 hover:text-green-900"
-                          onClick={() => navigateToSection(section.id)}
+                          onClick={() => navigateToSection(section.id, true)}
                         >
                           Edit
                           <ChevronRight className="ml-1 h-3 w-3" />
@@ -1489,7 +1520,7 @@ export default function RECAReviewPage({ params }: PageProps) {
                         <Button
                           size="sm"
                           className="h-7 rounded-full bg-amber-600 text-xs hover:bg-amber-700"
-                          onClick={() => navigateToSection(section.id)}
+                          onClick={() => navigateToSection(section.id, true)}
                         >
                           Complete
                           <ChevronRight className="ml-1 h-3 w-3" />
@@ -1525,7 +1556,7 @@ export default function RECAReviewPage({ params }: PageProps) {
                         <Button
                           size="sm"
                           className="h-7 rounded-full bg-red-600 text-xs hover:bg-red-700"
-                          onClick={() => navigateToSection(section.id)}
+                          onClick={() => navigateToSection(section.id, true)}
                         >
                           Start
                           <ChevronRight className="ml-1 h-3 w-3" />
