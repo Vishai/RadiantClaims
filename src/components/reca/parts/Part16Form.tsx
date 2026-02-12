@@ -88,7 +88,7 @@ export default function Part16Form({
   // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
   const handlePartialSubmit = useCallback(
     async (data: any) => {
-      onSubmit(data as Part16Signature);
+      await onSubmit(data as Part16Signature);
     },
     [onSubmit]
   );

@@ -141,7 +141,7 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
   // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
   const handlePartialSubmit = useCallback(
     async (data: any) => {
-      onSubmit(data as Part8Exposure);
+      await onSubmit(data as Part8Exposure);
     },
     [onSubmit]
   );

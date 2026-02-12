@@ -69,6 +69,10 @@ interface SectionInfo {
   conditional?: (formData: any) => boolean; // returns true if section is applicable
 }
 
+const isSelfFiler = (formData: any) =>
+  formData?.part_1?.filingForSelf === true ||
+  formData?.part_3?.relationship === "Self";
+
 const SECTION_DEFINITIONS: SectionInfo[] = [
   {
     id: "part_1",
@@ -81,8 +85,7 @@ const SECTION_DEFINITIONS: SectionInfo[] = [
     name: "Part 2: Claimant Information",
     shortName: "Claimant Info",
     required: false,
-    conditional: (fd) =>
-      fd?.part_3?.relationship && fd.part_3.relationship !== "Self",
+    conditional: (fd) => !isSelfFiler(fd),
   },
   {
     id: "part_3",
@@ -741,6 +744,26 @@ function analyzeFormCompletion(
     const sectionKey = def.id as keyof typeof formData;
     const sectionData = formData?.[sectionKey];
 
+    if (def.id === "part_9") {
+      // sectionData is a union type here; use part_9 specifically
+      const part9 = (formData as any)?.part_9;
+      const hasPresenceSubmission =
+        typeof part9?.ldsChurchAssistance === "boolean" ||
+        (Array.isArray(part9?.uploadedDocuments) &&
+          part9.uploadedDocuments.length > 0);
+      if (hasPresenceSubmission) {
+        sections.push({
+          id: def.id,
+          name: def.name,
+          shortName: def.shortName,
+          status: "complete",
+          filledFields: 1,
+          totalFields: 1,
+        });
+        continue;
+      }
+    }
+
     if (
       !sectionData ||
       (typeof sectionData === "object" && Object.keys(sectionData).length === 0)
@@ -1197,7 +1220,10 @@ export default function RECAReviewPage({ params }: PageProps) {
         {/* Importance Checklist (review-tracking.ts) */}
         {/* ================================================================ */}
         {reviewChecklist && (
-          <Card className="mb-6 border-2 border-sage-200 bg-white">
+          <Card
+            id="missing-info-checklist"
+            className="mb-6 border-2 border-sage-200 bg-white"
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sage-900">
                 <AlertCircle className="h-5 w-5 text-terracotta-500" />
@@ -1228,6 +1254,18 @@ export default function RECAReviewPage({ params }: PageProps) {
                     <CheckCircle2 className="h-4 w-4" />
                     Ready for submission &mdash; all required items are complete
                     or acknowledged
+                  </div>
+                </div>
+              )}
+
+              {!reviewTracking?.canSubmitToDOJ && priorityMissingCount > 0 && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                  <div className="flex items-center gap-3 text-sm text-red-800">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <span>
+                      Required items are still missing. Complete or acknowledge
+                      them before continuing to final submission.
+                    </span>
                   </div>
                 </div>
               )}

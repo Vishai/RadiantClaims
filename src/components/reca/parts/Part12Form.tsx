@@ -86,7 +86,7 @@ export default function Part12Form({ initialData, onSubmit }: Part12FormProps) {
   // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
   const handlePartialSubmit = useCallback(
     async (data: any) => {
-      onSubmit(data as Part12PreviousPayments);
+      await onSubmit(data as Part12PreviousPayments);
     },
     [onSubmit]
   );

@@ -18,6 +18,8 @@ import {
   FileText,
   Info,
   CheckCircle2,
+  AlertCircle,
+  Loader2,
   ChevronDown,
   ChevronUp,
   Church,
@@ -162,6 +164,13 @@ export default function Part9Form({
 
   const successfulUploads = uploadedDocuments.filter(
     (doc) => doc.status === "success"
+  ).length;
+  const totalUploads = uploadedDocuments.length;
+  const uploadingUploads = uploadedDocuments.filter(
+    (doc) => doc.status === "uploading"
+  ).length;
+  const failedUploads = uploadedDocuments.filter(
+    (doc) => doc.status === "error"
   ).length;
 
   return (
@@ -510,79 +519,126 @@ export default function Part9Form({
                 <h3 className="text-lg font-bold text-terracotta-900">
                   Your Uploaded Documents
                 </h3>
-                <p className="text-sm font-medium text-green-700">
-                  {successfulUploads} document
-                  {successfulUploads !== 1 ? "s" : ""} saved to your claim
-                </p>
+                {totalUploads > 0 ? (
+                  <>
+                    <p className="text-sm font-medium text-sage-800">
+                      {totalUploads} uploaded • {successfulUploads} saved to
+                      claim
+                      {uploadingUploads > 0
+                        ? ` • ${uploadingUploads} uploading`
+                        : ""}
+                      {failedUploads > 0 ? ` • ${failedUploads} failed` : ""}
+                    </p>
+                    <p className="text-xs text-sage-600">
+                      Saved documents are attached to your claim and pending
+                      RECA verification.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-sage-600">
+                    No documents uploaded yet
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Document List */}
-            {successfulUploads > 0 ? (
+            {totalUploads > 0 ? (
               <div className="space-y-3">
-                {uploadedDocuments
-                  .filter((doc) => doc.status === "success")
-                  .map((doc, idx) => {
-                    const docTypeLabel = getDocumentTypeLabel(doc.documentType);
+                {uploadedDocuments.map((doc) => {
+                  const docTypeLabel = getDocumentTypeLabel(doc.documentType);
 
-                    return (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-terracotta-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex-shrink-0">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                              <FileText className="h-5 w-5 text-blue-600" />
+                  return (
+                    <div
+                      key={doc.id}
+                      className="rounded-lg border border-terracotta-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 flex-shrink-0">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="truncate font-semibold text-sage-900">
+                                {doc.fileName}
+                              </p>
+                              <p className="mt-0.5 text-sm text-sage-600">
+                                Classified as:{" "}
+                                <span className="font-medium text-blue-700">
+                                  {docTypeLabel}
+                                </span>
+                              </p>
+                              <p className="mt-1 text-xs text-sage-500">
+                                Uploaded:{" "}
+                                {new Date(doc.uploadedAt).toLocaleString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </p>
                             </div>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="mb-1 flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <p className="truncate font-semibold text-sage-900">
-                                  {doc.fileName}
-                                </p>
-                                <p className="mt-0.5 text-sm text-sage-600">
-                                  Classified as:{" "}
-                                  <span className="font-medium text-blue-700">
-                                    {docTypeLabel}
-                                  </span>
-                                </p>
-                                <p className="mt-1 text-xs text-sage-500">
-                                  Uploaded:{" "}
-                                  {new Date(doc.uploadedAt).toLocaleString(
-                                    "en-US",
-                                    {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    }
-                                  )}
-                                </p>
-                              </div>
-                            </div>
 
-                            {/* Saved Status Badge */}
+                          {/* Upload Status Badge */}
+                          {doc.status === "success" && (
                             <div className="mt-2 flex items-center gap-2 rounded-md border border-green-200 bg-green-50 p-2">
                               <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
                               <p className="text-xs text-green-800">
                                 <span className="font-semibold">
-                                  ✓ Saved to your claim
+                                  Saved to your claim
                                 </span>
                                 <span className="mt-0.5 block text-green-700">
-                                  This document has been securely uploaded and
-                                  linked to your claim. Our team will review it
-                                  to verify it meets RECA requirements.
+                                  Attached successfully and pending RECA
+                                  verification.
                                 </span>
                               </p>
                             </div>
-                          </div>
+                          )}
+                          {doc.status === "uploading" && (
+                            <div className="mt-2 flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-2">
+                              <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-blue-600" />
+                              <p className="text-xs text-blue-800">
+                                <span className="font-semibold">
+                                  Upload in progress
+                                </span>
+                                <span className="mt-0.5 block text-blue-700">
+                                  We are still processing this file.
+                                </span>
+                              </p>
+                            </div>
+                          )}
+                          {doc.status === "error" && (
+                            <div className="mt-2 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-2">
+                              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600" />
+                              <p className="text-xs text-red-800">
+                                <span className="font-semibold">
+                                  Upload failed
+                                </span>
+                                <span className="mt-0.5 block text-red-700">
+                                  {doc.errorMessage
+                                    ? doc.errorMessage
+                                    : "This file is not attached to your claim yet."}
+                                </span>
+                                <span className="mt-0.5 block text-red-700">
+                                  Use Retry in the upload list above, or remove
+                                  and re-upload.
+                                </span>
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="py-8 text-center">
@@ -631,6 +687,24 @@ export default function Part9Form({
                       Your document has been securely saved to your claim.
                       Consider uploading at least one more document from a
                       different category to meet RECA's minimum requirements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {failedUploads > 0 && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+                  <div>
+                    <p className="mb-1 font-semibold text-red-900">
+                      Some files were not saved
+                    </p>
+                    <p className="text-sm text-red-800">
+                      {failedUploads} upload
+                      {failedUploads !== 1 ? "s were" : " was"} not attached to
+                      your claim. Use Retry above or remove failed files and
+                      upload again.
                     </p>
                   </div>
                 </div>

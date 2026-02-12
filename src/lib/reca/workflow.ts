@@ -8,6 +8,7 @@ import {
   RECAWorkflowSection,
   WORKFLOW_STAGES,
   RECAWorkflowStage,
+  RECAFormData,
 } from "./types";
 
 /**
@@ -423,4 +424,36 @@ export function getStageDisplayName(stage: RECAWorkflowStage): string {
   };
 
   return names[stage] || `Stage ${stage}`;
+}
+
+export type SupportingFormType =
+  | "medical_info_release"
+  | "certification_of_identity"
+  | "tribal_records_release"
+  | "surviving_beneficiaries";
+
+export function getSupportingFormsForClaim(
+  formData: Partial<RECAFormData>
+): SupportingFormType[] {
+  const required: SupportingFormType[] = ["certification_of_identity"];
+
+  if (formData.part_11?.cancerRegistryAuthorization) {
+    required.push("medical_info_release");
+  }
+
+  if (formData.part_1?.tribalAffiliation) {
+    required.push("tribal_records_release");
+  }
+
+  if (formData.part_3?.relationship === "Child") {
+    required.push("surviving_beneficiaries");
+  }
+
+  return required;
+}
+
+export function isSupportingFormOptional(
+  formType: SupportingFormType
+): boolean {
+  return formType === "surviving_beneficiaries";
 }

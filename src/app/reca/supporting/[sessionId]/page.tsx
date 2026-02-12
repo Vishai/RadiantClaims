@@ -15,18 +15,17 @@ import {
   // TribalRecordsRelease,
   // SurvivingBeneficiariesSignatures,
 } from "@/lib/reca/types";
+import {
+  getSupportingFormsForClaim,
+  isSupportingFormOptional,
+  type SupportingFormType,
+} from "@/lib/reca/workflow";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, FileText } from "lucide-react";
 
 interface PageProps {
   params: { sessionId: string };
 }
-
-type SupportingFormType =
-  | "medical_info_release"
-  | "certification_of_identity"
-  | "tribal_records_release"
-  | "surviving_beneficiaries";
 
 export default function RECASupportingFormsPage({ params }: PageProps) {
   const router = useRouter();
@@ -135,30 +134,6 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
     }
   };
 
-  // Determine which forms are required based on main form data
-  const getRequiredForms = (): SupportingFormType[] => {
-    if (!workflowState) return ["certification_of_identity"];
-
-    const required: SupportingFormType[] = ["certification_of_identity"]; // Always required
-
-    // Medical Info Release - required if cancer registry authorization in Part 11
-    if (workflowState.formData.part_11?.cancerRegistryAuthorization) {
-      required.push("medical_info_release");
-    }
-
-    // Tribal Records Release - required if tribal affiliation in Part 1
-    if (workflowState.formData.part_1?.tribalAffiliation) {
-      required.push("tribal_records_release");
-    }
-
-    // Surviving Beneficiaries - optional for Part 6 (Child relationship)
-    if (workflowState.formData.part_3?.relationship === "Child") {
-      required.push("surviving_beneficiaries");
-    }
-
-    return required;
-  };
-
   const handleNavigateToReview = () => {
     router.push(`/reca/form/${params.sessionId}?section=review` as any);
   };
@@ -171,7 +146,7 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
   const areAllRequiredFormsComplete = (): boolean => {
     if (!workflowState) return false;
 
-    const required = getRequiredForms();
+    const required = getSupportingFormsForClaim(workflowState.formData);
     return required.every((form) => {
       const formKey =
         form === "medical_info_release"
@@ -183,7 +158,7 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
               : "survivingBeneficiariesSignatures";
 
       // Surviving beneficiaries is optional
-      if (form === "surviving_beneficiaries") return true;
+      if (isSupportingFormOptional(form)) return true;
 
       return !!workflowState.supportingForms[formKey];
     });
@@ -192,7 +167,7 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
   const renderCurrentForm = () => {
     if (!workflowState) return null;
 
-    const requiredForms = getRequiredForms();
+    const requiredForms = getSupportingFormsForClaim(workflowState.formData);
 
     // Show message if form is not required for this claim
     if (!requiredForms.includes(currentForm)) {
@@ -339,59 +314,62 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
                   necessary to process your claim.
                 </p>
                 <div className="mb-4 space-y-2">
-                  {getRequiredForms().map((form) => {
-                    const formKey =
-                      form === "medical_info_release"
-                        ? "medicalInformationRelease"
-                        : form === "certification_of_identity"
-                          ? "certificationOfIdentity"
-                          : form === "tribal_records_release"
-                            ? "tribalRecordsRelease"
-                            : "survivingBeneficiariesSignatures";
+                  {getSupportingFormsForClaim(workflowState.formData).map(
+                    (form) => {
+                      const formKey =
+                        form === "medical_info_release"
+                          ? "medicalInformationRelease"
+                          : form === "certification_of_identity"
+                            ? "certificationOfIdentity"
+                            : form === "tribal_records_release"
+                              ? "tribalRecordsRelease"
+                              : "survivingBeneficiariesSignatures";
 
-                    const isComplete = !!workflowState.supportingForms[formKey];
-                    const isOptional = form === "surviving_beneficiaries";
+                      const isComplete =
+                        !!workflowState.supportingForms[formKey];
+                      const isOptional = isSupportingFormOptional(form);
 
-                    return (
-                      <div
-                        key={form}
-                        className="flex items-center gap-2 text-sm"
-                      >
+                      return (
                         <div
-                          className={`h-2 w-2 rounded-full ${
-                            isComplete
-                              ? "bg-green-500"
-                              : isOptional
-                                ? "bg-blue-400"
-                                : "bg-amber-500"
-                          }`}
-                        />
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/reca/supporting/${params.sessionId}?form=${form}`
-                            )
-                          }
-                          className={`text-left hover:underline ${
-                            currentForm === form
-                              ? "font-semibold text-terracotta-900"
-                              : "text-sage-900"
-                          }`}
+                          key={form}
+                          className="flex items-center gap-2 text-sm"
                         >
-                          {form === "medical_info_release"
-                            ? "Medical Information Release"
-                            : form === "certification_of_identity"
-                              ? "Certification of Identity (Required)"
-                              : form === "tribal_records_release"
-                                ? "Tribal Records Release"
-                                : "Surviving Beneficiaries Signatures (Optional)"}
-                        </button>
-                        {isComplete && (
-                          <CheckCircle2 className="ml-1 h-4 w-4 text-green-600" />
-                        )}
-                      </div>
-                    );
-                  })}
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              isComplete
+                                ? "bg-green-500"
+                                : isOptional
+                                  ? "bg-blue-400"
+                                  : "bg-amber-500"
+                            }`}
+                          />
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/reca/supporting/${params.sessionId}?form=${form}`
+                              )
+                            }
+                            className={`text-left hover:underline ${
+                              currentForm === form
+                                ? "font-semibold text-terracotta-900"
+                                : "text-sage-900"
+                            }`}
+                          >
+                            {form === "medical_info_release"
+                              ? "Medical Information Release"
+                              : form === "certification_of_identity"
+                                ? "Certification of Identity (Required)"
+                                : form === "tribal_records_release"
+                                  ? "Tribal Records Release"
+                                  : "Surviving Beneficiaries Signatures (Optional)"}
+                          </button>
+                          {isComplete && (
+                            <CheckCircle2 className="ml-1 h-4 w-4 text-green-600" />
+                          )}
+                        </div>
+                      );
+                    }
+                  )}
                 </div>
 
                 {areAllRequiredFormsComplete() && (

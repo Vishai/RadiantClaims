@@ -106,7 +106,9 @@ export default function Part10Form({ initialData, onSubmit }: Part10FormProps) {
   // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
   const handlePartialSubmit = useCallback(
     async (data: any) => {
-      onSubmit({ diseases: (data.diseases || []) as CompensableDisease[] });
+      await onSubmit({
+        diseases: (data.diseases || []) as CompensableDisease[],
+      });
     },
     [onSubmit]
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useCallback } from "react";
+import { ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -47,22 +47,43 @@ export function FormWizard({
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [hasPromptedAccount, setHasPromptedAccount] = useState(false);
 
+  // Use refs to access latest state in callbacks without recreating them
+  const workflowStateRef = useRef(workflowState);
+  const isSavingRef = useRef(isSaving);
+
+  // Keep refs updated
+  useEffect(() => {
+    workflowStateRef.current = workflowState;
+  }, [workflowState]);
+
+  useEffect(() => {
+    isSavingRef.current = isSaving;
+  }, [isSaving]);
+
+  useEffect(() => {
+    setWorkflowState(initialState);
+  }, [initialState]);
+
   const handleAutoSave = useCallback(async () => {
-    if (isSaving) return;
+    // Use ref to check current saving state
+    if (isSavingRef.current) return;
 
     try {
       setIsSaving(true);
       setSaveError(null);
 
+      // Use ref to get latest workflow state
+      const currentState = workflowStateRef.current;
+
       const response = await fetch(`/api/reca/workflow/${sessionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentSection: workflowState.currentSection,
-          currentStage: workflowState.currentStage,
-          formData: workflowState.formData,
-          supportingForms: workflowState.supportingForms,
-          eligibilityData: workflowState.eligibilityData,
+          currentSection: currentState.currentSection,
+          currentStage: currentState.currentStage,
+          formData: currentState.formData,
+          supportingForms: currentState.supportingForms,
+          eligibilityData: currentState.eligibilityData,
         } as SaveWorkflowRequest),
       });
 
@@ -91,20 +112,20 @@ export function FormWizard({
     }
   }, [
     sessionId,
-    workflowState,
     status,
     hasPromptedAccount,
-    lastSaved,
-    isSaving,
+    // Only include stable dependencies
+    // workflowState, lastSaved, and isSaving are accessed via refs
   ]);
 
-  // Auto-save every 2 minutes
+  // Auto-save every 2 minutes - fixed to prevent infinite loop
   useEffect(() => {
     const interval = setInterval(() => {
       handleAutoSave();
     }, 120000); // 2 minutes
 
     return () => clearInterval(interval);
+    // Now safe to depend on handleAutoSave since it only depends on stable values
   }, [handleAutoSave]);
 
   const handleManualSave = async () => {
@@ -112,8 +133,10 @@ export function FormWizard({
   };
 
   const handleNext = async () => {
+    let usedFormSubmit = false;
     // Trigger form submission/validation if available
     if ((window as any).__currentFormSubmit) {
+      usedFormSubmit = true;
       const isValid = await (window as any).__currentFormSubmit();
       if (!isValid) {
         return; // Don't navigate if form is invalid
@@ -123,7 +146,9 @@ export function FormWizard({
     }
 
     // Save before navigating (though form should have already saved)
-    await handleAutoSave();
+    if (!usedFormSubmit) {
+      await handleAutoSave();
+    }
 
     // Reload the latest state from the server to ensure we have the most up-to-date data
     let latestState = workflowState;

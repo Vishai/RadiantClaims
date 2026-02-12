@@ -6,6 +6,9 @@ import {
   getSectionSequence,
   shouldSkipSection,
   getSectionDisplayName,
+  getSupportingFormsForClaim,
+  isSupportingFormOptional,
+  type SupportingFormType,
 } from "@/lib/reca/workflow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,15 +74,35 @@ function maskSSN(ssn?: string): string {
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "Not provided";
   try {
+    const [datePartMaybe] = dateStr.split("T");
+    const datePart = datePartMaybe ?? "";
+    const parts = datePart.split("-");
+    if (parts.length === 3 && (parts[0]?.length ?? 0) === 4) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      if (![year, month, day].some((value) => Number.isNaN(value))) {
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+    }
+
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
   } catch {
     return dateStr;
   }
+  return dateStr;
 }
 
 function SectionCard({
@@ -170,6 +193,32 @@ export default function ReviewSection({
 }: ReviewSectionProps) {
   const { formData, supportingForms } = workflowState;
   const relationship = formData.part_3?.relationship;
+  const supportingFormsForClaim = getSupportingFormsForClaim(formData);
+
+  const supportingFormCompletion: Record<SupportingFormType, boolean> = {
+    certification_of_identity:
+      !!supportingForms?.certificationOfIdentity?.fullName,
+    medical_info_release:
+      !!supportingForms?.medicalInformationRelease?.patientName,
+    tribal_records_release:
+      !!supportingForms?.tribalRecordsRelease?.claimantName,
+    surviving_beneficiaries:
+      (supportingForms?.survivingBeneficiariesSignatures?.beneficiaries
+        ?.length || 0) > 0,
+  };
+
+  const supportingFormsComplete = supportingFormsForClaim.every((form) =>
+    isSupportingFormOptional(form) ? true : supportingFormCompletion[form]
+  );
+  const supportingFormsStarted = supportingFormsForClaim.some(
+    (form) => supportingFormCompletion[form]
+  );
+
+  const formatSupportingFormStatus = (form: SupportingFormType): string => {
+    if (supportingFormCompletion[form]) return "Completed";
+    if (isSupportingFormOptional(form)) return "Optional";
+    return "Incomplete";
+  };
 
   // Get the relevant section sequence for this user
   const sections = relationship
@@ -424,7 +473,7 @@ export default function ReviewSection({
         sessionId={sessionId}
         hasData={
           !!formData.part_9?.uploadedDocuments?.length ||
-          !!formData.part_9?.ldsChurchAssistance
+          typeof formData.part_9?.ldsChurchAssistance === "boolean"
         }
       >
         {formData.part_9?.uploadedDocuments?.length ? (
@@ -598,42 +647,33 @@ export default function ReviewSection({
         section="supporting_forms"
         sessionId={sessionId}
         editPath={`/reca/supporting/${sessionId}`}
-        hasData={!!supportingForms?.certificationOfIdentity?.fullName}
+        hasData={supportingFormsComplete || supportingFormsStarted}
       >
-        <ReviewField
-          label="Certification of Identity"
-          value={
-            supportingForms?.certificationOfIdentity?.fullName
-              ? "Completed"
-              : "Incomplete"
-          }
-        />
-        <ReviewField
-          label="Medical Info Release"
-          value={
-            supportingForms?.medicalInformationRelease?.patientName
-              ? "Completed"
-              : "Incomplete"
-          }
-        />
-        {supportingForms?.tribalRecordsRelease && (
+        {supportingFormsForClaim.includes("certification_of_identity") && (
           <ReviewField
-            label="Tribal Records Release"
-            value={
-              supportingForms.tribalRecordsRelease.claimantName
-                ? "Completed"
-                : "Incomplete"
-            }
+            label="Certification of Identity"
+            value={formatSupportingFormStatus("certification_of_identity")}
           />
         )}
-        {supportingForms?.survivingBeneficiariesSignatures && (
+        {supportingFormsForClaim.includes("medical_info_release") && (
+          <ReviewField
+            label="Medical Info Release"
+            value={formatSupportingFormStatus("medical_info_release")}
+          />
+        )}
+        {supportingFormsForClaim.includes("tribal_records_release") && (
+          <ReviewField
+            label="Tribal Records Release"
+            value={formatSupportingFormStatus("tribal_records_release")}
+          />
+        )}
+        {supportingFormsForClaim.includes("surviving_beneficiaries") && (
           <ReviewField
             label="Surviving Beneficiaries"
             value={
-              supportingForms.survivingBeneficiariesSignatures.beneficiaries
-                ?.length
-                ? `${supportingForms.survivingBeneficiariesSignatures.beneficiaries.length} beneficiary(ies)`
-                : "Incomplete"
+              supportingFormCompletion.surviving_beneficiaries
+                ? `${supportingForms?.survivingBeneficiariesSignatures?.beneficiaries?.length || 0} beneficiary(ies)`
+                : formatSupportingFormStatus("surviving_beneficiaries")
             }
           />
         )}

@@ -209,7 +209,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
         data.tribalAffiliation = "";
         data.tribalCensusNumber = "";
       }
-      onSubmit(data as Part1FilerInfo);
+      await onSubmit(data as Part1FilerInfo);
     },
     [hasTribalAffiliation, onSubmit]
   );

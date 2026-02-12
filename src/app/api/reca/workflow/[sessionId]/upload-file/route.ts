@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
+import { FileCategory, Prisma } from "@prisma/client";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,51 @@ const uploadFileSchema = z.object({
   documentType: z.string(), // ProofOfPresenceDocumentType or MedicalDocumentType
   category: z.string().optional(), // "Medical" or undefined (defaults to ProofOfResidence)
 });
+
+const PROOF_OF_PRESENCE_CATEGORY_MAP: Record<string, FileCategory> = {
+  TAX_RECORDS: FileCategory.TAX_RETURN,
+  PROPERTY_RECORDS: FileCategory.PROOF_OF_RESIDENCE,
+  SCHOOL_ENROLLMENT: FileCategory.SCHOOL_RECORDS,
+  UTILITY_BILLS: FileCategory.UTILITY_BILL,
+  MORTGAGE_STATEMENTS: FileCategory.MORTGAGE_STATEMENT,
+  RENTAL_AGREEMENTS: FileCategory.PROOF_OF_RESIDENCE,
+  EMPLOYMENT_RECORDS: FileCategory.EMPLOYMENT_RECORDS,
+  CENSUS_RECORDS: FileCategory.PROOF_OF_RESIDENCE,
+  GOVERNMENT_CORRESPONDENCE: FileCategory.PROOF_OF_RESIDENCE,
+  GOVERNMENT_ID: FileCategory.IDENTITY,
+  VOTING_RECORDS: FileCategory.PROOF_OF_RESIDENCE,
+  MILITARY_RECORDS: FileCategory.OTHER,
+  CHURCH_RECORDS: FileCategory.LDS_CHURCH_RECORDS,
+  BIRTH_MARRIAGE_RECORDS: FileCategory.OTHER,
+  OTHER: FileCategory.OTHER,
+};
+
+const MEDICAL_CATEGORY_MAP: Record<string, FileCategory> = {
+  PATHOLOGY_REPORT: FileCategory.PATHOLOGY_REPORT,
+  OPERATIVE_REPORT: FileCategory.MEDICAL_RECORDS,
+  DISCHARGE_SUMMARY: FileCategory.DISCHARGE_SUMMARY,
+  PHYSICIAN_SUMMARY: FileCategory.MEDICAL_RECORDS,
+  DEATH_CERTIFICATE: FileCategory.DEATH_CERTIFICATE,
+  AUTOPSY_REPORT: FileCategory.MEDICAL_RECORDS,
+  BONE_MARROW_BIOPSY: FileCategory.PATHOLOGY_REPORT,
+  LAB_REPORT: FileCategory.PATHOLOGY_REPORT,
+  XRAY_REPORT: FileCategory.MEDICAL_RECORDS,
+  OTHER_MEDICAL: FileCategory.OTHER,
+};
+
+function resolveFileCategory(
+  categoryHint: string | undefined,
+  documentType: string
+): FileCategory {
+  if (categoryHint === "Medical") {
+    return MEDICAL_CATEGORY_MAP[documentType] || FileCategory.MEDICAL_RECORDS;
+  }
+
+  return (
+    PROOF_OF_PRESENCE_CATEGORY_MAP[documentType] ||
+    FileCategory.PROOF_OF_RESIDENCE
+  );
+}
 
 /**
  * POST /api/reca/workflow/[sessionId]/upload-file
@@ -60,33 +106,10 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Determine file category
-    let category: string;
-
-    if (validated.category === "Medical") {
-      // Medical documents from Part 11
-      category = "Medical";
-    } else {
-      // Map proof of presence document types to category
-      const categoryMap: Record<string, string> = {
-        TAX_RECORDS: "ProofOfResidence",
-        PROPERTY_RECORDS: "ProofOfResidence",
-        SCHOOL_ENROLLMENT: "ProofOfResidence",
-        UTILITY_BILLS: "ProofOfResidence",
-        MORTGAGE_STATEMENTS: "ProofOfResidence",
-        RENTAL_AGREEMENTS: "ProofOfResidence",
-        EMPLOYMENT_RECORDS: "ProofOfResidence",
-        CENSUS_RECORDS: "ProofOfResidence",
-        GOVERNMENT_CORRESPONDENCE: "ProofOfResidence",
-        GOVERNMENT_ID: "ProofOfResidence",
-        VOTING_RECORDS: "ProofOfResidence",
-        MILITARY_RECORDS: "ProofOfResidence",
-        CHURCH_RECORDS: "ProofOfResidence",
-        BIRTH_MARRIAGE_RECORDS: "ProofOfResidence",
-        OTHER: "ProofOfResidence",
-      };
-      category = categoryMap[validated.documentType] || "ProofOfResidence";
-    }
+    const category = resolveFileCategory(
+      validated.category,
+      validated.documentType
+    );
 
     // Create the uploaded file record
     const uploadedFile = await db.uploadedFile.create({
@@ -96,7 +119,7 @@ export async function POST(
         originalFilename: validated.fileName,
         mimeType: validated.mimeType,
         sizeBytes: validated.fileSize,
-        category: category as any,
+        category,
         status: "READY", // Ready for review
         metadata: JSON.stringify({
           documentType: validated.documentType,
@@ -122,6 +145,16 @@ export async function POST(
       return NextResponse.json(
         { error: "Invalid request data", details: error.errors },
         { status: 400 }
+      );
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      return NextResponse.json(
+        {
+          error: "Database write failed while saving file record",
+          code: error.code,
+          details: error.message,
+        },
+        { status: 500 }
       );
     }
     if (error instanceof Error) {

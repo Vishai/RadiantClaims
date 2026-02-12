@@ -164,7 +164,7 @@ export default function Part11Form({
             fileSize: doc.fileSize,
           })),
       };
-      onSubmit(submissionData);
+      await onSubmit(submissionData);
     },
     [onSubmit, uploadedDocuments]
   );
