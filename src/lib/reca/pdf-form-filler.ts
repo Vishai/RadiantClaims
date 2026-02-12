@@ -23,6 +23,7 @@ const FONT_SIZES = {
 const COLORS = {
   black: rgb(0, 0, 0),
   blue: rgb(0, 0, 0.5),
+  red: rgb(0.75, 0.1, 0.1),
 };
 
 interface FieldCoordinate {
@@ -1656,6 +1657,16 @@ interface PDFFormFillerOptions {
   supportingForms: Partial<RECASupportingForms>;
   sessionId: string;
   officialPdfPath: string;
+
+  // Optional: uploaded document metadata for QA/verification-aware rendering
+  uploadedFiles?: Array<{
+    category?: string | null;
+    validationStatus?: string | null;
+    validatedAt?: Date | string | null;
+  }>;
+
+  // Optional: when true, draw internal QA annotations (not for DOJ submission copies)
+  qaOverlay?: boolean;
 }
 
 export class RECAPDFFormFiller {
@@ -1666,11 +1677,15 @@ export class RECAPDFFormFiller {
   private formData: Partial<RECAFormData>;
   private supportingForms: Partial<RECASupportingForms>;
   private officialPdfPath: string;
+  private uploadedFiles: PDFFormFillerOptions["uploadedFiles"];
+  private qaOverlay: boolean;
 
   constructor(options: PDFFormFillerOptions) {
     this.formData = options.formData;
     this.supportingForms = options.supportingForms;
     this.officialPdfPath = options.officialPdfPath;
+    this.uploadedFiles = options.uploadedFiles;
+    this.qaOverlay = options.qaOverlay || false;
   }
 
   async fill(): Promise<Uint8Array> {
@@ -1787,8 +1802,19 @@ export class RECAPDFFormFiller {
     const addressMaxCharsPerLine = 26;
     const totalAddressBoxes = 52;
 
-    if (part1.residenceAddress) {
-      let fullAddress = part1.residenceAddress;
+    // If a separate residence address isn't provided, default to mailing address.
+    // The official form labels this as "Residence Address (if different)", but in practice
+    // users expect it to be present, and it prevents an otherwise blank Page 2 section.
+    const defaultResidenceAddress =
+      part1.mailingAddress && part1.city && part1.state && part1.zipCode
+        ? `${part1.mailingAddress}, ${part1.city}, ${part1.state} ${part1.zipCode}`
+        : undefined;
+
+    const residenceAddressValue =
+      part1.residenceAddress || defaultResidenceAddress;
+
+    if (residenceAddressValue) {
+      let fullAddress = residenceAddressValue;
 
       // Parse address components
       const addressMatch = fullAddress.match(
@@ -1954,6 +1980,18 @@ export class RECAPDFFormFiller {
   }
 
   private async fillPart2() {
+    // Part 2 is only used when the filer is submitting on behalf of someone else.
+    // If the relationship is Self (or part_1.filingForSelf is true), Part 2 should be left blank.
+    const relationship = (this.formData.part_3 as any)?.relationship;
+    const filingForSelf = (this.formData.part_1 as any)?.filingForSelf;
+    if (
+      relationship === "Self" ||
+      relationship === "self" ||
+      filingForSelf === true
+    ) {
+      return;
+    }
+
     if (!this.formData.part_2) return;
 
     const part2 = this.formData.part_2;
@@ -2021,12 +2059,74 @@ export class RECAPDFFormFiller {
 
     const part4 = this.formData.part_4 as any;
 
-    // Self-filer document checkboxes
-    if (part4.birthCertificate) {
+    // Official DOJ checkboxes should only be checked if the corresponding document
+    // has been uploaded AND verified/staff-approved.
+    const uploaded = this.uploadedFiles || [];
+
+    const isVerified = (f: any) => {
+      const s = (f?.validationStatus || "").toString().toUpperCase();
+      return s === "VERIFIED" || s === "STAFF_APPROVED" || !!f?.validatedAt;
+    };
+
+    const hasBirthCert = uploaded.some(
+      (f: any) => (f?.category || "").toString() === "BIRTH_CERTIFICATE"
+    );
+    const birthCertVerified = uploaded.some(
+      (f: any) =>
+        (f?.category || "").toString() === "BIRTH_CERTIFICATE" && isVerified(f)
+    );
+
+    const hasMarriageCert = uploaded.some(
+      (f: any) => (f?.category || "").toString() === "MARRIAGE_CERTIFICATE"
+    );
+    const marriageCertVerified = uploaded.some(
+      (f: any) =>
+        (f?.category || "").toString() === "MARRIAGE_CERTIFICATE" &&
+        isVerified(f)
+    );
+
+    if (birthCertVerified) {
       this.drawCheckbox("part4.birthCertificate");
     }
-    if (part4.marriageCertificates) {
+
+    // Only check marriage certificates if the user indicated name changes AND the doc is verified.
+    if (part4.hasNameChanges && marriageCertVerified) {
       this.drawCheckbox("part4.marriageCertificates");
+    }
+
+    // Optional internal QA overlay (not for official submission copies)
+    if (this.qaOverlay) {
+      const page = this.pages[2]; // Part 4 appears on page 3 (0-indexed = 2)
+      if (page) {
+        const mark = (
+          label: string,
+          has: boolean,
+          verified: boolean,
+          x: number,
+          y: number
+        ) => {
+          const text = `${label}: ${verified ? "Verified" : has ? "Uploaded (pending)" : "Missing"}`;
+          page.drawText(text, {
+            x,
+            y,
+            size: 9,
+            font: this.font,
+            color: verified ? COLORS.black : has ? COLORS.red : COLORS.red,
+          });
+        };
+
+        // Place small notes just below Part 4 checkboxes area.
+        mark("Birth certificate", hasBirthCert, birthCertVerified, 74, 430);
+        if (part4.hasNameChanges) {
+          mark(
+            "Marriage cert(s)",
+            hasMarriageCert,
+            marriageCertVerified,
+            74,
+            418
+          );
+        }
+      }
     }
   }
 
@@ -2259,7 +2359,10 @@ export class RECAPDFFormFiller {
         if (index === 0) {
           // First entry for each state
           this.drawText(`part8.${stateKey}.townCity`, area.townCity);
-          this.drawText(`part8.${stateKey}.timePeriod`, area.timePeriod);
+          this.drawText(
+            `part8.${stateKey}.timePeriod`,
+            this.normalizeTimePeriodForPdf(area.timePeriod)
+          );
         }
       });
     }
@@ -2273,7 +2376,7 @@ export class RECAPDFFormFiller {
           this.drawText(`part8.arizona.${countyKey}.townCity`, county.townCity);
           this.drawText(
             `part8.arizona.${countyKey}.timePeriod`,
-            county.timePeriod
+            this.normalizeTimePeriodForPdf(county.timePeriod)
           );
         }
       });
@@ -2298,7 +2401,7 @@ export class RECAPDFFormFiller {
           this.drawText(`part8.nevada.${countyKey}.townCity`, county.townCity);
           this.drawText(
             `part8.nevada.${countyKey}.timePeriod`,
-            county.timePeriod
+            this.normalizeTimePeriodForPdf(county.timePeriod)
           );
         }
       });
@@ -2313,6 +2416,33 @@ export class RECAPDFFormFiller {
     // Checkbox for Church of LDS contact
     if (part9.contactedChurchLDS) {
       this.drawCheckbox("part9.contactedChurchLDS");
+    }
+
+    // QA overlay: show proof-of-presence upload/verification summary
+    if (this.qaOverlay) {
+      const { presenceUploaded, presenceVerified } = this.getUploadCounts();
+      const page = this.pages[7]; // Part 9 page (0-indexed)
+      if (page) {
+        const qty = 2;
+        const text =
+          `Proof of Presence: Uploaded ${Math.min(presenceUploaded, qty)}/${qty}` +
+          (presenceVerified > 0
+            ? ` • Verified ${Math.min(presenceVerified, qty)}/${qty}`
+            : "");
+
+        page.drawText(text, {
+          x: 73,
+          y: 140,
+          size: 9,
+          font: this.font,
+          color:
+            presenceVerified >= qty
+              ? COLORS.black
+              : presenceUploaded > 0
+                ? COLORS.red
+                : COLORS.red,
+        });
+      }
     }
   }
 
@@ -2374,6 +2504,29 @@ export class RECAPDFFormFiller {
       this.drawText("part11.resepClinicName", part11.resepClinicName);
     } else if (part11.resepAssistance === "NO") {
       this.drawCheckbox("part11.resepAssistance.no");
+    }
+
+    // QA overlay: show medical-doc upload/verification summary
+    if (this.qaOverlay) {
+      const { medicalUploaded, medicalVerified } = this.getUploadCounts();
+      const page = this.pages[8]; // submittedMedicalRecords checkbox is on page 9 (0-indexed 8)
+      if (page) {
+        const text =
+          `Medical docs: ` +
+          (medicalVerified > 0
+            ? `Verified (${medicalVerified})`
+            : medicalUploaded > 0
+              ? `Uploaded (pending) (${medicalUploaded})`
+              : "Missing");
+
+        page.drawText(text, {
+          x: 73,
+          y: 88,
+          size: 9,
+          font: this.font,
+          color: medicalVerified > 0 ? COLORS.black : COLORS.red,
+        });
+      }
     }
   }
 
@@ -3023,6 +3176,82 @@ export class RECAPDFFormFiller {
    * Draw text at specified coordinates
    * If characterSpacing is defined, use character-by-character spacing
    */
+  private normalizeTimePeriodForPdf(timePeriod?: string | null): string {
+    const s = (timePeriod || "").toString().trim();
+    if (!s) return "";
+
+    // Prefer a compact year range when possible to avoid ellipsis truncation.
+    // Examples:
+    // - "1951-1962" -> "1951-1962"
+    // - "1951-1962" or "1951–1962" or "January 1951-1962" -> extract years
+    const years = s.match(/\b(19\d{2}|20\d{2})\b/g) || [];
+    if (years.length >= 2) {
+      const start = years[0];
+      const end = years[years.length - 1];
+      if (start !== end) return `${start}-${end}`;
+
+      // If same year and the string looks like a short-period option (e.g., Jun 30 1962 - Jul 31 1962),
+      // keep the original but compress spacing.
+      return s.replace(/\s+/g, " ");
+    }
+
+    return s.replace(/\s+/g, " ");
+  }
+
+  private getUploadCounts(): {
+    presenceUploaded: number;
+    presenceVerified: number;
+    medicalUploaded: number;
+    medicalVerified: number;
+  } {
+    const uploaded = this.uploadedFiles || [];
+
+    const PRESENCE = new Set([
+      "UTILITY_BILL",
+      "MORTGAGE_STATEMENT",
+      "TAX_RETURN",
+      "SCHOOL_RECORDS",
+      "EMPLOYMENT_RECORDS",
+      "LDS_CHURCH_RECORDS",
+    ]);
+
+    const MEDICAL = new Set([
+      "MEDICAL_RECORDS",
+      "PATHOLOGY_REPORT",
+      "DISCHARGE_SUMMARY",
+      "TUMOR_REGISTRY",
+      "TREATMENT_RECORDS",
+    ]);
+
+    const isVerified = (f: any) => {
+      const s = (f?.validationStatus || "").toString().toUpperCase();
+      return s === "VERIFIED" || s === "STAFF_APPROVED" || !!f?.validatedAt;
+    };
+
+    const cat = (f: any) => (f?.category || "").toString().toUpperCase();
+
+    const presenceUploaded = uploaded.filter((f: any) =>
+      PRESENCE.has(cat(f))
+    ).length;
+    const presenceVerified = uploaded.filter(
+      (f: any) => PRESENCE.has(cat(f)) && isVerified(f)
+    ).length;
+
+    const medicalUploaded = uploaded.filter((f: any) =>
+      MEDICAL.has(cat(f))
+    ).length;
+    const medicalVerified = uploaded.filter(
+      (f: any) => MEDICAL.has(cat(f)) && isVerified(f)
+    ).length;
+
+    return {
+      presenceUploaded,
+      presenceVerified,
+      medicalUploaded,
+      medicalVerified,
+    };
+  }
+
   private drawText(fieldKey: string, text?: string | null) {
     if (!text) return;
 

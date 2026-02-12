@@ -37,7 +37,10 @@ export async function GET(_req: NextRequest) {
         "Session user ID:",
         session.user.id
       );
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({
+        claims: [],
+        warning: "User account record was not found for this session",
+      });
     }
 
     // SECURITY: Validate that session user ID matches database user ID

@@ -29,6 +29,7 @@ import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { DocumentDashboard } from "@/components/documents/DocumentDashboard";
 import {
   generateDocumentRequirements,
+  applyUploadsToRequirements,
   calculateSubmissionReadiness,
   getDocumentAssistance,
   type DocumentRequirement,
@@ -132,18 +133,34 @@ export default function SessionDocumentsPage() {
       // Determine relationship for requirement generation
       const relationship: RelationshipType = fd.part_3?.relationship || "Self";
 
-      const reqs = generateDocumentRequirements(
+      let reqs = generateDocumentRequirements(
         relationship,
         fd.part_1,
         fd.part_4
       );
+
+      // Hydrate requirement statuses from actual uploaded files
+      try {
+        const docsRes = await fetch(`/api/documents?sessionId=${sessionId}`);
+        if (docsRes.ok) {
+          const docsData = await docsRes.json();
+          const files = (docsData.files || []) as Array<{
+            category?: string | null;
+            validation?: { status?: string | null } | null;
+          }>;
+          reqs = applyUploadsToRequirements(reqs, files);
+        }
+      } catch (e) {
+        console.warn("Failed to hydrate document requirement statuses:", e);
+      }
+
       setRequirements(reqs);
     } catch (err) {
       console.error("Failed to load session data:", err);
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, refreshKey]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
@@ -217,7 +234,7 @@ export default function SessionDocumentsPage() {
                 onClick={() => router.push("/portal")}
                 className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
               >
-                Go to Dashboard
+                Go to Portal
               </Button>
             </CardContent>
           </Card>
@@ -238,7 +255,7 @@ export default function SessionDocumentsPage() {
           className="mb-6 gap-2 text-sage-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          Back to Portal
         </Button>
 
         {/* Header */}

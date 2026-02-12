@@ -251,9 +251,9 @@ export function FormWizard({
     if (resolveMode) {
       const nextResolveSection = getNextResolveSection(currentSection);
       if (nextResolveSection) {
-        router.push(buildFormUrl(nextResolveSection));
+        router.push(buildFormUrl(nextResolveSection) as any);
       } else {
-        router.push(resolveReturnTo);
+        router.push(resolveReturnTo as any);
       }
       return;
     }
@@ -271,15 +271,15 @@ export function FormWizard({
       // If filing for self, skip Part 2 and go straight to Part 3
       const filingForSelf = latestState.formData.part_1?.filingForSelf;
       if (filingForSelf === true) {
-        router.push(buildFormUrl("part_3"));
+        router.push(buildFormUrl("part_3") as any);
       } else {
-        router.push(buildFormUrl("part_2"));
+        router.push(buildFormUrl("part_2") as any);
       }
       return;
     }
 
     if (currentSection === "part_2") {
-      router.push(buildFormUrl("part_3"));
+      router.push(buildFormUrl("part_3") as any);
       return;
     }
 
@@ -299,14 +299,14 @@ export function FormWizard({
 
       // Navigate to relationship-specific section
       if (effectiveRelationship === "Self") {
-        router.push(buildFormUrl("part_4"));
+        router.push(buildFormUrl("part_4") as any);
       } else if (effectiveRelationship === "Spouse") {
-        router.push(buildFormUrl("part_5"));
+        router.push(buildFormUrl("part_5") as any);
       } else if (effectiveRelationship === "Child") {
-        router.push(buildFormUrl("part_6"));
+        router.push(buildFormUrl("part_6") as any);
       } else {
         // Parent, Grandchild, Grandparent
-        router.push(buildFormUrl("part_7"));
+        router.push(buildFormUrl("part_7") as any);
       }
       return;
     }
@@ -332,13 +332,13 @@ export function FormWizard({
       } else if (nextSection === "document_checklist") {
         router.push(`/reca/documents/${sessionId}` as any);
       } else if (nextSection === "final_review") {
-        router.push(`/reca/review/${sessionId}`);
+        router.push(`/reca/review/${sessionId}` as any);
       } else {
-        router.push(buildFormUrl(nextSection));
+        router.push(buildFormUrl(nextSection) as any);
       }
     } else {
       // No more sections - go to review
-      router.push(`/reca/review/${sessionId}`);
+      router.push(`/reca/review/${sessionId}` as any);
     }
   };
 
@@ -356,12 +356,12 @@ export function FormWizard({
 
       // Handle early sections (before Part 3)
       if (currentSection === "part_1") {
-        router.push(`/reca/start?sessionId=${sessionId}`);
+        router.push(`/reca/start?sessionId=${sessionId}` as any);
         return;
       }
 
       if (currentSection === "part_2") {
-        router.push(buildFormUrl("part_1"));
+        router.push(buildFormUrl("part_1") as any);
         return;
       }
 
@@ -369,16 +369,16 @@ export function FormWizard({
         // If filing for self, skip back to Part 1 (Part 2 was skipped)
         const filingForSelf = workflowState.formData.part_1?.filingForSelf;
         if (filingForSelf === true) {
-          router.push(buildFormUrl("part_1"));
+          router.push(buildFormUrl("part_1") as any);
         } else {
-          router.push(buildFormUrl("part_2"));
+          router.push(buildFormUrl("part_2") as any);
         }
         return;
       }
 
       const relationship = workflowState.formData.part_3?.relationship;
       if (!relationship) {
-        router.push(`/reca/start?sessionId=${sessionId}`);
+        router.push(`/reca/start?sessionId=${sessionId}` as any);
         return;
       }
 
@@ -389,15 +389,15 @@ export function FormWizard({
       );
 
       if (prevSection) {
-        router.push(buildFormUrl(prevSection));
+        router.push(buildFormUrl(prevSection) as any);
       } else {
-        router.push(`/reca/start?sessionId=${sessionId}`);
+        router.push(`/reca/start?sessionId=${sessionId}` as any);
       }
     }
   };
 
   const handleBackToReview = useCallback(() => {
-    router.push(resolveReturnTo);
+    router.push(resolveReturnTo as any);
   }, [router, resolveReturnTo]);
 
   return (

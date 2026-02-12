@@ -233,7 +233,10 @@ export async function GET(
   } catch (error) {
     console.error("Error loading RECA workflow state:", error);
     return NextResponse.json(
-      { error: "Failed to load workflow state" },
+      {
+        error: "Failed to load workflow state",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
@@ -336,7 +339,10 @@ export async function POST(
   } catch (error) {
     console.error("Error saving RECA workflow state:", error);
     return NextResponse.json(
-      { error: "Failed to save workflow state" },
+      {
+        error: "Failed to save workflow state",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

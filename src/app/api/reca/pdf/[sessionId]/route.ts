@@ -14,7 +14,7 @@ import * as path from "path";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
   try {
@@ -94,11 +94,22 @@ export async function GET(
     const formData = intakeSession.recaFormData as any;
     const supportingForms = intakeSession.recaSupportingForms as any;
 
+    const uploadedFiles = (intakeSession as any).uploadedFiles || [];
+    const uploadedFilesSummary = uploadedFiles.map((f: any) => ({
+      category: f.category,
+      validatedAt: f.validatedAt,
+      validationStatus: f.validation?.status || null,
+    }));
+
     if (!formData) {
       return NextResponse.json(
         { error: "No form data found" },
         { status: 400 }
       );
+    }
+
+    if (request.method === "HEAD") {
+      return new NextResponse(null, { status: 200 });
     }
 
     // Path to the official RECA PDF template
@@ -110,11 +121,15 @@ export async function GET(
     );
 
     // Generate the filled official RECA PDF
+    const qaOverlay = request.nextUrl.searchParams.get("qa") === "true";
+
     const pdfBytes = await fillOfficialRECAPDF({
       formData,
       supportingForms: supportingForms || {},
       sessionId: params.sessionId,
       officialPdfPath,
+      uploadedFiles: uploadedFilesSummary,
+      qaOverlay,
     });
 
     if (!intakeSession.recaFormPdfDownloaded) {
@@ -128,10 +143,20 @@ export async function GET(
     }
 
     // Return PDF with appropriate headers
-    return new NextResponse(Buffer.from(pdfBytes), {
+    const filename = `RECA-Downwinder-Form-${params.sessionId}.pdf`;
+    const body = Buffer.from(pdfBytes);
+
+    // Include both filename and RFC 5987 filename* for maximum browser compatibility.
+    // (Chrome should honor filename, but filename* helps in edge cases.)
+    return new NextResponse(body, {
+      status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="RECA-Downwinder-Form-${params.sessionId}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(
+          filename
+        )}`,
+        "Content-Length": body.length.toString(),
+        "X-Content-Type-Options": "nosniff",
         "Cache-Control": "no-cache",
       },
     });
@@ -205,7 +230,16 @@ export async function POST(
     // Get workflow state from database
     const intakeSession = await db.intakeSession.findUnique({
       where: { id: params.sessionId },
-      include: { claimant: true },
+      include: {
+        claimant: true,
+        uploadedFiles: {
+          select: {
+            category: true,
+            validatedAt: true,
+            validation: { select: { status: true } },
+          },
+        },
+      },
     });
 
     if (!intakeSession) {
@@ -220,6 +254,13 @@ export async function POST(
     const formData = intakeSession.recaFormData as any;
     const supportingForms = intakeSession.recaSupportingForms as any;
 
+    const uploadedFiles = (intakeSession as any).uploadedFiles || [];
+    const uploadedFilesSummary = uploadedFiles.map((f: any) => ({
+      category: f.category,
+      validatedAt: f.validatedAt,
+      validationStatus: f.validation?.status || null,
+    }));
+
     // Path to the official RECA PDF template
     const officialPdfPath = path.join(
       process.cwd(),
@@ -229,11 +270,15 @@ export async function POST(
     );
 
     // Generate both PDFs
+    const qaOverlay = request.nextUrl.searchParams.get("qa") === "true";
+
     const filledFormBytes = await fillOfficialRECAPDF({
       formData,
       supportingForms: supportingForms || {},
       sessionId: params.sessionId,
       officialPdfPath,
+      uploadedFiles: uploadedFilesSummary,
+      qaOverlay,
     });
 
     // Also generate data summary for future use (persist once we have storage wired up)

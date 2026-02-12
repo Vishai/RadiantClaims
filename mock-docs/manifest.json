@@ -1,0 +1,415 @@
+[
+  {
+    "personaId": "A",
+    "personaName": "Ruth Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/A_Ruth_Begay/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "A",
+    "personaName": "Ruth Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/A_Ruth_Begay/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "A",
+    "personaName": "Ruth Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/A_Ruth_Begay/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "A",
+    "personaName": "Ruth Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/A_Ruth_Begay/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/marriage_certificate_1.pdf",
+    "expectedCategory": "MARRIAGE_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/marriage_certificate_2.pdf",
+    "expectedCategory": "MARRIAGE_CERTIFICATE",
+    "style": "fake"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "B",
+    "personaName": "Harold Jensen",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/B_Harold_Jensen/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "C",
+    "personaName": "Maria Sandoval-Torres",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/C_Maria_Sandoval_Torres/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "C",
+    "personaName": "Maria Sandoval-Torres",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/C_Maria_Sandoval_Torres/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "C",
+    "personaName": "Maria Sandoval-Torres",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/C_Maria_Sandoval_Torres/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "C",
+    "personaName": "Maria Sandoval-Torres",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/C_Maria_Sandoval_Torres/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "C",
+    "personaName": "Maria Sandoval-Torres",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/C_Maria_Sandoval_Torres/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "D",
+    "personaName": "Patricia Williams",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/D_Patricia_Williams/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "D",
+    "personaName": "Patricia Williams",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/D_Patricia_Williams/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "D",
+    "personaName": "Patricia Williams",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/D_Patricia_Williams/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "D",
+    "personaName": "Patricia Williams",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/D_Patricia_Williams/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "D",
+    "personaName": "Patricia Williams",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/D_Patricia_Williams/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "E",
+    "personaName": "Thomas Redcloud",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/E_Thomas_Redcloud/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "E",
+    "personaName": "Thomas Redcloud",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/E_Thomas_Redcloud/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "E",
+    "personaName": "Thomas Redcloud",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/E_Thomas_Redcloud/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "E",
+    "personaName": "Thomas Redcloud",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/E_Thomas_Redcloud/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "E",
+    "personaName": "Thomas Redcloud",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/E_Thomas_Redcloud/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "F",
+    "personaName": "Jennifer Redcloud-Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/F_Jennifer_Redcloud_Nez/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "F",
+    "personaName": "Jennifer Redcloud-Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/F_Jennifer_Redcloud_Nez/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "F",
+    "personaName": "Jennifer Redcloud-Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/F_Jennifer_Redcloud_Nez/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "F",
+    "personaName": "Jennifer Redcloud-Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/F_Jennifer_Redcloud_Nez/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "F",
+    "personaName": "Jennifer Redcloud-Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/F_Jennifer_Redcloud_Nez/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "G",
+    "personaName": "Raymond Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/G_Raymond_Begay/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "G",
+    "personaName": "Raymond Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/G_Raymond_Begay/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "G",
+    "personaName": "Raymond Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/G_Raymond_Begay/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "G",
+    "personaName": "Raymond Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/G_Raymond_Begay/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "G",
+    "personaName": "Raymond Begay",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/G_Raymond_Begay/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "H",
+    "personaName": "Carol Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/H_Carol_Nez/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "H",
+    "personaName": "Carol Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/H_Carol_Nez/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "H",
+    "personaName": "Carol Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/H_Carol_Nez/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "H",
+    "personaName": "Carol Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/H_Carol_Nez/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "H",
+    "personaName": "Carol Nez",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/H_Carol_Nez/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "I",
+    "personaName": "Kevin Yazzie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/I_Kevin_Yazzie/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "I",
+    "personaName": "Kevin Yazzie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/I_Kevin_Yazzie/death_certificate.pdf",
+    "expectedCategory": "DEATH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "I",
+    "personaName": "Kevin Yazzie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/I_Kevin_Yazzie/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "I",
+    "personaName": "Kevin Yazzie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/I_Kevin_Yazzie/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "I",
+    "personaName": "Kevin Yazzie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/I_Kevin_Yazzie/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "J",
+    "personaName": "Margaret Blackhorse",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/J_Margaret_Blackhorse/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "J",
+    "personaName": "Margaret Blackhorse",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/J_Margaret_Blackhorse/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "J",
+    "personaName": "Margaret Blackhorse",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/J_Margaret_Blackhorse/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "J",
+    "personaName": "Margaret Blackhorse",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/J_Margaret_Blackhorse/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "K",
+    "personaName": "Samuel Tsosie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/K_Samuel_Tsosie/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "K",
+    "personaName": "Samuel Tsosie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/K_Samuel_Tsosie/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "K",
+    "personaName": "Samuel Tsosie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/K_Samuel_Tsosie/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "K",
+    "personaName": "Samuel Tsosie",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/K_Samuel_Tsosie/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/birth_certificate.pdf",
+    "expectedCategory": "BIRTH_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/marriage_certificate_1.pdf",
+    "expectedCategory": "MARRIAGE_CERTIFICATE",
+    "style": "realish"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/marriage_certificate_2.pdf",
+    "expectedCategory": "MARRIAGE_CERTIFICATE",
+    "style": "fake"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/medical_documentation.pdf",
+    "expectedCategory": "MEDICAL_RECORDS",
+    "style": "fake"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/proof_of_presence_1.pdf",
+    "expectedCategory": "SCHOOL_RECORDS",
+    "style": "realish"
+  },
+  {
+    "personaId": "L",
+    "personaName": "Dolores Chee",
+    "file": "/Users/brandonarmstrong/Developer/RadiantClaims/mock-docs/L_Dolores_Chee/proof_of_presence_2.pdf",
+    "expectedCategory": "TAX_RETURN",
+    "style": "fake"
+  }
+]

@@ -34,7 +34,7 @@ import {
 import {
   generateDocumentRequirements,
   getDocumentAssistance,
-  createDocumentTaskList,
+  type DocumentRequirement,
   type DocumentAssistance,
 } from "@/lib/reca/document-tracking";
 import {
@@ -165,8 +165,7 @@ const SECTION_DEFINITIONS: SectionInfo[] = [
     name: "Part 14: Attorney Acknowledgment",
     shortName: "Attorney Ack.",
     required: false,
-    conditional: (fd) =>
-      fd?.part_13?.hasAttorney === true || fd?.part_13?.hasAttorney === "YES",
+    conditional: (fd) => fd?.part_13?.hasAttorney === "YES",
   },
   {
     id: "part_15",
@@ -191,18 +190,57 @@ interface SectionStatus {
   id: RECAWorkflowSection;
   name: string;
   shortName: string;
-  status: "complete" | "partial" | "empty" | "not_applicable";
-  filledFields: number;
-  totalFields: number;
+  status:
+    | "complete"
+    | "needs_required"
+    | "optional_remaining"
+    | "not_applicable";
+  requiredRemaining: number;
+  recommendedRemaining: number;
+  optionalRemaining: number;
 }
 
 interface CompletionAnalysis {
   sections: SectionStatus[];
   completeSections: SectionStatus[];
-  incompleteSections: SectionStatus[];
-  emptySections: SectionStatus[];
+  needsRequiredSections: SectionStatus[];
+  optionalRemainingSections: SectionStatus[];
   overallPercentage: number;
   isFormComplete: boolean;
+}
+
+function buildDocumentTaskList(requirements: DocumentRequirement[]): {
+  urgentTasks: string[];
+  normalTasks: string[];
+  completedTasks: string[];
+} {
+  const urgentTasks: string[] = [];
+  const normalTasks: string[] = [];
+  const completedTasks: string[] = [];
+
+  requirements.forEach((req) => {
+    const taskDescription = `Obtain ${req.name}${req.quantity && req.quantity > 1 ? ` (${req.quantity} copies)` : ""}`;
+
+    if (
+      req.status === "confirmed" ||
+      req.status === "uploaded" ||
+      req.status === "verified"
+    ) {
+      completedTasks.push(`✓ ${taskDescription}`);
+    } else if (req.required && req.status === "needed") {
+      urgentTasks.push(`• ${taskDescription} [Required]`);
+    } else if (req.status === "in_progress") {
+      normalTasks.push(`• ${taskDescription} [In Progress]`);
+    } else if (!req.required && req.status === "needed") {
+      normalTasks.push(`• ${taskDescription} [Optional]`);
+    }
+  });
+
+  return {
+    urgentTasks,
+    normalTasks,
+    completedTasks,
+  };
 }
 
 interface ReviewFieldDefinition {
@@ -626,6 +664,15 @@ function hasData(value: any): boolean {
   return value !== undefined && value !== null;
 }
 
+function isReviewFieldComplete(
+  field: ReviewFieldDefinition,
+  sectionData: any,
+  formData: any
+): boolean {
+  const value = getValueByPath(sectionData, field.path);
+  return field.isComplete ? field.isComplete(value, formData) : hasData(value);
+}
+
 function buildReviewTracking(
   workflowState: RECAWorkflowState
 ): ReviewTrackingState {
@@ -636,6 +683,14 @@ function buildReviewTracking(
     const sectionFields = REVIEW_SECTION_FIELDS[section.id] || [];
     if (sectionFields.length === 0) continue;
 
+    if (section.conditional && !section.conditional(formData)) {
+      tracking = updateSectionReview(tracking, section.id, {
+        status: "complete",
+        incompleteItems: [],
+      });
+      continue;
+    }
+
     const sectionData = (formData as any)?.[section.id] || {};
     const incompleteItems: IncompleteItem[] = [];
     let completedFieldCount = 0;
@@ -645,10 +700,7 @@ function buildReviewTracking(
       if (field.appliesWhen && !field.appliesWhen(formData)) continue;
 
       applicableFieldCount++;
-      const value = getValueByPath(sectionData, field.path);
-      const isComplete = field.isComplete
-        ? field.isComplete(value, formData)
-        : hasData(value);
+      const isComplete = isReviewFieldComplete(field, sectionData, formData);
 
       if (isComplete) {
         completedFieldCount++;
@@ -689,35 +741,6 @@ function buildReviewTracking(
 // Helpers to analyze form data
 // ============================================================================
 
-function countFieldsInObject(obj: any): { filled: number; total: number } {
-  if (!obj || typeof obj !== "object") return { filled: 0, total: 0 };
-
-  let filled = 0;
-  let total = 0;
-
-  for (const [key, value] of Object.entries(obj)) {
-    // Skip internal metadata
-    if (key === "documentsIdentified" || key === "__meta") continue;
-
-    if (Array.isArray(value)) {
-      total++;
-      if (value.length > 0) filled++;
-    } else if (typeof value === "object" && value !== null) {
-      // Recurse into nested objects
-      const nested = countFieldsInObject(value);
-      filled += nested.filled;
-      total += nested.total;
-    } else {
-      total++;
-      if (value !== undefined && value !== null && value !== "") {
-        filled++;
-      }
-    }
-  }
-
-  return { filled, total };
-}
-
 function analyzeFormCompletion(
   workflowState: RECAWorkflowState
 ): CompletionAnalysis {
@@ -725,7 +748,6 @@ function analyzeFormCompletion(
   const sections: SectionStatus[] = [];
 
   for (const def of SECTION_DEFINITIONS) {
-    // Check if section is applicable
     if (def.conditional) {
       const isApplicable = def.conditional(formData);
       if (!isApplicable) {
@@ -734,62 +756,47 @@ function analyzeFormCompletion(
           name: def.name,
           shortName: def.shortName,
           status: "not_applicable",
-          filledFields: 0,
-          totalFields: 0,
+          requiredRemaining: 0,
+          recommendedRemaining: 0,
+          optionalRemaining: 0,
         });
         continue;
       }
     }
 
     const sectionKey = def.id as keyof typeof formData;
-    const sectionData = formData?.[sectionKey];
+    const sectionData = formData?.[sectionKey] || {};
+    const sectionFields = REVIEW_SECTION_FIELDS[def.id] || [];
 
-    if (def.id === "part_9") {
-      // sectionData is a union type here; use part_9 specifically
-      const part9 = (formData as any)?.part_9;
-      const hasPresenceSubmission =
-        typeof part9?.ldsChurchAssistance === "boolean" ||
-        (Array.isArray(part9?.uploadedDocuments) &&
-          part9.uploadedDocuments.length > 0);
-      if (hasPresenceSubmission) {
-        sections.push({
-          id: def.id,
-          name: def.name,
-          shortName: def.shortName,
-          status: "complete",
-          filledFields: 1,
-          totalFields: 1,
-        });
-        continue;
+    let requiredRemaining = 0;
+    let recommendedRemaining = 0;
+    let optionalRemaining = 0;
+    let applicableFieldCount = 0;
+
+    for (const field of sectionFields) {
+      if (field.appliesWhen && !field.appliesWhen(formData)) continue;
+
+      applicableFieldCount++;
+      const isComplete = isReviewFieldComplete(field, sectionData, formData);
+
+      if (isComplete) continue;
+
+      if (field.importance === "required") {
+        requiredRemaining += 1;
+      } else if (field.importance === "recommended") {
+        recommendedRemaining += 1;
+      } else {
+        optionalRemaining += 1;
       }
     }
 
-    if (
-      !sectionData ||
-      (typeof sectionData === "object" && Object.keys(sectionData).length === 0)
-    ) {
-      sections.push({
-        id: def.id,
-        name: def.name,
-        shortName: def.shortName,
-        status: "empty",
-        filledFields: 0,
-        totalFields: 1, // At minimum there should be fields
-      });
-      continue;
-    }
-
-    const { filled, total } = countFieldsInObject(sectionData);
-
-    let status: SectionStatus["status"];
-    if (total === 0) {
-      status = "empty";
-    } else if (filled >= total) {
+    let status: SectionStatus["status"] = "complete";
+    if (applicableFieldCount === 0) {
       status = "complete";
-    } else if (filled > 0) {
-      status = "partial";
-    } else {
-      status = "empty";
+    } else if (requiredRemaining > 0) {
+      status = "needs_required";
+    } else if (recommendedRemaining + optionalRemaining > 0) {
+      status = "optional_remaining";
     }
 
     sections.push({
@@ -797,8 +804,9 @@ function analyzeFormCompletion(
       name: def.name,
       shortName: def.shortName,
       status,
-      filledFields: filled,
-      totalFields: total,
+      requiredRemaining,
+      recommendedRemaining,
+      optionalRemaining,
     });
   }
 
@@ -808,15 +816,17 @@ function analyzeFormCompletion(
   const completeSections = applicableSections.filter(
     (s) => s.status === "complete"
   );
-  const incompleteSections = applicableSections.filter(
-    (s) => s.status === "partial"
+  const needsRequiredSections = applicableSections.filter(
+    (s) => s.status === "needs_required"
   );
-  const emptySections = applicableSections.filter((s) => s.status === "empty");
+  const optionalRemainingSections = applicableSections.filter(
+    (s) => s.status === "optional_remaining"
+  );
 
   const overallPercentage =
     applicableSections.length > 0
       ? Math.round(
-          ((completeSections.length + incompleteSections.length * 0.5) /
+          ((completeSections.length + optionalRemainingSections.length) /
             applicableSections.length) *
             100
         )
@@ -826,14 +836,13 @@ function analyzeFormCompletion(
   const reportedPercentage = workflowState.completionPercentage || 0;
   const finalPercentage = Math.max(overallPercentage, reportedPercentage);
 
-  const isFormComplete =
-    emptySections.length === 0 && incompleteSections.length === 0;
+  const isFormComplete = needsRequiredSections.length === 0;
 
   return {
     sections,
     completeSections,
-    incompleteSections,
-    emptySections,
+    needsRequiredSections,
+    optionalRemainingSections,
     overallPercentage: finalPercentage,
     isFormComplete,
   };
@@ -922,7 +931,7 @@ export default function RECAReviewPage({ params }: PageProps) {
       workflowState.formData.part_4
     );
 
-    const taskList = createDocumentTaskList(requirements);
+    const taskList = buildDocumentTaskList(requirements);
 
     // Build assistance map for each requirement
     const assistanceByDoc: Record<string, DocumentAssistance> = {};
@@ -941,10 +950,15 @@ export default function RECAReviewPage({ params }: PageProps) {
       const response = await fetch(`/api/reca/workflow/${params.sessionId}`);
 
       if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const serverMessage =
+          (typeof payload?.error === "string" && payload.error) ||
+          (typeof payload?.details === "string" && payload.details) ||
+          null;
         if (response.status === 404) {
-          throw new Error("Workflow session not found");
+          throw new Error(serverMessage || "Workflow session not found");
         }
-        throw new Error("Failed to load workflow state");
+        throw new Error(serverMessage || "Failed to load workflow state");
       }
 
       const data: RECAWorkflowState = await response.json();
@@ -974,7 +988,7 @@ export default function RECAReviewPage({ params }: PageProps) {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=/reca/review/${params.sessionId}`);
+      router.push(`/login?callbackUrl=/reca/review/${params.sessionId}` as any);
       return;
     }
 
@@ -1031,38 +1045,52 @@ export default function RECAReviewPage({ params }: PageProps) {
       setIsGenerating(true);
       setError(null);
 
-      const response = await fetch(`/api/reca/pdf/${params.sessionId}`);
+      const downloadUrl = `/api/reca/pdf/${params.sessionId}`;
+
+      // Open a popup immediately (synchronously) to preserve the browser "user gesture"
+      // for downloads. We'll navigate it to the actual PDF only after the preflight check.
+      const downloadWindow = window.open("about:blank", "_blank");
+
+      const response = await fetch(downloadUrl, { method: "HEAD" });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("PDF generation failed:", errorData);
+        // Close the popup if we opened one
+        downloadWindow?.close();
 
+        if (response.status === 401) {
+          throw new Error("Please sign in to download the PDF.");
+        }
         if (response.status === 403) {
           throw new Error(
-            errorData.error ||
-              "Payment is required to download the PDF. " +
-                `Debug: tier=${errorData.debug?.tier}, status=${errorData.debug?.status}, paid=${errorData.debug?.hasPaid}`
+            "Payment is required to download the PDF. Please complete your payment to access your form."
           );
         }
-        throw new Error(errorData.error || "Failed to generate PDF");
+        if (response.status === 404) {
+          throw new Error("Workflow session not found.");
+        }
+        throw new Error("Failed to generate PDF. Please try again.");
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `RECA-Downwinder-Form-${params.sessionId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
       if (paymentInfo?.isInstallmentPlan) {
-        await fetch("/api/subscriptions/mark-pdf-downloaded", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: params.sessionId }),
-        });
+        const payload = JSON.stringify({ sessionId: params.sessionId });
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: "application/json" });
+          navigator.sendBeacon("/api/subscriptions/mark-pdf-downloaded", blob);
+        } else {
+          void fetch("/api/subscriptions/mark-pdf-downloaded", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            keepalive: true,
+          });
+        }
+      }
+
+      // If popups are blocked, fall back to same-tab navigation.
+      if (downloadWindow) {
+        downloadWindow.location.href = downloadUrl;
+      } else {
+        window.location.assign(downloadUrl);
       }
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -1098,10 +1126,10 @@ export default function RECAReviewPage({ params }: PageProps) {
   };
   const navigateToSection = (sectionId: string, resolveMode = false) => {
     if (resolveMode) {
-      router.push(buildResolveLink(sectionId));
+      router.push(buildResolveLink(sectionId) as any);
       return;
     }
-    router.push(`/reca/form/${params.sessionId}?section=${sectionId}`);
+    router.push(`/reca/form/${params.sessionId}?section=${sectionId}` as any);
   };
 
   if (status === "loading" || isLoading) {
@@ -1133,8 +1161,13 @@ export default function RECAReviewPage({ params }: PageProps) {
   }
 
   const isComplete = completion.isFormComplete;
-  const needsAttentionCount =
-    completion.incompleteSections.length + completion.emptySections.length;
+  const needsAttentionCount = completion.needsRequiredSections.length;
+  const applicableSectionCount = completion.sections.filter(
+    (section) => section.status !== "not_applicable"
+  ).length;
+  const requiredCompleteSectionCount =
+    completion.completeSections.length +
+    completion.optionalRemainingSections.length;
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -1223,10 +1256,7 @@ export default function RECAReviewPage({ params }: PageProps) {
                   />
                   <div className="mt-1 flex justify-between text-xs text-amber-700">
                     <span>
-                      {completion.completeSections.length} of{" "}
-                      {completion.completeSections.length +
-                        completion.incompleteSections.length +
-                        completion.emptySections.length}{" "}
+                      {requiredCompleteSectionCount} of {applicableSectionCount}{" "}
                       sections complete
                     </span>
                     <span>Ready for submission</span>
@@ -1492,34 +1522,34 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Partially Complete Sections */}
-              {completion.incompleteSections.length > 0 && (
+              {/* Needs Required Info */}
+              {completion.needsRequiredSections.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-800">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-800">
                     <AlertCircle className="h-4 w-4" />
-                    Partially Complete ({completion.incompleteSections.length})
+                    Needs Required Info (
+                    {completion.needsRequiredSections.length})
                   </h3>
                   <div className="space-y-1">
-                    {completion.incompleteSections.map((section) => (
+                    {completion.needsRequiredSections.map((section) => (
                       <div
                         key={section.id}
-                        className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5"
+                        className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-2.5"
                       >
                         <div className="flex items-center gap-3">
-                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                          <AlertCircle className="h-4 w-4 text-red-600" />
                           <div>
-                            <span className="text-sm font-medium text-amber-900">
+                            <span className="text-sm font-medium text-red-900">
                               {section.name}
                             </span>
-                            <span className="ml-2 text-xs text-amber-700">
-                              ({section.filledFields} of {section.totalFields}{" "}
-                              fields)
+                            <span className="ml-2 text-xs text-red-700">
+                              Required remaining: {section.requiredRemaining}
                             </span>
                           </div>
                         </div>
                         <Button
                           size="sm"
-                          className="h-7 rounded-full bg-amber-600 text-xs hover:bg-amber-700"
+                          className="h-7 rounded-full bg-red-600 text-xs hover:bg-red-700"
                           onClick={() => navigateToSection(section.id, true)}
                         >
                           Complete
@@ -1531,34 +1561,53 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Empty / Not Started Sections */}
-              {completion.emptySections.length > 0 && (
+              {/* Optional / Recommended Remaining */}
+              {completion.optionalRemainingSections.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-800">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-sage-700">
                     <AlertCircle className="h-4 w-4" />
-                    Not Started ({completion.emptySections.length})
+                    Optional/Recommended Remaining (
+                    {completion.optionalRemainingSections.length})
                   </h3>
                   <div className="space-y-1">
-                    {completion.emptySections.map((section) => (
+                    {completion.optionalRemainingSections.map((section) => (
                       <div
                         key={section.id}
-                        className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-2.5"
+                        className="flex items-center justify-between rounded-lg border border-sage-200 bg-sage-50 px-4 py-2.5"
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 rounded-full border-2 border-red-400" />
-                          <span className="text-sm font-medium text-red-900">
-                            {section.name}
-                          </span>
-                          <Badge variant="destructive" className="text-xs">
-                            Required
-                          </Badge>
+                        <div className="flex items-center gap-3">
+                          <AlertCircle className="h-4 w-4 text-sage-600" />
+                          <div>
+                            <span className="text-sm font-medium text-sage-900">
+                              {section.name}
+                            </span>
+                            <div className="mt-0.5 text-xs text-sage-700">
+                              {section.recommendedRemaining > 0 && (
+                                <span>
+                                  Recommended remaining:{" "}
+                                  {section.recommendedRemaining}
+                                </span>
+                              )}
+                              {section.recommendedRemaining > 0 &&
+                                section.optionalRemaining > 0 && (
+                                  <span className="mx-1">•</span>
+                                )}
+                              {section.optionalRemaining > 0 && (
+                                <span>
+                                  Optional remaining:{" "}
+                                  {section.optionalRemaining}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <Button
+                          variant="ghost"
                           size="sm"
-                          className="h-7 rounded-full bg-red-600 text-xs hover:bg-red-700"
+                          className="h-7 text-xs text-sage-700 hover:text-sage-900"
                           onClick={() => navigateToSection(section.id, true)}
                         >
-                          Start
+                          Edit
                           <ChevronRight className="ml-1 h-3 w-3" />
                         </Button>
                       </div>
@@ -1998,7 +2047,7 @@ export default function RECAReviewPage({ params }: PageProps) {
             <Button
               variant="outline"
               onClick={() =>
-                router.push(`/reca/supporting/${params.sessionId}`)
+                router.push(`/reca/supporting/${params.sessionId}` as any)
               }
               className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
             >

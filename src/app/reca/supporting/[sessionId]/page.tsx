@@ -49,10 +49,15 @@ export default function RECASupportingFormsPage({ params }: PageProps) {
       const response = await fetch(`/api/reca/workflow/${params.sessionId}`);
 
       if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const serverMessage =
+          (typeof payload?.error === "string" && payload.error) ||
+          (typeof payload?.details === "string" && payload.details) ||
+          null;
         if (response.status === 404) {
-          throw new Error("Workflow session not found");
+          throw new Error(serverMessage || "Workflow session not found");
         }
-        throw new Error("Failed to load workflow state");
+        throw new Error(serverMessage || "Failed to load workflow state");
       }
 
       const data: RECAWorkflowState = await response.json();

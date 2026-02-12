@@ -573,7 +573,7 @@ export default function DocumentsPortal() {
                 onClick={() => router.push("/portal")}
                 className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
               >
-                Go to Dashboard
+                Go to Portal
               </Button>
             </CardContent>
           </Card>
@@ -618,7 +618,7 @@ export default function DocumentsPortal() {
           className="mb-6 gap-2 text-sage-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          Back to Portal
         </Button>
 
         {/* Header */}

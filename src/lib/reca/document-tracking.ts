@@ -381,3 +381,117 @@ export function createDocumentTaskList(requirements: DocumentRequirement[]): {
     completedTasks,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Hydrate requirement statuses from uploaded files
+// ---------------------------------------------------------------------------
+
+type UploadedFileSummary = {
+  category?: string | null;
+  validation?: {
+    status?: string | null;
+  } | null;
+};
+
+function normalizeCat(cat?: string | null) {
+  return (cat || "").toString().toUpperCase();
+}
+
+function isVerifiedUpload(file: UploadedFileSummary) {
+  const s = (file.validation?.status || "").toString().toUpperCase();
+  return s === "VERIFIED" || s === "STAFF_APPROVED";
+}
+
+const PRESENCE_CATEGORIES = new Set([
+  "UTILITY_BILL",
+  "MORTGAGE_STATEMENT",
+  "TAX_RETURN",
+  "SCHOOL_RECORDS",
+  "EMPLOYMENT_RECORDS",
+  "LDS_CHURCH_RECORDS",
+]);
+
+const MEDICAL_CATEGORIES = new Set([
+  "MEDICAL_RECORDS",
+  "PATHOLOGY_REPORT",
+  "DISCHARGE_SUMMARY",
+  "TUMOR_REGISTRY",
+  "TREATMENT_RECORDS",
+]);
+
+/**
+ * Updates requirement statuses based on actually uploaded files.
+ *
+ * MVP rules:
+ * - If matching uploads exist: mark as "uploaded".
+ * - If matching uploads are verified/staff-approved: mark as "verified".
+ * - For quantity requirements (e.g. proof_of_presence x2), verify only when enough are verified.
+ */
+export function applyUploadsToRequirements(
+  requirements: DocumentRequirement[],
+  uploadedFiles: UploadedFileSummary[]
+): DocumentRequirement[] {
+  const files = uploadedFiles || [];
+
+  const countBy = (predicate: (f: UploadedFileSummary) => boolean) =>
+    files.filter(predicate).length;
+
+  const verifiedCountBy = (predicate: (f: UploadedFileSummary) => boolean) =>
+    files.filter((f) => predicate(f) && isVerifiedUpload(f)).length;
+
+  const birthCount = countBy(
+    (f) => normalizeCat(f.category) === "BIRTH_CERTIFICATE"
+  );
+  const birthVerified = verifiedCountBy(
+    (f) => normalizeCat(f.category) === "BIRTH_CERTIFICATE"
+  );
+
+  const medicalCount = countBy((f) =>
+    MEDICAL_CATEGORIES.has(normalizeCat(f.category))
+  );
+  const medicalVerified = verifiedCountBy((f) =>
+    MEDICAL_CATEGORIES.has(normalizeCat(f.category))
+  );
+
+  const presenceCount = countBy((f) =>
+    PRESENCE_CATEGORIES.has(normalizeCat(f.category))
+  );
+  const presenceVerified = verifiedCountBy((f) =>
+    PRESENCE_CATEGORIES.has(normalizeCat(f.category))
+  );
+
+  return requirements.map((req) => {
+    const next: DocumentRequirement = { ...req };
+
+    if (req.id === "filer_birth_certificate") {
+      if (birthCount > 0) {
+        next.status = birthVerified > 0 ? "verified" : "uploaded";
+        next.notes = `${birthCount} uploaded${birthVerified > 0 ? " (verified)" : ""}`;
+      }
+      return next;
+    }
+
+    if (req.id === "medical_documentation") {
+      if (medicalCount > 0) {
+        next.status = medicalVerified > 0 ? "verified" : "uploaded";
+        next.notes = `${medicalCount} uploaded${medicalVerified > 0 ? " (verified)" : ""}`;
+      }
+      return next;
+    }
+
+    if (req.id === "proof_of_presence") {
+      const qty = req.quantity ?? 2;
+      if (presenceCount > 0) {
+        next.status = presenceVerified >= qty ? "verified" : "uploaded";
+        next.notes =
+          `Uploaded ${Math.min(presenceCount, qty)}/${qty}` +
+          (presenceVerified > 0
+            ? ` • Verified ${Math.min(presenceVerified, qty)}/${qty}`
+            : "");
+      }
+      return next;
+    }
+
+    return next;
+  });
+}
