@@ -78,7 +78,16 @@ export async function GET(
     // Get workflow state from database
     const intakeSession = await db.intakeSession.findUnique({
       where: { id: params.sessionId },
-      include: { claimant: true },
+      include: {
+        claimant: true,
+        uploadedFiles: {
+          select: {
+            category: true,
+            validatedAt: true,
+            validation: { select: { status: true } },
+          },
+        },
+      },
     });
 
     if (!intakeSession) {

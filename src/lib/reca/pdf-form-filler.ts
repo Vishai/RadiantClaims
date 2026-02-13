@@ -3185,14 +3185,19 @@ export class RECAPDFFormFiller {
     // - "1951-1962" -> "1951-1962"
     // - "1951-1962" or "1951–1962" or "January 1951-1962" -> extract years
     const years = s.match(/\b(19\d{2}|20\d{2})\b/g) || [];
-    if (years.length >= 2) {
-      const start = years[0];
-      const end = years[years.length - 1];
-      if (start !== end) return `${start}-${end}`;
 
-      // If same year and the string looks like a short-period option (e.g., Jun 30 1962 - Jul 31 1962),
-      // keep the original but compress spacing.
-      return s.replace(/\s+/g, " ");
+    // If we have 2+ years, collapse to a compact range.
+    if (years.length >= 2) {
+      const start = years[0] || "";
+      const end = years[years.length - 1] || "";
+      if (start && end && start !== end) return `${start}-${end}`;
+      return start || end;
+    }
+
+    // If we only have one year (common when the input is verbose like "January 1951 ..."),
+    // return just the year to avoid truncation.
+    if (years.length === 1) {
+      return years[0] || "";
     }
 
     return s.replace(/\s+/g, " ");
