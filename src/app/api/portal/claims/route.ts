@@ -72,10 +72,15 @@ export async function GET(_req: NextRequest) {
             currentStep: true,
             status: true,
             uploadedFiles: {
-              where: { status: "READY" },
+              where: {
+                status: {
+                  notIn: ["FAILED", "REJECTED"],
+                },
+              },
               select: {
                 id: true,
                 category: true,
+                status: true,
                 originalFilename: true,
                 sizeBytes: true,
                 uploadedAt: true,

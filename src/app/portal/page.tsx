@@ -25,11 +25,16 @@ import {
   BookOpen,
   Menu,
   Trash2,
+  ChevronDown,
+  ChevronUp,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
+import { generateDocumentRequirements } from "@/lib/reca/document-tracking";
+import { RelationshipType } from "@/lib/reca/types";
 
 interface Claimant {
   id: string;
@@ -46,11 +51,19 @@ interface Claimant {
     currentStep: string;
     status: string;
     updatedAt: string;
-    uploadedFiles: any[];
+    uploadedFiles: Array<{
+      id: string;
+      category?: string | null;
+      status: string;
+      originalFilename: string;
+      sizeBytes: number;
+      uploadedAt: string;
+    }>;
     packetSubmission: PacketSubmissionMeta | null;
     recaWorkflowStage?: number | null;
     recaWorkflowSection?: string | null;
     recaCompletionPercent?: number | null;
+    recaFormData?: any;
   } | null;
 }
 
@@ -131,6 +144,85 @@ function getPartLabel(section: string): string {
   return labels[partNum] || section.replace(/_/g, " ");
 }
 
+const RELATIONSHIP_TYPES: RelationshipType[] = [
+  "Self",
+  "Spouse",
+  "Child",
+  "Parent",
+  "Grandchild",
+  "Grandparent",
+];
+const VERIFIED_FILE_STATUSES = new Set(["VALIDATED", "APPROVED"]);
+
+function buildNextSteps(
+  intakeSession: Claimant["intakeSession"],
+  shouldPreferReview: boolean
+) {
+  if (!intakeSession || !shouldPreferReview) return null;
+
+  const formData = intakeSession.recaFormData ?? {};
+  const relationshipCandidate = formData?.part_3?.relationship;
+  const relationship = RELATIONSHIP_TYPES.includes(relationshipCandidate)
+    ? relationshipCandidate
+    : null;
+
+  const requirements = relationship
+    ? generateDocumentRequirements(
+        relationship,
+        formData.part_1,
+        formData.part_4
+      ).filter((req) => req.required)
+    : [];
+
+  const uploadedDocs = intakeSession.uploadedFiles.length;
+  const verifiedDocs = intakeSession.uploadedFiles.filter((file) =>
+    VERIFIED_FILE_STATUSES.has(file.status)
+  ).length;
+  const estimatedRequiredDocs = requirements.length;
+  const remainingUploadEstimate = Math.max(
+    estimatedRequiredDocs - uploadedDocs,
+    0
+  );
+  const pendingVerification = Math.max(uploadedDocs - verifiedDocs, 0);
+
+  const checklist: string[] = [];
+  if ((intakeSession.recaCompletionPercent ?? 0) < 100) {
+    checklist.push("Confirm remaining form details on Review.");
+  }
+  if (!relationship) {
+    checklist.push(
+      "Set claimant relationship to finalize your required document list."
+    );
+  }
+  if (remainingUploadEstimate > 0) {
+    checklist.push(
+      `Upload approximately ${remainingUploadEstimate} more required document${remainingUploadEstimate === 1 ? "" : "s"}.`
+    );
+  }
+  if (uploadedDocs === 0) {
+    checklist.push("Upload your first document packet for this claim.");
+  }
+  if (pendingVerification > 0) {
+    checklist.push(
+      `${pendingVerification} uploaded document${pendingVerification === 1 ? "" : "s"} awaiting staff verification.`
+    );
+  }
+  if (
+    remainingUploadEstimate === 0 &&
+    pendingVerification === 0 &&
+    uploadedDocs > 0
+  ) {
+    checklist.push("All uploaded documents are currently verified/reviewed.");
+  }
+
+  return {
+    estimatedRequiredDocs,
+    uploadedDocs,
+    verifiedDocs,
+    checklist,
+  };
+}
+
 export default function CustomerPortal() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -146,6 +238,7 @@ export default function CustomerPortal() {
   const [claimToDelete, setClaimToDelete] = useState<string | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDOJMetrics, setShowDOJMetrics] = useState(false);
 
   const loadClaims = useCallback(async () => {
     try {
@@ -384,7 +477,38 @@ export default function CustomerPortal() {
 
         {/* DOJ Metrics Dashboard */}
         <div className="mb-8">
-          <DOJMetricsDashboard />
+          <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sage-900">
+                    <Activity className="h-5 w-5 text-terracotta-500" />
+                    DOJ Processing Metrics
+                  </CardTitle>
+                  <CardDescription className="text-sage-600">
+                    National processing trends and backlog insights
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDOJMetrics((prev) => !prev)}
+                  className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                >
+                  {showDOJMetrics ? "Hide Metrics" : "Show Metrics"}
+                  {showDOJMetrics ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+          {showDOJMetrics && (
+            <div className="mt-4">
+              <DOJMetricsDashboard />
+            </div>
+          )}
         </div>
 
         {/* Claims List */}
@@ -456,8 +580,10 @@ export default function CustomerPortal() {
                   ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
                   : `/reca/start?sessionId=${intakeSession.id}`
                 : null;
-              const showEditButton =
-                Boolean(intakeSession) && shouldPreferReview;
+              const nextSteps = buildNextSteps(
+                intakeSession,
+                shouldPreferReview
+              );
 
               return (
                 <Card
@@ -557,6 +683,28 @@ export default function CustomerPortal() {
                               </span>
                             </div>
                           </div>
+                          {nextSteps && (
+                            <div className="rounded-2xl border border-sage-200 bg-white p-4">
+                              <div className="mb-2 flex items-center justify-between">
+                                <h4 className="text-sm font-semibold text-sage-900">
+                                  What&apos;s Left
+                                </h4>
+                                <span className="text-xs text-sage-500">
+                                  Docs verified: {nextSteps.verifiedDocs}/
+                                  {nextSteps.uploadedDocs}
+                                </span>
+                              </div>
+                              <div className="mb-2 text-xs text-sage-600">
+                                Estimated required docs:{" "}
+                                {nextSteps.estimatedRequiredDocs}
+                              </div>
+                              <ul className="space-y-1 text-sm text-sage-700">
+                                {nextSteps.checklist.map((item) => (
+                                  <li key={item}>• {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                           {intakeSession && (
                             <PacketDeliveryCard
                               status={derivedPacketStatus}
@@ -597,20 +745,6 @@ export default function CustomerPortal() {
                                   <CheckCircle className="h-4 w-4" />
                                   Review Application
                                 </Button>
-
-                                {showEditButton && (
-                                  <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                      formRoute &&
-                                      router.push(formRoute as Route)
-                                    }
-                                    className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                    Edit Application
-                                  </Button>
-                                )}
                               </>
                             ) : (
                               <>
