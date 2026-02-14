@@ -9,6 +9,18 @@
     {
       "path": "/api/resources/stats/aggregate",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/document-follow-up",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/re-engagement",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/attorney-summary",
+      "schedule": "0 23 * * *"
     }
   ]
 }
