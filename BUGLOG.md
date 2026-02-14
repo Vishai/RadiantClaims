@@ -33,7 +33,6 @@
 - **Observed:** Error screen "Unauthorized".
 - **Impact:** Blocks resuming/reviewing application.
 - **Expected:** Review page should load for the claim/session.
-- **Status:** Open
-
-### 4) Portal: Review Application returns Unauthorized
-- **Status Update (2026-02-13):** Paused fix work until Bug #3 is resolved (to avoid overlapping access-control changes).
+- **Root Cause:** Auth check in `/api/reca/workflow/[sessionId]` only matched ownership via `claimant.userId`. If the claimant was created before auth (no userId) or linked via email/subscription instead, the check failed.
+- **Resolution:** Expanded ownership detection to check 3 paths: (1) claimant.userId match, (2) serviceSubscription.userId match, (3) claimant.email match. Removed payment-gating from review page access (payment only gates PDF download).
+- **Status:** Resolved (2026-02-14)

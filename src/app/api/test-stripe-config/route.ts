@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user as { role?: string } | undefined)?.role;
+    if (userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const tests = [
       {
         name: "DIY Setup Fee",

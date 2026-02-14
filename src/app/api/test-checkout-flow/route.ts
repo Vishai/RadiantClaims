@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
+    // Admin-only: gate test routes in production
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user as { role?: string } | undefined)?.role;
+    if (userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const tier = searchParams.get("tier") || "DIY_PREP";
 
@@ -26,7 +35,6 @@ export async function GET(request: NextRequest) {
     let lineItemsConfig;
 
     if (tier === "DIY_PREP") {
-      // DIY Path Test
       const diySetupPriceId = STRIPE_CONFIG.DIY_SETUP_FEE.priceId;
       const diyMonthlyPriceId = STRIPE_CONFIG.DIY_MONTHLY_FIRST_CLAIM.priceId;
 
@@ -74,9 +82,8 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      // LEGAL_REP Path Test
       const legalSetupPriceId = STRIPE_CONFIG.LEGAL_SETUP_FEE.priceId;
-      const legalMonthlyPriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId; // $24.99/mo
+      const legalMonthlyPriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId;
 
       if (!legalSetupPriceId || !legalMonthlyPriceId) {
         return NextResponse.json(
@@ -107,7 +114,7 @@ export async function GET(request: NextRequest) {
           { price: legalMonthlyPriceId, quantity: 1 },
         ],
         subscription_data: {
-          trial_period_days: 30, // Free first month
+          trial_period_days: 30,
           metadata: {
             test: "true",
             tier: "LEGAL_REP",
@@ -123,7 +130,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Retrieve the full session to get line items
     const fullSession = await stripe.checkout.sessions.retrieve(
       checkoutSession.id,
       {
@@ -131,7 +137,6 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Parse line items
     const lineItems = fullSession.line_items?.data.map((item: any) => {
       const price = item.price;
       return {
@@ -150,7 +155,6 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Verify line items match expectations
     const verification = lineItemsConfig.map((expected, index) => {
       const actual = lineItems?.[index];
       return {
@@ -164,9 +168,6 @@ export async function GET(request: NextRequest) {
     });
 
     const allMatched = verification.every((v) => v.matches);
-
-    // Clean up test customer (optional - comment out if you want to inspect in Stripe)
-    // await stripe.customers.del(testCustomer.id);
 
     return NextResponse.json({
       success: allMatched,

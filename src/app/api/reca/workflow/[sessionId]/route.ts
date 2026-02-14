@@ -9,7 +9,6 @@ import {
   SaveWorkflowResponse,
 } from "@/lib/reca/types";
 import { calculateCompletionPercentage } from "@/lib/reca/workflow";
-import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
 import { toISODateString } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
@@ -187,16 +186,37 @@ export async function GET(
     // Check authorization - must be the owner (portal access) or an admin/attorney
     const userId = session.user.id;
     const userRole = (session.user as { role?: string }).role;
-    const isOwner = userId && userId === intakeSession.claimant?.userId;
     const isAdminOrAttorney = userRole === "ADMIN" || userRole === "ATTORNEY";
 
-    let hasPaidAccess = false;
-    if (isOwner) {
-      const access = await getActiveSubscriptionAccess(userId);
-      hasPaidAccess = !!access;
+    // Ownership check: user owns the claimant linked to this session
+    const isOwnerViaClaimant =
+      userId && intakeSession.claimant?.userId === userId;
+
+    // Fallback ownership: user owns the service subscription linked to this session
+    let isOwnerViaSubscription = false;
+    if (!isOwnerViaClaimant && intakeSession.serviceSubscriptionId) {
+      const sub = await db.serviceSubscription.findUnique({
+        where: { id: intakeSession.serviceSubscriptionId },
+        select: { userId: true },
+      });
+      isOwnerViaSubscription = sub?.userId === userId;
     }
 
-    if (!isAdminOrAttorney && !(isOwner || hasPaidAccess)) {
+    // Also check if the user has ANY claimant linked to this session's claimantId
+    // (covers cases where claimant.userId wasn't set but claimant belongs to user)
+    let isOwnerViaEmail = false;
+    if (
+      !isOwnerViaClaimant &&
+      !isOwnerViaSubscription &&
+      intakeSession.claimant?.email
+    ) {
+      isOwnerViaEmail = intakeSession.claimant.email === session.user.email;
+    }
+
+    const isOwner =
+      isOwnerViaClaimant || isOwnerViaSubscription || isOwnerViaEmail;
+
+    if (!isAdminOrAttorney && !isOwner) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -275,16 +295,36 @@ export async function POST(
     // Check authorization - must be the owner (portal access) or an admin/attorney
     const userId = session.user.id;
     const userRole = (session.user as { role?: string }).role;
-    const isOwner = userId && userId === intakeSession.claimant?.userId;
     const isAdminOrAttorney = userRole === "ADMIN" || userRole === "ATTORNEY";
 
-    let hasPaidAccess = false;
-    if (isOwner) {
-      const access = await getActiveSubscriptionAccess(userId);
-      hasPaidAccess = !!access;
+    // Ownership check: user owns the claimant linked to this session
+    const isOwnerViaClaimant =
+      userId && intakeSession.claimant?.userId === userId;
+
+    // Fallback ownership: user owns the service subscription linked to this session
+    let isOwnerViaSubscription = false;
+    if (!isOwnerViaClaimant && intakeSession.serviceSubscriptionId) {
+      const sub = await db.serviceSubscription.findUnique({
+        where: { id: intakeSession.serviceSubscriptionId },
+        select: { userId: true },
+      });
+      isOwnerViaSubscription = sub?.userId === userId;
     }
 
-    if (!isAdminOrAttorney && !(isOwner || hasPaidAccess)) {
+    // Email-based fallback: claimant email matches session user email
+    let isOwnerViaEmail = false;
+    if (
+      !isOwnerViaClaimant &&
+      !isOwnerViaSubscription &&
+      intakeSession.claimant?.email
+    ) {
+      isOwnerViaEmail = intakeSession.claimant.email === session.user.email;
+    }
+
+    const isOwner =
+      isOwnerViaClaimant || isOwnerViaSubscription || isOwnerViaEmail;
+
+    if (!isAdminOrAttorney && !isOwner) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

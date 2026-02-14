@@ -201,7 +201,7 @@ export default function Part13Form({
   useEffect(() => {
     if (isDIYUser) return; // DIY users already submitted
 
-    const subscription = form.watch((value, { name, type }) => {
+    const subscription = form.watch((_value, { type }) => {
       // Only trigger on actual field changes, not on every render
       if (type !== "change") return;
 
