@@ -122,7 +122,7 @@ export default function RECAFormPage({ params }: PageProps) {
     }
 
     checkSubscriptionAccess();
-  }, [status, push]);
+  }, [status, push, params.sessionId]);
 
   useEffect(() => {
     // Only load workflow state if user has access
@@ -137,10 +137,12 @@ export default function RECAFormPage({ params }: PageProps) {
       const filingForSelf = workflowState.formData.part_1?.filingForSelf;
       if (filingForSelf === true) {
         // Skip Part 2 - redirect to Part 3
-        replace(`/reca/form/${params.sessionId}?section=part_3`);
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.set("section", "part_3");
+        replace(`/reca/form/${params.sessionId}?${nextParams.toString()}`);
       }
     }
-  }, [workflowState, currentSection, params.sessionId, replace]);
+  }, [workflowState, currentSection, params.sessionId, replace, searchParams]);
 
   const handleSaveSection = async (sectionData: any) => {
     if (!workflowState) return;

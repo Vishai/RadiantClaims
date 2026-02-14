@@ -900,24 +900,6 @@ export default function RECAReviewPage({ params }: PageProps) {
     if (!reviewTracking) return 0;
     return getPriorityReviewItems(reviewTracking).length;
   }, [reviewTracking]);
-  const resolveQueue = useMemo(() => {
-    if (!reviewTracking || !workflowState) return [];
-    const formData = workflowState.formData;
-    return reviewTracking.sections
-      .filter((section) => {
-        const definition = SECTION_DEFINITIONS.find(
-          (def) => def.id === section.sectionId
-        );
-        if (definition?.conditional && !definition.conditional(formData)) {
-          return false;
-        }
-        return section.incompleteItems.some(
-          (item) => item.importance === "required" && !item.acknowledged
-        );
-      })
-      .map((section) => section.sectionId);
-  }, [reviewTracking, workflowState]);
-
   // Document requirements & assistance
   const documentHelp = useMemo(() => {
     if (!workflowState?.formData) return null;
@@ -1116,15 +1098,18 @@ export default function RECAReviewPage({ params }: PageProps) {
   };
 
   const resolveReturnTo = `/reca/review/${params.sessionId}`;
-  const buildResolveLink = (sectionId: string) => {
+  const buildResolveLink = (sectionId: RECAWorkflowSection) => {
     const searchParams = new URLSearchParams();
     searchParams.set("section", sectionId);
     searchParams.set("mode", "resolve");
     searchParams.set("returnTo", resolveReturnTo);
-    searchParams.set("resolveQueue", resolveQueue.join(","));
+    searchParams.set("resolveQueue", sectionId);
     return `/reca/form/${params.sessionId}?${searchParams.toString()}`;
   };
-  const navigateToSection = (sectionId: string, resolveMode = false) => {
+  const navigateToSection = (
+    sectionId: RECAWorkflowSection,
+    resolveMode = false
+  ) => {
     if (resolveMode) {
       router.push(buildResolveLink(sectionId) as any);
       return;
@@ -1265,7 +1250,7 @@ export default function RECAReviewPage({ params }: PageProps) {
 
                 {/* Edit Application button — prominent */}
                 <Button
-                  onClick={() => navigateToSection("part_1")}
+                  onClick={() => navigateToSection("part_1", true)}
                   className="h-12 w-full rounded-full bg-terracotta-500 text-base hover:bg-terracotta-600"
                 >
                   <Edit3 className="mr-2 h-5 w-5" />
@@ -2057,7 +2042,7 @@ export default function RECAReviewPage({ params }: PageProps) {
             {!isComplete && (
               <Button
                 variant="outline"
-                onClick={() => navigateToSection("part_1")}
+                onClick={() => navigateToSection("part_1", true)}
                 className="rounded-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-50"
               >
                 <Edit3 className="mr-2 h-4 w-4" />

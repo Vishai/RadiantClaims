@@ -77,9 +77,11 @@ export function FormWizard({
   // Use refs to access latest state in callbacks without recreating them
   const workflowStateRef = useRef(workflowState);
   const isSavingRef = useRef(isSaving);
-  const resolveMode = searchParams.get("mode") === "resolve";
-  const resolveQueueParam = searchParams.get("resolveQueue");
   const returnToParam = searchParams.get("returnTo");
+  const resolveMode =
+    searchParams.get("mode") === "resolve" ||
+    (returnToParam?.startsWith("/") ?? false);
+  const resolveQueueParam = searchParams.get("resolveQueue");
   const resolveReturnTo = useMemo(() => {
     const fallback = `/reca/review/${sessionId}`;
     if (!returnToParam) return fallback;
@@ -118,22 +120,6 @@ export function FormWizard({
     },
     [resolveSearchParams, sessionId]
   );
-  const getNextResolveSection = useCallback(
-    (sectionId: RECAWorkflowSection) => {
-      if (resolveQueue.length === 0) return null;
-      const currentIndex = RESOLVE_SECTION_ORDER.indexOf(sectionId);
-      if (currentIndex === -1) return resolveQueue[0] || null;
-      for (const queuedSection of resolveQueue) {
-        const queuedIndex = RESOLVE_SECTION_ORDER.indexOf(queuedSection);
-        if (queuedIndex > currentIndex) {
-          return queuedSection;
-        }
-      }
-      return null;
-    },
-    [resolveQueue]
-  );
-
   // Keep refs updated
   useEffect(() => {
     workflowStateRef.current = workflowState;
@@ -147,9 +133,9 @@ export function FormWizard({
     setWorkflowState(initialState);
   }, [initialState]);
 
-  const handleAutoSave = useCallback(async () => {
+  const handleAutoSave = useCallback(async (): Promise<boolean> => {
     // Use ref to check current saving state
-    if (isSavingRef.current) return;
+    if (isSavingRef.current) return false;
 
     try {
       setIsSaving(true);
@@ -184,7 +170,18 @@ export function FormWizard({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save");
+        const payload = await response.json().catch(() => null);
+        const serverMessage =
+          (typeof payload?.error === "string" && payload.error) ||
+          (typeof payload?.details === "string" && payload.details) ||
+          null;
+        if (response.status === 404) {
+          throw new Error(
+            serverMessage ||
+              "Application session not found. Please return to the portal and reopen your claim."
+          );
+        }
+        throw new Error(serverMessage || "Failed to save");
       }
 
       const result = await response.json();
@@ -200,9 +197,15 @@ export function FormWizard({
         setShowAccountModal(true);
         setHasPromptedAccount(true);
       }
+      return true;
     } catch (error) {
       console.error("Auto-save error:", error);
-      setSaveError("Failed to auto-save. Your progress may not be saved.");
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "Failed to auto-save. Your progress may not be saved."
+      );
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -210,8 +213,9 @@ export function FormWizard({
     sessionId,
     status,
     hasPromptedAccount,
+    lastSaved,
     // Only include stable dependencies
-    // workflowState, lastSaved, and isSaving are accessed via refs
+    // workflowState and isSaving are accessed via refs
   ]);
 
   // Auto-save every 2 minutes - fixed to prevent infinite loop
@@ -229,10 +233,8 @@ export function FormWizard({
   };
 
   const handleNext = async () => {
-    let usedFormSubmit = false;
     // Trigger form submission/validation if available
     if ((window as any).__currentFormSubmit) {
-      usedFormSubmit = true;
       const isValid = await (window as any).__currentFormSubmit();
       if (!isValid) {
         return; // Don't navigate if form is invalid
@@ -241,9 +243,10 @@ export function FormWizard({
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
-    // Save before navigating (though form should have already saved)
-    if (!usedFormSubmit) {
-      await handleAutoSave();
+    // Always require a successful server save before navigating.
+    const saveSucceeded = await handleAutoSave();
+    if (!saveSucceeded) {
+      return;
     }
 
     // Reload the latest state from the server to ensure we have the most up-to-date data
@@ -262,12 +265,7 @@ export function FormWizard({
     }
 
     if (resolveMode) {
-      const nextResolveSection = getNextResolveSection(currentSection);
-      if (nextResolveSection) {
-        router.push(buildFormUrl(nextResolveSection) as any);
-      } else {
-        router.push(resolveReturnTo as any);
-      }
+      router.push(resolveReturnTo as any);
       return;
     }
 

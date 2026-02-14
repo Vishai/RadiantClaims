@@ -123,12 +123,21 @@ function SectionCard({
   editPath?: string;
 }) {
   const router = useRouter();
+  const resolveReturnTo = `/reca/form/${sessionId}?section=review`;
+  const buildResolveEditPath = (sectionId: RECAWorkflowSection) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("section", sectionId);
+    searchParams.set("mode", "resolve");
+    searchParams.set("returnTo", resolveReturnTo);
+    searchParams.set("resolveQueue", sectionId);
+    return `/reca/form/${sessionId}?${searchParams.toString()}`;
+  };
 
   const handleEdit = () => {
     if (editPath) {
       router.push(editPath as any);
     } else if (section) {
-      router.push(`/reca/form/${sessionId}?section=${section}` as any);
+      router.push(buildResolveEditPath(section) as any);
     }
   };
 
