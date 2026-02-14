@@ -10,6 +10,7 @@ import {
 } from "@/lib/reca/types";
 import { calculateCompletionPercentage } from "@/lib/reca/workflow";
 import { getActiveSubscriptionAccess } from "@/lib/subscription-access";
+import { toISODateString } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +36,7 @@ function preFillPart1FromClaimant(formData: any, claimant: any) {
     // Format DOB as YYYY-MM-DD for date input field
     let dobFormatted = "";
     if (claimant.dob) {
-      const dobDate = new Date(claimant.dob);
-      dobFormatted = dobDate.toISOString().split("T")[0] || "";
+      dobFormatted = toISODateString(claimant.dob);
     }
 
     formData.part_1 = {
@@ -184,7 +184,7 @@ export async function GET(
       );
     }
 
-    // Check authorization - must be the owner with active subscription or an admin/attorney
+    // Check authorization - must be the owner (portal access) or an admin/attorney
     const userId = session.user.id;
     const userRole = (session.user as { role?: string }).role;
     const isOwner = userId && userId === intakeSession.claimant?.userId;
@@ -196,7 +196,7 @@ export async function GET(
       hasPaidAccess = !!access;
     }
 
-    if (!isAdminOrAttorney && !(isOwner && hasPaidAccess)) {
+    if (!isAdminOrAttorney && !(isOwner || hasPaidAccess)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -272,7 +272,7 @@ export async function POST(
       );
     }
 
-    // Check authorization - must be the owner with active subscription or an admin/attorney
+    // Check authorization - must be the owner (portal access) or an admin/attorney
     const userId = session.user.id;
     const userRole = (session.user as { role?: string }).role;
     const isOwner = userId && userId === intakeSession.claimant?.userId;
@@ -284,7 +284,7 @@ export async function POST(
       hasPaidAccess = !!access;
     }
 
-    if (!isAdminOrAttorney && !(isOwner && hasPaidAccess)) {
+    if (!isAdminOrAttorney && !(isOwner || hasPaidAccess)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

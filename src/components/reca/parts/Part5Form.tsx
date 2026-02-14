@@ -84,14 +84,24 @@ type Part5FormData = z.infer<typeof part5Schema>;
 interface Part5FormProps {
   initialData?: Partial<Part5SurvivingSpouse>;
   onSubmit: (data: Part5SurvivingSpouse) => void;
+  part2Data?: any; // Data from Part 2 containing deceased person's info
 }
 
-export default function Part5Form({ initialData, onSubmit }: Part5FormProps) {
+export default function Part5Form({
+  initialData,
+  onSubmit,
+  part2Data,
+}: Part5FormProps) {
+  // Auto-populate from Part 2 data if available
+  const claimantDeceasedFromPart2 = part2Data?.dod ? "YES" : undefined;
+  const dateOfDeathFromPart2 = part2Data?.dod || "";
+
   const form = useForm<Part5FormData>({
     resolver: zodResolver(part5Schema),
     defaultValues: {
-      claimantDeceased: initialData?.claimantDeceased || undefined,
-      dateOfDeath: initialData?.dateOfDeath || "",
+      claimantDeceased:
+        initialData?.claimantDeceased || claimantDeceasedFromPart2,
+      dateOfDeath: initialData?.dateOfDeath || dateOfDeathFromPart2,
       marriageDate: initialData?.marriageDate || "",
       marriedOneYear: initialData?.marriedOneYear || undefined,
       nameAtMarriage: initialData?.nameAtMarriage || "",

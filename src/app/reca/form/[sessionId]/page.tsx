@@ -87,7 +87,9 @@ export default function RECAFormPage({ params }: PageProps) {
     async function checkSubscriptionAccess() {
       if (status === "authenticated") {
         try {
-          const response = await fetch("/api/subscriptions/status");
+          const response = await fetch(
+            `/api/subscriptions/status?sessionId=${params.sessionId}`
+          );
           if (response.ok) {
             const data = await response.json();
 
@@ -216,6 +218,7 @@ export default function RECAFormPage({ params }: PageProps) {
             initialData={workflowState.formData.part_2}
             onSubmit={handleSaveSection}
             part1Data={workflowState.formData.part_1}
+            eligibilityData={workflowState.eligibilityData as any}
           />
         );
 
@@ -240,6 +243,7 @@ export default function RECAFormPage({ params }: PageProps) {
         return (
           <Part5Form
             initialData={workflowState.formData.part_5}
+            part2Data={workflowState.formData.part_2}
             onSubmit={handleSaveSection}
           />
         );
@@ -281,6 +285,7 @@ export default function RECAFormPage({ params }: PageProps) {
         return (
           <Part10Form
             initialData={workflowState.formData.part_10}
+            eligibilityData={workflowState.eligibilityData}
             onSubmit={handleSaveSection}
           />
         );

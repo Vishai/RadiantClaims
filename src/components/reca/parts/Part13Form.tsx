@@ -187,19 +187,24 @@ export default function Part13Form({
   // const hasAttorney = form.watch("hasAttorney");
   const formErrors = form.formState.errors;
 
-  // Auto-submit for DIY users on mount
+  // Auto-submit for DIY users on mount (only once)
   useEffect(() => {
-    if (isDIYUser) {
+    if (isDIYUser && !initialData?.hasAttorney) {
+      // Only auto-submit if we haven't saved data yet
       const values = form.getValues();
       onSubmit(values as Part13Attorney);
     }
-  }, [isDIYUser, form, onSubmit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   // Auto-submit when form data changes (with validation) - only for LEGAL_REP users
   useEffect(() => {
     if (isDIYUser) return; // DIY users already submitted
 
-    const subscription = form.watch(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      // Only trigger on actual field changes, not on every render
+      if (type !== "change") return;
+
       const values = form.getValues();
       // Only submit if hasAttorney is selected
       if (values.hasAttorney) {

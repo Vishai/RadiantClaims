@@ -71,7 +71,7 @@ interface FormData {
 
   // Step 3: Residence
   residenceState: ResidenceState | "";
-  residenceDuration: "yes" | "no" | "";
+  residenceDuration: "yes" | "july1962" | "no" | "";
   residenceStartYear: string;
   arizonaCounty: string;
   nevadaCounty: string;
@@ -172,21 +172,33 @@ export default function EligibilityCheckPage() {
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 7));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  // Helper to calculate latency status
-  const checkLatency = (): boolean => {
-    if (
-      !formData.residenceStartYear ||
-      !formData.diagnosisYear ||
-      !formData.cancerType
-    ) {
-      return false;
+  // Helper: determine exposure start year from the answers we have.
+  // - If they lived there >=1 year, we ask for the start year.
+  // - If they qualify under the alternate rule (entire month of July 1962), use 1962.
+  // - If they're unsure / don't meet the presence requirement, exposure is unknown.
+  const getExposureStartYear = (): number | undefined => {
+    if (formData.residenceDuration === "july1962") return 1962;
+
+    if (formData.residenceDuration === "yes") {
+      const startYear = parseInt(formData.residenceStartYear);
+      if (Number.isFinite(startYear)) return Math.max(1951, startYear);
     }
 
-    const startYear = parseInt(formData.residenceStartYear);
-    const diagYear = parseInt(formData.diagnosisYear);
+    return undefined;
+  };
 
-    // Exposure starts at max(1951, user's start year)
-    const exposureStart = Math.max(1951, startYear);
+  // Helper to calculate latency status.
+  // Returns:
+  // - true/false when we can compute it
+  // - undefined when we can't (e.g., presence not confirmed)
+  const checkLatency = (): boolean | undefined => {
+    if (!formData.diagnosisYear || !formData.cancerType) return undefined;
+
+    const exposureStart = getExposureStartYear();
+    if (!exposureStart) return undefined;
+
+    const diagYear = parseInt(formData.diagnosisYear);
+    if (!Number.isFinite(diagYear)) return undefined;
 
     // Latency requirement: 2 years for Leukemia, 5 for others
     const isLeukemia = formData.cancerType.toLowerCase().includes("leukemia");
@@ -199,28 +211,44 @@ export default function EligibilityCheckPage() {
 
   // Calculate eligibility
   const calculateEligibility = () => {
-    const hasResidence =
-      formData.residenceState !== "" &&
-      formData.residenceState !== "none" &&
-      formData.residenceDuration === "yes";
+    const isCoveredResidenceState =
+      formData.residenceState !== "" && formData.residenceState !== "none";
+
+    const residenceConfirmed =
+      isCoveredResidenceState &&
+      (formData.residenceDuration === "yes" ||
+        formData.residenceDuration === "july1962");
+
     const hasCoveredCancer = formData.hasCancer === "yes";
 
-    // Use calculated latency check
+    // Use calculated latency check (tri-state)
     const meetsLatency = checkLatency();
 
-    if (hasResidence && hasCoveredCancer && meetsLatency) {
+    if (residenceConfirmed && hasCoveredCancer && meetsLatency === true) {
       return "likely";
-    } else if (hasResidence && hasCoveredCancer && !meetsLatency) {
+    }
+
+    if (residenceConfirmed && hasCoveredCancer && meetsLatency === false) {
       return "unlikely";
-    } else if (!hasResidence || !hasCoveredCancer) {
+    }
+
+    // Explicit disqualifiers
+    if (formData.residenceState === "none" || formData.hasCancer === "no") {
       return "ineligible";
     }
+
+    // If we're missing confirmation (e.g., "not sure" on presence), do not hard-reject.
+    // We should route these cases to professional review.
     return "needs-review";
   };
 
   // Submit handler
   const handleSubmit = async () => {
     const eligibility = calculateEligibility();
+
+    const latency = checkLatency();
+    const latencyMet: FormData["latencyMet"] =
+      latency === true ? "yes" : latency === false ? "no" : "unsure";
 
     // Store user data for prefilling other forms
     saveUserData(
@@ -238,7 +266,7 @@ export default function EligibilityCheckPage() {
       const response = await fetch("/api/eligibility-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, latencyMet }),
       });
 
       if (!response.ok) {
@@ -930,12 +958,21 @@ export default function EligibilityCheckPage() {
                     </Label>
                     <RadioGroup
                       value={formData.residenceDuration}
-                      onValueChange={(value) =>
-                        updateFormData(
-                          "residenceDuration",
-                          value as "yes" | "no"
-                        )
-                      }
+                      onValueChange={(value) => {
+                        const v = value as "yes" | "july1962" | "no";
+                        updateFormData("residenceDuration", v);
+
+                        // If the user selects the July 1962 alternate rule,
+                        // we can safely set an approximate exposure start year.
+                        if (v === "july1962") {
+                          updateFormData("residenceStartYear", "1962");
+                        }
+
+                        // If they switch away from "yes", clear the start year unless we need it.
+                        if (v !== "yes" && v !== "july1962") {
+                          updateFormData("residenceStartYear", "");
+                        }
+                      }}
                     >
                       <div className="space-y-3">
                         <div className="flex items-center gap-3 rounded-xl border-2 border-cream-200 bg-white p-4">
@@ -947,6 +984,20 @@ export default function EligibilityCheckPage() {
                             Yes, at least 1 full year
                           </Label>
                         </div>
+
+                        <div className="flex items-center gap-3 rounded-xl border-2 border-cream-200 bg-white p-4">
+                          <RadioGroupItem
+                            value="july1962"
+                            id="duration-july1962"
+                          />
+                          <Label
+                            htmlFor="duration-july1962"
+                            className="flex-1 cursor-pointer font-medium"
+                          >
+                            Entire month of July 1962 (alternate rule)
+                          </Label>
+                        </div>
+
                         <div className="flex items-center gap-3 rounded-xl border-2 border-cream-200 bg-white p-4">
                           <RadioGroupItem value="no" id="duration-no" />
                           <Label
@@ -983,6 +1034,14 @@ export default function EligibilityCheckPage() {
                           If {getPronoun()} lived there before 1951, enter 1951.
                         </p>
                       </div>
+                    )}
+
+                    {formData.residenceDuration === "july1962" && (
+                      <p className="mt-4 text-sm text-sage-700">
+                        This is an alternate RECA presence rule: living in the
+                        covered area for the entire month of July 1962 can
+                        qualify even without a full year of residence.
+                      </p>
                     )}
                   </div>
                 )}
@@ -1154,17 +1213,15 @@ export default function EligibilityCheckPage() {
         );
 
       case 5:
-        const latencyPassed = checkLatency();
+        const latencyResult = checkLatency();
         const isLeukemia = formData.cancerType
           .toLowerCase()
           .includes("leukemia");
         const requiredYears = isLeukemia ? 2 : 5;
-        const exposureStart = Math.max(
-          1951,
-          parseInt(formData.residenceStartYear || "1951")
-        );
+
+        const exposureStart = getExposureStartYear();
         const diagYear = parseInt(formData.diagnosisYear || "0");
-        const yearsElapsed = diagYear - exposureStart;
+        const yearsElapsed = exposureStart ? diagYear - exposureStart : NaN;
 
         return (
           <div className="space-y-6">
@@ -1195,12 +1252,28 @@ export default function EligibilityCheckPage() {
             </div>
 
             <div
-              className={`rounded-2xl border-2 p-6 ${latencyPassed ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}
+              className={`rounded-2xl border-2 p-6 ${
+                latencyResult === true
+                  ? "border-green-200 bg-green-50"
+                  : latencyResult === false
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-blue-200 bg-blue-50"
+              }`}
             >
               <h3
-                className={`mb-2 text-xl font-bold ${latencyPassed ? "text-green-800" : "text-amber-800"}`}
+                className={`mb-2 text-xl font-bold ${
+                  latencyResult === true
+                    ? "text-green-800"
+                    : latencyResult === false
+                      ? "text-amber-800"
+                      : "text-blue-800"
+                }`}
               >
-                {latencyPassed ? "Requirement Met" : "Requirement Not Met"}
+                {latencyResult === true
+                  ? "Requirement Met"
+                  : latencyResult === false
+                    ? "Requirement Not Met"
+                    : "Cannot Confirm Yet"}
               </h3>
 
               <div className="space-y-2 text-sm">
@@ -1208,7 +1281,7 @@ export default function EligibilityCheckPage() {
                   <span className="text-gray-600">
                     First Exposure (approx):
                   </span>
-                  <span className="font-semibold">{exposureStart}</span>
+                  <span className="font-semibold">{exposureStart ?? "—"}</span>
                 </div>
                 <div className="flex justify-between border-b border-black/10 pb-2">
                   <span className="text-gray-600">Diagnosis Year:</span>
@@ -1217,20 +1290,40 @@ export default function EligibilityCheckPage() {
                 <div className="flex justify-between pt-1">
                   <span className="text-gray-600">Time Elapsed:</span>
                   <span
-                    className={`font-bold ${latencyPassed ? "text-green-700" : "text-amber-700"}`}
+                    className={`font-bold ${
+                      latencyResult === true
+                        ? "text-green-700"
+                        : latencyResult === false
+                          ? "text-amber-700"
+                          : "text-blue-700"
+                    }`}
                   >
-                    {yearsElapsed} years
+                    {Number.isFinite(yearsElapsed)
+                      ? `${yearsElapsed} years`
+                      : "—"}
                   </span>
                 </div>
               </div>
 
-              {!latencyPassed && (
+              {latencyResult === false && (
                 <div className="mt-4 rounded-xl bg-white p-3 text-sm text-amber-800 shadow-sm">
                   <p>
                     <strong>Note:</strong> Even if the latency period isn't met
                     based on these dates, there may be exceptions or special
                     circumstances. We recommend continuing so an attorney can
                     review your specific case details.
+                  </p>
+                </div>
+              )}
+
+              {latencyResult === undefined && (
+                <div className="mt-4 rounded-xl bg-white p-3 text-sm text-blue-800 shadow-sm">
+                  <p>
+                    <strong>Note:</strong> We can’t confirm the latency period
+                    yet because the exposure period hasn’t been confirmed.
+                    Consider gathering proof of residence (including the July
+                    1962 alternate rule, if applicable) before paying for
+                    document preparation.
                   </p>
                 </div>
               )}

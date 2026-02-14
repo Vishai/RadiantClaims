@@ -36,21 +36,23 @@ export async function POST(request: NextRequest) {
     } = data;
 
     // Calculate eligibility
-    const hasResidence =
+    const residenceConfirmed =
       residenceState &&
       residenceState !== "none" &&
-      residenceDuration === "yes";
+      (residenceDuration === "yes" || residenceDuration === "july1962");
+
     const hasCoveredCancer = hasCancer === "yes";
-    const meetsLatency = latencyMet === "yes" || latencyMet === "unsure";
 
     let eligibilityStatus: string;
-    if (hasResidence && hasCoveredCancer && meetsLatency) {
+
+    if (residenceConfirmed && hasCoveredCancer && latencyMet === "yes") {
       eligibilityStatus = "likely";
-    } else if (hasResidence && hasCoveredCancer && latencyMet === "no") {
+    } else if (residenceConfirmed && hasCoveredCancer && latencyMet === "no") {
       eligibilityStatus = "unlikely";
-    } else if (!hasResidence || !hasCoveredCancer) {
+    } else if (residenceState === "none" || hasCancer === "no") {
       eligibilityStatus = "ineligible";
     } else {
+      // Missing confirmation (e.g. unsure about presence, or latency unknown)
       eligibilityStatus = "needs-review";
     }
 

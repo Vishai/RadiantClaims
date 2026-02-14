@@ -150,12 +150,13 @@ function ResultContent() {
           description:
             "Your situation requires professional review to determine eligibility.",
           nextSteps: [
-            "Our team will review your responses carefully",
-            "We may reach out for additional information",
-            "We'll provide a detailed eligibility assessment",
+            "Double-check the presence requirement (1 full year OR the entire month of July 1962)",
+            "Gather proof of residence and medical records",
+            "If you’re still unsure, contact us for guidance before purchasing services",
           ],
-          ctaText: "Contact Us",
-          ctaLink: "/service-tiers",
+          ctaText: "Review Full Requirements",
+          ctaLink: "/eligibility",
+          showServiceLink: false,
         };
     }
   };

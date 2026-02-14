@@ -115,10 +115,19 @@ export default function Part9Form({
       handleSubmit(values);
     });
     return () => subscription.unsubscribe();
-  }, [form, onSubmit, uploadedDocuments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - set up watch only once on mount
 
-  // Also submit when documents change
+  // Submit when documents change (avoiding infinite loop)
   useEffect(() => {
+    // Skip if no documents have been uploaded yet
+    if (
+      uploadedDocuments.length === 0 &&
+      !initialData?.uploadedDocuments?.length
+    ) {
+      return;
+    }
+
     const values = form.getValues();
     const submissionData: Part9ProofOfPresence = {
       ldsChurchAssistance: values.ldsChurchAssistance,
@@ -134,7 +143,8 @@ export default function Part9Form({
         })),
     };
     onSubmit(submissionData);
-  }, [uploadedDocuments, form, onSubmit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadedDocuments]); // Only trigger when uploadedDocuments actually changes
 
   // Expose form submission to FormWizard
   React.useEffect(() => {

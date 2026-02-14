@@ -28,6 +28,7 @@ type Part10FormData = z.infer<typeof part10Schema>;
 interface Part10FormProps {
   initialData?: Partial<Part10Diseases>;
   onSubmit: (data: Part10Diseases) => void;
+  eligibilityData?: any; // Eligibility data containing previously selected diseases
 }
 
 // Disease options organized by category
@@ -80,11 +81,18 @@ const diseaseCategories = [
   },
 ];
 
-export default function Part10Form({ initialData, onSubmit }: Part10FormProps) {
+export default function Part10Form({
+  initialData,
+  onSubmit,
+  eligibilityData,
+}: Part10FormProps) {
+  // Auto-populate from eligibility data if available
+  const diseasesFromEligibility = eligibilityData?.diseaseSelected || [];
+
   const form = useForm<Part10FormData>({
     resolver: zodResolver(part10Schema),
     defaultValues: {
-      diseases: initialData?.diseases || [],
+      diseases: initialData?.diseases || diseasesFromEligibility,
     },
   });
 

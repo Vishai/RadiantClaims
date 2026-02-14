@@ -12,8 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Info, AlertTriangle } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Info, AlertTriangle, ExternalLink } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 
 const formerNameSchema = z.object({
   name: z.string().min(1, "Name is required").max(50),
@@ -47,17 +49,26 @@ interface Part2FormProps {
   initialData?: Partial<Part2ClaimantInfo>;
   onSubmit: (data: Part2ClaimantInfo) => void;
   part1Data?: Partial<Part1FilerInfo>; // Filer information for name matching validation
+  eligibilityData?: any; // raw eligibility payload captured earlier in intake
 }
 
 export function Part2Form({
   initialData,
   onSubmit,
   part1Data,
+  eligibilityData,
 }: Part2FormProps) {
   const [nameMatchWarning, setNameMatchWarning] = useState<string | null>(null);
   const [dateConsistencyErrors, setDateConsistencyErrors] = useState<string[]>(
     []
   );
+  const [eligibilityMismatchWarning, setEligibilityMismatchWarning] = useState<
+    string | null
+  >(null);
+  const [eligibilityMismatchConfirmed, setEligibilityMismatchConfirmed] =
+    useState(false);
+
+  const lastEligibilityMismatchKeyRef = useRef<string>("");
 
   const form = useForm<Part2FormData>({
     resolver: zodResolver(part2Schema),
@@ -76,6 +87,83 @@ export function Part2Form({
   const deceasedLastName = form.watch("lastName");
   const dob = form.watch("dob");
   const dod = form.watch("dod");
+
+  const normalizeDate = (value?: string | null) => {
+    if (!value) return "";
+    // If it's already YYYY-MM-DD (input[type=date]) keep it stable.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toISOString().slice(0, 10);
+  };
+
+  // Validate eligibility vs form mismatch (non-blocking, but requires explicit confirmation)
+  useEffect(() => {
+    const eligibilityDob =
+      eligibilityData?.deceasedDOB || eligibilityData?.deceasedDob || "";
+    const eligibilityDod =
+      eligibilityData?.deceasedDOD || eligibilityData?.deceasedDod || "";
+
+    const normalizedEligibilityDob = normalizeDate(eligibilityDob);
+    const normalizedEligibilityDod = normalizeDate(eligibilityDod);
+    const normalizedFormDob = normalizeDate(dob);
+    const normalizedFormDod = normalizeDate(dod);
+
+    const mismatches: string[] = [];
+
+    if (normalizedEligibilityDob && normalizedFormDob) {
+      if (normalizedEligibilityDob !== normalizedFormDob) {
+        const eligibilityFormatted = new Date(
+          normalizedEligibilityDob
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        mismatches.push(
+          `Date of Birth: You entered ${eligibilityFormatted} during the eligibility check.`
+        );
+      }
+    }
+
+    if (normalizedEligibilityDod && normalizedFormDod) {
+      if (normalizedEligibilityDod !== normalizedFormDod) {
+        const eligibilityFormatted = new Date(
+          normalizedEligibilityDod
+        ).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        mismatches.push(
+          `Date of Death: You entered ${eligibilityFormatted} during the eligibility check.`
+        );
+      }
+    }
+
+    const mismatchKey = [
+      normalizedEligibilityDob,
+      normalizedEligibilityDod,
+      normalizedFormDob,
+      normalizedFormDod,
+    ].join("|");
+
+    if (mismatches.length === 0) {
+      setEligibilityMismatchWarning(null);
+      // Reset confirmation if there is no mismatch anymore
+      lastEligibilityMismatchKeyRef.current = mismatchKey;
+      setEligibilityMismatchConfirmed(false);
+      return;
+    }
+
+    setEligibilityMismatchWarning(mismatches.join(" "));
+
+    // Only force re-confirmation when the compared values change.
+    if (lastEligibilityMismatchKeyRef.current !== mismatchKey) {
+      lastEligibilityMismatchKeyRef.current = mismatchKey;
+      setEligibilityMismatchConfirmed(false);
+    }
+  }, [eligibilityData, dob, dod]);
 
   // Validate date consistency
   useEffect(() => {
@@ -161,15 +249,67 @@ export function Part2Form({
   }, [deceasedLastName, part1Data]);
 
   const handleSubmit = (data: Part2FormData) => {
-    onSubmit(data as Part2ClaimantInfo);
+    // Include metadata about date changes if there was a mismatch
+    const submitData: Part2ClaimantInfo & { _metadata?: any } =
+      data as Part2ClaimantInfo;
+
+    if (eligibilityMismatchWarning && eligibilityMismatchConfirmed) {
+      // Add metadata to track that dates were changed from eligibility check
+      submitData._metadata = {
+        datesChangedFromEligibility: true,
+        eligibilityDatesUsed: {
+          dob: normalizeDate(
+            eligibilityData?.deceasedDOB || eligibilityData?.deceasedDob || ""
+          ),
+          dod: normalizeDate(
+            eligibilityData?.deceasedDOD || eligibilityData?.deceasedDod || ""
+          ),
+        },
+        correctedDates: {
+          dob: normalizeDate(data.dob || ""),
+          dod: normalizeDate(data.dod || ""),
+        },
+        confirmedAt: new Date().toISOString(),
+      };
+    }
+
+    onSubmit(submitData as Part2ClaimantInfo);
   };
 
-  // Non-blocking submit for FormWizard navigation — saves partial data and always allows progression
+  // Non-blocking submit for FormWizard navigation — saves partial data
   const handlePartialSubmit = useCallback(
     async (data: any) => {
-      await onSubmit(data as Part2ClaimantInfo);
+      const submitData: Part2ClaimantInfo & { _metadata?: any } =
+        data as Part2ClaimantInfo;
+
+      if (eligibilityMismatchWarning && eligibilityMismatchConfirmed) {
+        // Add metadata to track that dates were changed from eligibility check
+        submitData._metadata = {
+          datesChangedFromEligibility: true,
+          eligibilityDatesUsed: {
+            dob: normalizeDate(
+              eligibilityData?.deceasedDOB || eligibilityData?.deceasedDob || ""
+            ),
+            dod: normalizeDate(
+              eligibilityData?.deceasedDOD || eligibilityData?.deceasedDod || ""
+            ),
+          },
+          correctedDates: {
+            dob: normalizeDate(data.dob || ""),
+            dod: normalizeDate(data.dod || ""),
+          },
+          confirmedAt: new Date().toISOString(),
+        };
+      }
+
+      await onSubmit(submitData as Part2ClaimantInfo);
     },
-    [onSubmit]
+    [
+      onSubmit,
+      eligibilityMismatchWarning,
+      eligibilityMismatchConfirmed,
+      eligibilityData,
+    ]
   );
 
   useEffect(() => {
@@ -178,12 +318,26 @@ export function Part2Form({
         form.handleSubmit(
           async (data) => {
             await handlePartialSubmit(data);
+
+            // If the user changed key identity dates vs what they entered earlier,
+            // require an explicit confirmation before allowing navigation.
+            if (eligibilityMismatchWarning && !eligibilityMismatchConfirmed) {
+              resolve(false);
+              return;
+            }
+
             resolve(true);
           },
           async () => {
             const formData = form.getValues();
             await handlePartialSubmit(formData);
-            resolve(true); // Always allow progression
+
+            if (eligibilityMismatchWarning && !eligibilityMismatchConfirmed) {
+              resolve(false);
+              return;
+            }
+
+            resolve(true);
           }
         )();
       });
@@ -191,7 +345,12 @@ export function Part2Form({
     return () => {
       delete (window as any).__currentFormSubmit;
     };
-  }, [form, handlePartialSubmit]);
+  }, [
+    form,
+    handlePartialSubmit,
+    eligibilityMismatchWarning,
+    eligibilityMismatchConfirmed,
+  ]);
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -215,6 +374,103 @@ export function Part2Form({
           </div>
         </CardContent>
       </Card>
+
+      {/* Eligibility mismatch warning */}
+      {eligibilityMismatchWarning && (
+        <Card className="border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-white shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-100 p-2">
+                <AlertTriangle className="h-6 w-6 text-amber-700" />
+              </div>
+              <div className="flex-1">
+                <p className="mb-3 text-lg font-bold text-amber-900">
+                  ⚠️ Important: Date Discrepancy Detected
+                </p>
+
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="mb-2 text-sm font-semibold text-amber-900">
+                    The dates you've entered here differ from the eligibility
+                    check:
+                  </p>
+                  <div className="ml-2 space-y-1 text-sm text-amber-800">
+                    {eligibilityMismatchWarning
+                      .split(". ")
+                      .map((line, idx) => line && <p key={idx}>• {line}</p>)}
+                  </div>
+                </div>
+
+                <div className="mb-4 space-y-3">
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p className="mb-1 text-sm font-semibold text-blue-900">
+                      📋 Please verify which dates are correct:
+                    </p>
+                    <ul className="ml-4 list-disc space-y-1 text-sm text-blue-800">
+                      <li>
+                        Check the death certificate for the exact Date of Death
+                      </li>
+                      <li>Verify the Date of Birth from official documents</li>
+                      <li>
+                        These dates are critical for determining eligibility
+                        periods
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                    <p className="mb-1 text-sm font-semibold text-orange-900">
+                      ⚠️ Important to understand:
+                    </p>
+                    <p className="mb-3 text-sm text-orange-800">
+                      If the dates you're entering now are the correct ones, the
+                      eligibility assessment we performed earlier may not be
+                      accurate. The eligibility check was based on the dates you
+                      initially provided, not these corrected dates.
+                    </p>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-orange-200 pt-3">
+                      <p className="text-xs text-orange-700">
+                        Consider re-checking eligibility with the correct dates
+                      </p>
+                      <Link
+                        href="/eligibility-check"
+                        target="_blank"
+                        className="inline-flex items-center gap-1 rounded-md bg-orange-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-700"
+                      >
+                        Re-check Eligibility
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <label className="mb-3 flex cursor-pointer items-start gap-2 rounded-lg border-2 border-amber-300 bg-white p-3 transition-colors hover:bg-amber-50">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-amber-600"
+                    checked={eligibilityMismatchConfirmed}
+                    onChange={(e) =>
+                      setEligibilityMismatchConfirmed(e.target.checked)
+                    }
+                  />
+                  <span className="text-sm font-medium text-gray-800">
+                    I have verified these dates against official documents and
+                    confirm they are correct. I understand the eligibility check
+                    may need to be re-evaluated with these corrected dates.
+                  </span>
+                </label>
+
+                {!eligibilityMismatchConfirmed && (
+                  <p className="text-xs font-medium text-amber-700">
+                    ✓ You must confirm the dates are correct before proceeding
+                    to the next section.
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Date Consistency Errors */}
       {dateConsistencyErrors.length > 0 && (

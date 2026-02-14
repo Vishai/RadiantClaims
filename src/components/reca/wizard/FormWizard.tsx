@@ -155,6 +155,19 @@ export function FormWizard({
       setIsSaving(true);
       setSaveError(null);
 
+      // Ensure the latest in-section form values (react-hook-form) are pushed into
+      // workflowState before we POST it. Without this, clicking "Save Progress"
+      // can persist stale workflowState.formData (e.g., SSN appears missing).
+      try {
+        const submitFn = (window as any).__currentFormSubmit;
+        if (typeof submitFn === "function") {
+          await submitFn();
+        }
+      } catch (e) {
+        // Non-blocking: still attempt to save whatever state we currently have.
+        console.warn("[FormWizard] __currentFormSubmit failed", e);
+      }
+
       // Use ref to get latest workflow state
       const currentState = workflowStateRef.current;
 

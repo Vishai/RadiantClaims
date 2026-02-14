@@ -46,7 +46,11 @@ export function NewClaimFlow({
 
   // Eligibility state
   const [showBypassWarning, setShowBypassWarning] = useState(false);
-  const [eligibilityData, setEligibilityData] = useState<any>(null);
+  const [eligibilityData, setEligibilityData] = useState<any>({
+    // This flow is currently for RECA Downwinder claims.
+    // Include claimType so server-side eligibility logic doesn't treat it as missing.
+    claimType: "DOWNWINDER",
+  });
 
   // Claim state
   const [claimantId, setClaimantId] = useState<string | null>(null);
@@ -292,8 +296,8 @@ export function NewClaimFlow({
               disabled={
                 loading ||
                 !eligibilityData?.relationship ||
-                !eligibilityData?.exposure ||
-                !eligibilityData?.disease
+                eligibilityData?.exposure === undefined ||
+                eligibilityData?.disease === undefined
               }
             >
               {loading ? (

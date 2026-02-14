@@ -20,7 +20,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, Loader2, AlertCircle, Info } from "lucide-react";
 
 const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_STRIPE_TEST_PUBLISHABLE_KEY ||
+    ""
 );
 
 interface ClaimPricing {

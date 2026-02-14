@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Calendar, Mail, Phone, FileText, Package } from "lucide-react";
+import { formatISODateForDisplay } from "@/lib/date-utils";
 
 interface AdminSessionOverviewProps {
   session: any;
@@ -122,7 +123,7 @@ export default function AdminSessionOverview({
                   <span className="flex items-center gap-1 text-sage-600">
                     <Calendar className="h-3 w-3" /> DOB
                   </span>
-                  <span>{formatDate(claimant.dob)}</span>
+                  <span>{formatISODateForDisplay(claimant.dob)}</span>
                 </div>
               )}
               <div className="flex justify-between">

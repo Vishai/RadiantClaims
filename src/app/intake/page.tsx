@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { claimantSchema, ClaimantFormData } from "@/lib/validations/claimant";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
@@ -18,6 +17,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { Heart, CheckCircle } from "lucide-react";
 import { getPrefillData, saveUserData } from "@/lib/user-data-manager";
+import { toISODateString } from "@/lib/date-utils";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
@@ -77,10 +77,9 @@ function IntakeForm() {
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [accountCreated, setAccountCreated] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
+  const [accountCreatedEmail, setAccountCreatedEmail] = useState<string | null>(
+    null
+  );
 
   // Check if this is for a RECA claim
   const isRECAClaim = searchParams.get("claimType") === "DOWNWINDER";
@@ -114,7 +113,8 @@ function IntakeForm() {
         typeof value === "string" &&
         !form.getValues(key as keyof ClaimantFormData)
       ) {
-        form.setValue(key as keyof ClaimantFormData, value);
+        const normalizedValue = key === "dob" ? toISODateString(value) : value;
+        form.setValue(key as keyof ClaimantFormData, normalizedValue);
       }
     });
   }, [form]);
@@ -122,6 +122,9 @@ function IntakeForm() {
   const onSubmit = async (data: ClaimantFormData) => {
     setIsSubmitting(true);
     setError(null);
+    setAccountCreatedEmail(null);
+
+    const normalizedDob = toISODateString(data.dob);
 
     // Save user data for future forms
     saveUserData(
@@ -136,7 +139,7 @@ function IntakeForm() {
         county: data.county,
         state: data.state,
         postalCode: data.postalCode,
-        dob: data.dob,
+        dob: normalizedDob,
       },
       "intake"
     );
@@ -147,6 +150,7 @@ function IntakeForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          dob: normalizedDob,
           claimType: isRECAClaim ? "DOWNWINDER" : null,
         }),
       });
@@ -161,33 +165,11 @@ function IntakeForm() {
       // Send users to the dashboard after intake to continue application/documents
       const nextRoute = "/portal";
 
-      // If new account was created, auto-login the user
-      if (result.credentials) {
-        setAccountCreated({
-          email: result.credentials.email,
-          password: result.credentials.temporaryPassword,
-        });
-
-        // Auto-login with the temporary password
-        const signInResult = await signIn("credentials", {
-          email: result.credentials.email,
-          password: result.credentials.temporaryPassword,
-          redirect: false,
-        });
-
-        if (signInResult?.error) {
-          setError(
-            "Account created but auto-login failed. Please login manually."
-          );
-          setTimeout(() => {
-            router.push(`/login?callbackUrl=${nextRoute}`);
-          }, 3000);
-          return;
-        }
-
-        // Small delay to show credentials before redirect
+      // If new account was created, send to login after reset email
+      if (result.accountCreated) {
+        setAccountCreatedEmail(data.email);
         setTimeout(() => {
-          router.push(nextRoute as any);
+          router.push(`/login?callbackUrl=${nextRoute}`);
         }, 5000);
       } else {
         // Existing user - they should already be logged in or will be prompted
@@ -350,7 +332,7 @@ function IntakeForm() {
                 </div>
               )}
 
-              {accountCreated && (
+              {accountCreatedEmail && (
                 <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-6">
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500">
@@ -361,8 +343,8 @@ function IntakeForm() {
                         Account Created Successfully!
                       </h3>
                       <p className="mb-3 text-sm text-emerald-800">
-                        We've created your RadiantClaims account. Save these
-                        credentials to log in and track your claim status:
+                        We emailed a secure link to set your password and finish
+                        signing in.
                       </p>
                       <div className="mb-3 rounded-lg border border-emerald-200 bg-white p-4">
                         <div className="space-y-2 text-sm">
@@ -371,21 +353,13 @@ function IntakeForm() {
                               Email:
                             </span>{" "}
                             <code className="text-sage-900">
-                              {accountCreated.email}
-                            </code>
-                          </div>
-                          <div>
-                            <span className="font-medium text-sage-700">
-                              Temporary Password:
-                            </span>{" "}
-                            <code className="rounded bg-cream-100 px-2 py-1 font-mono text-sage-900">
-                              {accountCreated.password}
+                              {accountCreatedEmail}
                             </code>
                           </div>
                         </div>
                       </div>
                       <p className="text-xs text-emerald-700">
-                        Redirecting to document upload in 5 seconds...
+                        Redirecting to sign in in 5 seconds...
                       </p>
                     </div>
                   </div>

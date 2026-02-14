@@ -116,18 +116,33 @@ export async function createClaimSubscription(
     monthlyStripePriceId = STRIPE_CONFIG.LEGAL_MONTHLY_PER_CLAIM.priceId;
   }
 
-  // Create Stripe subscription for this claim's monthly fee
-  const stripeSubscription = await stripe.subscriptions.create({
-    customer: stripeCustomerId,
-    items: [{ price: monthlyStripePriceId }],
-    trial_period_days: 30, // First month covered by setup fee
-    metadata: {
-      claimantId,
-      serviceSubscriptionId,
-      claimOrder: claimOrder.toString(),
-      tier,
-    },
-  });
+  // Create Stripe subscription for this claim's monthly fee (if applicable)
+  // Some environments/configurations use a one-time setup fee only.
+  let stripeSubscriptionId: string | null = null;
+  let stripePriceId: string | null = null;
+
+  if (pricing.monthlyFee > 0) {
+    if (!monthlyStripePriceId) {
+      throw new Error(
+        "Monthly fee pricing is configured but STRIPE price id is missing"
+      );
+    }
+
+    const stripeSubscription = await stripe.subscriptions.create({
+      customer: stripeCustomerId,
+      items: [{ price: monthlyStripePriceId }],
+      trial_period_days: 30, // First month covered by setup fee
+      metadata: {
+        claimantId,
+        serviceSubscriptionId,
+        claimOrder: claimOrder.toString(),
+        tier,
+      },
+    });
+
+    stripeSubscriptionId = stripeSubscription.id;
+    stripePriceId = monthlyStripePriceId;
+  }
 
   // Create claim subscription in database
   const claimSubscription = await db.claimSubscription.create({
@@ -140,8 +155,8 @@ export async function createClaimSubscription(
       setupFeePaid: false, // Will be set true after setup fee payment
       setupFeeRefunded: false,
       lawyerTrackNoDiscount: tier === "LEGAL_REP",
-      stripeSubscriptionId: stripeSubscription.id,
-      stripePriceId: monthlyStripePriceId,
+      stripeSubscriptionId,
+      stripePriceId,
       status: "PENDING", // Will become ACTIVE after setup fee payment
     },
   });

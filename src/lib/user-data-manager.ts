@@ -1,3 +1,5 @@
+import { toISODateString } from "./date-utils";
+
 /**
  * Centralized User Data Management
  *
@@ -44,10 +46,14 @@ export function saveUserData(
   source: UserData["source"] = "intake"
 ): void {
   try {
+    const normalizedData = { ...data };
+    if (normalizedData.dob) {
+      normalizedData.dob = toISODateString(normalizedData.dob);
+    }
     const existing = getUserData();
     const merged: UserData = {
       ...existing,
-      ...data,
+      ...normalizedData,
       timestamp: Date.now(),
       source,
     };

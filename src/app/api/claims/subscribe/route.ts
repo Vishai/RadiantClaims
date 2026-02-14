@@ -19,6 +19,7 @@ import {
   chargeClaimSetupFee,
   getActiveClaimCount,
 } from "@/lib/claim-subscription-manager";
+import { ensureServiceSubscriptionForUser } from "@/lib/ensure-service-subscription";
 import {
   calculateClaimPricing,
   type ServiceTier,
@@ -72,8 +73,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has a service subscription
-    if (!claimant.user?.serviceSubscription) {
+    if (!claimant.user) {
+      return NextResponse.json(
+        { error: "Claimant user not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user has a service subscription (backfill legacy accounts when missing).
+    let serviceSubscription = claimant.user?.serviceSubscription ?? null;
+
+    if (!serviceSubscription) {
+      serviceSubscription = await ensureServiceSubscriptionForUser(
+        claimant.user.id
+      );
+    }
+
+    if (!serviceSubscription) {
       return NextResponse.json(
         {
           error:
@@ -84,7 +100,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const serviceSubscription = claimant.user.serviceSubscription;
     const tier = serviceSubscription.tier as ServiceTier;
 
     // Check if claim already has a subscription
@@ -242,14 +257,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!claimant.user?.serviceSubscription) {
+    if (!claimant.user) {
+      return NextResponse.json(
+        { error: "Claimant user not found" },
+        { status: 404 }
+      );
+    }
+
+    let serviceSubscription = claimant.user?.serviceSubscription ?? null;
+
+    if (!serviceSubscription) {
+      serviceSubscription = await ensureServiceSubscriptionForUser(
+        claimant.user.id
+      );
+    }
+
+    if (!serviceSubscription) {
       return NextResponse.json(
         { error: "No service subscription found" },
         { status: 400 }
       );
     }
 
-    const serviceSubscription = claimant.user.serviceSubscription;
     const tier = serviceSubscription.tier as ServiceTier;
 
     // Get current claim count

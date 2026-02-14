@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { claimantSchema } from "@/lib/validations/claimant";
-import { createCustomerAccount, sendWelcomeEmail } from "@/lib/create-customer-account";
+import { createCustomerAccount } from "@/lib/create-customer-account";
+import { sendPasswordResetEmail } from "@/lib/email";
+import { parseISODateToUTC } from "@/lib/date-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
         lastName: validated.lastName,
         email: validated.email,
         phone: validated.phone,
-        dob: new Date(validated.dob),
+        dob: parseISODateToUTC(validated.dob),
         address1: validated.address1,
         address2: validated.address2 || null,
         city: validated.city,
@@ -57,20 +59,19 @@ export async function POST(req: NextRequest) {
     });
 
     // Create customer account automatically
-    const { temporaryPassword } = await createCustomerAccount({
-      email: validated.email,
-      name: `${validated.firstName} ${validated.lastName}`,
-      claimantId: claimant.id,
-    });
-
-    // Send welcome email with credentials
-    // Only send if this is a new account (temporaryPassword is set)
-    if (temporaryPassword) {
-      await sendWelcomeEmail({
+    const { accountCreated, resetToken, resetTokenExpires } =
+      await createCustomerAccount({
         email: validated.email,
         name: `${validated.firstName} ${validated.lastName}`,
-        temporaryPassword,
         claimantId: claimant.id,
+      });
+
+    if (accountCreated && resetToken && resetTokenExpires) {
+      await sendPasswordResetEmail({
+        to: validated.email,
+        name: `${validated.firstName} ${validated.lastName}`,
+        resetToken,
+        expiresAt: resetTokenExpires,
       });
     }
 
@@ -78,15 +79,7 @@ export async function POST(req: NextRequest) {
       {
         claimant,
         intakeSession: claimant.intakeSession,
-        accountCreated: !!temporaryPassword,
-        // Include credentials in response for now (for testing)
-        // TODO: Remove in production - only send via email
-        ...(temporaryPassword && {
-          credentials: {
-            email: validated.email,
-            temporaryPassword,
-          },
-        }),
+        accountCreated,
       },
       { status: 201 }
     );
@@ -116,8 +109,12 @@ export async function GET(req: NextRequest) {
         search
           ? {
               OR: [
-                { firstName: { contains: search, mode: "insensitive" as const } },
-                { lastName: { contains: search, mode: "insensitive" as const } },
+                {
+                  firstName: { contains: search, mode: "insensitive" as const },
+                },
+                {
+                  lastName: { contains: search, mode: "insensitive" as const },
+                },
                 { email: { contains: search, mode: "insensitive" as const } },
               ],
             }

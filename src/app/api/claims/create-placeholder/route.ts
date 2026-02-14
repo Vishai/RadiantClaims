@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ensureServiceSubscriptionForUser } from "@/lib/ensure-service-subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -27,22 +28,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { claimType, eligibilityData } = body;
 
-    // Verify user has service subscription
-    const subscription = await db.serviceSubscription.findUnique({
+    // Verify user has service subscription.
+    // Backfill legacy/QA accounts that already have claims.
+    let subscription = await db.serviceSubscription.findUnique({
       where: { userId: session.user.id },
     });
 
+    const existingClaims = await db.claimant.findMany({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+
+    if (!subscription && existingClaims.length > 0) {
+      subscription = await ensureServiceSubscriptionForUser(session.user.id);
+    }
+
     if (!subscription) {
       return NextResponse.json(
-        { error: "No service subscription found" },
+        {
+          error: "No service subscription found",
+          needsServiceTier: true,
+          redirectTo: "/service-tiers",
+        },
         { status: 400 }
       );
     }
 
     // Get claim count for naming
-    const existingClaims = await db.claimant.findMany({
-      where: { userId: session.user.id },
-    });
+    // (We already queried existingClaims above)
 
     const claimOrder = existingClaims.length + 1;
 

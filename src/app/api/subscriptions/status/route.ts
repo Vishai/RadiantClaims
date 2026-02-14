@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveRecaFormAccess } from "@/lib/reca/form-access";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +12,28 @@ export const dynamic = "force-dynamic";
  * Returns the current user's service subscription status.
  * Used by the RECA form to determine if user has paid and can access the form.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const sessionId = request.nextUrl.searchParams.get("sessionId");
+    let isPortalOwner = false;
+
+    if (sessionId) {
+      const intakeSession = await prisma.intakeSession.findUnique({
+        where: { id: sessionId },
+        select: {
+          claimant: {
+            select: { userId: true },
+          },
+        },
+      });
+
+      isPortalOwner = intakeSession?.claimant?.userId === session.user.id;
     }
 
     // Fetch user's subscription
@@ -52,26 +69,38 @@ export async function GET() {
 
     // No subscription = needs to select a tier
     if (!subscription) {
+      const accessState = resolveRecaFormAccess({
+        hasSubscription: false,
+        hasPaidAccess: false,
+        isPortalOwner,
+      });
+
       return NextResponse.json({
         hasSubscription: false,
-        needsToSelectTier: true,
+        needsToSelectTier: accessState.needsToSelectTier,
         tier: null,
         status: null,
-        canAccessForms: false,
+        canAccessForms: accessState.canAccessForms,
+        needsPayment: accessState.needsPayment,
       });
     }
 
     // Legal path users - must have ACTIVE status (after first payment)
     if (subscription.tier === "LEGAL_REP") {
-      const canAccessForms = subscription.status === "ACTIVE";
+      const baseAccess = subscription.status === "ACTIVE";
+      const accessState = resolveRecaFormAccess({
+        hasSubscription: true,
+        hasPaidAccess: baseAccess,
+        isPortalOwner,
+      });
 
       return NextResponse.json({
         hasSubscription: true,
         needsToSelectTier: false,
         tier: "LEGAL_REP",
         status: subscription.status,
-        canAccessForms,
-        needsPayment: !canAccessForms,
+        canAccessForms: accessState.canAccessForms,
+        needsPayment: accessState.needsPayment,
         referredToFirm: subscription.referredToFirm,
         referredAt: subscription.referredAt,
       });
@@ -82,14 +111,14 @@ export async function GET() {
     // OR have at least one installment payment made
     // SECURITY FIX: Removed 24-hour grace period that allowed access before payment confirmation.
     // Access is now ONLY granted when webhook confirms payment.
-    const canAccessForms =
+    const baseAccess =
       subscription.tier === "DIY_PREP" &&
       (subscription.status === "ACTIVE" ||
         subscription.setupFeePaid === true ||
         (subscription.installmentPaymentCount ?? 0) > 0);
 
     // DIAGNOSTIC LOGGING for debugging payment issues
-    if (subscription.tier === "DIY_PREP" && !canAccessForms) {
+    if (subscription.tier === "DIY_PREP" && !baseAccess) {
       console.log(
         "[Subscription Status] DIY user blocked from forms:",
         "User ID:",
@@ -103,6 +132,12 @@ export async function GET() {
       );
     }
 
+    const accessState = resolveRecaFormAccess({
+      hasSubscription: true,
+      hasPaidAccess: baseAccess,
+      isPortalOwner,
+    });
+
     return NextResponse.json({
       hasSubscription: true,
       needsToSelectTier: false,
@@ -111,8 +146,8 @@ export async function GET() {
       setupFeePaid: subscription.setupFeePaid,
       setupFeePaidAt: subscription.setupFeePaidAt,
       nextBillingDate: subscription.nextBillingDate,
-      canAccessForms,
-      needsPayment: !canAccessForms,
+      canAccessForms: accessState.canAccessForms,
+      needsPayment: accessState.needsPayment,
       isInstallmentPlan: subscription.isInstallmentPlan,
       installmentPaymentCount: subscription.installmentPaymentCount,
       hasDownloadedPDF,

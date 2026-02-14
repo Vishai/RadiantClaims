@@ -801,6 +801,23 @@ export default function ClaimsAdminPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={async () => {
+                        try {
+                          await fetch(
+                            `/api/admin/claims/${selectedSession.id}/start-review`,
+                            { method: "POST" }
+                          );
+                        } catch (e) {
+                          console.error("Failed to start review", e);
+                        }
+                      }}
+                    >
+                      Start Review
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => {
                         window.open(
                           `/api/admin/sessions/${selectedSession.id}/download`,

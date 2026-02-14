@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ensureServiceSubscriptionForUser } from "@/lib/ensure-service-subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,23 @@ export async function POST(request: NextRequest) {
       where: { userId: session.user.id },
     });
 
-    // Check if user has service subscription
-    const subscription = await db.serviceSubscription.findUnique({
+    // Check if user has service subscription.
+    // Backfill legacy/QA accounts that have claims but no ServiceSubscription row.
+    let subscription = await db.serviceSubscription.findUnique({
       where: { userId: session.user.id },
     });
 
+    if (!subscription && existingClaims.length > 0) {
+      subscription = await ensureServiceSubscriptionForUser(session.user.id);
+    }
+
     if (!subscription) {
       return NextResponse.json(
-        { error: "No service subscription found" },
+        {
+          error: "No service subscription found",
+          needsServiceTier: true,
+          redirectTo: "/service-tiers",
+        },
         { status: 400 }
       );
     }
@@ -67,10 +77,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate eligibility data
-    const { relationship, exposure, disease, claimType } = eligibilityData;
+    const { relationship, exposure, disease } = eligibilityData;
 
     // Basic validation logic (same as initial eligibility check)
-    const isEligible = !!(relationship && exposure && disease && claimType);
+    // NOTE: claimType is fixed in this subsequent-claim UI flow.
+    const isEligible =
+      relationship &&
+      typeof exposure === "boolean" &&
+      typeof disease === "boolean";
 
     if (!isEligible) {
       return NextResponse.json({

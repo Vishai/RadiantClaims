@@ -51,6 +51,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // If user is on LEGAL_REP, block cancellation once staff review has started
+    if (subscription.tier === "LEGAL_REP") {
+      const started = await prisma.staffAction.findFirst({
+        where: {
+          actionType: "STARTED_REVIEW",
+          intakeSession: {
+            claimant: {
+              userId: session.user.id,
+            },
+          },
+        },
+        select: { id: true, createdAt: true },
+      });
+
+      if (started) {
+        return NextResponse.json(
+          {
+            error:
+              "Legal work has already started on your claim. Cancellation is not available here. Please contact support so we can help you avoid unnecessary fees.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // Update subscription status in database
     await prisma.serviceSubscription.update({
       where: { id: subscription.id },
