@@ -13,6 +13,7 @@ import { checkRECACompliance } from "@/lib/document-intelligence/reca-compliance
 import { analyzeRisks } from "@/lib/document-intelligence/risk-analysis";
 import { detectCategoryFromText } from "@/lib/document-intelligence/heuristic-categorization";
 import { analyzeOtherDocument } from "@/lib/document-intelligence/other-document-analyzer";
+import { sendUploadConfirmationEmail } from "@/lib/email";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -67,9 +68,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify session exists
+    // Verify session exists and get claimant info for upload confirmation
     const session = await db.intakeSession.findUnique({
       where: { id: sessionId },
+      include: {
+        claimant: { select: { email: true, firstName: true, lastName: true } },
+        uploadedFiles: { select: { id: true } },
+      },
     });
 
     if (!session) {
@@ -100,6 +105,20 @@ export async function POST(req: NextRequest) {
         uploadedAt: new Date(),
       },
     });
+
+    // Send upload confirmation email (fire-and-forget)
+    if (session.claimant?.email && session.resumeToken) {
+      const totalUploaded = (session.uploadedFiles?.length || 0) + 1;
+      sendUploadConfirmationEmail({
+        to: session.claimant.email,
+        name: `${session.claimant.firstName} ${session.claimant.lastName}`,
+        documentType: category || "Document",
+        totalUploaded,
+        resumeToken: session.resumeToken,
+      }).catch((err) =>
+        console.error("Failed to send upload confirmation email:", err)
+      );
+    }
 
     // Trigger document intelligence processing asynchronously
     // Process in background without blocking the response

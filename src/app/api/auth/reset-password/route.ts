@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createAuditLog, getClientIp, getUserAgent } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
+import { sendPasswordChangedEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -67,6 +68,16 @@ export async function POST(req: Request) {
       userAgent,
       success: true,
     });
+
+    // Send password changed confirmation email (fire-and-forget)
+    if (user.email) {
+      sendPasswordChangedEmail({
+        to: user.email,
+        name: user.name || "there",
+      }).catch((err) =>
+        console.error("Failed to send password changed email:", err)
+      );
+    }
 
     return NextResponse.json(
       { message: "Password reset successfully" },

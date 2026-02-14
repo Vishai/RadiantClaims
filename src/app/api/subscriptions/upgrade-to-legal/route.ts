@@ -12,6 +12,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { sendAttorneyNewClientEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,33 @@ export async function POST(req: NextRequest) {
             })
           )
         );
+
+        // Notify firm attorneys about new client assignments (fire-and-forget)
+        const firmUsers = await prisma.user.findMany({
+          where: { firmId: heritageLaw.id, role: "ATTORNEY" },
+          select: { email: true, name: true },
+        });
+
+        for (const claimant of user.claimants) {
+          for (const attorney of firmUsers) {
+            if (!attorney.email) continue;
+            sendAttorneyNewClientEmail({
+              to: attorney.email,
+              attorneyName: attorney.name || undefined,
+              firmName: heritageLaw.name,
+              claimant: {
+                name: `${claimant.firstName} ${claimant.lastName}`,
+                email: claimant.email,
+                phone: claimant.phone || undefined,
+                state: claimant.state,
+                county: claimant.county || undefined,
+                claimId: claimant.id,
+              },
+            }).catch((err) =>
+              console.error("Failed to send attorney new client email:", err)
+            );
+          }
+        }
       }
     }
 

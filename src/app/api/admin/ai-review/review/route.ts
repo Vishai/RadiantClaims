@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ValidationStatus } from "@prisma/client";
+import { sendDocumentValidatedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,33 @@ export async function POST(request: NextRequest) {
         }),
       },
     });
+
+    // Send document validated email when approved (fire-and-forget)
+    if (decision === "STAFF_APPROVED") {
+      const file = await prisma.uploadedFile.findUnique({
+        where: { id: validation.uploadedFileId },
+        include: {
+          intakeSession: {
+            include: {
+              claimant: {
+                select: { email: true, firstName: true, lastName: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (file?.intakeSession?.claimant?.email) {
+        const claimant = file.intakeSession.claimant;
+        sendDocumentValidatedEmail({
+          to: claimant.email,
+          name: `${claimant.firstName} ${claimant.lastName}`,
+          resumeToken: file.intakeSession.resumeToken || undefined,
+        }).catch((err) =>
+          console.error("Failed to send document validated email:", err)
+        );
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

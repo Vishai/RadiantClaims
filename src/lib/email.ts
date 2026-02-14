@@ -14,6 +14,23 @@ import PaymentFailedEmail from "@/emails/payment-failed";
 import IntakeStartedEmail from "@/emails/intake-started";
 import { ClientProgressMilestoneEmail } from "@/emails/client/progress-milestone";
 import type { MilestoneData } from "@/emails/client/progress-milestone";
+import PasswordChangedEmail from "@/emails/password-changed";
+import DocumentValidatedEmail from "@/emails/document-validated";
+import { AttorneyNewClientNotification } from "@/emails/attorney/new-client-notification";
+import type {
+  ClaimantSummary,
+  ClaimOverview,
+} from "@/emails/attorney/new-client-notification";
+import { ClientDocumentFollowUpEmail } from "@/emails/client/document-follow-up";
+import type { DocumentReminder } from "@/emails/client/document-follow-up";
+import { ClientReengagementEmail } from "@/emails/client/re-engagement";
+import { AttorneyActivitySummaryEmail } from "@/emails/attorney/activity-summary";
+import type {
+  SummaryMetrics,
+  ActivityItem,
+} from "@/emails/attorney/activity-summary";
+import FirmOnboardingEmail from "@/emails/firm-onboarding";
+import AttorneyWelcomeEmail from "@/emails/attorney-welcome";
 import { EmailType } from "@prisma/client";
 import {
   isUnsubscribed,
@@ -853,6 +870,500 @@ export async function sendProgressMilestoneEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending progress milestone email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send password changed confirmation email
+ * Does NOT check unsubscribe — security emails always send
+ */
+export async function sendPasswordChangedEmail(params: {
+  to: string;
+  name: string;
+}) {
+  const { to, name } = params;
+
+  const baseUrl = getBaseUrl();
+  const loginUrl = `${baseUrl}/login`;
+
+  try {
+    const emailHtml = await render(
+      PasswordChangedEmail({
+        name,
+        timestamp: new Date().toLocaleString("en-US", {
+          timeZone: "America/Denver",
+        }),
+        loginUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Your RadiantClaims Password Has Been Changed",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send password changed email:", error);
+      throw new Error(
+        `Failed to send password changed email: ${error.message}`
+      );
+    }
+
+    console.log("Password changed email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending password changed email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send document validated notification email
+ */
+export async function sendDocumentValidatedEmail(params: {
+  to: string;
+  name: string;
+  resumeToken?: string;
+}) {
+  const { to, name, resumeToken } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.DOCUMENT_VALIDATED);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from DOCUMENT_VALIDATED emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const resumeUrl = resumeToken
+    ? `${baseUrl}/intake/step2?token=${resumeToken}`
+    : `${baseUrl}/portal`;
+
+  try {
+    const emailHtml = await render(
+      DocumentValidatedEmail({
+        name,
+        resumeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.DOCUMENT_VALIDATED
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Your Document Has Been Validated",
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send document validated email:", error);
+      throw new Error(
+        `Failed to send document validated email: ${error.message}`
+      );
+    }
+
+    console.log("Document validated email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending document validated email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send attorney new client notification email
+ */
+export async function sendAttorneyNewClientEmail(params: {
+  to: string;
+  attorneyName?: string;
+  firmName?: string;
+  claimant: ClaimantSummary;
+  claim?: ClaimOverview;
+}) {
+  const { to, attorneyName, firmName, claimant, claim } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.ATTORNEY_NEW_CLIENT);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from ATTORNEY_NEW_CLIENT emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const dashboardUrl = `${baseUrl}/attorney/dashboard`;
+  const claimantUrl = claimant.claimId
+    ? `${baseUrl}/attorney/claimants/${claimant.claimId}`
+    : dashboardUrl;
+  const settingsUrl = `${baseUrl}/attorney/settings`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.ATTORNEY_NEW_CLIENT
+    );
+    const emailHtml = await render(
+      AttorneyNewClientNotification({
+        attorneyName,
+        firmName,
+        claimant,
+        claim,
+        dashboardUrl,
+        claimantUrl,
+        settingsUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `New Client Assigned: ${claimant.name}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send attorney new client email:", error);
+      throw new Error(
+        `Failed to send attorney new client email: ${error.message}`
+      );
+    }
+
+    console.log("Attorney new client email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending attorney new client email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send client document follow-up email (cron-triggered)
+ */
+export async function sendClientDocumentFollowUpEmail(params: {
+  to: string;
+  claimantName?: string;
+  progressPercent?: number;
+  documents?: DocumentReminder[];
+  cadenceLabel?: string;
+}) {
+  const { to, claimantName, progressPercent, documents, cadenceLabel } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.CLIENT_DOCUMENT_FOLLOW_UP
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from CLIENT_DOCUMENT_FOLLOW_UP emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.CLIENT_DOCUMENT_FOLLOW_UP
+    );
+    const emailHtml = await render(
+      ClientDocumentFollowUpEmail({
+        claimantName,
+        progressPercent,
+        portalUrl,
+        documents,
+        cadenceLabel,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Documents Needed for Your RECA Claim",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send document follow-up email:", error);
+      throw new Error(
+        `Failed to send document follow-up email: ${error.message}`
+      );
+    }
+
+    console.log("Document follow-up email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending document follow-up email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send client re-engagement email (cron-triggered)
+ */
+export async function sendReengagementEmail(params: {
+  to: string;
+  claimantName?: string;
+  daysInactive?: number;
+  priorityScore?: number;
+  recommendedAction?: string;
+}) {
+  const { to, claimantName, daysInactive, priorityScore, recommendedAction } =
+    params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.CLIENT_REENGAGEMENT);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from CLIENT_REENGAGEMENT emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+  const assistanceUrl = `${baseUrl}/chat`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.CLIENT_REENGAGEMENT
+    );
+    const emailHtml = await render(
+      ClientReengagementEmail({
+        claimantName,
+        daysInactive,
+        priorityScore,
+        recommendedAction,
+        portalUrl,
+        assistanceUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Your RECA Claim is Waiting — Let's Get Back on Track",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send re-engagement email:", error);
+      throw new Error(`Failed to send re-engagement email: ${error.message}`);
+    }
+
+    console.log("Re-engagement email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending re-engagement email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send attorney activity summary email (cron-triggered)
+ */
+export async function sendAttorneyActivitySummaryEmail(params: {
+  to: string;
+  timeframeLabel?: string;
+  metrics?: SummaryMetrics;
+  activities?: ActivityItem[];
+}) {
+  const { to, timeframeLabel, metrics, activities } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.ATTORNEY_ACTIVITY_SUMMARY
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from ATTORNEY_ACTIVITY_SUMMARY emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const dashboardUrl = `${baseUrl}/attorney/dashboard`;
+  const managePreferencesUrl = `${baseUrl}/attorney/settings`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.ATTORNEY_ACTIVITY_SUMMARY
+    );
+    const emailHtml = await render(
+      AttorneyActivitySummaryEmail({
+        timeframeLabel,
+        metrics,
+        activities,
+        dashboardUrl,
+        managePreferencesUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `Activity Summary — ${timeframeLabel || "Today"}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send attorney activity summary email:", error);
+      throw new Error(
+        `Failed to send attorney activity summary email: ${error.message}`
+      );
+    }
+
+    console.log("Attorney activity summary email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending attorney activity summary email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send firm onboarding email
+ */
+export async function sendFirmOnboardingEmail(params: {
+  to: string;
+  firmName: string;
+  contactName: string;
+  attorneyEmail: string;
+  attorneyPassword: string;
+  demoEmail: string;
+  demoPassword: string;
+}) {
+  const {
+    to,
+    firmName,
+    contactName,
+    attorneyEmail,
+    attorneyPassword,
+    demoEmail,
+    demoPassword,
+  } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.FIRM_ONBOARDING);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from FIRM_ONBOARDING emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const loginUrl = `${baseUrl}/login`;
+
+  try {
+    const emailHtml = await render(
+      FirmOnboardingEmail({
+        firmName,
+        contactName,
+        attorneyEmail,
+        attorneyPassword,
+        demoEmail,
+        demoPassword,
+        loginUrl,
+      }),
+      { pretty: true }
+    );
+
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.FIRM_ONBOARDING
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `Welcome to RadiantClaims — ${firmName} Onboarding`,
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send firm onboarding email:", error);
+      throw new Error(`Failed to send firm onboarding email: ${error.message}`);
+    }
+
+    console.log("Firm onboarding email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending firm onboarding email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send attorney welcome email
+ */
+export async function sendAttorneyWelcomeEmail(params: {
+  to: string;
+  name: string;
+  email: string;
+  temporaryPassword: string;
+}) {
+  const { to, name, email, temporaryPassword } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.ATTORNEY_WELCOME);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from ATTORNEY_WELCOME emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const loginUrl = `${baseUrl}/login`;
+  const changePasswordUrl = `${baseUrl}/attorney/settings`;
+
+  try {
+    const emailHtml = await render(
+      AttorneyWelcomeEmail({
+        name,
+        email,
+        temporaryPassword,
+        loginUrl,
+        changePasswordUrl,
+      }),
+      { pretty: true }
+    );
+
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.ATTORNEY_WELCOME
+    );
+    const finalHtml = emailHtml.replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Welcome to RadiantClaims — Attorney Portal Access",
+      html: finalHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send attorney welcome email:", error);
+      throw new Error(
+        `Failed to send attorney welcome email: ${error.message}`
+      );
+    }
+
+    console.log("Attorney welcome email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending attorney welcome email:", error);
     throw error;
   }
 }

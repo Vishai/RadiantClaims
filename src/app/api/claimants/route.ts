@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { claimantSchema } from "@/lib/validations/claimant";
 import { createCustomerAccount } from "@/lib/create-customer-account";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 import { parseISODateToUTC } from "@/lib/date-utils";
 
 export async function POST(req: NextRequest) {
@@ -67,6 +67,17 @@ export async function POST(req: NextRequest) {
       });
 
     if (accountCreated && resetToken && resetTokenExpires) {
+      // Send welcome email (fire-and-forget)
+      sendWelcomeEmail({
+        to: validated.email,
+        name: `${validated.firstName} ${validated.lastName}`,
+        email: validated.email,
+        temporaryPassword: "Set via password reset link",
+        claimantId: claimant.id,
+        resumeToken: claimant.intakeSession?.resumeToken,
+      }).catch((err) => console.error("Failed to send welcome email:", err));
+
+      // Send password reset email so user can set their password
       await sendPasswordResetEmail({
         to: validated.email,
         name: `${validated.firstName} ${validated.lastName}`,

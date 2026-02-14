@@ -536,6 +536,9 @@ enum EmailType {
   PAYMENT_CONFIRMATION // Payment/checkout success confirmation
   PAYMENT_FAILED // Payment failure notification
   INTAKE_STARTED // First form save / intake session started
+  PASSWORD_CHANGED // Password change confirmation
+  FIRM_ONBOARDING // Law firm onboarding
+  ATTORNEY_WELCOME // Attorney account welcome
 }
 
 model EmailPreference {

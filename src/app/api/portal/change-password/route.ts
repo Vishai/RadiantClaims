@@ -3,6 +3,7 @@ import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { sendPasswordChangedEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,14 @@ export async function POST(req: NextRequest) {
         passwordChangedAt: new Date(),
       },
     });
+
+    // Send password changed confirmation email (fire-and-forget)
+    sendPasswordChangedEmail({
+      to: session.user.email,
+      name: user.name || "there",
+    }).catch((err) =>
+      console.error("Failed to send password changed email:", err)
+    );
 
     return NextResponse.json({
       success: true,
