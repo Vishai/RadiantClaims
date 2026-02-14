@@ -8,6 +8,12 @@ import ResourceFollowUpEmail from "@/emails/client/resource-follow-up";
 import ResourceAlternativesEmail from "@/emails/client/resource-alternatives";
 import ResourceSuccessEmail from "@/emails/client/resource-success";
 import PasswordResetEmail from "@/emails/password-reset";
+import WaitlistConfirmationEmail from "@/emails/waitlist-confirmation";
+import PaymentConfirmationEmail from "@/emails/payment-confirmation";
+import PaymentFailedEmail from "@/emails/payment-failed";
+import IntakeStartedEmail from "@/emails/intake-started";
+import { ClientProgressMilestoneEmail } from "@/emails/client/progress-milestone";
+import type { MilestoneData } from "@/emails/client/progress-milestone";
 import { EmailType } from "@prisma/client";
 import {
   isUnsubscribed,
@@ -570,6 +576,283 @@ export async function sendPasswordResetEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending password reset email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send waitlist confirmation email
+ */
+export async function sendWaitlistConfirmationEmail(params: {
+  to: string;
+  name?: string;
+}) {
+  const { to, name } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.WAITLIST_CONFIRMATION
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from WAITLIST_CONFIRMATION emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.WAITLIST_CONFIRMATION
+    );
+    const emailHtml = await render(
+      WaitlistConfirmationEmail({
+        name,
+        email: to,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "You're on the RadiantClaims Waitlist",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send waitlist confirmation email:", error);
+      throw new Error(
+        `Failed to send waitlist confirmation email: ${error.message}`
+      );
+    }
+
+    console.log("Waitlist confirmation email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending waitlist confirmation email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send payment confirmation email
+ */
+export async function sendPaymentConfirmationEmail(params: {
+  to: string;
+  name?: string;
+  amount: number;
+  paymentType: string;
+  planDescription: string;
+}) {
+  const { to, name, amount, paymentType, planDescription } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.PAYMENT_CONFIRMATION);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from PAYMENT_CONFIRMATION emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.PAYMENT_CONFIRMATION
+    );
+    const emailHtml = await render(
+      PaymentConfirmationEmail({
+        name: name || "there",
+        amount: `$${amount.toFixed(2)}`,
+        paymentType,
+        planDescription,
+        portalUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `Payment Confirmed — $${amount.toFixed(2)}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send payment confirmation email:", error);
+      throw new Error(
+        `Failed to send payment confirmation email: ${error.message}`
+      );
+    }
+
+    console.log("Payment confirmation email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending payment confirmation email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send payment failed notification email
+ */
+export async function sendPaymentFailedEmail(params: {
+  to: string;
+  name?: string;
+  amount: number;
+  failureReason?: string;
+}) {
+  const { to, name, amount, failureReason } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.PAYMENT_FAILED);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from PAYMENT_FAILED emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(to, EmailType.PAYMENT_FAILED);
+    const emailHtml = await render(
+      PaymentFailedEmail({
+        name: name || "there",
+        amount: `$${amount.toFixed(2)}`,
+        failureReason: failureReason || "Your payment method was declined",
+        portalUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Action Needed — Payment Unsuccessful",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send payment failed email:", error);
+      throw new Error(`Failed to send payment failed email: ${error.message}`);
+    }
+
+    console.log("Payment failed email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending payment failed email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send intake session started confirmation email
+ */
+export async function sendIntakeStartedEmail(params: {
+  to: string;
+  name?: string;
+  sessionId: string;
+}) {
+  const { to, name, sessionId } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.INTAKE_STARTED);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from INTAKE_STARTED emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const portalUrl = `${baseUrl}/portal`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(to, EmailType.INTAKE_STARTED);
+    const emailHtml = await render(
+      IntakeStartedEmail({
+        name: name || "there",
+        sessionId,
+        portalUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "Your RECA Claim Preparation Has Started",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send intake started email:", error);
+      throw new Error(`Failed to send intake started email: ${error.message}`);
+    }
+
+    console.log("Intake started email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending intake started email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send progress milestone email
+ */
+export async function sendProgressMilestoneEmail(params: {
+  to: string;
+  name?: string;
+  milestone: MilestoneData;
+}) {
+  const { to, name, milestone } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.CLIENT_PROGRESS_MILESTONE
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from CLIENT_PROGRESS_MILESTONE emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.CLIENT_PROGRESS_MILESTONE
+    );
+    const emailHtml = await render(
+      ClientProgressMilestoneEmail({
+        claimantName: name,
+        milestone,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `Milestone: ${milestone.milestoneTitle}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send progress milestone email:", error);
+      throw new Error(
+        `Failed to send progress milestone email: ${error.message}`
+      );
+    }
+
+    console.log("Progress milestone email sent successfully:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending progress milestone email:", error);
     throw error;
   }
 }

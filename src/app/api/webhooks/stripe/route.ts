@@ -19,6 +19,10 @@ import {
   handleClaimSubscriptionCancelled,
   handleClaimSubscriptionUpdated,
 } from "@/lib/stripe-webhook-handlers";
+import {
+  sendPaymentConfirmationEmail,
+  sendPaymentFailedEmail,
+} from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -199,6 +203,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? session.subscription
       : session.subscription?.id;
 
+  // Look up user email for payment confirmation emails
+  const user = userId
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true },
+      })
+    : null;
+
   // Legal Rep: monthly subscription only, no setup fee
   if (tier === "LEGAL_REP") {
     await prisma.serviceSubscription.update({
@@ -224,6 +236,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           }),
         },
       });
+    }
+
+    // Send payment confirmation email
+    if (user?.email) {
+      const legalRepAmount = session.amount_total
+        ? session.amount_total / 100
+        : 0;
+      sendPaymentConfirmationEmail({
+        to: user.email,
+        name: user.name || undefined,
+        amount: legalRepAmount,
+        paymentType: "Subscription",
+        planDescription: "Legal Representative Plan",
+      }).catch((err) =>
+        console.error("Failed to send payment confirmation email:", err)
+      );
     }
 
     return;
@@ -271,6 +299,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }),
       },
     });
+
+    // Send payment confirmation email for installment plan start
+    if (user?.email) {
+      sendPaymentConfirmationEmail({
+        to: user.email,
+        name: user.name || undefined,
+        amount: paymentAmount,
+        paymentType: "Installment 1 of 2",
+        planDescription: "DIY Prep — Installment Plan",
+      }).catch((err) =>
+        console.error("Failed to send payment confirmation email:", err)
+      );
+    }
 
     return;
   }
@@ -328,6 +369,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       }),
     },
   });
+
+  // Send payment confirmation email
+  if (user?.email) {
+    sendPaymentConfirmationEmail({
+      to: user.email,
+      name: user.name || undefined,
+      amount: paymentAmount,
+      paymentType: "Setup Fee",
+      planDescription: "DIY Prep — Full Payment",
+    }).catch((err) =>
+      console.error("Failed to send payment confirmation email:", err)
+    );
+  }
 }
 
 /**
@@ -634,6 +688,23 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         }),
       },
     });
+
+    // Send payment failed notification email
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
+    if (user?.email) {
+      sendPaymentFailedEmail({
+        to: user.email,
+        name: user.name || undefined,
+        amount: (invoice.amount_due || 0) / 100,
+        failureReason:
+          invoice.last_finalization_error?.message || "Payment failed",
+      }).catch((err) =>
+        console.error("Failed to send payment failed email:", err)
+      );
+    }
   }
 }
 

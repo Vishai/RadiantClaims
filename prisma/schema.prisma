@@ -532,6 +532,10 @@ enum EmailType {
   RESOURCE_FOLLOW_UP // Initial follow-up for resource feedback
   RESOURCE_ALTERNATIVES // Second follow-up with alternatives
   RESOURCE_SUCCESS // Success confirmation with upload prompt
+  WAITLIST_CONFIRMATION // Waitlist signup confirmation
+  PAYMENT_CONFIRMATION // Payment/checkout success confirmation
+  PAYMENT_FAILED // Payment failure notification
+  INTAKE_STARTED // First form save / intake session started
 }
 
 model EmailPreference {

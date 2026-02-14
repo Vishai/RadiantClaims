@@ -10,6 +10,10 @@ import {
 } from "@/lib/reca/types";
 import { calculateCompletionPercentage } from "@/lib/reca/workflow";
 import { toISODateString } from "@/lib/date-utils";
+import {
+  sendIntakeStartedEmail,
+  sendProgressMilestoneEmail,
+} from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -368,6 +372,40 @@ export async function POST(
       },
     });
 
+    // --- Email triggers (fire and forget) ---
+    const userEmail = session.user.email;
+    const userName = session.user.name;
+    const previousPercent = intakeSession.recaCompletionPercent || 0;
+
+    if (userEmail) {
+      // Intake started: first meaningful save (was 0, now > 0)
+      if (previousPercent === 0 && completionPercentage > 0) {
+        sendIntakeStartedEmail({
+          to: userEmail,
+          name: userName || undefined,
+          sessionId,
+        }).catch((err) =>
+          console.error("Failed to send intake started email:", err)
+        );
+      }
+
+      // Progress milestones at 25%, 50%, 75%, 100%
+      const milestoneThresholds = [25, 50, 75, 100];
+      for (const threshold of milestoneThresholds) {
+        if (previousPercent < threshold && completionPercentage >= threshold) {
+          const milestoneConfig = getMilestoneConfig(threshold);
+          sendProgressMilestoneEmail({
+            to: userEmail,
+            name: userName || undefined,
+            milestone: milestoneConfig,
+          }).catch((err) =>
+            console.error(`Failed to send ${threshold}% milestone email:`, err)
+          );
+          break; // Only send one milestone email per save
+        }
+      }
+    }
+
     const response: SaveWorkflowResponse = {
       success: true,
       sessionId: updated.id,
@@ -386,4 +424,87 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+/**
+ * Get milestone configuration for progress email
+ */
+function getMilestoneConfig(percent: number) {
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const portalUrl = `${baseUrl}/portal`;
+
+  const configs: Record<
+    number,
+    {
+      milestoneTitle: string;
+      message: string;
+      completedSteps: string[];
+      upcomingSteps: string[];
+    }
+  > = {
+    25: {
+      milestoneTitle: "Getting Started",
+      message:
+        "You've completed the initial sections. The foundation of your claim is taking shape.",
+      completedSteps: ["Filer information", "Basic eligibility screening"],
+      upcomingSteps: [
+        "Exposure history details",
+        "Medical evidence sections",
+        "Supporting documents",
+      ],
+    },
+    50: {
+      milestoneTitle: "Halfway There",
+      message:
+        "Excellent progress! You've completed half of the required sections.",
+      completedSteps: [
+        "Filer & claimant information",
+        "Eligibility screening",
+        "Exposure history",
+        "Employment details",
+      ],
+      upcomingSteps: [
+        "Medical evidence",
+        "Supporting documentation",
+        "Final review",
+      ],
+    },
+    75: {
+      milestoneTitle: "Almost Done",
+      message:
+        "You're in the home stretch. Just a few more sections to complete your claim packet.",
+      completedSteps: [
+        "All personal information",
+        "Complete exposure history",
+        "Medical evidence",
+        "Employment records",
+      ],
+      upcomingSteps: ["Final document uploads", "Review and sign"],
+    },
+    100: {
+      milestoneTitle: "Form Complete",
+      message:
+        "All form sections are complete. Review your packet and prepare to submit.",
+      completedSteps: [
+        "All 16 form sections",
+        "Supporting documentation",
+        "Eligibility verified",
+      ],
+      upcomingSteps: [
+        "Final review in portal",
+        "Download and mail packet to DOJ",
+      ],
+    },
+  };
+
+  const config = configs[percent] ?? configs[25]!;
+
+  return {
+    percentComplete: percent,
+    milestoneTitle: config.milestoneTitle,
+    message: config.message,
+    completedSteps: config.completedSteps,
+    upcomingSteps: config.upcomingSteps,
+    portalUrl,
+  };
 }

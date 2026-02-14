@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { WaitlistStatus } from "@prisma/client";
+import { sendWaitlistConfirmationEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,8 +93,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send confirmation email via Resend
-    // await sendWaitlistConfirmationEmail(email, name);
+    // Send waitlist confirmation email (fire and forget)
+    sendWaitlistConfirmationEmail({
+      to: email.toLowerCase(),
+      name: name || undefined,
+    }).catch((err) =>
+      console.error("Failed to send waitlist confirmation email:", err)
+    );
 
     return NextResponse.json(
       {

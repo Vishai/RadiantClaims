@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { generatePacketArchive } from "@/lib/reca/packet-generator";
 import { getObject } from "@/lib/r2";
 import type { PacketStatus } from "@prisma/client";
+import { sendPacketReadyEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,29 @@ export async function POST(
       initiatedByUserId: authSession.user.id,
       forceRegenerate: true,
     });
+
+    // Send packet ready notification email
+    if (result.status === "READY" || result.status === "READY_TO_MAIL") {
+      const userEmail = intakeSession.claimant?.email || authSession.user.email;
+      const userName =
+        intakeSession.claimant?.firstName || authSession.user.name;
+      const docCount = await db.uploadedFile.count({
+        where: {
+          intakeSessionId: params.sessionId,
+          status: { in: ["READY", "APPROVED", "VALIDATED"] },
+        },
+      });
+
+      if (userEmail) {
+        sendPacketReadyEmail({
+          to: userEmail,
+          name: userName || "there",
+          documentCount: docCount,
+        }).catch((err) =>
+          console.error("Failed to send packet ready email:", err)
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,
