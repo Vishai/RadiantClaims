@@ -391,6 +391,11 @@ export function LegalRepresentationAgreement({
         </div>
       </div>
 
+      {/* Promo code hint */}
+      <p className="text-center text-xs text-sage-600">
+        Have a promo code? You can enter it on the next checkout screen.
+      </p>
+
       {/* Action Buttons */}
       <div className="flex gap-4">
         <Button
