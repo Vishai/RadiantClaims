@@ -34,7 +34,7 @@ import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
 import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
 import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
-import { getBetaPricing } from "@/lib/constants/beta-config";
+import { getBetaPricing, isBetaActive } from "@/lib/constants/beta-config";
 import { BetaBadge, BetaPrice, BetaBanner } from "@/components/BetaBanner";
 
 function ServiceTiersContent() {
@@ -56,7 +56,6 @@ function ServiceTiersContent() {
 
   // Beta pricing — reads from beta-config.ts; returns original prices when beta is off
   const diyFullBeta = getBetaPricing(499);
-  const diyInstallmentBeta = getBetaPricing(249.99);
 
   // SECURITY: Clean up old sessionStorage keys on mount to prevent cross-user contamination
   useEffect(() => {
@@ -144,7 +143,7 @@ function ServiceTiersContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tier: "DIY_PREP",
-          paymentPlan,
+          paymentPlan: isBetaActive() ? "full" : paymentPlan,
           policyType: "TERMS_OF_SERVICE",
           policyVersion: "1.0",
           ipAddress: window.location.hostname,
@@ -426,7 +425,9 @@ function ServiceTiersContent() {
                     className="text-3xl font-bold text-sage-900"
                   />
                   <div className="text-sm font-bold text-terracotta-600">
-                    One-time or 2 Payments
+                    {isBetaActive()
+                      ? "One-time Payment"
+                      : "One-time or 2 Payments"}
                   </div>
                 </div>
               </div>
@@ -483,87 +484,106 @@ function ServiceTiersContent() {
 
               {/* Payment Plan Selector */}
               <div className="rounded-lg border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white p-4">
-                <p className="mb-3 text-sm font-semibold text-sage-900">
-                  Choose Your Payment Plan
-                </p>
-                <div className="space-y-3">
-                  {/* Full Payment Option */}
-                  <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
-                      paymentPlan === "full"
-                        ? "border-sage-600 bg-sage-100"
-                        : "border-sage-200 bg-white hover:border-sage-400"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentPlan"
-                      value="full"
-                      checked={paymentPlan === "full"}
-                      onChange={(e) =>
-                        setPaymentPlan(e.target.value as "full" | "installment")
-                      }
-                      className="mt-1 h-4 w-4 text-sage-600"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sage-900">
-                          Pay in Full
-                        </span>
-                        <BetaPrice
-                          originalPrice={499}
-                          discountedPrice={diyFullBeta.finalPrice}
-                          className="text-lg font-bold text-sage-900"
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-sage-600">
-                        One-time payment • No recurring charges
+                {isBetaActive() ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-sage-900">
+                        One-Time Payment
                       </p>
+                      <BetaPrice
+                        originalPrice={499}
+                        discountedPrice={diyFullBeta.finalPrice}
+                        className="text-lg font-bold text-sage-900"
+                      />
                     </div>
-                  </label>
+                    <p className="mt-2 text-xs text-sage-600">
+                      Financing available at checkout via Klarna, Affirm, or
+                      Afterpay
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-3 text-sm font-semibold text-sage-900">
+                      Choose Your Payment Plan
+                    </p>
+                    <div className="space-y-3">
+                      {/* Full Payment Option */}
+                      <label
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
+                          paymentPlan === "full"
+                            ? "border-sage-600 bg-sage-100"
+                            : "border-sage-200 bg-white hover:border-sage-400"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentPlan"
+                          value="full"
+                          checked={paymentPlan === "full"}
+                          onChange={(e) =>
+                            setPaymentPlan(
+                              e.target.value as "full" | "installment"
+                            )
+                          }
+                          className="mt-1 h-4 w-4 text-sage-600"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sage-900">
+                              Pay in Full
+                            </span>
+                            <span className="text-lg font-bold text-sage-900">
+                              $499
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-sage-600">
+                            One-time payment • No recurring charges
+                          </p>
+                        </div>
+                      </label>
 
-                  {/* Installment Plan Option */}
-                  <label
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
-                      paymentPlan === "installment"
-                        ? "border-sage-600 bg-sage-100"
-                        : "border-sage-200 bg-white hover:border-sage-400"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentPlan"
-                      value="installment"
-                      checked={paymentPlan === "installment"}
-                      onChange={(e) =>
-                        setPaymentPlan(e.target.value as "full" | "installment")
-                      }
-                      className="mt-1 h-4 w-4 text-sage-600"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sage-900">
-                          2-Payment Plan
-                        </span>
-                        <BetaPrice
-                          originalPrice={249.99}
-                          discountedPrice={diyInstallmentBeta.finalPrice}
-                          suffix=" × 2"
-                          className="text-lg font-bold text-sage-900"
+                      {/* Installment Plan Option */}
+                      <label
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all ${
+                          paymentPlan === "installment"
+                            ? "border-sage-600 bg-sage-100"
+                            : "border-sage-200 bg-white hover:border-sage-400"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentPlan"
+                          value="installment"
+                          checked={paymentPlan === "installment"}
+                          onChange={(e) =>
+                            setPaymentPlan(
+                              e.target.value as "full" | "installment"
+                            )
+                          }
+                          className="mt-1 h-4 w-4 text-sage-600"
                         />
-                      </div>
-                      <p className="mt-1 text-xs text-sage-600">
-                        ${diyInstallmentBeta.finalPrice.toFixed(2)} today, then
-                        ${diyInstallmentBeta.finalPrice.toFixed(2)} in 30 days •
-                        Auto-stops after 2 payments
-                      </p>
-                      <p className="mt-1 text-xs text-blue-600">
-                        💳 Card payments only (Affirm/Klarna not available for
-                        installments)
-                      </p>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sage-900">
+                              2-Payment Plan
+                            </span>
+                            <span className="text-lg font-bold text-sage-900">
+                              $249.99 × 2
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-sage-600">
+                            $249.99 today, then $249.99 in 30 days • Auto-stops
+                            after 2 payments
+                          </p>
+                          <p className="mt-1 text-xs text-blue-600">
+                            Card payments only (Affirm/Klarna not available for
+                            installments)
+                          </p>
+                        </div>
+                      </label>
                     </div>
-                  </label>
-                </div>
+                  </>
+                )}
               </div>
 
               {/* CTA Button */}

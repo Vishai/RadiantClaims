@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/audit";
 import { stripe, STRIPE_CONFIG } from "@/lib/stripe";
 import Stripe from "stripe";
+import { getBetaStripeCouponId } from "@/lib/beta-stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { tier, policyType, policyVersion, ipAddress, paymentPlan } = body;
+
+    // Check if beta discount is available (server-side 30-user cap enforcement)
+    const betaCouponId =
+      tier === "DIY_PREP" ? await getBetaStripeCouponId() : null;
+    const hasBetaDiscount = !!betaCouponId;
 
     if (!tier || !["DIY_PREP", "LEGAL_REP"].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
@@ -173,7 +179,10 @@ export async function POST(request: NextRequest) {
               },
             },
           }),
-          allow_promotion_codes: true,
+          // Beta coupon and promo codes are mutually exclusive in Stripe
+          ...(betaCouponId
+            ? { discounts: [{ coupon: betaCouponId }] }
+            : { allow_promotion_codes: true }),
           success_url: `${baseUrl}/portal?payment=success`,
           cancel_url: `${baseUrl}/service-tiers?payment=canceled`,
           metadata: {
@@ -186,6 +195,7 @@ export async function POST(request: NextRequest) {
               ? "INSTALLMENT_PAYMENT"
               : "ONE_TIME_PAYMENT",
             paymentPlan: normalizedPaymentPlan,
+            betaDiscount: hasBetaDiscount ? "true" : "false",
           },
         });
 
@@ -203,6 +213,7 @@ export async function POST(request: NextRequest) {
             reusedSubscription: true,
             paymentPlan: normalizedPaymentPlan,
             isInstallmentPlan,
+            betaDiscount: hasBetaDiscount,
           },
         });
 
@@ -349,7 +360,10 @@ export async function POST(request: NextRequest) {
             },
           },
         }),
-        allow_promotion_codes: true,
+        // Beta coupon and promo codes are mutually exclusive in Stripe
+        ...(betaCouponId
+          ? { discounts: [{ coupon: betaCouponId }] }
+          : { allow_promotion_codes: true }),
         success_url: `${baseUrl}/portal?payment=success`,
         cancel_url: `${baseUrl}/service-tiers?payment=canceled`,
         metadata: {
@@ -359,6 +373,7 @@ export async function POST(request: NextRequest) {
           tier: "DIY_PREP",
           type: isInstallmentPlan ? "INSTALLMENT_PAYMENT" : "ONE_TIME_PAYMENT",
           paymentPlan: normalizedPaymentPlan,
+          betaDiscount: hasBetaDiscount ? "true" : "false",
         },
       });
 
@@ -376,6 +391,7 @@ export async function POST(request: NextRequest) {
           policyAcceptanceId: policyAcceptance.id,
           paymentPlan: normalizedPaymentPlan,
           isInstallmentPlan,
+          betaDiscount: hasBetaDiscount,
         },
       });
 

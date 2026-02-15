@@ -13,6 +13,12 @@ export const BETA_CONFIG = {
   /** Discount percentage applied during beta (0–100) */
   discountPercent: 50,
 
+  /** Maximum number of beta-discounted signups before auto-disabling */
+  maxRedemptions: 30,
+
+  /** Stripe coupon name prefix */
+  stripeCouponName: "BETA50",
+
   /** Label shown on pricing UI */
   label: "Beta",
 
