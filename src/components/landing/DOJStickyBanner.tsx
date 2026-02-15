@@ -8,6 +8,11 @@ interface UrgencyMetrics {
   applicationsPerDay: number;
   approvalsPerDay: number;
   ratio: number;
+
+  previousWeekAsOfDate?: string | null;
+  previousWeekQueueSize?: number | null;
+  weeklyQueueChange?: number | null;
+  weeklyQueueGrowthPercent?: number | null;
 }
 
 export function DOJStickyBanner() {
@@ -34,15 +39,8 @@ export function DOJStickyBanner() {
     return null;
   }
 
-  // Calculate queue growth percentage (week over week approximation).
-  // We only have current queue size + rates from the public API.
-  // Approximate last week's queue as: currentQueue - 7*(submissions - approvals).
-  const netPerDay = metrics.applicationsPerDay - metrics.approvalsPerDay;
-  const approxLastWeekQueue = metrics.queueSize - netPerDay * 7;
-  const weeklyGrowth =
-    approxLastWeekQueue > 0
-      ? ((metrics.queueSize - approxLastWeekQueue) / approxLastWeekQueue) * 100
-      : 0;
+  // Exact week-over-week queue growth comes from the API (derived from DB).
+  const weeklyGrowth = metrics.weeklyQueueGrowthPercent ?? 0;
 
   // Use API's pre-calculated wait time (based on 30-day average for stability)
   const waitMonths = Math.round(metrics.estimatedWaitDays / 30);

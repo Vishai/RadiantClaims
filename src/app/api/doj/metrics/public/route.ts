@@ -41,8 +41,28 @@ export async function GET() {
       });
     }
 
-    // Calculate 7-day averages for recent velocity
+    // Pull the prior week queue size (exact as-of the closest data point on/before 7 days ago)
     const sevenDaysAgo = subDays(latestData.reportDate, 7);
+    const previousWeekData = await db.dOJDailyStats.findFirst({
+      where: {
+        claimCategory: "DOWNWINDER",
+        scrapingSuccess: true,
+        reportDate: {
+          lte: sevenDaysAgo,
+        },
+      },
+      orderBy: { reportDate: "desc" },
+    });
+
+    const weeklyQueueChange = previousWeekData
+      ? latestData.pending - previousWeekData.pending
+      : null;
+    const weeklyQueueGrowthPercent =
+      previousWeekData && previousWeekData.pending > 0
+        ? (weeklyQueueChange! / previousWeekData.pending) * 100
+        : null;
+
+    // Calculate 7-day averages for recent velocity
     const recentData = await db.dOJDailyStats.findMany({
       where: {
         claimCategory: "DOWNWINDER",
@@ -107,6 +127,12 @@ export async function GET() {
       approvalsPerDay: Math.round(approvalsPerDay * 10) / 10,
       ratio: Math.round(ratio * 10) / 10,
       asOfDate: latestData.reportDate.toISOString(),
+
+      // Exact week-over-week queue growth (best available: closest data point on/before 7 days ago)
+      previousWeekAsOfDate: previousWeekData?.reportDate.toISOString() ?? null,
+      previousWeekQueueSize: previousWeekData?.pending ?? null,
+      weeklyQueueChange,
+      weeklyQueueGrowthPercent,
     });
   } catch (error) {
     console.error("Error fetching public DOJ metrics:", error);
