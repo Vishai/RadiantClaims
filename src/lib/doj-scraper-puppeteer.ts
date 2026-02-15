@@ -7,7 +7,7 @@
 import puppeteer from "puppeteer";
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
-import { format, subDays, addDays } from "date-fns";
+import { format, addDays, startOfDay, subDays } from "date-fns";
 
 interface DOJClaimStats {
   pending: number;
@@ -233,28 +233,32 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
   for (const category of categories) {
     const stats = data[category];
 
-    // Get yesterday's data for calculating deltas
-    const yesterday = subDays(date, 1);
-    const yesterdayData = await db.dOJDailyStats.findUnique({
+    // Find the previous successful publish-day for calculating deltas.
+    const reportDate = startOfDay(date);
+    const previousData = await db.dOJDailyStats.findFirst({
       where: {
-        reportDate_claimCategory: {
-          reportDate: yesterday,
-          claimCategory: category,
+        claimCategory: category,
+        scrapingSuccess: true,
+        reportDate: {
+          lt: reportDate,
         },
       },
+      orderBy: { reportDate: "desc" },
     });
 
-    // Calculate daily changes
-    const dailyApproved = yesterdayData
-      ? stats.approved - yesterdayData.approved
+    const dailyApproved = previousData
+      ? stats.approved - previousData.approved
       : null;
-    const dailyDenied = yesterdayData
-      ? stats.denied - yesterdayData.denied
+    const dailyDenied = previousData
+      ? stats.denied - previousData.denied
+      : null;
+
+    const currentTotal = stats.pending + stats.approved + stats.denied;
+    const previousTotal = previousData
+      ? previousData.pending + previousData.approved + previousData.denied
       : null;
     const dailySubmitted =
-      yesterdayData && dailyApproved !== null && dailyDenied !== null
-        ? stats.pending + dailyApproved + dailyDenied - yesterdayData.pending
-        : null;
+      previousTotal !== null ? currentTotal - previousTotal : null;
 
     // Store in database (upsert to handle re-runs)
     await db.dOJDailyStats.upsert({

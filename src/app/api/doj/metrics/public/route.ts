@@ -82,10 +82,12 @@ export async function GET() {
         .reduce((sum, d) => sum + (d.dailyApproved || 0), 0) /
       Math.max(recentData.filter((d) => d.dailyApproved !== null).length, 1);
 
+    // Submissions are inferred; DOJ occasionally revises totals downward.
+    // Treat negative inferred submissions as 0 for public-facing averages.
     const submissionsPerDay =
       recentData
         .filter((d) => d.dailySubmitted !== null)
-        .reduce((sum, d) => sum + (d.dailySubmitted || 0), 0) /
+        .reduce((sum, d) => sum + Math.max(0, d.dailySubmitted || 0), 0) /
       Math.max(
         recentData.filter((d) => d.dailySubmitted !== null).length,
         1

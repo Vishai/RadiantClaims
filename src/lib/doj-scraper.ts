@@ -228,33 +228,37 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
   for (const category of categories) {
     const stats = data[category];
 
-    // Get yesterday's data for calculating deltas
-    const yesterday = subDays(reportDate, 1);
-    const yesterdayData = await db.dOJDailyStats.findUnique({
+    // Find the previous successful publish-day for calculating deltas.
+    // DOJ does not publish every calendar day (weekends/holidays), so comparing
+    // to "yesterday" can create nonsensical negative deltas.
+    const previousData = await db.dOJDailyStats.findFirst({
       where: {
-        reportDate_claimCategory: {
-          reportDate: yesterday,
-          claimCategory: category,
+        claimCategory: category,
+        scrapingSuccess: true,
+        reportDate: {
+          lt: reportDate,
         },
       },
+      orderBy: { reportDate: "desc" },
     });
 
-    // Calculate daily changes
-    const dailyApproved = yesterdayData
-      ? stats.approved - yesterdayData.approved
+    // Calculate changes vs the prior publish day (not necessarily yesterday)
+    const dailyApproved = previousData
+      ? stats.approved - previousData.approved
       : null;
-    const dailyDenied = yesterdayData
-      ? stats.denied - yesterdayData.denied
+    const dailyDenied = previousData
+      ? stats.denied - previousData.denied
       : null;
+
+    // New submissions are inferred from total-claims growth between publish days.
+    // totalClaims = pending + approved + denied
+    const currentTotal = stats.pending + stats.approved + stats.denied;
+    const previousTotal = previousData
+      ? previousData.pending + previousData.approved + previousData.denied
+      : null;
+
     const dailySubmitted =
-      yesterdayData && dailyApproved !== null && dailyDenied !== null
-        ? stats.pending +
-          dailyApproved +
-          dailyDenied -
-          yesterdayData.pending -
-          yesterdayData.approved -
-          yesterdayData.denied
-        : null;
+      previousTotal !== null ? currentTotal - previousTotal : null;
 
     // Store in database (upsert to handle re-runs)
     await db.dOJDailyStats.upsert({
