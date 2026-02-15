@@ -9,7 +9,13 @@
 
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
-import { format, subDays, addDays } from "date-fns";
+import { format, subDays, addDays, startOfDay } from "date-fns";
+
+function normalizeReportDate(date: Date): Date {
+  // Enforce a stable key for the @@unique([reportDate, claimCategory]) constraint.
+  // Without this, the same calendar day can be stored multiple times at different hours.
+  return startOfDay(date);
+}
 
 // Types for parsed data
 interface DOJClaimStats {
@@ -211,6 +217,7 @@ function parseDOJAwardsPage(html: string): DOJPageData {
  * Store scraped data in database
  */
 export async function storeDOJData(date: Date, data: DOJPageData) {
+  const reportDate = normalizeReportDate(date);
   const categories: DOJClaimCategory[] = [
     "DOWNWINDER",
     "ONSITE_PARTICIPANT",
@@ -222,7 +229,7 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     const stats = data[category];
 
     // Get yesterday's data for calculating deltas
-    const yesterday = subDays(date, 1);
+    const yesterday = subDays(reportDate, 1);
     const yesterdayData = await db.dOJDailyStats.findUnique({
       where: {
         reportDate_claimCategory: {
@@ -253,12 +260,12 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     await db.dOJDailyStats.upsert({
       where: {
         reportDate_claimCategory: {
-          reportDate: date,
+          reportDate: reportDate,
           claimCategory: category,
         },
       },
       create: {
-        reportDate: date,
+        reportDate: reportDate,
         claimCategory: category,
         pending: stats.pending,
         approved: stats.approved,
@@ -287,7 +294,7 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     });
   }
 
-  console.log(`✅ Stored DOJ data for ${format(date, "MM/dd/yyyy")}`);
+  console.log(`✅ Stored DOJ data for ${format(reportDate, "MM/dd/yyyy")}`);
 }
 
 /**
@@ -310,21 +317,46 @@ export async function scrapeDOJDailyData(date: Date = new Date()) {
       error
     );
 
-    // Log failure in database
-    await db.dOJDailyStats.create({
-      data: {
-        reportDate: date,
-        claimCategory: "DOWNWINDER",
-        pending: 0,
-        approved: 0,
-        approvalPercent: 0,
-        dollarsApproved: 0,
-        denied: 0,
-        totalClaims: 0,
-        scrapingSuccess: false,
-        scrapingError: error instanceof Error ? error.message : "Unknown error",
-      },
-    });
+    // Log failure in database (normalized reportDate). We upsert so a later
+    // successful run can overwrite the failure row for the same calendar day.
+    const reportDate = normalizeReportDate(date);
+    const categories: DOJClaimCategory[] = [
+      "DOWNWINDER",
+      "ONSITE_PARTICIPANT",
+      "MANHATTAN_PROJECT_WASTE",
+      "URANIUM_WORKER",
+    ];
+
+    for (const claimCategory of categories) {
+      await db.dOJDailyStats.upsert({
+        where: {
+          reportDate_claimCategory: {
+            reportDate,
+            claimCategory,
+          },
+        },
+        create: {
+          reportDate,
+          claimCategory,
+          pending: 0,
+          approved: 0,
+          approvalPercent: 0,
+          dollarsApproved: 0,
+          denied: 0,
+          totalClaims: 0,
+          scrapingSuccess: false,
+          scrapingError:
+            error instanceof Error ? error.message : "Unknown error",
+          dataSource: "http_scraper",
+        },
+        update: {
+          scrapingSuccess: false,
+          scrapingError:
+            error instanceof Error ? error.message : "Unknown error",
+          dataSource: "http_scraper",
+        },
+      });
+    }
 
     return {
       success: false,
@@ -348,7 +380,9 @@ export async function scrapeAndStoreDOJStats(dateString: string) {
     const month = dateString.substring(0, 2);
     const day = dateString.substring(2, 4);
     const year = dateString.substring(4, 8);
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const date = normalizeReportDate(
+      new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    );
 
     console.log(`\nScraping DOJ data for ${format(date, "MM/dd/yyyy")}...`);
 
