@@ -285,7 +285,7 @@ export async function generateInsightsSummary(
     return null;
   }
 
-  // Get current queue status
+  // Latest publish day
   const latestStat = await db.dOJDailyStats.findFirst({
     where: {
       claimCategory,
@@ -298,12 +298,90 @@ export async function generateInsightsSummary(
     return null;
   }
 
+  // Exact WoW queue growth (best-available: closest data point on/before 7 days ago)
+  const sevenDaysAgo = subDays(latestStat.reportDate, 7);
+  const previousWeekStat = await db.dOJDailyStats.findFirst({
+    where: {
+      claimCategory,
+      scrapingSuccess: true,
+      reportDate: {
+        lte: sevenDaysAgo,
+      },
+    },
+    orderBy: { reportDate: "desc" },
+  });
+
+  const weeklyQueueChange = previousWeekStat
+    ? latestStat.pending - previousWeekStat.pending
+    : null;
+  const weeklyQueueGrowthPercent =
+    previousWeekStat && previousWeekStat.pending > 0
+      ? (weeklyQueueChange! / previousWeekStat.pending) * 100
+      : null;
+
+  // Data quality window (calendar 7 days, ending at latest publish day)
+  const windowRows = await db.dOJDailyStats.findMany({
+    where: {
+      claimCategory,
+      scrapingSuccess: true,
+      reportDate: {
+        gte: sevenDaysAgo,
+        lte: latestStat.reportDate,
+      },
+    },
+    orderBy: { reportDate: "asc" },
+    select: {
+      pending: true,
+      approved: true,
+      denied: true,
+      dailyApproved: true,
+      dailyDenied: true,
+      dailySubmitted: true,
+      dataSource: true,
+    },
+  });
+
+  const publishDays = windowRows.filter(
+    (r) => r.dataSource !== "imputed"
+  ).length;
+  const imputedDays = windowRows.filter(
+    (r) => r.dataSource === "imputed"
+  ).length;
+
+  const negativeDeltaDays = windowRows.filter((r) => {
+    const neg = (n: number | null) => n !== null && n < 0;
+    return neg(r.dailyApproved) || neg(r.dailyDenied) || neg(r.dailySubmitted);
+  }).length;
+
+  // Count days where totals decreased vs previous publish day (in this window)
+  let totalDecreasedDays = 0;
+  let prevTotal: number | null = null;
+  for (const r of windowRows) {
+    const total = r.pending + r.approved + r.denied;
+    if (prevTotal !== null && total < prevTotal) totalDecreasedDays++;
+    prevTotal = total;
+  }
+
   return {
     currentQueue: {
       pending: latestStat.pending,
       approved: latestStat.approved,
       totalClaims: latestStat.totalClaims,
       asOfDate: latestStat.reportDate,
+    },
+    exactWeeklyQueue: {
+      previousWeekAsOfDate: previousWeekStat?.reportDate ?? null,
+      previousWeekQueueSize: previousWeekStat?.pending ?? null,
+      weeklyQueueChange,
+      weeklyQueueGrowthPercent,
+    },
+    dataQuality: {
+      windowStart: sevenDaysAgo,
+      windowEnd: latestStat.reportDate,
+      publishDays,
+      imputedDays,
+      negativeDeltaDays,
+      totalDecreasedDays,
     },
     velocity: {
       last7Days: last7Days.avgApprovalsPerDay,

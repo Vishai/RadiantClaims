@@ -40,6 +40,20 @@ interface DOJMetrics {
     approved: number;
     totalClaims: number;
   };
+  exactWeeklyQueue: {
+    previousWeekAsOfDate: string | null;
+    previousWeekQueueSize: number | null;
+    weeklyQueueChange: number | null;
+    weeklyQueueGrowthPercent: number | null;
+  };
+  dataQuality: {
+    windowStart: string;
+    windowEnd: string;
+    publishDays: number;
+    imputedDays: number;
+    negativeDeltaDays: number;
+    totalDecreasedDays: number;
+  };
   velocity: {
     last7Days: number;
     last30Days: number;
@@ -250,12 +264,27 @@ export function DOJMetricsDashboard() {
                 {metrics.currentQueue.pending.toLocaleString()}
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <TrendBadge
-                  trend={metrics.queue.trend}
-                  change={metrics.queue.trendChange}
-                />
-                <span className="text-xs text-sage-500">vs last week</span>
+                <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700">
+                  <TrendingUp className="mr-1 h-3 w-3" />
+                  {metrics.exactWeeklyQueue.weeklyQueueGrowthPercent !== null
+                    ? `${metrics.exactWeeklyQueue.weeklyQueueGrowthPercent.toFixed(1)}%`
+                    : "N/A"}
+                </Badge>
+                <span className="text-xs text-sage-500">
+                  WoW ({metrics.exactWeeklyQueue.weeklyQueueChange ?? "—"})
+                </span>
               </div>
+              {metrics.exactWeeklyQueue.previousWeekAsOfDate && (
+                <div className="mt-1 text-[11px] text-sage-500">
+                  vs{" "}
+                  {new Date(
+                    metrics.exactWeeklyQueue.previousWeekAsOfDate
+                  ).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -332,6 +361,62 @@ export function DOJMetricsDashboard() {
           <div className="space-y-6 pt-2 animate-in slide-in-from-top-2">
             {/* Divider */}
             <div className="border-t border-sage-200" />
+
+            {/* Data Quality */}
+            <div className="rounded-lg border border-sage-200/50 bg-white/60 p-6">
+              <div className="mb-4">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-sage-800">
+                  <AlertCircle className="h-5 w-5 text-sage-500" />
+                  Data Quality (Last 7 Calendar Days)
+                </h3>
+                <p className="mt-1 text-xs text-sage-600">
+                  DOJ doesn’t publish every day (weekends/holidays). We compute
+                  deltas vs the previous publish day.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
+                  <div className="text-xs text-sage-500">Publish days</div>
+                  <div className="text-lg font-semibold text-sage-800">
+                    {metrics.dataQuality.publishDays}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
+                  <div className="text-xs text-sage-500">Imputed days</div>
+                  <div className="text-lg font-semibold text-sage-800">
+                    {metrics.dataQuality.imputedDays}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
+                  <div className="text-xs text-sage-500">
+                    Negative delta days
+                  </div>
+                  <div className="text-lg font-semibold text-sage-800">
+                    {metrics.dataQuality.negativeDeltaDays}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
+                  <div className="text-xs text-sage-500">
+                    Total decreased days
+                  </div>
+                  <div className="text-lg font-semibold text-sage-800">
+                    {metrics.dataQuality.totalDecreasedDays}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 text-[11px] text-sage-500">
+                Window:{" "}
+                {new Date(metrics.dataQuality.windowStart).toLocaleDateString(
+                  "en-US"
+                )}{" "}
+                –{" "}
+                {new Date(metrics.dataQuality.windowEnd).toLocaleDateString(
+                  "en-US"
+                )}
+              </div>
+            </div>
 
             {/* Detailed Metrics Table */}
             <div className="rounded-lg border border-sage-200/50 bg-white/60 p-6">
