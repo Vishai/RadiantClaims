@@ -8,27 +8,19 @@ export interface ReengagementEmailProps {
   daysInactive?: number;
   priorityScore?: number;
   recommendedAction?: string;
-  supportSlots?: string[];
   portalUrl?: string;
-  assistanceUrl?: string;
+  supportEmail?: string;
   unsubscribeUrl?: string;
 }
-
-const defaultSupportSlots = [
-  "Today · 2:00 PM Mountain",
-  "Tomorrow · 10:00 AM Mountain",
-  "Tomorrow · 4:30 PM Mountain",
-];
 
 export const ClientReengagementEmail = ({
   previewText = "Need a hand getting unstuck? Let’s finish your RECA packet together.",
   claimantName = "Mary",
   daysInactive = 12,
   priorityScore = 68,
-  recommendedAction = "Schedule a 15-minute check-in so we can upload any remaining files together.",
-  supportSlots = defaultSupportSlots,
+  recommendedAction = "Open your portal to upload any remaining files and finish your packet.",
   portalUrl = "https://app.radiantclaims.com/portal",
-  assistanceUrl = "https://app.radiantclaims.com/portal/support",
+  supportEmail = "support@radiantclaims.com",
   unsubscribeUrl,
 }: ReengagementEmailProps) => {
   return (
@@ -59,26 +51,19 @@ export const ClientReengagementEmail = ({
       </Section>
 
       <Section style={cardSectionStyle}>
-        <Text style={sectionHeadingStyle}>Pick a time that works</Text>
-        <ul style={listStyle}>
-          {supportSlots.map((slot) => (
-            <li key={slot} style={listItemStyle}>
-              {slot}
-            </li>
-          ))}
-        </ul>
+        <Text style={sectionHeadingStyle}>Need help?</Text>
         <Text style={mutedTextStyle}>
-          Book a session and we’ll walk you through uploads, forms, or anything
-          else needed.
+          Reply to this email or contact us at {supportEmail} and we’ll help you
+          get unstuck.
         </Text>
       </Section>
 
       <Section style={buttonGroupStyle}>
-        <Button href={assistanceUrl} style={primaryButtonStyle}>
-          Schedule help
+        <Button href={portalUrl} style={primaryButtonStyle}>
+          Open my portal
         </Button>
-        <Button href={portalUrl} style={secondaryButtonStyle}>
-          I’ll handle it now
+        <Button href={`mailto:${supportEmail}`} style={secondaryButtonStyle}>
+          Email support
         </Button>
       </Section>
 
@@ -142,16 +127,7 @@ const sectionHeadingStyle = {
   marginBottom: "8px",
 };
 
-const listStyle = {
-  margin: "0 0 0 18px",
-  padding: 0,
-  color: "#1f2937",
-  fontSize: "15px",
-};
-
-const listItemStyle = {
-  marginBottom: "4px",
-};
+// listStyle/listItemStyle removed (no longer showing time slot list)
 
 const buttonGroupStyle = {
   display: "flex",

@@ -1131,7 +1131,7 @@ export async function sendReengagementEmail(params: {
 
   const baseUrl = getBaseUrl();
   const portalUrl = `${baseUrl}/portal`;
-  const assistanceUrl = `${baseUrl}/chat`;
+  const supportEmail = "support@radiantclaims.com";
 
   try {
     const unsubscribeUrl = generateUnsubscribeUrl(
@@ -1145,7 +1145,7 @@ export async function sendReengagementEmail(params: {
         priorityScore,
         recommendedAction,
         portalUrl,
-        assistanceUrl,
+        supportEmail,
         unsubscribeUrl,
       }),
       { pretty: true }
