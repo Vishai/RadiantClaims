@@ -34,7 +34,11 @@ import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
 import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
 import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
-import { getBetaPricing, isBetaActive } from "@/lib/constants/beta-config";
+import {
+  BETA_CONFIG,
+  getBetaPricing,
+  isBetaActive,
+} from "@/lib/constants/beta-config";
 import { BetaBadge, BetaPrice, BetaBanner } from "@/components/BetaBanner";
 
 function ServiceTiersContent() {
@@ -481,6 +485,18 @@ function ServiceTiersContent() {
                   completed form
                 </p>
               </div>
+
+              {/* Beta Explainer */}
+              {isBetaActive() && (
+                <div className="rounded-lg border border-terracotta-200 bg-terracotta-50 p-4">
+                  <p className="mb-1 text-xs font-semibold text-terracotta-800">
+                    Why 50% off?
+                  </p>
+                  <p className="text-xs leading-relaxed text-terracotta-700">
+                    {BETA_CONFIG.description}
+                  </p>
+                </div>
+              )}
 
               {/* Payment Plan Selector */}
               <div className="rounded-lg border-2 border-sage-200 bg-gradient-to-br from-sage-50 to-white p-4">

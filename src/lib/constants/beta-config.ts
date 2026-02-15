@@ -20,17 +20,18 @@ export const BETA_CONFIG = {
   stripeCouponName: "BETA50",
 
   /** Label shown on pricing UI */
-  label: "Beta",
+  label: "Early Access",
 
   /** Short tagline for banners */
-  tagline: "Early access pricing — help us build the best RECA platform",
+  tagline:
+    "RECA expires December 2027 — we're launching early so you have time to file. 50% off while we grow.",
 
   /** Longer description for pricing pages */
   description:
-    "You're among our first users. In exchange for your feedback as we refine the platform, enjoy 50% off.",
+    "The RECA program closes in December 2027. We're launching now — ahead of schedule — to give you the maximum time to prepare and file your claim. As an early user, you'll get 50% off while we continue building.",
 
   /** Badge text on pricing cards */
-  badge: "Beta Pricing",
+  badge: "Early Access — 50% Off",
 
   /** When the beta period ends (null = no auto-expiry, controlled manually) */
   expiresAt: null as Date | null,

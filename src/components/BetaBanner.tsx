@@ -11,13 +11,11 @@ export function BetaBanner() {
   if (!isBetaActive()) return null;
 
   return (
-    <div className="bg-gradient-to-r from-terracotta-500 to-terracotta-600 px-4 py-2 text-center text-sm font-medium text-white">
+    <div className="bg-gradient-to-r from-terracotta-500 to-terracotta-600 px-4 py-2.5 text-center text-xs font-medium text-white sm:text-sm">
       <div className="container mx-auto flex items-center justify-center gap-2">
-        <Sparkles className="h-4 w-4" />
-        <span>
-          <strong>{BETA_CONFIG.badge}</strong> — {BETA_CONFIG.tagline}
-        </span>
-        <Sparkles className="h-4 w-4" />
+        <Sparkles className="h-4 w-4 flex-shrink-0" />
+        <span>{BETA_CONFIG.tagline}</span>
+        <Sparkles className="h-4 w-4 flex-shrink-0" />
       </div>
     </div>
   );
