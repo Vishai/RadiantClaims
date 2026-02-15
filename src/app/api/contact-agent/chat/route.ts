@@ -11,6 +11,10 @@ import {
 import { ResourceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { searchRecaLibrary, formatRecaContext } from "@/lib/rag/retrieve";
+import {
+  labelForDocumentType,
+  normalizeDocumentType,
+} from "@/lib/chat/document-type-labels";
 
 /**
  * Calculate when to send follow-up based on document type
@@ -182,6 +186,148 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const buildQuickStatus = () => {
+      if (!sessionContext) return "";
+
+      const lines: string[] = [];
+      const section = sessionContext.recaWorkflowSection || "";
+      const completion =
+        typeof sessionContext.recaCompletionPercent === "number"
+          ? sessionContext.recaCompletionPercent
+          : null;
+
+      // Top-level snapshot
+      if (section) lines.push(`• Current step: ${section}`);
+      if (completion !== null)
+        lines.push(`• Progress: ~${completion}% complete`);
+
+      // Missing documents (top few)
+      const missing = Array.isArray(sessionContext.missingDocuments)
+        ? sessionContext.missingDocuments
+        : [];
+      if (missing.length > 0) {
+        const sample = missing
+          .slice(0, 4)
+          .map(
+            (m: any) => `${labelForDocumentType(m.documentType)} (${m.status})`
+          )
+          .join(", ");
+        lines.push(`• Documents still in progress: ${sample}`);
+      }
+
+      const pickNextActionFromMissingDocs = () => {
+        if (!missing.length) return null;
+
+        const dt = missing.map((m: any) =>
+          normalizeDocumentType(m.documentType)
+        );
+
+        // Prioritize items that commonly block Downwinder packets.
+        const priorities = [
+          "DEATH_CERTIFICATE",
+          "BIRTH_CERTIFICATE",
+          "MARRIAGE_CERTIFICATE",
+          "DIVORCE_DECREE",
+          "PHOTO_ID",
+          "PROOF_OF_RESIDENCE",
+          "RESIDENCE_PROOF",
+          "MEDICAL_RECORDS",
+          "PATHOLOGY_REPORT",
+          "CANCER_DIAGNOSIS",
+          "SOCIAL_SECURITY_CARD",
+        ];
+
+        const hit = priorities.find((p) =>
+          dt.some((x: string) => x.includes(p))
+        );
+        if (!hit) return null;
+
+        const pretty = labelForDocumentType(hit);
+
+        return `Focus next on: ${pretty}. It’s commonly required and often delays claims when missing.`;
+      };
+
+      // Section-specific nudge (Downwinder-focused)
+      const nudges: Record<string, string[]> = {
+        part_1: [
+          "Confirm your name, DOB, and SSN match your ID exactly (avoid typos).",
+          "If you’ve ever used a different last name, add former/maiden names now.",
+        ],
+        part_2: [
+          "Enter the deceased individual’s details exactly as on the death certificate.",
+          "If DOB/DOD differ from earlier screening, double-check and confirm.",
+        ],
+        part_3: [
+          "Confirm relationship type (Self/Spouse/Child/Parent/etc.)—it changes required documents.",
+        ],
+        part_4: [
+          "List the exact exposure location(s) and dates; residence proof requirements depend on this.",
+        ],
+        part_5: [
+          "As spouse: be ready to provide marriage certificate and (if applicable) divorce decree(s).",
+        ],
+        part_6: [
+          "As child: confirm parent details and be ready with birth certificate(s) linking you to the deceased.",
+        ],
+        part_7: [
+          "For extended family: line up intermediary relative documents to prove the chain of relationship.",
+        ],
+        part_8: [
+          "Double-check employment/residence timelines—consistency matters for credibility and eligibility.",
+        ],
+        part_9: [
+          "Ensure all addresses/locations are complete (city/county/state) to avoid document mismatches.",
+        ],
+        part_10: [
+          "Review exposure/residence answers carefully; these drive what proofs you must upload/request.",
+        ],
+        part_11: [
+          "Have cancer diagnosis documentation ready (pathology report and/or treating facility records).",
+        ],
+        part_12: [
+          "Verify signatures/authorizations: missing initials/signatures often cause rejection delays.",
+        ],
+        part_13: [
+          "Make sure all survivor/beneficiary details are accurate—names/dates must match vital records.",
+        ],
+        part_14: [
+          "Attorney acknowledgements: confirm you understand representation/DIY path and refund rules.",
+        ],
+        part_15: [
+          "Re-check any optional fields that reduce follow-up requests (aliases, prior addresses, etc.).",
+        ],
+        part_16: [
+          "Final confirmations: ensure consistency of names, DOB/DOD, and SSNs across all parts.",
+        ],
+        supporting_forms: [
+          "Complete releases/authorizations so medical/vital records requests don’t get rejected.",
+        ],
+        documents: [
+          "Upload the highest-impact missing docs first (death cert, birth certs, residence proof, diagnosis proof).",
+        ],
+        document_checklist: [
+          "Use the checklist to request missing records first (vital + medical).",
+        ],
+        review: [
+          "Resolve any flagged inconsistencies before generating the packet.",
+        ],
+        final_review: [
+          "Scan for name/date consistency before generating packets.",
+        ],
+      };
+
+      const docPriorityNudge = pickNextActionFromMissingDocs();
+      const sectionNudge = nudges[section]?.[0];
+      const nudge = docPriorityNudge || sectionNudge;
+      if (nudge) lines.push(`• Next best action: ${nudge}`);
+
+      if (lines.length === 0) return "";
+
+      return `Quick status (from your claim progress):\n${lines.join("\n")}`;
+    };
+
+    const quickStatus = buildQuickStatus();
+
     // System prompt for the contact agent
     const systemPrompt = `You are a helpful AI assistant for RadiantClaims, specializing in helping RECA (Radiation Exposure Compensation Act) claimants find institutional contacts, understand the RECA legislation, and use the RadiantClaims platform.
 
@@ -237,9 +383,19 @@ ${
   sessionContext
     ? `- State: ${sessionContext.state || "Not specified"}
 - County: ${sessionContext.county || "Not specified"}
-- Claim Type: ${sessionContext.claimType || "Not specified"}`
+- Claim Type: ${sessionContext.claimType || "Not specified"}
+- Intake Session: ${sessionContext.intakeSessionId || "Not specified"}
+- Workflow Stage: ${sessionContext.recaWorkflowStage ?? "Not specified"}
+- Workflow Section: ${sessionContext.recaWorkflowSection || "Not specified"}
+- Completion: ${sessionContext.recaCompletionPercent ?? "Not specified"}%
+- Document Status Counts: ${sessionContext.documentStatusCounts ? JSON.stringify(sessionContext.documentStatusCounts) : "Not available"}
+- Missing Documents (sample): ${sessionContext.missingDocuments ? JSON.stringify(sessionContext.missingDocuments) : "Not available"}`
     : "- No claim context provided yet"
 }
+
+**PROACTIVE HELP (IMPORTANT):**
+- If the user is working on a Downwinder claim and you have workflow context (stage/section/completion/missing docs), start your reply with a short **"Quick status"** section (2-4 bullets) tailored to what they should do next.
+- Keep it non-annoying: if the user asked a very specific question, answer it first, then add a brief "Quick status" at the end.
 
 Be conversational, helpful, and guide users step-by-step.`;
 
@@ -368,6 +524,9 @@ Be conversational, helpful, and guide users step-by-step.`;
         model: contactAgentModel,
         messages: [
           { role: "system", content: systemPrompt },
+          ...(quickStatus
+            ? [{ role: "system" as const, content: quickStatus }]
+            : []),
           ...openAIMessages, // Use DB history instead of client messages
         ],
         functions,

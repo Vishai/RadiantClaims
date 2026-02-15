@@ -61,6 +61,12 @@ interface ContactAgentChatProps {
     state?: string;
     county?: string;
     claimType?: string;
+    intakeSessionId?: string;
+    recaWorkflowStage?: number | null;
+    recaWorkflowSection?: string | null;
+    recaCompletionPercent?: number | null;
+    missingDocuments?: Array<{ documentType: string; status: string }>;
+    documentStatusCounts?: Record<string, number>;
   };
   onContactSelected?: (contact: Contact) => void;
 }
@@ -86,6 +92,10 @@ export function ContactAgentChat({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [supportText, setSupportText] = useState("");
+  const [supportStatus, setSupportStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -160,6 +170,29 @@ export function ContactAgentChat({
     handleSend(topic);
   };
 
+  const handleRequestSupport = async () => {
+    if (!supportText.trim() || supportStatus === "sending") return;
+    setSupportStatus("sending");
+    try {
+      const res = await fetch("/api/support/chat-escalation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatSessionId,
+          intakeSessionId: sessionContext?.intakeSessionId,
+          message: supportText,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setSupportStatus("sent");
+      setSupportText("");
+      setTimeout(() => setSupportStatus("idle"), 2500);
+    } catch {
+      setSupportStatus("error");
+      setTimeout(() => setSupportStatus("idle"), 2500);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -170,15 +203,50 @@ export function ContactAgentChat({
   return (
     <Card className="flex h-[600px] flex-col border-0 shadow-none sm:border sm:shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b bg-gray-50/50 p-4">
+      <div className="flex items-start gap-3 border-b bg-gray-50/50 p-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 shadow-sm">
           <Bot className="h-5 w-5 text-blue-600" />
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-900">Acquisition Assistant</h3>
-          <p className="text-xs text-muted-foreground">
-            Expert in locating RECA documents
-          </p>
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="font-semibold text-gray-900">
+                Acquisition Assistant
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Expert in locating RECA documents
+              </p>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {sessionContext?.recaWorkflowSection
+                ? `On: ${sessionContext.recaWorkflowSection}`
+                : "General"}
+            </Badge>
+          </div>
+
+          {/* Lightweight support request */}
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={supportText}
+              onChange={(e) => setSupportText(e.target.value)}
+              placeholder="Need a human? Describe the issue (sends to support)."
+              className="h-9"
+            />
+            <Button
+              onClick={handleRequestSupport}
+              disabled={!supportText.trim() || supportStatus === "sending"}
+              size="sm"
+              variant="outline"
+            >
+              {supportStatus === "sending"
+                ? "Sending..."
+                : supportStatus === "sent"
+                  ? "Sent"
+                  : supportStatus === "error"
+                    ? "Error"
+                    : "Send"}
+            </Button>
+          </div>
         </div>
       </div>
 
