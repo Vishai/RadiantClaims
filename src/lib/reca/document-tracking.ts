@@ -208,6 +208,308 @@ export function generateDocumentRequirements(
   return requirements;
 }
 
+// ---------------------------------------------------------------------------
+// Portal-level requirement checklist (detailed, form-data-aware)
+// ---------------------------------------------------------------------------
+
+export interface PortalRequiredDocument {
+  category: string;
+  label: string;
+  description: string;
+  uploaded: boolean;
+  required: boolean;
+  helpText?: string;
+}
+
+/**
+ * Generate a detailed checklist of required documents for the portal page.
+ *
+ * This is the *single source of truth* for document requirements across the
+ * session document page and the portal document page. It inspects form data
+ * to infer name-chain needs, sibling docs, Part-5 surviving-spouse docs,
+ * Part-7 relationship-chain docs, etc.
+ *
+ * `uploadedFiles` should be the raw array returned by `/api/documents`.
+ */
+export function generatePortalRequirements(
+  claimType: string | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  formData: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  uploadedFiles: any[]
+): PortalRequiredDocument[] {
+  const requirements: PortalRequiredDocument[] = [];
+
+  const isUploaded = (cat: string) =>
+    uploadedFiles.some((f) => f.category === cat);
+
+  const countUploaded = (cat: string) =>
+    uploadedFiles.filter((f) => f.category === cat).length;
+
+  if (claimType === "DOWNWINDER") {
+    // --- Identity & Vital Records ---
+
+    const isDeceased =
+      formData?.part_5?.claimantDeceased === "YES" ||
+      formData?.part_6?.claimantDeceased === "YES" ||
+      formData?.part_1?.filingForSelf === false;
+
+    if (isDeceased) {
+      requirements.push({
+        category: "DEATH_CERTIFICATE",
+        label: "Death Certificate",
+        description: "Official death certificate for the claimant",
+        uploaded: isUploaded("DEATH_CERTIFICATE"),
+        required: true,
+        helpText: "Required for all deceased claimants",
+      });
+    }
+
+    requirements.push({
+      category: "BIRTH_CERTIFICATE",
+      label: "Birth Certificate",
+      description: "Official birth certificate for the claimant",
+      uploaded: isUploaded("BIRTH_CERTIFICATE"),
+      required: true,
+      helpText: "Must show parents' names",
+    });
+
+    // --- Name chain logic ---
+    let nameChainRequired = false;
+    let nameChainReason = "";
+
+    if (
+      formData?.part_1?.formerNames &&
+      formData.part_1.formerNames.length > 0
+    ) {
+      nameChainRequired = true;
+      nameChainReason = "Filer has former names";
+    }
+
+    if (
+      formData?.part_2?.formerNames &&
+      formData.part_2.formerNames.length > 0
+    ) {
+      nameChainRequired = true;
+      nameChainReason = "Claimant has former names";
+    }
+
+    const relationship = formData?.part_3?.relationship;
+    if (
+      relationship === "Spouse" ||
+      relationship === "Child" ||
+      relationship === "Grandchild"
+    ) {
+      const filerLast = formData?.part_1?.lastName?.toLowerCase();
+      const claimantLast =
+        formData?.part_2?.lastName?.toLowerCase() || filerLast;
+      if (filerLast && claimantLast && filerLast !== claimantLast) {
+        nameChainRequired = true;
+        nameChainReason = "Filer and Claimant last names differ";
+      }
+    }
+
+    if (nameChainRequired) {
+      requirements.push({
+        category: "MARRIAGE_CERTIFICATE",
+        label: "Marriage Certificate(s) / Name Change Docs",
+        description:
+          "Documents linking current names to birth names (e.g., Marriage Certs, Divorce Decrees)",
+        uploaded:
+          isUploaded("MARRIAGE_CERTIFICATE") || countUploaded("IDENTITY") >= 2,
+        required: true,
+        helpText: `Required because: ${nameChainReason}. Provide a document for EACH name change.`,
+      });
+    }
+
+    // --- Sibling-specific docs (Part 6) ---
+    if (formData?.part_6?.siblings && Array.isArray(formData.part_6.siblings)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      formData.part_6.siblings.forEach((sibling: any, index: number) => {
+        const siblingName = sibling.name || `Sibling #${index + 1}`;
+        const firstName = siblingName.split(" ")[0].toLowerCase();
+
+        requirements.push({
+          category: "BIRTH_CERTIFICATE",
+          label: `${siblingName} - Birth Certificate`,
+          description: `Birth certificate for ${siblingName} to prove relationship`,
+          uploaded: uploadedFiles.some(
+            (f) =>
+              f.category === "BIRTH_CERTIFICATE" &&
+              f.originalFilename?.toLowerCase().includes(firstName)
+          ),
+          required: true,
+          helpText:
+            "Must show parents' names to establish sibling relationship",
+        });
+
+        if (
+          sibling.hadNameChange === "YES" ||
+          sibling.nameChangeHistory?.length > 0
+        ) {
+          requirements.push({
+            category: "MARRIAGE_CERTIFICATE",
+            label: `${siblingName} - Marriage/Name Change`,
+            description: `Marriage certificate or legal name change for ${siblingName}`,
+            uploaded: uploadedFiles.some(
+              (f) =>
+                f.category === "MARRIAGE_CERTIFICATE" &&
+                f.originalFilename?.toLowerCase().includes(firstName)
+            ),
+            required: true,
+            helpText: "Required to link current name to birth certificate",
+          });
+        }
+      });
+    }
+
+    // --- Part 5: Surviving Spouse docs ---
+    if (formData?.part_5?.documentsIdentified) {
+      const part5Docs = formData.part_5.documentsIdentified;
+      if (part5Docs.divorcePapersNeeded) {
+        requirements.push({
+          category: "OTHER",
+          label: "Divorce Decree(s)",
+          description:
+            "Divorce decrees for previous marriages (yours or the person who became ill)",
+          uploaded: uploadedFiles.some(
+            (f) =>
+              f.category === "OTHER" &&
+              f.originalFilename?.toLowerCase().includes("divorce")
+          ),
+          required: true,
+          helpText:
+            "Contact the court where the divorce was finalized to obtain certified copies",
+        });
+      }
+      if (part5Docs.previousMarriageCertsNeeded > 0) {
+        requirements.push({
+          category: "MARRIAGE_CERTIFICATE",
+          label: `Previous Marriage Certificate(s) (${part5Docs.previousMarriageCertsNeeded})`,
+          description:
+            "Marriage certificates for prior marriages to establish complete marital history",
+          uploaded:
+            countUploaded("MARRIAGE_CERTIFICATE") >=
+            part5Docs.previousMarriageCertsNeeded + 1,
+          required: true,
+          helpText: "Contact the county clerk where each marriage took place",
+        });
+      }
+    }
+
+    // --- Part 7: Other Relatives relationship chain ---
+    if (
+      formData?.part_7?.documentsIdentified &&
+      relationship !== "Self" &&
+      relationship !== "Spouse" &&
+      relationship !== "Child"
+    ) {
+      const part7Docs = formData.part_7.documentsIdentified;
+      if (part7Docs.birthCertificatesNeeded > 1) {
+        requirements.push({
+          category: "BIRTH_CERTIFICATE",
+          label: `Relationship Chain Birth Certificates (${part7Docs.birthCertificatesNeeded} needed)`,
+          description:
+            "Birth certificates establishing the family chain between you and the person who became ill",
+          uploaded:
+            countUploaded("BIRTH_CERTIFICATE") >=
+            part7Docs.birthCertificatesNeeded,
+          required: true,
+          helpText:
+            "Contact the vital records office in each state of birth. Each link in the family chain needs a birth certificate.",
+        });
+      }
+    }
+
+    // Part 7: Intermediary death certs
+    if (
+      formData?.part_7?.intermediaryRelatives &&
+      Array.isArray(formData.part_7.intermediaryRelatives)
+    ) {
+      const deceased = formData.part_7.intermediaryRelatives.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (r: any) => r.isDeceased === "YES"
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      deceased.forEach((rel: any) => {
+        const relName = rel.name || "Family Member";
+        const firstName = relName.split(" ")[0].toLowerCase();
+        requirements.push({
+          category: "DEATH_CERTIFICATE",
+          label: `${relName} - Death Certificate`,
+          description: `Death certificate for ${relName} (relationship chain member)`,
+          uploaded: uploadedFiles.some(
+            (f) =>
+              f.category === "DEATH_CERTIFICATE" &&
+              f.originalFilename?.toLowerCase().includes(firstName)
+          ),
+          required: true,
+          helpText:
+            "Contact the vital records office in the state where death occurred",
+        });
+      });
+    }
+
+    // --- Proof of Presence ---
+    requirements.push({
+      category: "PROOF_OF_RESIDENCE",
+      label: "Proof of Physical Presence (2+ documents)",
+      description:
+        "Tax records, property records, school enrollment, utility bills, employment records, etc.",
+      uploaded:
+        uploadedFiles.filter((f) =>
+          [
+            "PROOF_OF_RESIDENCE",
+            "UTILITY_BILL",
+            "TAX_RETURN",
+            "SCHOOL_RECORDS",
+            "MORTGAGE_STATEMENT",
+            "EMPLOYMENT_RECORDS",
+          ].includes(f.category || "")
+        ).length >= 2,
+      required: true,
+      helpText:
+        "Need at least 2 documents showing presence in affected area during exposure period",
+    });
+
+    // --- Medical Records ---
+    requirements.push({
+      category: "MEDICAL_RECORDS",
+      label: "Medical Records Showing Cancer Diagnosis",
+      description:
+        "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
+      uploaded: isUploaded("MEDICAL_RECORDS") || isUploaded("PATHOLOGY_REPORT"),
+      required: true,
+      helpText:
+        "See RECA form pages 18-24 for specific documents accepted for each disease type",
+    });
+  } else {
+    // Generic requirements for other claim types
+    requirements.push(
+      {
+        category: "IDENTITY",
+        label: "Identification Documents",
+        description:
+          "Birth certificate, death certificate, marriage certificates as applicable",
+        uploaded: isUploaded("IDENTITY"),
+        required: true,
+        helpText: "Required to establish identity and relationships",
+      },
+      {
+        category: "MEDICAL_RECORDS",
+        label: "Medical Records",
+        description: "Medical documentation relevant to your claim type",
+        uploaded: isUploaded("MEDICAL_RECORDS"),
+        required: true,
+        helpText:
+          "Requirements vary by claim type - refer to your RECA form instructions",
+      }
+    );
+  }
+
+  return requirements;
+}
+
 /**
  * Calculate readiness for submission
  */
@@ -439,12 +741,19 @@ export function applyUploadsToRequirements(
   const verifiedCountBy = (predicate: (f: UploadedFileSummary) => boolean) =>
     files.filter((f) => predicate(f) && isVerifiedUpload(f)).length;
 
-  const birthCount = countBy(
-    (f) => normalizeCat(f.category) === "BIRTH_CERTIFICATE"
-  );
-  const birthVerified = verifiedCountBy(
-    (f) => normalizeCat(f.category) === "BIRTH_CERTIFICATE"
-  );
+  const countByCat = (cat: string) =>
+    countBy((f) => normalizeCat(f.category) === cat);
+  const verifiedByCat = (cat: string) =>
+    verifiedCountBy((f) => normalizeCat(f.category) === cat);
+
+  const birthCount = countByCat("BIRTH_CERTIFICATE");
+  const birthVerified = verifiedByCat("BIRTH_CERTIFICATE");
+
+  const deathCount = countByCat("DEATH_CERTIFICATE");
+  const deathVerified = verifiedByCat("DEATH_CERTIFICATE");
+
+  const marriageCount = countByCat("MARRIAGE_CERTIFICATE");
+  const marriageVerified = verifiedByCat("MARRIAGE_CERTIFICATE");
 
   const medicalCount = countBy((f) =>
     MEDICAL_CATEGORIES.has(normalizeCat(f.category))
@@ -460,38 +769,78 @@ export function applyUploadsToRequirements(
     PRESENCE_CATEGORIES.has(normalizeCat(f.category))
   );
 
+  // Helper: apply simple single-doc matching
+  function applySimpleMatch(
+    next: DocumentRequirement,
+    uploaded: number,
+    verified: number
+  ): DocumentRequirement {
+    if (uploaded > 0) {
+      next.status = verified > 0 ? "verified" : "uploaded";
+      next.notes = `${uploaded} uploaded${verified > 0 ? " (verified)" : ""}`;
+    }
+    return next;
+  }
+
+  // Helper: apply quantity-based matching
+  function applyQuantityMatch(
+    next: DocumentRequirement,
+    uploaded: number,
+    verified: number,
+    qty: number
+  ): DocumentRequirement {
+    if (uploaded > 0) {
+      next.status = verified >= qty ? "verified" : "uploaded";
+      next.notes =
+        `Uploaded ${Math.min(uploaded, qty)}/${qty}` +
+        (verified > 0 ? ` • Verified ${Math.min(verified, qty)}/${qty}` : "");
+    }
+    return next;
+  }
+
+  // Map requirement IDs to their upload category matches
+  const requirementMatchers: Record<
+    string,
+    (next: DocumentRequirement) => DocumentRequirement
+  > = {
+    filer_birth_certificate: (n) =>
+      applySimpleMatch(n, birthCount, birthVerified),
+    parent_birth_certificate: (n) =>
+      applySimpleMatch(
+        n,
+        birthCount > 1 ? birthCount - 1 : birthCount,
+        birthVerified > 1 ? birthVerified - 1 : birthVerified
+      ),
+    spouse_death_certificate: (n) =>
+      applySimpleMatch(n, deathCount, deathVerified),
+    parent_death_certificate: (n) =>
+      applySimpleMatch(n, deathCount, deathVerified),
+    sibling_death_certificates: (n) =>
+      applySimpleMatch(
+        n,
+        deathCount > 1 ? deathCount - 1 : 0,
+        deathVerified > 1 ? deathVerified - 1 : 0
+      ),
+    marriage_certificate_spouse: (n) =>
+      applySimpleMatch(n, marriageCount, marriageVerified),
+    marriage_certificates: (n) => {
+      const qty = n.quantity ?? 1;
+      return applyQuantityMatch(n, marriageCount, marriageVerified, qty);
+    },
+    medical_documentation: (n) =>
+      applySimpleMatch(n, medicalCount, medicalVerified),
+    proof_of_presence: (n) => {
+      const qty = n.quantity ?? 2;
+      return applyQuantityMatch(n, presenceCount, presenceVerified, qty);
+    },
+  };
+
   return requirements.map((req) => {
     const next: DocumentRequirement = { ...req };
-
-    if (req.id === "filer_birth_certificate") {
-      if (birthCount > 0) {
-        next.status = birthVerified > 0 ? "verified" : "uploaded";
-        next.notes = `${birthCount} uploaded${birthVerified > 0 ? " (verified)" : ""}`;
-      }
-      return next;
+    const matcher = requirementMatchers[req.id];
+    if (matcher) {
+      return matcher(next);
     }
-
-    if (req.id === "medical_documentation") {
-      if (medicalCount > 0) {
-        next.status = medicalVerified > 0 ? "verified" : "uploaded";
-        next.notes = `${medicalCount} uploaded${medicalVerified > 0 ? " (verified)" : ""}`;
-      }
-      return next;
-    }
-
-    if (req.id === "proof_of_presence") {
-      const qty = req.quantity ?? 2;
-      if (presenceCount > 0) {
-        next.status = presenceVerified >= qty ? "verified" : "uploaded";
-        next.notes =
-          `Uploaded ${Math.min(presenceCount, qty)}/${qty}` +
-          (presenceVerified > 0
-            ? ` • Verified ${Math.min(presenceVerified, qty)}/${qty}`
-            : "");
-      }
-      return next;
-    }
-
     return next;
   });
 }

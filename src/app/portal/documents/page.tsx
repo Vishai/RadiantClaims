@@ -40,15 +40,10 @@ import {
 } from "@/components/documents/DocumentTrackingCard";
 import { Progress } from "@/components/ui/progress";
 import { RequestSiblingDocsDialog } from "@/components/documents/RequestSiblingDocsDialog";
-
-interface RequiredDocument {
-  category: string;
-  label: string;
-  description: string;
-  uploaded: boolean;
-  required: boolean;
-  helpText?: string;
-}
+import {
+  generatePortalRequirements,
+  type PortalRequiredDocument,
+} from "@/lib/reca/document-tracking";
 
 export default function DocumentsPortal() {
   const { data: session, status } = useSession();
@@ -56,7 +51,9 @@ export default function DocumentsPortal() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
+  const [requiredDocs, setRequiredDocs] = useState<PortalRequiredDocument[]>(
+    []
+  );
   const [uploadedCount, setUploadedCount] = useState(0);
   const [cachedClaimType, setCachedClaimType] = useState<string | undefined>();
   const [cachedFormData, setCachedFormData] = useState<any>(null);
@@ -90,7 +87,6 @@ export default function DocumentsPortal() {
   const loadDocumentRequirements = useCallback(
     async (sessionId: string, claimType?: string, formData?: any) => {
       try {
-        // Fetch uploaded files
         const response = await fetch(`/api/documents?sessionId=${sessionId}`);
         if (!response.ok) return;
 
@@ -98,296 +94,11 @@ export default function DocumentsPortal() {
         const uploadedFiles = data.files || [];
         setUploadedCount(uploadedFiles.length);
 
-        // Define required documents based on claim type
-        const requirements: RequiredDocument[] = [];
-
-        // Helper to check if a category is uploaded
-        const isUploaded = (category: string) =>
-          uploadedFiles.some((f: any) => f.category === category);
-
-        // Helper to check count of uploaded category
-        const countUploaded = (category: string) =>
-          uploadedFiles.filter((f: any) => f.category === category).length;
-
-        if (claimType === "DOWNWINDER") {
-          // 1. Identity & Vital Records
-          // Check for Deceased Claimant (Death Certificate)
-          const isDeceased =
-            formData?.part_5?.claimantDeceased === "YES" ||
-            formData?.part_6?.claimantDeceased === "YES" ||
-            formData?.part_1?.filingForSelf === false; // Heuristic if not explicit
-
-          if (isDeceased) {
-            requirements.push({
-              category: "DEATH_CERTIFICATE",
-              label: "Death Certificate",
-              description: "Official death certificate for the claimant",
-              uploaded: isUploaded("DEATH_CERTIFICATE"),
-              required: true,
-              helpText: "Required for all deceased claimants",
-            });
-          }
-
-          // Birth Certificate (Always required for claimant)
-          requirements.push({
-            category: "BIRTH_CERTIFICATE",
-            label: "Birth Certificate",
-            description: "Official birth certificate for the claimant",
-            uploaded: isUploaded("BIRTH_CERTIFICATE"),
-            required: true,
-            helpText: "Must show parents' names",
-          });
-
-          // Name Chain Logic (Marriage Certificates / Name Changes)
-          let nameChainRequired = false;
-          let nameChainReason = "";
-
-          // Check Filer's Name Changes
-          if (
-            formData?.part_1?.formerNames &&
-            formData.part_1.formerNames.length > 0
-          ) {
-            nameChainRequired = true;
-            nameChainReason = "Filer has former names";
-          }
-
-          // Check Claimant's Name Changes (if different person)
-          if (
-            formData?.part_2?.formerNames &&
-            formData.part_2.formerNames.length > 0
-          ) {
-            nameChainRequired = true;
-            nameChainReason = "Claimant has former names";
-          }
-
-          // Check Relationship (Spouse/Child often implies name changes)
-          const relationship = formData?.part_3?.relationship;
-          if (
-            relationship === "Spouse" ||
-            relationship === "Child" ||
-            relationship === "Grandchild"
-          ) {
-            // If last names differ, we likely need a link
-            const filerLast = formData?.part_1?.lastName?.toLowerCase();
-            const claimantLast =
-              formData?.part_2?.lastName?.toLowerCase() || filerLast; // Fallback if self
-            if (filerLast && claimantLast && filerLast !== claimantLast) {
-              nameChainRequired = true;
-              nameChainReason = "Filer and Claimant last names differ";
-            }
-          }
-
-          if (nameChainRequired) {
-            requirements.push({
-              category: "MARRIAGE_CERTIFICATE",
-              label: "Marriage Certificate(s) / Name Change Docs",
-              description:
-                "Documents linking current names to birth names (e.g., Marriage Certs, Divorce Decrees)",
-              uploaded:
-                isUploaded("MARRIAGE_CERTIFICATE") ||
-                countUploaded("IDENTITY") >= 2, // Fallback to generic identity if specific not found
-              required: true,
-              helpText: `Required because: ${nameChainReason}. Provide a document for EACH name change.`,
-            });
-          }
-
-          // Sibling Requirements (Part 6)
-          if (
-            formData?.part_6?.siblings &&
-            Array.isArray(formData.part_6.siblings)
-          ) {
-            formData.part_6.siblings.forEach((sibling: any, index: number) => {
-              const siblingName = sibling.name || `Sibling #${index + 1}`;
-
-              // Sibling Birth Certificate
-              requirements.push({
-                category: "BIRTH_CERTIFICATE",
-                label: `${siblingName} - Birth Certificate`,
-                description: `Birth certificate for ${siblingName} to prove relationship`,
-                uploaded: uploadedFiles.some(
-                  (f: any) =>
-                    f.category === "BIRTH_CERTIFICATE" &&
-                    f.originalFilename
-                      ?.toLowerCase()
-                      .includes(siblingName.split(" ")[0].toLowerCase())
-                ),
-                required: true,
-                helpText:
-                  "Must show parents' names to establish sibling relationship",
-              });
-
-              // Sibling Name Change / Marriage Certificate
-              if (
-                sibling.hadNameChange === "YES" ||
-                sibling.nameChangeHistory?.length > 0
-              ) {
-                requirements.push({
-                  category: "MARRIAGE_CERTIFICATE",
-                  label: `${siblingName} - Marriage/Name Change`,
-                  description: `Marriage certificate or legal name change for ${siblingName}`,
-                  uploaded: uploadedFiles.some(
-                    (f: any) =>
-                      f.category === "MARRIAGE_CERTIFICATE" &&
-                      f.originalFilename
-                        ?.toLowerCase()
-                        .includes(siblingName.split(" ")[0].toLowerCase())
-                  ),
-                  required: true,
-                  helpText:
-                    "Required to link current name to birth certificate",
-                });
-              }
-            });
-          }
-
-          // Part 5: Surviving Spouse - Divorce/Marriage Docs
-          if (formData?.part_5?.documentsIdentified) {
-            const part5Docs = formData.part_5.documentsIdentified;
-            if (part5Docs.divorcePapersNeeded) {
-              requirements.push({
-                category: "OTHER",
-                label: "Divorce Decree(s)",
-                description:
-                  "Divorce decrees for previous marriages (yours or the person who became ill)",
-                uploaded: uploadedFiles.some(
-                  (f: any) =>
-                    f.category === "OTHER" &&
-                    f.originalFilename?.toLowerCase().includes("divorce")
-                ),
-                required: true,
-                helpText:
-                  "Contact the court where the divorce was finalized to obtain certified copies",
-              });
-            }
-            if (part5Docs.previousMarriageCertsNeeded > 0) {
-              requirements.push({
-                category: "MARRIAGE_CERTIFICATE",
-                label: `Previous Marriage Certificate(s) (${part5Docs.previousMarriageCertsNeeded})`,
-                description:
-                  "Marriage certificates for prior marriages to establish complete marital history",
-                uploaded:
-                  countUploaded("MARRIAGE_CERTIFICATE") >=
-                  part5Docs.previousMarriageCertsNeeded + 1, // +1 for the current marriage cert
-                required: true,
-                helpText:
-                  "Contact the county clerk where each marriage took place",
-              });
-            }
-          }
-
-          // Part 7: Other Relatives - Relationship Chain Docs
-          if (
-            formData?.part_7?.documentsIdentified &&
-            relationship !== "Self" &&
-            relationship !== "Spouse" &&
-            relationship !== "Child"
-          ) {
-            const part7Docs = formData.part_7.documentsIdentified;
-            if (part7Docs.birthCertificatesNeeded > 1) {
-              requirements.push({
-                category: "BIRTH_CERTIFICATE",
-                label: `Relationship Chain Birth Certificates (${part7Docs.birthCertificatesNeeded} needed)`,
-                description:
-                  "Birth certificates establishing the family chain between you and the person who became ill",
-                uploaded:
-                  countUploaded("BIRTH_CERTIFICATE") >=
-                  part7Docs.birthCertificatesNeeded,
-                required: true,
-                helpText:
-                  "Contact the vital records office in each state of birth. Each link in the family chain needs a birth certificate.",
-              });
-            }
-          }
-
-          // Part 7: Intermediary Death Certificates
-          if (
-            formData?.part_7?.intermediaryRelatives &&
-            Array.isArray(formData.part_7.intermediaryRelatives)
-          ) {
-            const deceasedIntermediaries =
-              formData.part_7.intermediaryRelatives.filter(
-                (r: any) => r.isDeceased === "YES"
-              );
-            if (deceasedIntermediaries.length > 0) {
-              deceasedIntermediaries.forEach((rel: any) => {
-                const relName = rel.name || "Family Member";
-                requirements.push({
-                  category: "DEATH_CERTIFICATE",
-                  label: `${relName} - Death Certificate`,
-                  description: `Death certificate for ${relName} (relationship chain member)`,
-                  uploaded: uploadedFiles.some(
-                    (f: any) =>
-                      f.category === "DEATH_CERTIFICATE" &&
-                      f.originalFilename
-                        ?.toLowerCase()
-                        .includes(relName.split(" ")[0].toLowerCase())
-                  ),
-                  required: true,
-                  helpText:
-                    "Contact the vital records office in the state where death occurred",
-                });
-              });
-            }
-          }
-
-          // 2. Proof of Presence
-          requirements.push({
-            category: "PROOF_OF_RESIDENCE",
-            label: "Proof of Physical Presence (2+ documents)",
-            description:
-              "Tax records, property records, school enrollment, utility bills, employment records, etc.",
-            uploaded:
-              uploadedFiles.filter((f: any) =>
-                [
-                  "PROOF_OF_RESIDENCE",
-                  "UTILITY_BILL",
-                  "TAX_RETURN",
-                  "SCHOOL_RECORDS",
-                  "MORTGAGE_STATEMENT",
-                  "EMPLOYMENT_RECORDS",
-                ].includes(f.category || "")
-              ).length >= 2,
-            required: true,
-            helpText:
-              "Need at least 2 documents showing presence in affected area during exposure period",
-          });
-
-          // 3. Medical Records
-          requirements.push({
-            category: "MEDICAL_RECORDS",
-            label: "Medical Records Showing Cancer Diagnosis",
-            description:
-              "Pathology reports, biopsy results, hospital records, or doctor's notes confirming compensable disease",
-            uploaded:
-              isUploaded("MEDICAL_RECORDS") || isUploaded("PATHOLOGY_REPORT"),
-            required: true,
-            helpText:
-              "See RECA form pages 18-24 for specific documents accepted for each disease type",
-          });
-        } else {
-          // Generic requirements for other claim types
-          requirements.push(
-            {
-              category: "IDENTITY",
-              label: "Identification Documents",
-              description:
-                "Birth certificate, death certificate, marriage certificates as applicable",
-              uploaded: isUploaded("IDENTITY"),
-              required: true,
-              helpText: "Required to establish identity and relationships",
-            },
-            {
-              category: "MEDICAL_RECORDS",
-              label: "Medical Records",
-              description: "Medical documentation relevant to your claim type",
-              uploaded: isUploaded("MEDICAL_RECORDS"),
-              required: true,
-              helpText:
-                "Requirements vary by claim type - refer to your RECA form instructions",
-            }
-          );
-        }
-
+        const requirements = generatePortalRequirements(
+          claimType,
+          formData,
+          uploadedFiles
+        );
         setRequiredDocs(requirements);
       } catch (error) {
         console.error("Failed to load requirements:", error);

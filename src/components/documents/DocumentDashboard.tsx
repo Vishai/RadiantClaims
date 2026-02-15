@@ -48,7 +48,14 @@ interface UploadedFile {
   rejectionReason?: string | null;
   aiIntelligence?: AIIntelligence | null;
   validation?: {
-    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    status:
+      | "PENDING"
+      | "PROCESSING"
+      | "VERIFIED"
+      | "NEEDS_REVIEW"
+      | "STAFF_APPROVED"
+      | "REJECTED"
+      | "ERROR";
     category?: string;
     confidence?: number;
   } | null;
@@ -78,24 +85,41 @@ export function DocumentDashboard({
   const [validating, setValidating] = useState(false);
   const [showValidationProgress, setShowValidationProgress] = useState(false);
 
-  const loadDocuments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/documents?sessionId=${sessionId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(data.files || []);
+  const loadDocuments = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const response = await fetch(`/api/documents?sessionId=${sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setDocuments(data.files || []);
+        }
+      } catch (error) {
+        console.error("Failed to load documents:", error);
+      } finally {
+        if (!silent) setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load documents:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId]);
+    },
+    [sessionId]
+  );
 
   useEffect(() => {
     void loadDocuments();
   }, [loadDocuments]);
+
+  // Auto-refresh while any documents are still processing
+  useEffect(() => {
+    const hasProcessing = documents.some(
+      (d) => d.status === "UPLOADING" || d.status === "PROCESSING"
+    );
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      void loadDocuments(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [documents, loadDocuments]);
 
   const handleView = async (fileId: string) => {
     // Open document in new tab
@@ -317,14 +341,39 @@ export function DocumentDashboard({
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               <SelectItem value="IDENTITY">Identity</SelectItem>
+              <SelectItem value="BIRTH_CERTIFICATE">
+                Birth Certificate
+              </SelectItem>
+              <SelectItem value="DEATH_CERTIFICATE">
+                Death Certificate
+              </SelectItem>
+              <SelectItem value="MARRIAGE_CERTIFICATE">
+                Marriage Certificate
+              </SelectItem>
               <SelectItem value="MEDICAL_RECORDS">Medical Records</SelectItem>
               <SelectItem value="PATHOLOGY_REPORT">Pathology Report</SelectItem>
+              <SelectItem value="DISCHARGE_SUMMARY">
+                Discharge Summary
+              </SelectItem>
+              <SelectItem value="TUMOR_REGISTRY">Tumor Registry</SelectItem>
+              <SelectItem value="TREATMENT_RECORDS">
+                Treatment Records
+              </SelectItem>
               <SelectItem value="PROOF_OF_RESIDENCE">
                 Proof of Residence
               </SelectItem>
               <SelectItem value="UTILITY_BILL">Utility Bill</SelectItem>
+              <SelectItem value="MORTGAGE_STATEMENT">
+                Mortgage Statement
+              </SelectItem>
               <SelectItem value="TAX_RETURN">Tax Return</SelectItem>
               <SelectItem value="SCHOOL_RECORDS">School Records</SelectItem>
+              <SelectItem value="EMPLOYMENT_RECORDS">
+                Employment Records
+              </SelectItem>
+              <SelectItem value="LDS_CHURCH_RECORDS">
+                LDS Church Records
+              </SelectItem>
               <SelectItem value="OTHER">Other</SelectItem>
             </SelectContent>
           </Select>
@@ -335,10 +384,14 @@ export function DocumentDashboard({
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="UPLOADING">Uploading</SelectItem>
+              <SelectItem value="PROCESSING">Processing</SelectItem>
+              <SelectItem value="READY">Ready</SelectItem>
               <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="VALIDATED">Validated</SelectItem>
+              <SelectItem value="AWAITING_REVIEW">Awaiting Review</SelectItem>
               <SelectItem value="APPROVED">Approved</SelectItem>
               <SelectItem value="REJECTED">Rejected</SelectItem>
-              <SelectItem value="NEEDS_ATTENTION">Needs Attention</SelectItem>
+              <SelectItem value="FAILED">Failed</SelectItem>
             </SelectContent>
           </Select>
           {/* View Mode Toggle */}

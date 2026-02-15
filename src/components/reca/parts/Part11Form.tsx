@@ -31,6 +31,8 @@ import {
   UploadedMedicalDocument,
   MedicalDocumentType,
 } from "../MedicalDocumentUpload";
+import Link from "next/link";
+import { FolderOpen } from "lucide-react";
 
 // Validation schema
 const part11Schema = z
@@ -202,6 +204,30 @@ export default function Part11Form({
             Medical documentation required to establish diagnosis of compensable
             disease
           </CardDescription>
+          {/* Document status banner */}
+          {(() => {
+            const medDocsUploaded = uploadedDocuments.filter(
+              (doc) => doc.status === "success"
+            ).length;
+            return medDocsUploaded > 0 ? (
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5">
+                <div className="flex items-center gap-2 text-sm text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>
+                    <strong>{medDocsUploaded}</strong> medical document
+                    {medDocsUploaded !== 1 ? "s" : ""} uploaded
+                  </span>
+                </div>
+                <Link
+                  href={`/reca/documents/${sessionId}`}
+                  className="flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-900"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  View all docs
+                </Link>
+              </div>
+            ) : null;
+          })()}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Acceptable Documents Info */}

@@ -27,6 +27,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DocumentUpload, UploadedDocument } from "../DocumentUpload";
+import Link from "next/link";
+import { FolderOpen } from "lucide-react";
 
 // Validation schema
 const part9Schema = z.object({
@@ -195,6 +197,26 @@ export default function Part9Form({
             Upload documents that establish physical presence in affected areas
             during eligible time periods
           </CardDescription>
+          {/* Document status banner */}
+          {successfulUploads > 0 && (
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-emerald-800">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>
+                  <strong>{successfulUploads}</strong> presence document
+                  {successfulUploads !== 1 ? "s" : ""} uploaded
+                  {successfulUploads < 2 && " (2 required)"}
+                </span>
+              </div>
+              <Link
+                href={`/reca/documents/${sessionId}`}
+                className="flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-900"
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+                View all docs
+              </Link>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {/* RECA Requirements */}

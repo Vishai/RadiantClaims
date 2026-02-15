@@ -440,7 +440,7 @@ export function DocumentUploadZone({
 
                     {uploadingFile.status === "complete" && (
                       <p className="mt-1 text-xs text-emerald-600">
-                        ✓ Upload complete
+                        ✓ Uploaded — AI analysis in progress
                       </p>
                     )}
 
