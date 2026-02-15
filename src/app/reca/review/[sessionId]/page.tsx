@@ -56,6 +56,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
+import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 
 // ============================================================================
 // Section metadata for completion analysis
@@ -872,6 +874,9 @@ export default function RECAReviewPage({ params }: PageProps) {
   const [showInstallmentWarning, setShowInstallmentWarning] = useState(false);
   const [hasAcknowledgedWarning, setHasAcknowledgedWarning] = useState(false);
 
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
+
   // Completion analysis
   const completion = useMemo<CompletionAnalysis | null>(() => {
     if (!workflowState) return null;
@@ -1156,6 +1161,17 @@ export default function RECAReviewPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-cream-50">
+      <InviteCollaboratorDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        intakeSessionId={params.sessionId}
+      />
+      <ManageCollaboratorsDialog
+        open={showManageDialog}
+        onOpenChange={setShowManageDialog}
+        intakeSessionId={params.sessionId}
+      />
+
       <div className="container mx-auto max-w-4xl px-6 py-8">
         {/* ================================================================ */}
         {/* Header — adapts to completion state */}
@@ -1260,6 +1276,39 @@ export default function RECAReviewPage({ params }: PageProps) {
             </CardContent>
           </Card>
         )}
+
+        {/* ================================================================ */}
+        {/* Family / sibling help */}
+        {/* ================================================================ */}
+        <Card className="mb-6 rounded-3xl border-2 border-sage-200 bg-white">
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-sage-900">
+                Missing documents?
+              </p>
+              <p className="text-sm text-sage-600">
+                Invite a sibling/family member to upload documents and leave
+                notes. They can’t edit your answers.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                onClick={() => setShowInviteDialog(true)}
+              >
+                Invite
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                onClick={() => setShowManageDialog(true)}
+              >
+                Manage
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ================================================================ */}
         {/* Importance Checklist (review-tracking.ts) */}

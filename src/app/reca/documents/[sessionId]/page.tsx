@@ -27,6 +27,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { DocumentDashboard } from "@/components/documents/DocumentDashboard";
+import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
+import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 import {
   generateDocumentRequirements,
   applyUploadsToRequirements,
@@ -105,6 +107,9 @@ export default function SessionDocumentsPage() {
 
   // Help panel
   const [helpDocId, setHelpDocId] = useState<string | null>(null);
+
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
 
   // ------- data loading -------
 
@@ -269,9 +274,51 @@ export default function SessionDocumentsPage() {
         </div>
 
         {/* Main Grid: 2/3 content + 1/3 sidebar */}
+        <InviteCollaboratorDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          intakeSessionId={sessionId}
+        />
+        <ManageCollaboratorsDialog
+          open={showManageDialog}
+          onOpenChange={setShowManageDialog}
+          intakeSessionId={sessionId}
+        />
+
         <div className="grid gap-8 lg:grid-cols-3">
           {/* ---- LEFT: upload + file list ---- */}
           <div className="space-y-8 lg:col-span-2">
+            {/* Family / sibling help */}
+            <Card className="rounded-3xl border-2 border-sage-200 bg-white">
+              <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-sage-900">
+                    Need help gathering documents?
+                  </p>
+                  <p className="text-sm text-sage-600">
+                    Invite a sibling/family member to upload documents and leave
+                    notes. They can’t edit your answers.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                    onClick={() => setShowInviteDialog(true)}
+                  >
+                    Invite
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                    onClick={() => setShowManageDialog(true)}
+                  >
+                    Manage
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Upload Zone */}
             <Card className="rounded-3xl border-2 border-cream-200">
               <CardHeader>

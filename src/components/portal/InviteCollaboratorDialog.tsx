@@ -60,6 +60,15 @@ export function InviteCollaboratorDialog({
       }
 
       setGeneratedUrl(data.invite?.acceptUrl || null);
+
+      if (data?.emailSent === false) {
+        // Still show the link, but warn the user the email didn't go out.
+        alert(
+          data?.emailError
+            ? `Invite created, but email failed to send: ${data.emailError}`
+            : "Invite created, but email failed to send."
+        );
+      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to send invite");
     } finally {
@@ -79,11 +88,11 @@ export function InviteCollaboratorDialog({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>
-            {generatedUrl ? "Invite link ready" : "Invite a sibling"}
+            {generatedUrl ? "Invite sent" : "Invite a sibling"}
           </DialogTitle>
           <DialogDescription>
             {generatedUrl
-              ? "Share this link with your family member. They’ll need to sign in (or create an account) to view the claim and upload documents."
+              ? "We emailed the invite. If they don’t see it, you can copy the link below. They’ll need to sign in (or create an account) to view the claim and upload documents."
               : "Invite a family member to view this claim, upload documents, and leave notes. They cannot edit your answers."}
           </DialogDescription>
         </DialogHeader>

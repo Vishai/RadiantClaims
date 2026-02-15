@@ -6,6 +6,9 @@ import {
   assertCanAccessIntakeSession,
   generateInviteToken,
 } from "@/lib/collaboration";
+import * as React from "react";
+import { sendEmail } from "@/lib/resend";
+import ClientCollaboratorInviteEmail from "@/emails/client/collaborator-invite";
 
 const schema = z.object({
   intakeSessionId: z.string(),
@@ -13,6 +16,9 @@ const schema = z.object({
   name: z.string().optional(),
   role: z.enum(["VIEWER", "CONTRIBUTOR"]).optional(),
 });
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,9 +66,23 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
     const acceptUrl = `${baseUrl}/portal/invites/accept?token=${invite.token}`;
 
-    // TODO: send email via resend (for now return the link)
+    const inviterName =
+      session.user.name || session.user.email || "A family member";
+
+    const delivery = await sendEmail({
+      to: invite.email,
+      subject: "You’ve been invited to help with a RECA claim",
+      from: "RadiantClaims Support <support@radiantclaims.com>",
+      react: React.createElement(ClientCollaboratorInviteEmail, {
+        inviterName,
+        acceptUrl,
+      }),
+    });
+
     return NextResponse.json({
       success: true,
+      emailSent: delivery.success,
+      emailError: delivery.success ? null : delivery.message,
       invite: {
         id: invite.id,
         email: invite.email,
