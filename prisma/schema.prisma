@@ -2,13 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [vector]
 }
 
@@ -85,8 +85,12 @@ model User {
   promoCodeUsages             PromoCodeUsage[] // Promo codes used by this user
   documentAssistancesAssigned DocumentRequestAssistance[] @relation("DocumentAssistanceAssignedStaff") // Claimants receiving staff assistance
 
-  createdAt                   DateTime                    @default(now())
-  updatedAt                   DateTime                    @updatedAt
+  intakeSessionInvites        IntakeSessionInvite[]
+  intakeSessionCollaborations IntakeSessionCollaborator[]
+  intakeSessionInvitedBy      IntakeSessionCollaborator[] @relation("IntakeSessionCollaboratorInvitedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([role])
@@ -282,6 +286,10 @@ model IntakeSession {
   documentAssistances     DocumentRequestAssistance[]
   AttorneyNotificationLog AttorneyNotificationLog[]
   externalUploadTokens    ExternalUploadToken[]
+
+  // Collaboration (family/siblings)
+  collaboratorInvites IntakeSessionInvite[]
+  collaborators       IntakeSessionCollaborator[]
 
   @@index([resumeToken])
   @@index([claimantId])
@@ -1101,13 +1109,64 @@ model ExternalUploadToken {
   recipientEmail  String
   recipientName   String?
   targetCategory  String? // Optional: restrict to specific category
-  guestData       Json?   // Store form data filled by the guest (address, phone, etc.)
+  guestData       Json? // Store form data filled by the guest (address, phone, etc.)
   expiresAt       DateTime
   usedAt          DateTime?
   createdAt       DateTime      @default(now())
 
   @@index([token])
   @@index([intakeSessionId])
+}
+
+// ============================================================================
+// INTAKE SESSION COLLABORATION (Family/Siblings)
+// ============================================================================
+
+enum IntakeSessionCollaboratorRole {
+  VIEWER
+  CONTRIBUTOR // can upload docs + comment/notes (no editing of claim form)
+}
+
+model IntakeSessionInvite {
+  id              String        @id @default(cuid())
+  token           String        @unique
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+  invitedByUserId String
+  invitedByUser   User          @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  email String
+  name  String?
+  role  IntakeSessionCollaboratorRole @default(CONTRIBUTOR)
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([token])
+  @@index([intakeSessionId])
+  @@index([email])
+}
+
+model IntakeSessionCollaborator {
+  id              String        @id @default(cuid())
+  intakeSessionId String
+  intakeSession   IntakeSession @relation(fields: [intakeSessionId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role            IntakeSessionCollaboratorRole @default(CONTRIBUTOR)
+  invitedByUserId String
+  invitedByUser   User                          @relation("IntakeSessionCollaboratorInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  acceptedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@unique([intakeSessionId, userId])
+  @@index([intakeSessionId])
+  @@index([userId])
 }
 
 model FollowUpPriorityQueue {
@@ -1198,13 +1257,13 @@ model DocumentResource {
   estimatedCost         Float? // Dollar amount (e.g., 20.00)
 
   // Quality & Verification
-  source              ResourceSource           @default(DATABASE) // Where this resource came from
-  verificationStatus  ResourceVerificationStatus @default(UNVERIFIED)
-  verifiedBy          String? // Staff user ID who verified
-  verifiedAt          DateTime?
-  lastUpdated         DateTime                 @default(now())
-  searchCount         Int                      @default(0) // How many times this was returned in search results
-  selectionCount      Int                      @default(0) // How many times this was selected by users
+  source             ResourceSource             @default(DATABASE) // Where this resource came from
+  verificationStatus ResourceVerificationStatus @default(UNVERIFIED)
+  verifiedBy         String? // Staff user ID who verified
+  verifiedAt         DateTime?
+  lastUpdated        DateTime                   @default(now())
+  searchCount        Int                        @default(0) // How many times this was returned in search results
+  selectionCount     Int                        @default(0) // How many times this was selected by users
 
   claimantDocumentStatuses ClaimantDocumentStatus[]
   resourceFeedback         ResourceFeedback[] // User feedback on this resource
@@ -1991,9 +2050,9 @@ model ServiceSubscription {
   setupFeePaidAt DateTime?
 
   // Installment Plan Support (2 payments of $249.99)
-  isInstallmentPlan     Boolean @default(false) // True if user chose 2-payment plan
-  installmentPaymentCount Int   @default(0) // Track number of payments made (max 2)
-  installmentCompleted  Boolean @default(false) // True when all installments paid
+  isInstallmentPlan       Boolean @default(false) // True if user chose 2-payment plan
+  installmentPaymentCount Int     @default(0) // Track number of payments made (max 2)
+  installmentCompleted    Boolean @default(false) // True when all installments paid
 
   // DEPRECATED: Old monthly subscription fields (no longer used as of Dec 2024)
   monthlyFeeAmount Float? // DEPRECATED: No longer used (was $24.99)
@@ -2029,9 +2088,9 @@ model ServiceSubscription {
   cancelReason String?   @db.Text
 
   // Relations
-  payments          Payment[]
-  intakeSessions    IntakeSession[]
-  promoCodeUsages   PromoCodeUsage[] // Detailed promo code usage tracking
+  payments           Payment[]
+  intakeSessions     IntakeSession[]
+  promoCodeUsages    PromoCodeUsage[] // Detailed promo code usage tracking
   claimSubscriptions ClaimSubscription[] // Per-claim subscriptions
 
   createdAt DateTime @default(now())
@@ -2049,40 +2108,40 @@ model ServiceSubscription {
 // Per-claim subscription tracking
 // Each claim gets its own subscription with individual pricing
 model ClaimSubscription {
-  id                   String              @id @default(cuid())
-  claimantId           String              @unique
-  claimant             Claimant            @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  id                    String              @id @default(cuid())
+  claimantId            String              @unique
+  claimant              Claimant            @relation(fields: [claimantId], references: [id], onDelete: Cascade)
   serviceSubscriptionId String
-  serviceSubscription  ServiceSubscription @relation(fields: [serviceSubscriptionId], references: [id], onDelete: Cascade)
+  serviceSubscription   ServiceSubscription @relation(fields: [serviceSubscriptionId], references: [id], onDelete: Cascade)
 
   // Claim order tracking (for pricing tier)
-  claimOrder           Int // 1 = first claim ($24.99/mo), 2+ = additional ($14.99/mo)
+  claimOrder Int // 1 = first claim ($24.99/mo), 2+ = additional ($14.99/mo)
 
   // Per-claim setup fee
-  setupFeePaid         Boolean             @default(false)
-  setupFeeAmount       Float // DIY: 149.99, Lawyer: 89.99
-  setupFeePaidAt       DateTime?
-  setupFeeRefunded     Boolean             @default(false) // Lawyer track: refundable on claim receipt
-  setupFeeRefundedAt   DateTime?
+  setupFeePaid       Boolean   @default(false)
+  setupFeeAmount     Float // DIY: 149.99, Lawyer: 89.99
+  setupFeePaidAt     DateTime?
+  setupFeeRefunded   Boolean   @default(false) // Lawyer track: refundable on claim receipt
+  setupFeeRefundedAt DateTime?
 
   // Monthly fee (calculated based on claimOrder)
-  monthlyFeeAmount     Float // $24.99 for claimOrder=1, $14.99 for claimOrder>1
+  monthlyFeeAmount Float // $24.99 for claimOrder=1, $14.99 for claimOrder>1
 
   // Lawyer track: no discount on additional claims
-  lawyerTrackNoDiscount Boolean           @default(false)
+  lawyerTrackNoDiscount Boolean @default(false)
 
   // Stripe tracking (individual subscription per claim)
-  stripeSubscriptionId String?            @unique
+  stripeSubscriptionId String? @unique
   stripePriceId        String? // The Stripe price ID for this claim's monthly fee
 
   // Lifecycle
-  status               SubscriptionStatus  @default(ACTIVE)
-  startedAt            DateTime            @default(now())
-  canceledAt           DateTime?
-  cancelReason         String?             @db.Text
+  status       SubscriptionStatus @default(ACTIVE)
+  startedAt    DateTime           @default(now())
+  canceledAt   DateTime?
+  cancelReason String?            @db.Text
 
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([serviceSubscriptionId])
   @@index([claimantId])
@@ -2217,31 +2276,31 @@ enum ResourceFeedbackType {
 
 // Track when we show a resource to a user (for follow-up)
 model ResourceInteraction {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   resourceId String
   resource   DocumentResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   // Who we showed it to
-  userId     String?
-  sessionId  String?
-  email      String? // For follow-up
+  userId    String?
+  sessionId String?
+  email     String? // For follow-up
 
   // Context
   documentType String // What they were looking for
-  shownVia     String @default("chat_bot") // "chat_bot", "resource_page", "email"
+  shownVia     String  @default("chat_bot") // "chat_bot", "resource_page", "email"
   searchQuery  String? @db.Text // Original user query
 
   // Immediate feedback (thumbs up/down)
   immediatelyHelpful  Boolean? // true = thumbs up, false = thumbs down
   immediateFeedbackAt DateTime?
-  immediateComments   String? @db.Text // Why thumbs down
+  immediateComments   String?   @db.Text // Why thumbs down
 
   // Follow-up tracking
   followUpScheduledFor DateTime // When to send follow-up
   followUpSentAt       DateTime?
   followUpMethod       String? // "email", "sms", "modal"
   followUpCompletedAt  DateTime?
-  followUpReminderSent Boolean  @default(false)
+  followUpReminderSent Boolean   @default(false)
 
   // Link to detailed feedback (if provided)
   feedbackId String?           @unique
@@ -2259,14 +2318,14 @@ model ResourceInteraction {
 
 // Track user feedback on resources to improve quality
 model ResourceFeedback {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   resourceId String
   resource   DocumentResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   // Who provided feedback
-  userId     String?
-  sessionId  String? // For anonymous users
-  email      String? // Optional contact
+  userId    String?
+  sessionId String? // For anonymous users
+  email     String? // Optional contact
 
   // Feedback details
   feedbackType ResourceFeedbackType
@@ -2274,10 +2333,10 @@ model ResourceFeedback {
   wasHelpful   Boolean? // Simple thumbs up/down
 
   // Detailed feedback
-  documentType String? // What document they were seeking
-  comments     String? @db.Text
-  contactedAt  DateTime? // When they contacted the resource
-  responseTime String? // "same_day", "within_3_days", "within_week", "1_2_weeks", "2_4_weeks", "no_response"
+  documentType         String? // What document they were seeking
+  comments             String?   @db.Text
+  contactedAt          DateTime? // When they contacted the resource
+  responseTime         String? // "same_day", "within_3_days", "within_week", "1_2_weeks", "2_4_weeks", "no_response"
   successfullyObtained Boolean? // Did they get the document?
 
   // Cost & Time tracking
@@ -2285,9 +2344,9 @@ model ResourceFeedback {
   actualProcessingDays Int? // How long it actually took
 
   // Metadata
-  ipAddress  String?
-  userAgent  String?
-  metadata   Json? // Additional context
+  ipAddress String?
+  userAgent String?
+  metadata  Json? // Additional context
 
   // Link back to interaction
   interaction ResourceInteraction?
@@ -2319,10 +2378,10 @@ model ResourceStats {
   successCount    Int @default(0) // Successfully obtained document
 
   // Averages
-  avgRating            Float? // Average star rating
-  avgActualCost        Float? // Average reported cost
-  avgProcessingDays    Float? // Average reported processing time
-  avgResponseTime      String? // Most common response time
+  avgRating         Float? // Average star rating
+  avgActualCost     Float? // Average reported cost
+  avgProcessingDays Float? // Average reported processing time
+  avgResponseTime   String? // Most common response time
 
   // Quality indicators
   helpfulnessRate Float? // % of feedback that was positive
@@ -2330,7 +2389,7 @@ model ResourceStats {
 
   // Last updated
   lastFeedbackAt DateTime?
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
 
   @@index([helpfulnessRate])
   @@index([successRate])
@@ -2342,50 +2401,50 @@ model ResourceStats {
 // ============================================================================
 
 model RecaLibrary {
-  id             String   @id @default(cuid())
-  content        String   @db.Text
+  id             String                      @id @default(cuid())
+  content        String                      @db.Text
   sourceDocument String // Filename (e.g. "RECA_2025_Amendment.pdf")
   pageNumber     Int?
   section        String?
   embedding      Unsupported("vector(1536)")
-  
+
   // New fields for scoping
-  isPublic       Boolean   @default(true) // True = Global Law/Rules
-  claimantId     String?   // If set, ONLY accessible when discussing this claimant
-  claimant       Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  uploadedBy     String?   // Admin/Attorney who added it
-  
+  isPublic   Boolean   @default(true) // True = Global Law/Rules
+  claimantId String? // If set, ONLY accessible when discussing this claimant
+  claimant   Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  uploadedBy String? // Admin/Attorney who added it
+
   // Link to source file
   knowledgeSourceId String?
   knowledgeSource   KnowledgeSource? @relation(fields: [knowledgeSourceId], references: [id], onDelete: Cascade)
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([claimantId])
   @@index([knowledgeSourceId])
 }
 
 model KnowledgeSource {
-  id          String   @id @default(cuid())
-  fileName    String
-  fileKey     String   // R2 Key
-  mimeType    String
-  sizeBytes   Int
-  
-  isPublic    Boolean  @default(true)
-  claimantId  String?
-  claimant    Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  
+  id        String @id @default(cuid())
+  fileName  String
+  fileKey   String // R2 Key
+  mimeType  String
+  sizeBytes Int
+
+  isPublic   Boolean   @default(true)
+  claimantId String?
+  claimant   Claimant? @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
   uploadedById String?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  
-  chunkCount  Int      @default(0)
-  
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  chunkCount Int @default(0)
+
   recaLibraryEntries RecaLibrary[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([claimantId])
   @@index([isPublic])
@@ -2393,16 +2452,16 @@ model KnowledgeSource {
 
 // Chat History Models
 model ChatSession {
-  id        String        @id @default(cuid())
-  userId    String?       // Link to User (optional for guests)
-  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  claimantId String?      // Link to a specific claim context
-  claimant  Claimant?     @relation(fields: [claimantId], references: [id], onDelete: SetNull)
-  messages  ChatMessage[]
-  title     String?       // Auto-generated title from first message
-  
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id         String        @id @default(cuid())
+  userId     String? // Link to User (optional for guests)
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  claimantId String? // Link to a specific claim context
+  claimant   Claimant?     @relation(fields: [claimantId], references: [id], onDelete: SetNull)
+  messages   ChatMessage[]
+  title      String? // Auto-generated title from first message
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([claimantId])
@@ -2412,11 +2471,11 @@ model ChatMessage {
   id        String      @id @default(cuid())
   sessionId String
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      String      // "user", "assistant", "system"
+  role      String // "user", "assistant", "system"
   content   String      @db.Text
-  metadata  Json?       // Store function calls, tool outputs, citations, etc.
+  metadata  Json? // Store function calls, tool outputs, citations, etc.
 
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   @@index([sessionId])
   @@index([createdAt])
@@ -2424,39 +2483,39 @@ model ChatMessage {
 
 // Medical Record Sources - Track hospitals/facilities for medical records
 model MedicalRecordSource {
-  id                String    @id @default(cuid())
-  claimantId        String
-  claimant          Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  claimantId String
+  claimant   Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
 
   // Hospital/Facility Information
-  facilityName      String
-  streetAddress     String?
-  city              String?
-  state             String?
-  zipCode           String?
-  phoneNumber       String?
+  facilityName  String
+  streetAddress String?
+  city          String?
+  state         String?
+  zipCode       String?
+  phoneNumber   String?
 
   // Operation Dates (for validation)
-  yearOpened        Int?
-  yearClosed        Int?
-  stillOperating    Boolean   @default(true)
+  yearOpened     Int?
+  yearClosed     Int?
+  stillOperating Boolean @default(true)
 
   // Treatment Information
-  treatmentYear     Int?      // Year patient was treated at this facility
-  treatmentType     String?   // Type of treatment (e.g., "Radiation", "Chemotherapy")
+  treatmentYear Int? // Year patient was treated at this facility
+  treatmentType String? // Type of treatment (e.g., "Radiation", "Chemotherapy")
 
   // Metadata
-  source            String    @default("USER_ENTERED") // "USER_ENTERED", "WEB_SEARCH", "DATABASE"
-  webSearchResult   Boolean   @default(false) // Was this from web search?
-  requestGenerated  Boolean   @default(false) // Has request packet been generated?
-  requestedAt       DateTime? // When request was made
-  receivedAt        DateTime? // When records were received
+  source           String    @default("USER_ENTERED") // "USER_ENTERED", "WEB_SEARCH", "DATABASE"
+  webSearchResult  Boolean   @default(false) // Was this from web search?
+  requestGenerated Boolean   @default(false) // Has request packet been generated?
+  requestedAt      DateTime? // When request was made
+  receivedAt       DateTime? // When records were received
 
   // Notes
-  notes             String?   @db.Text
+  notes String? @db.Text
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([claimantId])
   @@index([treatmentYear])
@@ -2493,64 +2552,64 @@ enum MetricWindow {
 
 // Lead Status - tracking claimant conversion funnel
 enum LeadStatus {
-  NEW                    // Just completed eligibility
-  CONTACTED              // We've reached out
-  ENGAGED                // They responded to follow-up
-  NURTURING              // In follow-up sequence
-  CONVERTED              // Signed up and started claim
-  CHURNED                // Decided not to proceed
-  INELIGIBLE             // Not eligible for RECA
-  COLD                   // No response after multiple attempts
+  NEW // Just completed eligibility
+  CONTACTED // We've reached out
+  ENGAGED // They responded to follow-up
+  NURTURING // In follow-up sequence
+  CONVERTED // Signed up and started claim
+  CHURNED // Decided not to proceed
+  INELIGIBLE // Not eligible for RECA
+  COLD // No response after multiple attempts
 }
 
 // Conversion Stage - where in the funnel
 enum ConversionStage {
-  ELIGIBILITY_COMPLETED  // Finished eligibility check
-  ACCOUNT_CREATED        // Signed up but hasn't started form
-  FORM_STARTED           // Started RECA form
-  FORM_IN_PROGRESS       // Working through form sections
-  PAYMENT_PENDING        // Needs to pay for service tier
-  PAYMENT_COMPLETED      // Paid, has active subscription
-  FORM_COMPLETED         // Finished entire form
-  PDF_GENERATED          // PDF created
-  PDF_DOWNLOADED         // Downloaded PDF
-  SUBMITTED_TO_DOJ       // Claim submitted to DOJ
+  ELIGIBILITY_COMPLETED // Finished eligibility check
+  ACCOUNT_CREATED // Signed up but hasn't started form
+  FORM_STARTED // Started RECA form
+  FORM_IN_PROGRESS // Working through form sections
+  PAYMENT_PENDING // Needs to pay for service tier
+  PAYMENT_COMPLETED // Paid, has active subscription
+  FORM_COMPLETED // Finished entire form
+  PDF_GENERATED // PDF created
+  PDF_DOWNLOADED // Downloaded PDF
+  SUBMITTED_TO_DOJ // Claim submitted to DOJ
 }
 
 // DOJ Daily Statistics - scraped from justice.gov/civil/awards-date-MMDDYYYY
 model DOJDailyStats {
-  id               String             @id @default(cuid())
+  id String @id @default(cuid())
 
   // Date tracking
-  reportDate       DateTime           // Date from URL (e.g., 12/05/2024)
-  scrapedAt        DateTime           @default(now())
+  reportDate DateTime // Date from URL (e.g., 12/05/2024)
+  scrapedAt  DateTime @default(now())
 
   // Claim type
-  claimCategory    DOJClaimCategory
+  claimCategory DOJClaimCategory
 
   // Under PL 119-21 (current law, starting 7/3/2025)
-  pending          Int
-  approved         Int
-  approvalPercent  Float
-  dollarsApproved  Float     // In dollars (e.g., 39100000)
-  denied           Int
-  totalClaims      Int
+  pending         Int
+  approved        Int
+  approvalPercent Float
+  dollarsApproved Float // In dollars (e.g., 39100000)
+  denied          Int
+  totalClaims     Int
 
   // Calculated fields (vs previous day)
-  dailyApproved    Int?      // Approved today vs yesterday
-  dailyDenied      Int?      // Denied today vs yesterday
-  dailySubmitted   Int?      // New submissions today
+  dailyApproved  Int? // Approved today vs yesterday
+  dailyDenied    Int? // Denied today vs yesterday
+  dailySubmitted Int? // New submissions today
 
   // Processing velocity
-  approvalRate     Float?    // Claims approved per day (rolling avg)
+  approvalRate Float? // Claims approved per day (rolling avg)
 
   // Data quality
-  dataSource       String    @default("justice.gov")
-  scrapingSuccess  Boolean   @default(true)
-  scrapingError    String?   @db.Text
+  dataSource      String  @default("justice.gov")
+  scrapingSuccess Boolean @default(true)
+  scrapingError   String? @db.Text
 
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([reportDate, claimCategory])
   @@index([reportDate])
@@ -2560,13 +2619,13 @@ model DOJDailyStats {
 
 // DOJ Processing Metrics - calculated from daily stats
 model DOJProcessingMetrics {
-  id                    String             @id @default(cuid())
+  id String @id @default(cuid())
 
   // Time window
-  claimCategory         DOJClaimCategory
-  windowStart           DateTime
-  windowEnd             DateTime
-  windowType            MetricWindow
+  claimCategory DOJClaimCategory
+  windowStart   DateTime
+  windowEnd     DateTime
+  windowType    MetricWindow
 
   // Velocity metrics
   avgApprovalsPerDay    Float
@@ -2574,24 +2633,24 @@ model DOJProcessingMetrics {
   avgSubmissionsPerDay  Float
 
   // Capacity metrics
-  avgPendingQueue       Float
-  avgProcessingTime     Float?        // Days from submission to approval (estimated)
+  avgPendingQueue   Float
+  avgProcessingTime Float? // Days from submission to approval (estimated)
 
   // Success metrics
-  approvalRate          Float
-  denialRate            Float
+  approvalRate Float
+  denialRate   Float
 
   // Trend analysis
-  velocityTrend         TrendDirection
-  velocityChange        Float         // % change from previous period
-  queueTrend            TrendDirection
-  queueChange           Float
+  velocityTrend  TrendDirection
+  velocityChange Float // % change from previous period
+  queueTrend     TrendDirection
+  queueChange    Float
 
   // Sample
-  daysInSample          Int
+  daysInSample Int
 
   // Metadata
-  calculatedAt          DateTime           @default(now())
+  calculatedAt DateTime @default(now())
 
   @@index([claimCategory, windowType])
   @@index([calculatedAt])
