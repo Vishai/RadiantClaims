@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import {
   generateDocumentRequirements,
+  applyUploadsToRequirements,
   getDocumentAssistance,
   type DocumentRequirement,
   type DocumentAssistance,
@@ -905,29 +906,69 @@ export default function RECAReviewPage({ params }: PageProps) {
     if (!reviewTracking) return 0;
     return getPriorityReviewItems(reviewTracking).length;
   }, [reviewTracking]);
+  const [hydratedDocRequirements, setHydratedDocRequirements] = useState<
+    DocumentRequirement[]
+  >([]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!workflowState?.formData) {
+        setHydratedDocRequirements([]);
+        return;
+      }
+
+      const relationship = workflowState.formData.part_3?.relationship;
+      if (!relationship) {
+        setHydratedDocRequirements([]);
+        return;
+      }
+
+      let reqs = generateDocumentRequirements(
+        relationship,
+        workflowState.formData.part_1,
+        workflowState.formData.part_4
+      );
+
+      try {
+        const docsRes = await fetch(
+          `/api/documents?sessionId=${params.sessionId}`
+        );
+        if (docsRes.ok) {
+          const docsData = await docsRes.json();
+          const files = (docsData.files || []) as Array<{
+            category?: string | null;
+            validation?: { status?: string | null } | null;
+          }>;
+          reqs = applyUploadsToRequirements(reqs, files);
+        }
+      } catch (e) {
+        console.warn("Failed to hydrate doc requirements:", e);
+      }
+
+      setHydratedDocRequirements(reqs);
+    };
+
+    void run();
+  }, [workflowState?.formData, params.sessionId]);
+
   // Document requirements & assistance
   const documentHelp = useMemo(() => {
-    if (!workflowState?.formData) return null;
+    if (!hydratedDocRequirements.length) return null;
 
-    const relationship = workflowState.formData.part_3?.relationship;
-    if (!relationship) return null;
-
-    const requirements = generateDocumentRequirements(
-      relationship,
-      workflowState.formData.part_1,
-      workflowState.formData.part_4
-    );
-
-    const taskList = buildDocumentTaskList(requirements);
+    const taskList = buildDocumentTaskList(hydratedDocRequirements);
 
     // Build assistance map for each requirement
     const assistanceByDoc: Record<string, DocumentAssistance> = {};
-    for (const req of requirements) {
+    for (const req of hydratedDocRequirements) {
       assistanceByDoc[req.id] = getDocumentAssistance(req.id);
     }
 
-    return { requirements, taskList, assistanceByDoc };
-  }, [workflowState]);
+    return {
+      requirements: hydratedDocRequirements,
+      taskList,
+      assistanceByDoc,
+    };
+  }, [hydratedDocRequirements]);
 
   const loadWorkflowState = useCallback(async () => {
     try {
@@ -1278,37 +1319,51 @@ export default function RECAReviewPage({ params }: PageProps) {
         )}
 
         {/* ================================================================ */}
-        {/* Family / sibling help */}
+        {/* Family / sibling help (conditional) */}
         {/* ================================================================ */}
-        <Card className="mb-6 rounded-3xl border-2 border-sage-200 bg-white">
-          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-sage-900">
-                Missing documents?
-              </p>
-              <p className="text-sm text-sage-600">
-                Invite a sibling/family member to upload documents and leave
-                notes. They can’t edit your answers.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                onClick={() => setShowInviteDialog(true)}
-              >
-                Invite
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                onClick={() => setShowManageDialog(true)}
-              >
-                Manage
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {(() => {
+          const missingRequiredDocs = hydratedDocRequirements.some((req) => {
+            const resolved =
+              req.status === "confirmed" ||
+              req.status === "uploaded" ||
+              req.status === "verified";
+            return req.required && !resolved;
+          });
+
+          if (!missingRequiredDocs) return null;
+
+          return (
+            <Card className="mb-6 rounded-3xl border-2 border-sage-200 bg-white">
+              <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-sage-900">
+                    Missing documents?
+                  </p>
+                  <p className="text-sm text-sage-600">
+                    Invite a sibling/family member to upload documents and leave
+                    notes. They can’t edit your answers.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                    onClick={() => setShowInviteDialog(true)}
+                  >
+                    Invite
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                    onClick={() => setShowManageDialog(true)}
+                  >
+                    Manage
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* ================================================================ */}
         {/* Importance Checklist (review-tracking.ts) */}
