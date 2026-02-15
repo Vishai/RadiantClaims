@@ -28,7 +28,9 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [accessCode, setAccessCode] = useState("");
+  // Promo/access codes are applied at checkout (not during registration).
+  // Keeping registration friction-free avoids confusion.
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const callbackUrlParam = searchParams.get("callbackUrl");
@@ -87,7 +89,7 @@ function RegisterForm() {
           name,
           email,
           password,
-          accessCode: accessCode ? accessCode.trim() : undefined,
+          // accessCode removed
         }),
       });
 
@@ -221,19 +223,7 @@ function RegisterForm() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="accessCode" className="text-sage-800">
-                  Promo Code (optional)
-                </Label>
-                <Input
-                  id="accessCode"
-                  type="text"
-                  placeholder="e.g. BETA-2025"
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
-                  className="rounded-xl border-cream-300 focus:border-terracotta-400 focus:ring-terracotta-400"
-                />
-              </div>
+              {/* Promo codes are applied at checkout to avoid signup confusion. */}
 
               {error && (
                 <div className="rounded-2xl border border-terracotta-200 bg-terracotta-50 p-3 text-sm text-terracotta-800">
