@@ -34,11 +34,15 @@ export function DOJStickyBanner() {
     return null;
   }
 
-  // Calculate queue growth percentage (week over week approximation)
+  // Calculate queue growth percentage (week over week approximation).
+  // We only have current queue size + rates from the public API.
+  // Approximate last week's queue as: currentQueue - 7*(submissions - approvals).
+  const netPerDay = metrics.applicationsPerDay - metrics.approvalsPerDay;
+  const approxLastWeekQueue = metrics.queueSize - netPerDay * 7;
   const weeklyGrowth =
-    (((metrics.applicationsPerDay - metrics.approvalsPerDay) * 7) /
-      metrics.queueSize) *
-    100;
+    approxLastWeekQueue > 0
+      ? ((metrics.queueSize - approxLastWeekQueue) / approxLastWeekQueue) * 100
+      : 0;
 
   // Use API's pre-calculated wait time (based on 30-day average for stability)
   const waitMonths = Math.round(metrics.estimatedWaitDays / 30);
