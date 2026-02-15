@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -54,11 +55,13 @@ export default function AdminClientLayout({
     return null;
   }
 
-  const navigation: {
+  type NavItem = {
     name: string;
-    href: string;
+    href: Route;
     icon: React.ComponentType<{ className?: string }>;
-  }[] = [
+  };
+
+  const navigation: NavItem[] = [
     {
       name: "Dashboard",
       href: "/admin",
@@ -137,7 +140,7 @@ export default function AdminClientLayout({
               return (
                 <Link
                   key={item.name}
-                  href={item.href as any}
+                  href={item.href}
                   className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-sage-800 text-white"

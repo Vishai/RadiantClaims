@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,7 +17,7 @@ import {
 
 type NavItem = {
   name: string;
-  href: string;
+  href: Route;
   icon: React.ComponentType<{ className?: string }>;
   match?: (pathname: string) => boolean;
 };
@@ -129,7 +130,7 @@ export default function AttorneyClientLayout({
               return (
                 <Link
                   key={item.name}
-                  href={item.href as any}
+                  href={item.href}
                   className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                     isActive(item)
                       ? "bg-white/10 text-white"
