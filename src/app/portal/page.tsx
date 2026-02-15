@@ -33,6 +33,8 @@ import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
+import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
+import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 import { generateDocumentRequirements } from "@/lib/reca/document-tracking";
 import { RelationshipType } from "@/lib/reca/types";
 
@@ -239,6 +241,10 @@ export default function CustomerPortal() {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDOJMetrics, setShowDOJMetrics] = useState(false);
+  const [inviteSessionId, setInviteSessionId] = useState<string | null>(null);
+  const [manageSessionId, setManageSessionId] = useState<string | null>(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
 
   const loadClaims = useCallback(async () => {
     try {
@@ -682,6 +688,42 @@ export default function CustomerPortal() {
                                   : "None yet"}
                               </span>
                             </div>
+
+                            {/* Family / sibling help */}
+                            <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-sage-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="text-sm text-sage-700">
+                                <div className="font-semibold text-sage-900">
+                                  Family / Sibling Help
+                                </div>
+                                <div className="text-xs text-sage-600">
+                                  Invite a family member to view this claim,
+                                  upload documents, and leave notes. They can’t
+                                  edit your answers.
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                                  onClick={() => {
+                                    setInviteSessionId(intakeSession.id);
+                                    setShowInviteDialog(true);
+                                  }}
+                                >
+                                  Invite
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                                  onClick={() => {
+                                    setManageSessionId(intakeSession.id);
+                                    setShowManageDialog(true);
+                                  }}
+                                >
+                                  Manage
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                           {nextSteps && (
                             <div className="rounded-2xl border border-sage-200 bg-white p-4">
@@ -938,6 +980,17 @@ export default function CustomerPortal() {
           }
         }}
         existingClaimCount={claims.length}
+      />
+
+      <InviteCollaboratorDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        intakeSessionId={inviteSessionId}
+      />
+      <ManageCollaboratorsDialog
+        open={showManageDialog}
+        onOpenChange={setShowManageDialog}
+        intakeSessionId={manageSessionId}
       />
 
       {/* Delete Confirmation Dialog */}
