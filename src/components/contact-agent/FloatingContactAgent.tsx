@@ -13,6 +13,20 @@ interface FloatingContactAgentProps {
     state?: string;
     county?: string;
     claimType?: string;
+    intakeSessionId?: string;
+    recaWorkflowStage?: number | null;
+    recaWorkflowSection?: string | null;
+    recaCompletionPercent?: number | null;
+    missingDocuments?: Array<{ documentType: string; status: string }>;
+    documentStatusCounts?: Record<string, number>;
+    uploadedFiles?: Array<{
+      id: string;
+      fileName: string;
+      category: string;
+      status: string;
+      customerStatus: string | null;
+      createdAt: string;
+    }>;
   };
 }
 
