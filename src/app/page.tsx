@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DOJStickyBanner } from "@/components/landing/DOJStickyBanner";
 import { BacklogRaceSection } from "@/components/landing/BacklogRaceSection";
+import { getBetaPricing } from "@/lib/constants/beta-config";
+import { BetaBanner, BetaBadge, BetaPrice } from "@/components/BetaBanner";
 
 export const metadata: Metadata = {
   title: "RECA Claim Preparation for Downwinders",
@@ -11,8 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
+  const diyBeta = getBetaPricing(499);
+
   return (
     <div className="min-h-screen bg-[#FFFBF9]">
+      <BetaBanner />
       {/* Sticky Alert Banner */}
       <DOJStickyBanner />
 
@@ -203,9 +208,12 @@ export default function HomePage() {
             {/* DIY Prep */}
             <div className="group relative flex flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
               <div className="absolute left-0 top-0 h-1 w-full bg-[#D65F4D]"></div>
-              <span className="absolute right-4 top-4 rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
-                Accuracy Guaranteed
-              </span>
+              <div className="absolute right-4 top-4 flex items-center gap-2">
+                <BetaBadge />
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                  Accuracy Guaranteed
+                </span>
+              </div>
               <h3 className="mb-2 mt-6 text-xl font-bold text-gray-900">
                 Fast-Track Self-Filing
               </h3>
@@ -213,7 +221,11 @@ export default function HomePage() {
                 Best for clear medical/work history.
               </p>
               <div className="mb-1 text-4xl font-extrabold text-gray-900">
-                $499
+                <BetaPrice
+                  originalPrice={499}
+                  discountedPrice={diyBeta.finalPrice}
+                  className="text-4xl font-extrabold text-gray-900"
+                />
               </div>
               <p className="mb-6 text-sm font-bold text-[#D65F4D]">
                 One-time Flat Fee
@@ -263,7 +275,7 @@ export default function HomePage() {
                 </span>
                 <strong>Risk-Free Filing:</strong> We verify your eligibility
                 before you pay. If denied or you need help later, upgrade to
-                full legal representation and apply your $499 as a credit.
+                full legal representation and apply your payment as a credit.
               </div>
             </div>
 

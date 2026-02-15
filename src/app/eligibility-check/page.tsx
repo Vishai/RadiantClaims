@@ -1,14 +1,6 @@
 "use client";
 
-import type { Metadata } from "next";
 import { useState } from "react";
-
-export const metadata: Metadata = {
-  title: "RECA Eligibility Check (2 minutes)",
-  description:
-    "Answer a few questions to see if you may qualify for RECA Downwinder compensation and learn what to do next.",
-  alternates: { canonical: "/eligibility-check" },
-};
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveUserData } from "@/lib/user-data-manager";

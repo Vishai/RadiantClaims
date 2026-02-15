@@ -1,14 +1,6 @@
 "use client";
 
-import type { Metadata } from "next";
 import { useState, useEffect, Suspense } from "react";
-
-export const metadata: Metadata = {
-  title: "Pricing",
-  description:
-    "Choose the RadiantClaims plan that fits your needs—DIY claim prep or legal representation support.",
-  alternates: { canonical: "/service-tiers" },
-};
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -42,7 +34,8 @@ import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
 import { DIYTermsAgreement } from "@/components/DIYTermsAgreement";
 import { LegalRepresentationAgreement } from "@/components/LegalRepresentationAgreement";
-// import { calculateAccountPricing } from "@/lib/pricing-calculator"; // Deprecated - using flat pricing now
+import { getBetaPricing } from "@/lib/constants/beta-config";
+import { BetaBadge, BetaPrice, BetaBanner } from "@/components/BetaBanner";
 
 function ServiceTiersContent() {
   const router = useRouter();
@@ -61,11 +54,9 @@ function ServiceTiersContent() {
     "full"
   );
 
-  // Legacy per-claim pricing (deprecated, kept for backwards compatibility)
-  // const [diyClaimCount, setDiyClaimCount] = useState(1);
-  // const [legalClaimCount, setLegalClaimCount] = useState(1);
-  // const diyPricing = calculateAccountPricing("DIY_PREP", diyClaimCount);
-  // const legalPricing = calculateAccountPricing("LEGAL_REP", legalClaimCount);
+  // Beta pricing — reads from beta-config.ts; returns original prices when beta is off
+  const diyFullBeta = getBetaPricing(499);
+  const diyInstallmentBeta = getBetaPricing(249.99);
 
   // SECURITY: Clean up old sessionStorage keys on mount to prevent cross-user contamination
   useEffect(() => {
@@ -329,6 +320,8 @@ function ServiceTiersContent() {
 
   return (
     <div className="min-h-screen bg-cream-50">
+      <BetaBanner />
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-cream-200 bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between p-6">
@@ -420,13 +413,18 @@ function ServiceTiersContent() {
           <Card className="rounded-3xl border-2 border-sage-300 bg-white shadow-lg transition-all hover:border-sage-500 hover:shadow-xl">
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sage-100">
-                  <FileSearch className="h-8 w-8 text-sage-600" />
+                <div className="flex flex-col items-start gap-2">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sage-100">
+                    <FileSearch className="h-8 w-8 text-sage-600" />
+                  </div>
+                  <BetaBadge />
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-sage-900">
-                    $499.99
-                  </div>
+                  <BetaPrice
+                    originalPrice={499}
+                    discountedPrice={diyFullBeta.finalPrice}
+                    className="text-3xl font-bold text-sage-900"
+                  />
                   <div className="text-sm font-bold text-terracotta-600">
                     One-time or 2 Payments
                   </div>
@@ -512,9 +510,11 @@ function ServiceTiersContent() {
                         <span className="font-semibold text-sage-900">
                           Pay in Full
                         </span>
-                        <span className="text-lg font-bold text-sage-900">
-                          $499.99
-                        </span>
+                        <BetaPrice
+                          originalPrice={499}
+                          discountedPrice={diyFullBeta.finalPrice}
+                          className="text-lg font-bold text-sage-900"
+                        />
                       </div>
                       <p className="mt-1 text-xs text-sage-600">
                         One-time payment • No recurring charges
@@ -545,13 +545,17 @@ function ServiceTiersContent() {
                         <span className="font-semibold text-sage-900">
                           2-Payment Plan
                         </span>
-                        <span className="text-lg font-bold text-sage-900">
-                          $249.99 × 2
-                        </span>
+                        <BetaPrice
+                          originalPrice={249.99}
+                          discountedPrice={diyInstallmentBeta.finalPrice}
+                          suffix=" × 2"
+                          className="text-lg font-bold text-sage-900"
+                        />
                       </div>
                       <p className="mt-1 text-xs text-sage-600">
-                        $249.99 today, then $249.99 in 30 days • Auto-stops
-                        after 2 payments
+                        ${diyInstallmentBeta.finalPrice.toFixed(2)} today, then
+                        ${diyInstallmentBeta.finalPrice.toFixed(2)} in 30 days •
+                        Auto-stops after 2 payments
                       </p>
                       <p className="mt-1 text-xs text-blue-600">
                         💳 Card payments only (Affirm/Klarna not available for
@@ -806,7 +810,11 @@ function ServiceTiersContent() {
                         Upfront Cost
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-sage-900">
-                        $499
+                        <BetaPrice
+                          originalPrice={499}
+                          discountedPrice={diyFullBeta.finalPrice}
+                          className="font-semibold text-sage-900"
+                        />
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-sage-900">
                         $0
@@ -817,7 +825,11 @@ function ServiceTiersContent() {
                         Total Cost
                       </td>
                       <td className="px-4 py-3 text-center font-bold text-emerald-700">
-                        $499
+                        <BetaPrice
+                          originalPrice={499}
+                          discountedPrice={diyFullBeta.finalPrice}
+                          className="font-bold text-emerald-700"
+                        />
                         <div className="text-xs font-normal text-sage-600">
                           (One-time flat fee)
                         </div>
