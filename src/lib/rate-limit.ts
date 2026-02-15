@@ -9,7 +9,7 @@ class InMemoryRateLimiter {
   async limit(
     identifier: string,
     limit: number,
-    window: number,
+    window: number
   ): Promise<{
     success: boolean;
     limit: number;
@@ -22,7 +22,12 @@ class InMemoryRateLimiter {
 
     if (!hit || now > hit.resetAt) {
       this.hits.set(key, { count: 1, resetAt: now + window });
-      return { success: true, limit, remaining: limit - 1, reset: now + window };
+      return {
+        success: true,
+        limit,
+        remaining: limit - 1,
+        reset: now + window,
+      };
     }
 
     if (hit.count >= limit) {
@@ -30,7 +35,12 @@ class InMemoryRateLimiter {
     }
 
     hit.count++;
-    return { success: true, limit, remaining: limit - hit.count, reset: hit.resetAt };
+    return {
+      success: true,
+      limit,
+      remaining: limit - hit.count,
+      reset: hit.resetAt,
+    };
   }
 
   // Clean up old entries periodically
@@ -44,7 +54,7 @@ class InMemoryRateLimiter {
       }
     });
 
-    keysToDelete.forEach(key => this.hits.delete(key));
+    keysToDelete.forEach((key) => this.hits.delete(key));
   }
 }
 
@@ -65,12 +75,15 @@ const uploadMemoryLimiter = new InMemoryRateLimiter();
 
 // Clean up in-memory limiters every 5 minutes
 if (!redis) {
-  setInterval(() => {
-    loginMemoryLimiter.cleanup();
-    passwordResetMemoryLimiter.cleanup();
-    apiMemoryLimiter.cleanup();
-    uploadMemoryLimiter.cleanup();
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      loginMemoryLimiter.cleanup();
+      passwordResetMemoryLimiter.cleanup();
+      apiMemoryLimiter.cleanup();
+      uploadMemoryLimiter.cleanup();
+    },
+    5 * 60 * 1000
+  );
 }
 
 // Login rate limiter: 5 attempts per 15 minutes per IP
@@ -99,7 +112,7 @@ export const passwordResetRateLimiter = redis
         passwordResetMemoryLimiter.limit(identifier, 3, 60 * 60 * 1000),
     };
 
-// API rate limiter: 100 requests per minute per user
+// API rate limiter: 100 requests per minute per identifier
 export const apiRateLimiter = redis
   ? new Ratelimit({
       redis,
@@ -110,6 +123,45 @@ export const apiRateLimiter = redis
   : {
       limit: (identifier: string) =>
         apiMemoryLimiter.limit(identifier, 100, 60 * 1000),
+    };
+
+// Chat (expensive): 20 requests per minute per identifier
+export const chatRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "1 m"),
+      analytics: true,
+      prefix: "ratelimit:chat",
+    })
+  : {
+      limit: (identifier: string) =>
+        apiMemoryLimiter.limit(identifier, 20, 60 * 1000),
+    };
+
+// Feedback (cheap): 200 requests per minute per identifier
+export const chatFeedbackRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(200, "1 m"),
+      analytics: true,
+      prefix: "ratelimit:chat-feedback",
+    })
+  : {
+      limit: (identifier: string) =>
+        apiMemoryLimiter.limit(identifier, 200, 60 * 1000),
+    };
+
+// Escalation (email spam risk): 10 requests per hour per identifier
+export const chatEscalationRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "60 m"),
+      analytics: true,
+      prefix: "ratelimit:chat-escalation",
+    })
+  : {
+      limit: (identifier: string) =>
+        apiMemoryLimiter.limit(identifier, 10, 60 * 60 * 1000),
     };
 
 // File upload: 10 uploads per hour per user
@@ -148,6 +200,6 @@ export function createRateLimitResponse(result: {
         "X-RateLimit-Reset": result.reset.toString(),
         "Retry-After": Math.ceil((result.reset - Date.now()) / 1000).toString(),
       },
-    },
+    }
   );
 }

@@ -3,7 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/resend";
-import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
+import {
+  chatEscalationRateLimiter,
+  createRateLimitResponse,
+} from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +25,9 @@ export async function POST(req: NextRequest) {
   try {
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const rateResult = await apiRateLimiter.limit(`chat-escalation:${ip}`);
+    const rateResult = await chatEscalationRateLimiter.limit(
+      `chat-escalation:${ip}`
+    );
     if (!rateResult.success) {
       return createRateLimitResponse(rateResult);
     }
