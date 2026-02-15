@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { DOJStickyBanner } from "@/components/landing/DOJStickyBanner";
 import { BacklogRaceSection } from "@/components/landing/BacklogRaceSection";
+
+export const metadata: Metadata = {
+  title: "RECA Claim Preparation for Downwinders",
+  description:
+    "Check RECA eligibility and prepare your Downwinder claim packet step-by-step. We help you gather the right documents and submit a complete application.",
+  alternates: { canonical: "/" },
+};
 
 export default function HomePage() {
   return (

@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Document Resources",
+  description:
+    "Find where to request vital records and medical records for your RECA claim—state, county, hospitals, and registries.",
+  alternates: { canonical: "/resources" },
+};
 import { ResourceFinder } from "@/components/resources/ResourceFinder";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,6 +1,14 @@
 "use client";
 
+import type { Metadata } from "next";
 import { useState, useEffect, Suspense } from "react";
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description:
+    "Choose the RadiantClaims plan that fits your needs—DIY claim prep or legal representation support.",
+  alternates: { canonical: "/service-tiers" },
+};
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";

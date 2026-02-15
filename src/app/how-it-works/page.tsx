@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "How RadiantClaims Works",
+  description:
+    "Understand the RECA process and how RadiantClaims helps you prepare a complete Downwinder claim packet—forms, checklists, and document guidance.",
+  alternates: { canonical: "/how-it-works" },
+};
 import {
   Card,
   CardContent,

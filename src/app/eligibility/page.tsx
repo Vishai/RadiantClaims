@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "RECA Eligibility Requirements",
+  description:
+    "Learn the RECA eligibility rules for Downwinders—covered locations, time periods, and compensable diseases—and what documents you need.",
+  alternates: { canonical: "/eligibility" },
+};
 import { Button } from "@/components/ui/button";
 import {
   Card,
