@@ -10,8 +10,7 @@ export async function POST(request: NextRequest) {
     const normalizedAccessCode =
       typeof accessCode === "string" ? accessCode.trim().toUpperCase() : null;
 
-    // Check if registration is enabled or if we have an override code
-    const registrationEnabled = process.env.REGISTRATION_ENABLED !== "false";
+    // Check if an optional access/promo code was provided
     let accessOverridePromo: {
       id: string;
       code: string;
@@ -19,19 +18,6 @@ export async function POST(request: NextRequest) {
       accessSeatsUsed: number;
       expiresAt: Date | null;
     } | null = null;
-
-    if (!registrationEnabled) {
-      if (!normalizedAccessCode) {
-        return NextResponse.json(
-          {
-            error: "Registration is temporarily disabled",
-            message:
-              "We're currently not accepting new registrations while we finalize our workflows. Use your invite code or check back soon.",
-          },
-          { status: 503 }
-        );
-      }
-    }
 
     if (normalizedAccessCode) {
       const promo = await db.promoCode.findFirst({
