@@ -47,7 +47,14 @@ interface DocumentListItemProps {
   mimeType: string;
   aiIntelligence?: AIIntelligence;
   validation?: {
-    status: "PENDING" | "PROCESSING" | "VERIFIED" | "NEEDS_REVIEW" | "STAFF_APPROVED" | "REJECTED" | "ERROR";
+    status:
+      | "PENDING"
+      | "PROCESSING"
+      | "VERIFIED"
+      | "NEEDS_REVIEW"
+      | "STAFF_APPROVED"
+      | "REJECTED"
+      | "ERROR";
     category?: string;
     confidence?: number;
   } | null;
@@ -116,6 +123,8 @@ export function DocumentListItem({
       UPLOADING: Clock,
       PROCESSING: Clock,
       READY: CheckCircle,
+      VALIDATED: CheckCircle,
+      AWAITING_REVIEW: Clock,
       PENDING: Clock,
       APPROVED: CheckCircle,
       REJECTED: XCircle,
@@ -130,6 +139,8 @@ export function DocumentListItem({
       UPLOADING: "text-blue-600",
       PROCESSING: "text-blue-600",
       READY: "text-emerald-600",
+      VALIDATED: "text-emerald-600",
+      AWAITING_REVIEW: "text-amber-600",
       PENDING: "text-amber-600",
       APPROVED: "text-emerald-600",
       REJECTED: "text-red-600",
