@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
+import { prisma } from "@/lib/prisma";
+import { buildChatQuickStatus } from "@/lib/chat/quick-status";
 
 /**
  * POST /api/contact-agent/basic-info
@@ -24,7 +26,65 @@ import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages } = body;
+    const {
+      messages,
+      chatSessionId: providedChatSessionId,
+      sessionContext,
+    } = body;
+
+    const lastUserMessage = messages
+      .filter((m: any) => m.role === "user")
+      .pop();
+
+    let chatSessionId: string | null = providedChatSessionId || null;
+
+    // Try to persist history (guest sessions allowed)
+    try {
+      // Get or create ChatSession
+      if (chatSessionId) {
+        const existing = await prisma.chatSession.findUnique({
+          where: { id: chatSessionId },
+        });
+        if (!existing) chatSessionId = null;
+      }
+
+      if (!chatSessionId) {
+        const created = await prisma.chatSession.create({
+          data: {
+            title:
+              messages[messages.length - 1]?.content?.substring(0, 50) ||
+              "Basic Info Chat",
+          },
+        });
+        chatSessionId = created.id;
+      }
+
+      // Save latest user message
+      if (lastUserMessage?.content) {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSessionId,
+            role: "user",
+            content: lastUserMessage.content,
+          },
+        });
+      }
+
+      // Load last 10 messages from DB for continuity
+      const history = await prisma.chatMessage.findMany({
+        where: { sessionId: chatSessionId },
+        orderBy: { createdAt: "asc" },
+        take: 10,
+      });
+
+      // Replace client messages with persisted history
+      body.messages = history.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+    } catch (e) {
+      console.warn("[basic-info] chat persistence unavailable", e);
+    }
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -70,14 +130,21 @@ Politely explain: "I'm the free-tier assistant and can only help with general RE
 Be conversational, helpful, and guide users to understand if RECA might apply to them.`;
 
     // Call OpenAI for basic info response
+    const quickStatus = buildChatQuickStatus(sessionContext, {
+      includeMissingDocs: false,
+    });
+
+    const openAIMessages = (body.messages || messages)
+      .filter((m: any) => typeof m?.content === "string" && m?.role)
+      .slice(-10)
+      .map((m: any) => ({ role: m.role, content: m.content }));
+
     const response = await openai.chat.completions.create({
       model: CONTACT_AGENT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
+        ...(quickStatus ? [{ role: "system", content: quickStatus }] : []),
+        ...openAIMessages,
       ],
       temperature: 0.7,
       max_tokens: 800,
@@ -86,9 +153,32 @@ Be conversational, helpful, and guide users to understand if RECA might apply to
     const assistantMessage = response.choices[0]?.message;
     if (!assistantMessage) throw new Error("No message returned");
 
-    // Regular text response (no function calling for free tier)
+    let assistantMessageId: string | undefined;
+
+    // Persist assistant message
+    if (chatSessionId && assistantMessage.content) {
+      try {
+        const created = await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSessionId,
+            role: "assistant",
+            content: assistantMessage.content,
+            metadata: {
+              tier: "free",
+              source: "basic_info",
+            },
+          },
+        });
+        assistantMessageId = created.id;
+      } catch (e) {
+        console.warn("[basic-info] failed to persist assistant message", e);
+      }
+    }
+
     return NextResponse.json({
       message: assistantMessage.content,
+      chatSessionId,
+      assistantMessageId,
     });
   } catch (error) {
     console.error("Basic info bot error:", error);

@@ -113,7 +113,7 @@ export function FloatingContactAgent({
             {hasPaidAccess ? (
               <ContactAgentChat sessionContext={sessionContext} />
             ) : (
-              <BasicInfoBot />
+              <BasicInfoBot sessionContext={sessionContext} />
             )}
           </div>
         )}

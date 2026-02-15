@@ -23,6 +23,7 @@ import remarkGfm from "remark-gfm";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  messageId?: string; // assistant message id for analytics
   contacts?: Contact[];
   interactions?: { resourceId: string; interactionId: string }[];
 }
@@ -170,6 +171,23 @@ export function ContactAgentChat({
     handleSend(topic);
   };
 
+  const sendFeedback = async (messageId: string, rating: "up" | "down") => {
+    try {
+      await fetch("/api/chat/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatSessionId,
+          messageId,
+          rating,
+          source: "contact_agent",
+        }),
+      });
+    } catch {
+      // Non-blocking
+    }
+  };
+
   const handleRequestSupport = async () => {
     if (!supportText.trim() || supportStatus === "sending") return;
     setSupportStatus("sending");
@@ -305,6 +323,27 @@ export function ContactAgentChat({
                     >
                       {message.content}
                     </ReactMarkdown>
+
+                    {message.messageId && (
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          className="text-xs text-sage-600 hover:text-sage-900"
+                          onClick={() => sendFeedback(message.messageId!, "up")}
+                        >
+                          👍 Helpful
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs text-sage-600 hover:text-sage-900"
+                          onClick={() =>
+                            sendFeedback(message.messageId!, "down")
+                          }
+                        >
+                          👎 Not helpful
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">

@@ -924,9 +924,29 @@ Be conversational, helpful, and guide users step-by-step.`;
           }
         }
 
+        let assistantMessageId: string | undefined;
+        if (canPersistChatHistory && chatSessionId && finalText) {
+          try {
+            const created = await prisma.chatMessage.create({
+              data: {
+                sessionId: chatSessionId,
+                role: "assistant",
+                content: finalText,
+              },
+            });
+            assistantMessageId = created.id;
+          } catch (persistError) {
+            console.error(
+              "[Contact Agent] Failed to persist assistant message:",
+              persistError
+            );
+          }
+        }
+
         return NextResponse.json({
           chatSessionId, // Return ID to client
           message: finalText,
+          assistantMessageId,
           contacts,
           interactions, // Include interaction IDs for frontend
           functionCalled: functionName,
@@ -941,15 +961,17 @@ Be conversational, helpful, and guide users step-by-step.`;
     const finalText = assistantMessage.content || "";
 
     // Save Assistant Message (best effort)
+    let assistantMessageId: string | undefined;
     if (canPersistChatHistory && chatSessionId && finalText) {
       try {
-        await prisma.chatMessage.create({
+        const created = await prisma.chatMessage.create({
           data: {
             sessionId: chatSessionId,
             role: "assistant",
             content: finalText,
           },
         });
+        assistantMessageId = created.id;
       } catch (persistError) {
         console.error(
           "[Contact Agent] Failed to persist assistant message:",
@@ -961,6 +983,7 @@ Be conversational, helpful, and guide users step-by-step.`;
     return NextResponse.json({
       chatSessionId, // Return ID to client
       message: finalText,
+      assistantMessageId,
       contacts: [],
     });
   } catch (error) {

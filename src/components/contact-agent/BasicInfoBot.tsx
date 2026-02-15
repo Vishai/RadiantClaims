@@ -10,13 +10,22 @@ import Link from "next/link";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  messageId?: string; // assistant message id for feedback
 }
 
-// interface BasicInfoBotProps {
-//   onUpgradeClick: () => void;
-// }
-
-export function BasicInfoBot() {
+export function BasicInfoBot({
+  sessionContext,
+}: {
+  sessionContext?: {
+    state?: string;
+    county?: string;
+    claimType?: string;
+    intakeSessionId?: string;
+    recaWorkflowStage?: number | null;
+    recaWorkflowSection?: string | null;
+    recaCompletionPercent?: number | null;
+  };
+}) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -26,6 +35,7 @@ export function BasicInfoBot() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -57,6 +67,8 @@ export function BasicInfoBot() {
             role: m.role,
             content: m.content,
           })),
+          chatSessionId,
+          sessionContext,
         }),
       });
 
@@ -66,9 +78,14 @@ export function BasicInfoBot() {
 
       const data = await response.json();
 
+      if (data.chatSessionId && !chatSessionId) {
+        setChatSessionId(data.chatSessionId);
+      }
+
       const assistantMessage: Message = {
         role: "assistant",
         content: data.message,
+        messageId: data.assistantMessageId,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -91,6 +108,23 @@ export function BasicInfoBot() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const sendFeedback = async (messageId: string, rating: "up" | "down") => {
+    try {
+      await fetch("/api/chat/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatSessionId,
+          messageId,
+          rating,
+          source: "basic_info",
+        }),
+      });
+    } catch {
+      // Non-blocking
     }
   };
 
@@ -130,6 +164,24 @@ export function BasicInfoBot() {
                 }`}
               >
                 <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                {message.role === "assistant" && message.messageId && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      className="text-xs text-sage-600 hover:text-sage-900"
+                      onClick={() => sendFeedback(message.messageId!, "up")}
+                    >
+                      👍 Helpful
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-sage-600 hover:text-sage-900"
+                      onClick={() => sendFeedback(message.messageId!, "down")}
+                    >
+                      👎 Not helpful
+                    </button>
+                  </div>
+                )}
               </div>
               {message.role === "user" && (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
