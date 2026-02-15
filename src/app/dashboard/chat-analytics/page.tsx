@@ -104,17 +104,21 @@ export default async function ChatAnalyticsPage({
 
   const promptCounts = new Map<string, number>();
 
-  for (const dv of downvotes) {
-    const prevUser = await db.chatMessage.findFirst({
-      where: {
-        sessionId: dv.sessionId,
-        role: "user",
-        createdAt: { lt: dv.createdAt },
-      },
-      orderBy: { createdAt: "desc" },
-      select: { content: true },
-    });
+  const prevUsers = await Promise.all(
+    downvotes.map((dv) =>
+      db.chatMessage.findFirst({
+        where: {
+          sessionId: dv.sessionId,
+          role: "user",
+          createdAt: { lt: dv.createdAt },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { content: true },
+      })
+    )
+  );
 
+  for (const prevUser of prevUsers) {
     if (!prevUser?.content) continue;
     const key = normalizePrompt(prevUser.content);
     promptCounts.set(key, (promptCounts.get(key) || 0) + 1);

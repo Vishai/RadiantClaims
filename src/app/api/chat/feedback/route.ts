@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,13 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rateResult = await apiRateLimiter.limit(`chat-feedback:${ip}`);
+    if (!rateResult.success) {
+      return createRateLimitResponse(rateResult);
+    }
+
     const body = await req.json().catch(() => ({}));
     const messageId = String(body?.messageId || "");
     const chatSessionId = body?.chatSessionId ? String(body.chatSessionId) : "";

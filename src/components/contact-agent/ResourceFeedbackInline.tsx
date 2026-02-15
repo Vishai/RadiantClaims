@@ -85,8 +85,29 @@ export function ResourceFeedbackInline({
         <p className="text-sm font-medium text-amber-900">
           What's wrong with this resource?
         </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            "Wrong office/type",
+            "Wrong location",
+            "Wrong phone/email",
+            "Not for this document",
+            "No response",
+          ].map((label) => (
+            <Button
+              key={label}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setNegativeReason(label)}
+              disabled={isSubmitting}
+              className="h-7 px-2 text-xs"
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
         <Textarea
-          placeholder="Wrong type of office, wrong location, contact info looks incorrect, etc."
+          placeholder="Add details (optional): what went wrong?"
           value={negativeReason}
           onChange={(e) => setNegativeReason(e.target.value)}
           className="min-h-[60px] text-sm"

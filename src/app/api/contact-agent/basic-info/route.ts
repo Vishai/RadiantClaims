@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { openai, CONTACT_AGENT_MODEL } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
 import { buildChatQuickStatus } from "@/lib/chat/quick-status";
+import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
 
 /**
  * POST /api/contact-agent/basic-info
@@ -25,6 +26,13 @@ import { buildChatQuickStatus } from "@/lib/chat/quick-status";
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rateResult = await apiRateLimiter.limit(`basic-info:${ip}`);
+    if (!rateResult.success) {
+      return createRateLimitResponse(rateResult);
+    }
+
     const body = await req.json();
     const {
       messages,

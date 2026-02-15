@@ -10,6 +10,7 @@ import {
 } from "@/lib/contact-agent/auto-import";
 import { ResourceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { apiRateLimiter, createRateLimitResponse } from "@/lib/rate-limit";
 import { searchRecaLibrary, formatRecaContext } from "@/lib/rag/retrieve";
 import {
   labelForDocumentType,
@@ -69,6 +70,13 @@ function buildFallbackMessage(
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rateResult = await apiRateLimiter.limit(`contact-agent:${ip}`);
+    if (!rateResult.success) {
+      return createRateLimitResponse(rateResult);
+    }
+
     const body = await req.json();
     const {
       messages,
