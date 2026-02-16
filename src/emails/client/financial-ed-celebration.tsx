@@ -36,9 +36,9 @@ export const FinancialEdCelebrationEmail = ({
       <Section style={statBoxStyle}>
         <Text style={statLabelStyle}>What to expect</Text>
         <Text style={statTextStyle}>
-          RECA claims typically take several months to process. That wait can
-          feel long — but it&apos;s also an opportunity. The people who use this
-          time to plan ahead are the ones who make their compensation last.
+          RECA claims take time to process — and processing times can vary. But
+          that wait is also an opportunity. The people who use this time to plan
+          ahead are the ones who make their compensation last.
         </Text>
       </Section>
 

@@ -25,10 +25,9 @@ export const FinancialEdAdvisorEmail = ({
     >
       <Section style={introSection}>
         <Text style={bodyTextStyle}>
-          {claimantName}, it&apos;s been a few months since you submitted your
-          claim. While RECA processing takes time, many recipients use this
-          period to start thinking about their financial plan — so the money is
-          working for them from day one.
+          {claimantName}, whether your compensation has already arrived or is
+          still on the way — now is a great time to think about making it work
+          for you long-term.
         </Text>
         <Text style={bodyTextStyle}>
           Some people prefer to figure things out on their own — and that&apos;s

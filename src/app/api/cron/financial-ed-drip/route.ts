@@ -12,7 +12,7 @@ import {
  * Cron job that sends emails 2-4 of the financial education drip sequence
  * based on days elapsed since the trigger (DOJ claim number submission).
  *
- * RECA claims take ~12 months to process, so the drip is paced accordingly:
+ * RECA processing times vary, so the drip is paced conservatively:
  *
  * Email 1 (celebration): Sent immediately at trigger time
  * Email 2 (calculator): Day 14 — first nudge to explore compound growth

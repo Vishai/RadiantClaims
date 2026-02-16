@@ -2053,21 +2053,68 @@ export default function RECAReviewPage({ params }: PageProps) {
                     you can file your claim in either of these ways:
                   </p>
 
-                  <div className="mb-3 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-                    <p className="font-semibold">Option A: File Online</p>
-                    <p className="text-blue-800">
-                      Submit electronically and upload scans using the DOJ
-                      portal:
+                  <div className="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50 p-4 text-sm text-blue-900">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
+                        RECOMMENDED
+                      </span>
+                      <p className="font-semibold">
+                        Option A: File Online with Extension Helper
+                      </p>
+                    </div>
+                    <p className="mb-3 text-blue-800">
+                      Our Chrome Extension walks you through the DOJ portal
+                      step-by-step, pre-filling your answers and guiding
+                      document uploads.
                     </p>
+                    <div className="mb-3 space-y-2 rounded bg-white/60 p-3">
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                          1
+                        </span>
+                        <p className="text-blue-900">
+                          <strong>Install the extension</strong> — Get the{" "}
+                          <span className="font-semibold text-blue-700">
+                            RadiantClaims DOJ Portal Helper
+                          </span>{" "}
+                          from the Chrome Web Store (free)
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                          2
+                        </span>
+                        <p className="text-blue-900">
+                          <strong>Connect your data</strong> — Click the
+                          extension icon and press{" "}
+                          <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-xs">
+                            Connect &amp; Load Data
+                          </span>
+                          . Your claim answers load automatically from your
+                          RadiantClaims account.
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                          3
+                        </span>
+                        <p className="text-blue-900">
+                          <strong>Open the DOJ portal</strong> — The extension
+                          activates automatically and shows a helper panel with
+                          your data, field-by-field guidance, and document
+                          upload checklist.
+                        </p>
+                      </div>
+                    </div>
                     <a
                       href="https://reca.justice.gov/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-terracotta-600 underline hover:text-terracotta-700"
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
                     >
-                      https://reca.justice.gov/
+                      Open DOJ Portal →
                     </a>
-                    <p className="mt-2 text-xs text-blue-800">
+                    <p className="mt-2 text-xs text-blue-700">
                       DOJ may request originals/certified copies later. Keep
                       them available.
                     </p>
