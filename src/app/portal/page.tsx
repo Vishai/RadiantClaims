@@ -792,6 +792,8 @@ export default function CustomerPortal() {
                                 }
                                 isDownloading={currentAction === "downloading"}
                                 uploadedFiles={intakeSession.uploadedFiles}
+                                claimantId={claim.id}
+                                onMarkedAsSubmitted={() => loadClaims()}
                               />
 
                               <DOJUploadChecklist
