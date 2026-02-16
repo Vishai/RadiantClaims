@@ -754,6 +754,26 @@ export default function CustomerPortal() {
                           )}
                           {intakeSession && (
                             <>
+                              <DOJAnswerSheet
+                                formData={intakeSession.recaFormData ?? {}}
+                              />
+
+                              <DOJSubmissionCard
+                                packetReady={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                }
+                                onDownloadPacket={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                    ? () =>
+                                        handleDownloadPacket(intakeSession.id)
+                                    : undefined
+                                }
+                                isDownloading={currentAction === "downloading"}
+                                uploadedFiles={intakeSession.uploadedFiles}
+                                claimantId={claim.id}
+                                onMarkedAsSubmitted={() => loadClaims()}
+                              />
+
                               <PacketDeliveryCard
                                 status={derivedPacketStatus}
                                 warnings={packetWarnings}
@@ -776,26 +796,6 @@ export default function CustomerPortal() {
                                 isRegenerating={
                                   currentAction === "regenerating"
                                 }
-                              />
-
-                              <DOJAnswerSheet
-                                formData={intakeSession.recaFormData ?? {}}
-                              />
-
-                              <DOJSubmissionCard
-                                packetReady={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                }
-                                onDownloadPacket={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                    ? () =>
-                                        handleDownloadPacket(intakeSession.id)
-                                    : undefined
-                                }
-                                isDownloading={currentAction === "downloading"}
-                                uploadedFiles={intakeSession.uploadedFiles}
-                                claimantId={claim.id}
-                                onMarkedAsSubmitted={() => loadClaims()}
                               />
 
                               <DOJUploadChecklist

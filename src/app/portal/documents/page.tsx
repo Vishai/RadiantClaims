@@ -514,8 +514,9 @@ export default function DocumentsPortal() {
                       </p>
                       <p className="text-[11px]">
                         * = Required for your claim. Upload here for safekeeping
-                        and organization. Final submission will be via mail
-                        according to RECA requirements.
+                        and organization. Documents will be uploaded to the DOJ
+                        portal during e-filing, or included in your mailed
+                        packet if filing by mail.
                       </p>
                     </div>
                   </CardContent>

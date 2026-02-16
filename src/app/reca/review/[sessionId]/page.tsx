@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  Printer,
+  Globe,
   Mail,
   AlertCircle,
   Edit3,
@@ -1862,18 +1862,29 @@ export default function RECAReviewPage({ params }: PageProps) {
                   Department of Justice until:
                 </p>
                 <ol className="ml-2 list-inside list-decimal space-y-1 text-sm text-blue-800">
-                  <li>RadiantClaims reviews and prepares your claim packet</li>
+                  <li>You complete your RadiantClaims form ✅</li>
                   <li>
-                    You receive the packet and add any required original
-                    signatures/documents
+                    Install the <strong>Radiant Claims Filing Assistant</strong>{" "}
+                    Chrome extension
                   </li>
                   <li>
-                    You mail the completed packet to the DOJ address provided
+                    File your claim online through the DOJ portal at{" "}
+                    <a
+                      href="https://reca.justice.gov/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-blue-700 underline"
+                    >
+                      reca.justice.gov
+                    </a>
                   </li>
                 </ol>
+                <p className="mt-2 text-xs text-blue-700">
+                  Alternatively, you can mail your claim to the DOJ.
+                </p>
                 <p className="mt-3 text-sm font-semibold text-blue-900">
                   Your official claim submission date will be when the DOJ
-                  receives your mailed packet.
+                  receives your electronic submission or mailed packet.
                 </p>
               </div>
             </div>
@@ -1960,11 +1971,11 @@ export default function RECAReviewPage({ params }: PageProps) {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sage-900">
-              <Printer className="h-5 w-5 text-terracotta-500" />
+              <Globe className="h-5 w-5 text-terracotta-500" />
               What Happens Next
             </CardTitle>
             <CardDescription>
-              RadiantClaims will handle your claim preparation
+              File your claim online through the DOJ portal
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1975,15 +1986,11 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <p className="font-medium text-sage-900">
-                    Document Review &amp; Validation
+                    Review Your Answers
                   </p>
                   <p className="text-sm text-sage-700">
-                    RadiantClaims and our law firm partners will carefully
-                    review all uploaded documents and information to ensure
-                    accuracy, completeness, and validity of your claim.
-                  </p>
-                  <p className="mt-1 text-sm italic text-sage-600">
-                    Timeline: 3-5 business days
+                    Review everything on this page to make sure your information
+                    is accurate and complete.
                   </p>
                 </div>
               </div>
@@ -1994,28 +2001,11 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <p className="font-medium text-sage-900">
-                    Claim Packet Compilation
+                    Gather Your Documents
                   </p>
-                  <p className="mb-2 text-sm text-sage-700">
-                    RadiantClaims will compile an authenticated packet that
-                    includes:
-                  </p>
-                  <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-sage-700">
-                    <li>Your completed and authenticated claim form</li>
-                    <li>Step-by-step instruction set for final submission</li>
-                    <li>
-                      Pre-paid envelope pre-addressed to the Department of
-                      Justice
-                    </li>
-                    <li>
-                      Instructions for replacing copies with original/certified
-                      documents
-                    </li>
-                    <li>Selected uploaded documents ready for printing</li>
-                    <li>Signature guidance and instructions</li>
-                  </ul>
-                  <p className="mt-1 text-sm italic text-sage-600">
-                    Timeline: 2-3 business days after validation
+                  <p className="text-sm text-sage-700">
+                    Make sure you have all supporting documents ready to upload.
+                    Check the documents section above for what&apos;s needed.
                   </p>
                 </div>
               </div>
@@ -2026,15 +2016,13 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <p className="font-medium text-sage-900">
-                    You&apos;ll Receive Your Packet
+                    Install the Chrome Extension
                   </p>
                   <p className="text-sm text-sage-700">
-                    We&apos;ll notify you when your packet is ready. You&apos;ll
-                    receive detailed instructions on how to finalize any
-                    required original documents and signatures.
-                  </p>
-                  <p className="mt-1 text-sm italic text-sage-600">
-                    Notification via email and portal
+                    Get the <strong>Radiant Claims Filing Assistant</strong>{" "}
+                    from the Chrome Web Store (free). It walks you through the
+                    DOJ portal field-by-field, pre-filling your answers
+                    automatically.
                   </p>
                 </div>
               </div>
@@ -2045,105 +2033,51 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <p className="font-medium text-terracotta-900">
-                    You Submit Your Claim to the DOJ (Online or by Mail)
+                    File Online at reca.justice.gov
                   </p>
-                  <p className="mb-2 text-sm text-terracotta-700">
-                    Once you&apos;ve completed the simple final steps
-                    (signatures and any required originals/certified copies),
-                    you can file your claim in either of these ways:
+                  <p className="mb-3 text-sm text-sage-700">
+                    With the extension installed, visit the DOJ portal. The
+                    extension activates automatically and guides you through
+                    each step, including document uploads.
                   </p>
 
-                  <div className="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50 p-4 text-sm text-blue-900">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
-                        RECOMMENDED
-                      </span>
-                      <p className="font-semibold">
-                        Option A: File Online with Extension Helper
-                      </p>
-                    </div>
-                    <p className="mb-3 text-blue-800">
-                      Our Chrome Extension walks you through the DOJ portal
-                      step-by-step, pre-filling your answers and guiding
-                      document uploads.
-                    </p>
-                    <div className="mb-3 space-y-2 rounded bg-white/60 p-3">
-                      <div className="flex items-start gap-2">
-                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                          1
-                        </span>
-                        <p className="text-blue-900">
-                          <strong>Install the extension</strong> — Get the{" "}
-                          <span className="font-semibold text-blue-700">
-                            RadiantClaims DOJ Portal Helper
-                          </span>{" "}
-                          from the Chrome Web Store (free)
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                          2
-                        </span>
-                        <p className="text-blue-900">
-                          <strong>Connect your data</strong> — Click the
-                          extension icon and press{" "}
-                          <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-xs">
-                            Connect &amp; Load Data
-                          </span>
-                          . Your claim answers load automatically from your
-                          RadiantClaims account.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                          3
-                        </span>
-                        <p className="text-blue-900">
-                          <strong>Open the DOJ portal</strong> — The extension
-                          activates automatically and shows a helper panel with
-                          your data, field-by-field guidance, and document
-                          upload checklist.
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href="https://reca.justice.gov/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                    >
-                      Open DOJ Portal →
-                    </a>
-                    <p className="mt-2 text-xs text-blue-700">
-                      DOJ may request originals/certified copies later. Keep
-                      them available.
-                    </p>
-                  </div>
-
-                  <div className="rounded border border-sage-200 bg-sage-50 p-3 text-sm text-sage-900">
-                    <p className="font-semibold">Option B: Mail Your Packet</p>
-                    <p className="text-sage-800">
-                      Mail the completed packet to:
-                    </p>
-                    <div className="mt-2">
-                      <p>Radiation Exposure Compensation Program</p>
-                      <p>U.S. Department of Justice</p>
-                      <p>P.O. Box 146</p>
-                      <p>Ben Franklin Station</p>
-                      <p>Washington, DC 20044-0146</p>
-                    </div>
-                    <p className="mt-2 text-xs text-sage-800">
-                      We recommend using certified mail for tracking purposes.
-                    </p>
-                  </div>
-
-                  <p className="mt-3 text-sm font-semibold text-terracotta-900">
-                    ⚠️ Your claim is officially submitted when DOJ receives your
-                    electronic submission or mailed packet.
+                  <a
+                    href="https://reca.justice.gov/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                  >
+                    Open DOJ Portal →
+                  </a>
+                  <p className="mt-2 text-xs text-sage-600">
+                    DOJ may request originals or certified copies after
+                    e-filing. Keep them available.
                   </p>
                 </div>
               </div>
             </div>
+
+            {/* Mail-in fallback */}
+            <details className="mt-6 rounded-lg border border-sage-200">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-sage-700 hover:bg-sage-50">
+                Prefer to file by mail instead?
+              </summary>
+              <div className="border-t border-sage-200 px-4 py-3 text-sm text-sage-700">
+                <p className="mb-2">
+                  You can also mail your completed claim packet to:
+                </p>
+                <div className="ml-2 text-sm">
+                  <p>Radiation Exposure Compensation Program</p>
+                  <p>U.S. Department of Justice</p>
+                  <p>P.O. Box 146</p>
+                  <p>Ben Franklin Station</p>
+                  <p>Washington, DC 20044-0146</p>
+                </div>
+                <p className="mt-2 text-xs text-sage-600">
+                  We recommend using certified mail for tracking purposes.
+                </p>
+              </div>
+            </details>
 
             {/* Important Notice */}
             <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
@@ -2152,10 +2086,10 @@ export default function RECAReviewPage({ params }: PageProps) {
                 <div>
                   <p className="mb-1 font-semibold text-blue-900">Important</p>
                   <p className="text-sm text-blue-800">
-                    You do NOT need to download, print, or fill out the official
-                    form yourself. RadiantClaims handles all the technical
-                    preparation work. You&apos;ll only need to complete simple
-                    final steps when you receive your packet.
+                    RadiantClaims prepares your claim — you file it with the DOJ
+                    yourself through their online portal. Install the{" "}
+                    <strong>Radiant Claims Filing Assistant</strong> Chrome
+                    extension to make e-filing quick and easy.
                   </p>
                 </div>
               </div>

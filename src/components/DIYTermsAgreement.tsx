@@ -170,7 +170,8 @@ export function DIYTermsAgreement({
                 <p className="mt-2 text-red-900">
                   <strong>You are responsible for:</strong> Gathering documents,
                   uploading them to our portal, downloading the completed form,
-                  printing, signing, and mailing it to DOJ yourself.
+                  filing it with the DOJ yourself through their online portal or
+                  by mail.
                 </p>
               </div>
             </section>
@@ -378,7 +379,7 @@ export function DIYTermsAgreement({
                   Review all generated forms for accuracy before downloading
                 </li>
                 <li>
-                  Print, sign, and mail your claim to DOJ according to
+                  File your claim with the DOJ online or by mail according to
                   instructions
                 </li>
                 <li>Track your claim status directly with DOJ</li>

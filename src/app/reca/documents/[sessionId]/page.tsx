@@ -546,7 +546,8 @@ export default function SessionDocumentsPage() {
                   <p className="text-[11px]">
                     Requirements update automatically as you fill out the RECA
                     application. Some documents (vital records, medical reports)
-                    must be submitted as originals via mail.
+                    may need to be submitted as originals — DOJ may request
+                    these after electronic filing to verify authenticity.
                   </p>
                 </div>
               </CardContent>

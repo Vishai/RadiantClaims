@@ -509,12 +509,11 @@ export default function Part16Form({
                 4
               </div>
               <div>
-                <p className="font-medium text-sage-900">
-                  Wet Signature Required
-                </p>
+                <p className="font-medium text-sage-900">Submit to the DOJ</p>
                 <p className="text-sm text-sage-700">
-                  You will receive the PDF to print, sign by hand (wet
-                  signature), and mail to the Department of Justice
+                  You will submit your claim to the Department of Justice
+                  through their online portal (recommended) or by mail. The DOJ
+                  portal accepts electronic signatures for online submissions
                 </p>
               </div>
             </div>

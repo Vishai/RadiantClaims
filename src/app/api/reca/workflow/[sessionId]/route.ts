@@ -492,7 +492,7 @@ function getMilestoneConfig(percent: number) {
       ],
       upcomingSteps: [
         "Final review in portal",
-        "Download and mail packet to DOJ",
+        "Submit claim to DOJ online or by mail",
       ],
     },
   };
