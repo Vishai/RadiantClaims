@@ -33,6 +33,7 @@ import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
 import { DOJUploadChecklist } from "@/components/portal/DOJUploadChecklist";
+import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
@@ -773,6 +774,10 @@ export default function CustomerPortal() {
                                 isRegenerating={
                                   currentAction === "regenerating"
                                 }
+                              />
+
+                              <DOJAnswerSheet
+                                formData={intakeSession.recaFormData ?? {}}
                               />
 
                               <DOJSubmissionCard
