@@ -2045,24 +2045,54 @@ export default function RECAReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <p className="font-medium text-terracotta-900">
-                    You Submit Your Claim to the DOJ
+                    You Submit Your Claim to the DOJ (Online or by Mail)
                   </p>
                   <p className="mb-2 text-sm text-terracotta-700">
-                    Once you&apos;ve completed the simple final steps (adding
-                    original documents and wet signatures), you&apos;ll mail the
-                    packet using the pre-paid envelope to:
+                    Once you&apos;ve completed the simple final steps
+                    (signatures and any required originals/certified copies),
+                    you can file your claim in either of these ways:
                   </p>
-                  <div className="rounded border border-sage-200 bg-sage-50 p-3 text-sm text-sage-900">
-                    <p>Radiation Exposure Compensation Program</p>
-                    <p>U.S. Department of Justice</p>
-                    <p>P.O. Box 146</p>
-                    <p>Ben Franklin Station</p>
-                    <p>Washington, DC 20044-0146</p>
+
+                  <div className="mb-3 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                    <p className="font-semibold">Option A: File Online</p>
+                    <p className="text-blue-800">
+                      Submit electronically and upload scans using the DOJ
+                      portal:
+                    </p>
+                    <a
+                      href="https://reca.justice.gov/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-terracotta-600 underline hover:text-terracotta-700"
+                    >
+                      https://reca.justice.gov/
+                    </a>
+                    <p className="mt-2 text-xs text-blue-800">
+                      DOJ may request originals/certified copies later. Keep
+                      them available.
+                    </p>
                   </div>
+
+                  <div className="rounded border border-sage-200 bg-sage-50 p-3 text-sm text-sage-900">
+                    <p className="font-semibold">Option B: Mail Your Packet</p>
+                    <p className="text-sage-800">
+                      Mail the completed packet to:
+                    </p>
+                    <div className="mt-2">
+                      <p>Radiation Exposure Compensation Program</p>
+                      <p>U.S. Department of Justice</p>
+                      <p>P.O. Box 146</p>
+                      <p>Ben Franklin Station</p>
+                      <p>Washington, DC 20044-0146</p>
+                    </div>
+                    <p className="mt-2 text-xs text-sage-800">
+                      We recommend using certified mail for tracking purposes.
+                    </p>
+                  </div>
+
                   <p className="mt-3 text-sm font-semibold text-terracotta-900">
-                    ⚠️ Your claim is officially submitted when the DOJ receives
-                    this mailed packet. We recommend using certified mail for
-                    tracking purposes.
+                    ⚠️ Your claim is officially submitted when DOJ receives your
+                    electronic submission or mailed packet.
                   </p>
                 </div>
               </div>

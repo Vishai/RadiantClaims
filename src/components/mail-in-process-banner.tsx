@@ -24,10 +24,11 @@ export function MailInProcessBanner() {
             </h3>
 
             <p className="mb-4 text-sm text-blue-800">
-              The Department of Justice requires certain documents to be
-              submitted as <strong>certified copies or originals</strong>. Until
-              the new digital portal opens, we're using this streamlined process
-              to make things easier for you:
+              The Department of Justice now allows RECA claims to be filed
+              electronically (with uploaded scans) through their official
+              portal. In some cases, DOJ may still request originals or
+              certified copies later. RadiantClaims helps you get everything
+              organized and correct <em>before</em> you submit.
             </p>
 
             {/* Process Steps */}
@@ -76,14 +77,14 @@ export function MailInProcessBanner() {
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-blue-600" />
                     <h4 className="font-semibold text-blue-900">
-                      You Mail the Originals
+                      You Submit to DOJ (Online or by Mail)
                     </h4>
                   </div>
                   <p className="mt-1 text-xs text-blue-700">
-                    Once completed and approved, we'll send you an assembled
-                    packet with clear instructions. You'll replace our printed
-                    copies with your certified copies/originals and mail the
-                    packet to the DOJ.
+                    Once your packet is complete, you can file through the DOJ
+                    portal (upload scans) or mail it in. If DOJ later requests
+                    originals/certified copies, you'll already know exactly what
+                    to provide.
                   </p>
                 </div>
               </div>
@@ -107,12 +108,21 @@ export function MailInProcessBanner() {
               </div>
             </div>
 
-            {/* Temporary Process Note */}
+            {/* Filing note */}
             <div className="mt-4 rounded-lg bg-amber-50 p-3">
               <p className="text-xs text-amber-900">
-                <strong>Note:</strong> This process is temporary until the DOJ
-                digital portal launches. We'll shift to fully digital submission
-                as soon as it's available.
+                <strong>Note:</strong> RadiantClaims helps you prepare a clean,
+                complete claim packet (forms + evidence + collaboration). You
+                file it through DOJ online at{" "}
+                <a
+                  href="https://reca.justice.gov/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  reca.justice.gov
+                </a>{" "}
+                or by mail.
               </p>
             </div>
           </div>
