@@ -59,7 +59,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
     id: "identity",
     title: "Identity Verification",
     description:
-      "Upload 1 government-issued photo ID. A certified or notarized copy will be required in your final mailing.",
+      "Upload 1 government-issued photo ID. If filing online, upload a scan; DOJ may request a certified/notarized copy later.",
     requirements: [
       {
         category: "IDENTITY",
@@ -70,7 +70,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "A certified or notarized copy will be required for final mailing.",
+          "A certified or notarized copy may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Make sure your ID is current and not expired",
           "Ensure all text is clearly readable",
@@ -100,7 +100,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original bills will be required for final mailing.",
+        originalNote: "Original bills may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "These are particularly strong evidence",
           "Even partial bills or statements are helpful",
@@ -122,7 +122,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Original or certified copies will be required for final mailing.",
+          "Original or certified copies may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Report cards showing your name and school address are ideal",
           "Enrollment records or attendance certificates also qualify",
@@ -144,7 +144,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents will be required for final mailing.",
+        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "These are strong evidence of residence",
           "Property deeds with your name are particularly valuable",
@@ -190,7 +190,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents will be required for final mailing.",
+        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Upload at least 2 different types of documents for stronger verification",
           "Documents should clearly show your full name and complete address",
@@ -225,7 +225,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: true,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from medical facility will be required for final mailing.",
+          "Certified copies from medical facility may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Must include diagnosis date and cancer type",
           "Should be on official letterhead from the pathology lab",
@@ -246,7 +246,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Certified copies will be required for final mailing.",
+        originalNote: "Certified copies may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Treatment summaries and progress notes are helpful",
           "Imaging reports (CT, PET, MRI) showing cancer",
@@ -269,7 +269,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Certified copies from hospital will be required for final mailing.",
+          "Certified copies from hospital may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Should mention cancer diagnosis and treatment provided",
           "Include all hospitalizations related to your cancer",
@@ -313,7 +313,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 1,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Certified copy required for final mailing.",
+        originalNote: "DOJ may request certified copy after electronic filing.",
         tips: [
           "Must be a certified copy from the state/county",
           "Funeral home copies are usually not accepted",
@@ -358,7 +358,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents will be required for final mailing.",
+        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Should show employer name, address, and your employment dates",
           "Original documents strengthen your claim",
@@ -380,7 +380,7 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         isRequired: false,
         requiresOriginal: true,
         originalNote:
-          "Original or certified IRS copies will be required for final mailing.",
+          "Original or certified IRS copies may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "These are strong evidence if you have them",
           "Can request copies from IRS if needed",

@@ -32,6 +32,7 @@ import {
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
+import { DOJUploadChecklist } from "@/components/portal/DOJUploadChecklist";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
@@ -786,6 +787,13 @@ export default function CustomerPortal() {
                                 }
                                 isDownloading={currentAction === "downloading"}
                                 uploadedFiles={intakeSession.uploadedFiles}
+                              />
+
+                              <DOJUploadChecklist
+                                uploadedFiles={intakeSession.uploadedFiles}
+                                packetReady={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                }
                               />
                             </>
                           )}
