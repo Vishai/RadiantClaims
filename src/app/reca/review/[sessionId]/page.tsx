@@ -1248,14 +1248,22 @@ export default function RECAReviewPage({ params }: PageProps) {
                     law firm partners.
                   </p>
                   <p className="mb-3 text-terracotta-800">
-                    <strong>Next Steps:</strong> We&apos;ll compile your
-                    complete claim packet and send it to you for final
-                    signatures. You&apos;ll then mail the signed packet to the
-                    Department of Justice.
+                    <strong>Next Steps:</strong> Install the{" "}
+                    <strong>Radiant Claims Filing Assistant</strong> Chrome
+                    extension and file your claim online through the DOJ portal
+                    at{" "}
+                    <a
+                      href="https://reca.justice.gov"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold underline"
+                    >
+                      reca.justice.gov
+                    </a>
+                    . See the steps below to get started.
                   </p>
                   <p className="text-sm text-terracotta-700">
-                    Form completion: {completion.overallPercentage}% • Expected
-                    packet preparation time: 3-5 business days
+                    Form completion: {completion.overallPercentage}%
                   </p>
                 </div>
               </div>
@@ -1918,13 +1926,14 @@ export default function RECAReviewPage({ params }: PageProps) {
                       All your information pre-filled in the correct fields
                     </li>
                     <li>
-                      Ready for review, wet signature, and mailing to the DOJ
+                      Available for your records or as a reference when filing
+                      online
                     </li>
                   </ul>
                   <p className="mt-3 text-sm text-blue-800">
-                    <strong>Note:</strong> This is a preview of your form.
-                    RadiantClaims will prepare your final packet with
-                    instructions and supporting documents.
+                    <strong>Note:</strong> For online filing, use the Chrome
+                    extension instead — it transfers your answers directly. This
+                    PDF is useful for personal records or mail-in filing.
                   </p>
                   {!isComplete && (
                     <p className="mt-2 text-sm font-medium text-amber-700">
