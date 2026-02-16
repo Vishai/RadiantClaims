@@ -34,6 +34,7 @@ import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
 import { DOJUploadChecklist } from "@/components/portal/DOJUploadChecklist";
 import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
+import { ExportForExtension } from "@/components/portal/ExportForExtension";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
@@ -801,6 +802,12 @@ export default function CustomerPortal() {
                                 packetReady={
                                   derivedPacketStatus === "READY_FOR_DOJ"
                                 }
+                              />
+
+                              <ExportForExtension
+                                sessionId={intakeSession.id}
+                                formData={intakeSession.recaFormData ?? {}}
+                                uploadedFiles={intakeSession.uploadedFiles}
                               />
                             </>
                           )}

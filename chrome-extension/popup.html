@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RadiantClaims Helper</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #faf5e9;
+    }
+    .header {
+      background: linear-gradient(135deg, #617059, #4a5a42);
+      color: white;
+      padding: 16px;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .header p {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+    .content { padding: 16px; }
+
+    /* States */
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* Import state */
+    .import-area {
+      border: 2px dashed #c5b89a;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .import-area:hover { border-color: #617059; }
+    .import-area textarea {
+      width: 100%;
+      height: 100px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      resize: vertical;
+      margin-top: 8px;
+    }
+    .import-area label {
+      font-weight: 600;
+      color: #617059;
+    }
+
+    /* Loaded state */
+    .loaded-info {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #e0d8c8;
+    }
+    .loaded-info .name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .loaded-info .meta {
+      font-size: 11px;
+      color: #777;
+      margin-top: 2px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 8px;
+    }
+    .stat {
+      flex: 1;
+      background: #f4f0e6;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .stat .num {
+      font-size: 18px;
+      font-weight: 700;
+      color: #617059;
+    }
+    .stat .label {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Document list */
+    .doc-section {
+      margin-top: 12px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e0d8c8;
+      overflow: hidden;
+    }
+    .doc-section-header {
+      padding: 10px 12px;
+      background: #f4f0e6;
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .doc-item {
+      padding: 8px 12px;
+      border-top: 1px solid #f0ece2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .doc-item .doc-name {
+      font-size: 12px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-item .doc-tab {
+      font-size: 10px;
+      color: #617059;
+      background: #e8f0e5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .doc-item .download-btn {
+      background: #617059;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .doc-item .download-btn:hover { background: #4a5a42; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: #617059;
+      color: white;
+    }
+    .btn-primary:hover { background: #4a5a42; }
+    .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-danger {
+      background: white;
+      color: #c44;
+      border: 1px solid #dcc;
+    }
+    .btn-danger:hover { background: #fef0f0; }
+
+    .status-bar {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: center;
+    }
+    .status-bar.on-portal {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status-bar.off-portal {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    .error {
+      color: #c44;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>RadiantClaims Helper</h1>
+    <p>Transfer your claim data into the DOJ RECA portal</p>
+  </div>
+
+  <div class="content">
+    <!-- State: No data loaded -->
+    <div id="state-import" class="state active">
+      <div class="import-area">
+        <label>Paste your RadiantClaims data</label>
+        <p style="font-size: 11px; color: #888; margin-top: 4px;">
+          Copy the data blob from your RadiantClaims portal page
+        </p>
+        <textarea id="data-input" placeholder='Paste JSON data here...'></textarea>
+      </div>
+      <button id="btn-import" class="btn btn-primary" disabled>Load Data</button>
+      <div id="import-error" class="error" style="display:none;"></div>
+    </div>
+
+    <!-- State: Data loaded -->
+    <div id="state-loaded" class="state">
+      <div class="loaded-info">
+        <div class="name" id="claimant-name"></div>
+        <div class="meta" id="claimant-meta"></div>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="num" id="stat-fields">0</div>
+            <div class="label">Fields</div>
+          </div>
+          <div class="stat">
+            <div class="num" id="stat-docs">0</div>
+            <div class="label">Documents</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="doc-list"></div>
+
+      <div id="portal-status" class="status-bar off-portal">
+        Navigate to reca.justice.gov to start filling your claim
+      </div>
+
+      <button id="btn-clear" class="btn btn-danger">Clear Data &amp; Start Over</button>
+    </div>
+  </div>
+
+  <script src="src/popup.js"></script>
+</body>
+</html>
