@@ -310,16 +310,53 @@ export function generatePortalRequirements(
     }
 
     if (nameChainRequired) {
-      requirements.push({
-        category: "MARRIAGE_CERTIFICATE",
-        label: "Marriage Certificate(s) / Name Change Docs",
-        description:
-          "Documents linking current names to birth names (e.g., Marriage Certs, Divorce Decrees)",
-        uploaded:
-          isUploaded("MARRIAGE_CERTIFICATE") || countUploaded("IDENTITY") >= 2,
-        required: true,
-        helpText: `Required because: ${nameChainReason}. Provide a document for EACH name change.`,
-      });
+      // Check if we have detailed name change history to generate per-change requirements
+      const filerChanges =
+        formData?.part_4?.nameChangeHistory ||
+        formData?.part_1?.nameChangeHistory ||
+        [];
+      const claimantChanges = formData?.part_2?.nameChangeHistory || [];
+      const allChanges = [
+        ...filerChanges.map((c: any) => ({ ...c, person: "Filer" })),
+        ...claimantChanges.map((c: any) => ({ ...c, person: "Claimant" })),
+      ];
+
+      if (allChanges.length > 0) {
+        allChanges.forEach((change: any, idx: number) => {
+          const reasonLabel =
+            change.reasonForChange === "MARRIAGE"
+              ? "Marriage Certificate"
+              : change.reasonForChange === "DIVORCE"
+                ? "Divorce Decree"
+                : change.reasonForChange === "LEGAL_NAME_CHANGE"
+                  ? "Legal Name Change Order"
+                  : "Name Change Document";
+          const fromName = change.previousName || "previous name";
+          requirements.push({
+            category: "MARRIAGE_CERTIFICATE",
+            label: `${change.person} - ${reasonLabel}${allChanges.length > 1 ? ` (#${idx + 1})` : ""}`,
+            description: `${reasonLabel} (from ${fromName})`,
+            uploaded:
+              isUploaded("MARRIAGE_CERTIFICATE") ||
+              countUploaded("IDENTITY") >= 2,
+            required: true,
+            helpText: `Required to link current name to birth name.`,
+          });
+        });
+      } else {
+        // Fallback: no detailed history yet, show generic requirement
+        requirements.push({
+          category: "MARRIAGE_CERTIFICATE",
+          label: "Marriage Certificate(s) / Name Change Docs",
+          description:
+            "Documents linking current names to birth names (e.g., Marriage Certs, Divorce Decrees)",
+          uploaded:
+            isUploaded("MARRIAGE_CERTIFICATE") ||
+            countUploaded("IDENTITY") >= 2,
+          required: true,
+          helpText: `Required because: ${nameChainReason}. Provide a document for EACH name change.`,
+        });
+      }
     }
 
     // --- Sibling-specific docs (Part 6) ---
@@ -343,21 +380,51 @@ export function generatePortalRequirements(
             "Must show parents' names to establish sibling relationship",
         });
 
-        if (
-          sibling.hadNameChange === "YES" ||
-          sibling.nameChangeHistory?.length > 0
-        ) {
+        if (sibling.nameChangeHistory && sibling.nameChangeHistory.length > 0) {
+          // Generate one document requirement per name change
+          sibling.nameChangeHistory.forEach(
+            (
+              change: { previousName?: string; reasonForChange?: string },
+              changeIdx: number
+            ) => {
+              const reasonLabel =
+                change.reasonForChange === "MARRIAGE"
+                  ? "Marriage Certificate"
+                  : change.reasonForChange === "DIVORCE"
+                    ? "Divorce Decree"
+                    : change.reasonForChange === "LEGAL_NAME_CHANGE"
+                      ? "Legal Name Change Order"
+                      : "Name Change Document";
+              const fromName = change.previousName || "previous name";
+              requirements.push({
+                category: "MARRIAGE_CERTIFICATE",
+                label: `${siblingName} - ${reasonLabel}${sibling.nameChangeHistory!.length > 1 ? ` (#${changeIdx + 1})` : ""}`,
+                description: `${reasonLabel} for ${siblingName} (from ${fromName})`,
+                uploaded: uploadedFiles.some(
+                  (f) =>
+                    (f.category === "MARRIAGE_CERTIFICATE" ||
+                      f.category === "OTHER") &&
+                    f.originalFilename?.toLowerCase().includes(firstName)
+                ),
+                required: true,
+                helpText: `Required to link ${siblingName}'s current name back to birth certificate`,
+              });
+            }
+          );
+        } else if (sibling.hadNameChange === "YES") {
+          // hadNameChange is YES but no history entries yet — show generic requirement
           requirements.push({
             category: "MARRIAGE_CERTIFICATE",
-            label: `${siblingName} - Marriage/Name Change`,
-            description: `Marriage certificate or legal name change for ${siblingName}`,
+            label: `${siblingName} - Name Change Document(s)`,
+            description: `Marriage certificate(s), divorce decree(s), or legal name change order(s) for ${siblingName}`,
             uploaded: uploadedFiles.some(
               (f) =>
                 f.category === "MARRIAGE_CERTIFICATE" &&
                 f.originalFilename?.toLowerCase().includes(firstName)
             ),
             required: true,
-            helpText: "Required to link current name to birth certificate",
+            helpText:
+              "Required to link current name to birth certificate. Add name change details in the form for specific document requirements.",
           });
         }
       });
