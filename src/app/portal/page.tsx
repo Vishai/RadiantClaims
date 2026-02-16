@@ -33,6 +33,7 @@ import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
 import { DOJUploadChecklist } from "@/components/portal/DOJUploadChecklist";
+import { FinancialPlanningCard } from "@/components/portal/FinancialPlanningCard";
 import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
 import { ExportForExtension } from "@/components/portal/ExportForExtension";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
@@ -59,7 +60,7 @@ interface Claimant {
     updatedAt: string;
     uploadedFiles: Array<{
       id: string;
-      category?: string | null;
+      category: string | null;
       status: string;
       originalFilename: string;
       sizeBytes: number;
@@ -804,8 +805,16 @@ export default function CustomerPortal() {
                                 }
                               />
 
+                              <FinancialPlanningCard
+                                sessionId={intakeSession.id}
+                                visible={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                }
+                              />
+
                               <ExportForExtension
                                 sessionId={intakeSession.id}
+                                claimId={claim.id}
                                 formData={intakeSession.recaFormData ?? {}}
                                 uploadedFiles={intakeSession.uploadedFiles}
                               />

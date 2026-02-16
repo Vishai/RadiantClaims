@@ -3,8 +3,12 @@
   "name": "RadiantClaims – DOJ Portal Helper",
   "version": "0.1.0",
   "description": "Helps you transfer your RadiantClaims data into the DOJ RECA portal. Not affiliated with the U.S. Department of Justice.",
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://reca.justice.gov/*"],
+  "permissions": ["storage", "activeTab", "cookies"],
+  "host_permissions": [
+    "https://reca.justice.gov/*",
+    "https://www.radiantclaims.com/*",
+    "http://localhost:3000/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

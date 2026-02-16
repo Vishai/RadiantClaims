@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check, Copy, Puzzle } from "lucide-react";
+import { Check, Copy, Puzzle, ExternalLink } from "lucide-react";
 import type { RECAFormData } from "@/lib/reca/types";
 
 // Maps file categories to DOJ portal tab names
@@ -44,15 +44,18 @@ interface UploadedFile {
 
 interface ExportForExtensionProps {
   sessionId: string;
+  claimId: string;
   formData: Partial<RECAFormData>;
   uploadedFiles: UploadedFile[];
 }
 
 export function ExportForExtension({
   sessionId,
+  claimId,
   formData,
   uploadedFiles,
 }: ExportForExtensionProps) {
+  const [showManualCopy, setShowManualCopy] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const buildExportBlob = () => {
@@ -62,8 +65,6 @@ export function ExportForExtension({
       category: f.category || "OTHER",
       dojTab: CATEGORY_TO_DOJ_TAB[f.category || ""] || "Other",
       sizeBytes: f.sizeBytes,
-      // Download URLs would be added server-side via signed URLs
-      // For now, users download the ZIP separately
       downloadUrl: null,
     }));
 
@@ -114,29 +115,55 @@ export function ExportForExtension({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-xs text-purple-800">
-          Copy your claim data below, then paste it into the RadiantClaims
-          Chrome Extension popup. The extension will show your answers alongside
-          the DOJ portal fields.
-        </p>
-        <Button
-          onClick={handleCopy}
-          className="w-full gap-2 rounded-full bg-purple-600 hover:bg-purple-700"
+        <div className="space-y-2">
+          <p className="text-xs text-purple-800">
+            Install the{" "}
+            <span className="font-semibold">
+              RadiantClaims Chrome Extension
+            </span>
+            , then click{" "}
+            <span className="font-semibold">Connect &amp; Load Data</span> in
+            the extension popup. Your claim data will be loaded automatically.
+          </p>
+          <div className="flex items-center gap-2 rounded-lg bg-purple-50 px-3 py-2">
+            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-purple-500" />
+            <p className="text-[11px] text-purple-700">
+              The extension will connect securely using your current login
+              session — no copying needed.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowManualCopy(!showManualCopy)}
+          className="w-full cursor-pointer border-none bg-transparent text-center text-[11px] text-purple-500 underline hover:text-purple-700"
         >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4" />
-              Copied to Clipboard!
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" />
-              Copy Data for Extension
-            </>
-          )}
-        </Button>
+          {showManualCopy ? "Hide manual copy" : "Copy data manually instead"}
+        </button>
+
+        {showManualCopy && (
+          <Button
+            onClick={handleCopy}
+            variant="outline"
+            className="w-full gap-2 rounded-full border-purple-300 text-purple-700 hover:bg-purple-50"
+            size="sm"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                Copied to Clipboard!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                Copy Data for Extension
+              </>
+            )}
+          </Button>
+        )}
+
         <p className="text-center text-[10px] text-purple-600">
-          Data stays on your device — never sent to any server
+          Data stays on your device — never sent to any third-party server
         </p>
       </CardContent>
     </Card>

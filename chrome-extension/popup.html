@@ -200,6 +200,55 @@
       font-size: 12px;
       margin-top: 8px;
     }
+    .connect-section { text-align: center; }
+    .connect-section p { font-size: 11px; color: #888; margin-top: 4px; }
+    .claim-select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+    .advanced-toggle {
+      display: block;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      margin-top: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .advanced-toggle:hover { color: #617059; }
+    .advanced-section { display: none; margin-top: 12px; }
+    .advanced-section.visible { display: block; }
+    .dev-url {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-bottom: 8px;
+      display: none;
+    }
+    .login-link {
+      color: #617059;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -211,15 +260,28 @@
   <div class="content">
     <!-- State: No data loaded -->
     <div id="state-import" class="state active">
-      <div class="import-area">
-        <label>Paste your RadiantClaims data</label>
-        <p style="font-size: 11px; color: #888; margin-top: 4px;">
-          Copy the data blob from your RadiantClaims portal page
-        </p>
-        <textarea id="data-input" placeholder='Paste JSON data here...'></textarea>
+      <div class="connect-section">
+        <input id="rc-url" class="dev-url" type="text" value="https://www.radiantclaims.com" placeholder="RadiantClaims URL (dev override)" />
+        <div style="background: white; border-radius: 12px; padding: 20px; border: 1px solid #e0d8c8;">
+          <label style="font-weight: 600; color: #617059;">Connect to RadiantClaims</label>
+          <p>Sign in to RadiantClaims, then click the button below to load your claim data automatically.</p>
+          <select id="claim-select" class="claim-select">
+            <option value="">Select a claim...</option>
+          </select>
+        </div>
+        <button id="btn-connect" class="btn btn-primary">Connect &amp; Load Data</button>
+        <div id="connect-error" class="error" style="display:none;"></div>
       </div>
-      <button id="btn-import" class="btn btn-primary" disabled>Load Data</button>
-      <div id="import-error" class="error" style="display:none;"></div>
+
+      <a id="toggle-advanced" class="advanced-toggle">Advanced: paste JSON manually</a>
+      <div id="advanced-section" class="advanced-section">
+        <div class="import-area">
+          <label>Paste your RadiantClaims data</label>
+          <textarea id="data-input" placeholder='Paste JSON data here...'></textarea>
+        </div>
+        <button id="btn-import" class="btn btn-primary" disabled>Load Data</button>
+        <div id="import-error" class="error" style="display:none;"></div>
+      </div>
     </div>
 
     <!-- State: Data loaded -->
