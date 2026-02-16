@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { uploadToR2, getObject } from "@/lib/r2";
 import { fillOfficialRECAPDF } from "./pdf-form-filler";
 import { generateRECAPDF } from "./pdf-generator";
+import { generateCoversheetPDF } from "./coversheet-generator";
 import type { RECAFormData, RECASupportingForms } from "./types";
 import type { PacketStatus } from "@prisma/client";
 
@@ -126,8 +127,9 @@ export async function generatePacketArchive({
       "- DOJ may request originals/certified copies later to validate authenticity.",
       "",
       "Contents:",
-      "- forms/RECA-Downwinder-<sessionId>.pdf (pre-filled)",
-      "- forms/RadiantClaims-Summary-<sessionId>.pdf",
+      "- forms/Coversheet-Index-<sessionId>.pdf (this packet's table of contents)",
+      "- forms/RECA-Downwinder-<sessionId>.pdf (pre-filled official form — reference copy)",
+      "- forms/RadiantClaims-Summary-<sessionId>.pdf (complete data summary)",
       "- documents/<category>/<filename> (supporting evidence)",
       "- manifest.json (metadata)",
       "",
@@ -169,6 +171,24 @@ export async function generatePacketArchive({
     ?.file(
       `RadiantClaims-Summary-${sanitizeFileName(intakeSession.id)}.pdf`,
       Buffer.from(summaryBytes)
+    );
+
+  // Generate coversheet / index PDF
+  const coversheetBytes = await generateCoversheetPDF({
+    sessionId: intakeSession.id,
+    formData,
+    files: intakeSession.uploadedFiles.map((f) => ({
+      filename: f.originalFilename || f.id,
+      category: f.category,
+      sizeBytes: f.sizeBytes,
+    })),
+  });
+
+  zip
+    .folder("forms")
+    ?.file(
+      `Coversheet-Index-${sanitizeFileName(intakeSession.id)}.pdf`,
+      Buffer.from(coversheetBytes)
     );
 
   const manifestFiles: PacketManifest["files"] = [];
