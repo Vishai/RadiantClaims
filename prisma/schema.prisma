@@ -2669,9 +2669,9 @@ model FinancialEdDrip {
   claimant            Claimant        @relation(fields: [claimantId], references: [id], onDelete: Cascade)
   triggeredAt         DateTime        @default(now())
   email1SentAt        DateTime? // FINANCIAL_ED_CELEBRATION (Day 1)
-  email2SentAt        DateTime? // FINANCIAL_ED_CALCULATOR (Day 5)
-  email3SentAt        DateTime? // FINANCIAL_ED_TIPS (Day 14)
-  email4SentAt        DateTime? // FINANCIAL_ED_ADVISOR (Day 30)
+  email2SentAt        DateTime? // FINANCIAL_ED_CALCULATOR (Day 14)
+  email3SentAt        DateTime? // FINANCIAL_ED_TIPS (Day 60)
+  email4SentAt        DateTime? // FINANCIAL_ED_ADVISOR (Day 180)
   calculatorVisitedAt DateTime?
   advisorCTAClickedAt DateTime?
   // Referral tracking — lifecycle after CTA click

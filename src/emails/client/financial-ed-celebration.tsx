@@ -34,23 +34,24 @@ export const FinancialEdCelebrationEmail = ({
       </Section>
 
       <Section style={statBoxStyle}>
-        <Text style={statLabelStyle}>Did you know?</Text>
+        <Text style={statLabelStyle}>What to expect</Text>
         <Text style={statTextStyle}>
-          Research shows that the majority of people who receive a lump-sum
-          payment spend it within 18 months — often before they&apos;ve had time
-          to think about what it could become.
+          RECA claims typically take several months to process. That wait can
+          feel long — but it&apos;s also an opportunity. The people who use this
+          time to plan ahead are the ones who make their compensation last.
         </Text>
       </Section>
 
       <Section style={bodySection}>
         <Text style={bodyTextStyle}>
-          You&apos;ve already proven you&apos;re someone who plans ahead. You
-          didn&apos;t take shortcuts on your claim, and you don&apos;t have to
-          take shortcuts with your compensation either.
+          You&apos;ve already proven you&apos;re someone who follows through.
+          You didn&apos;t take shortcuts on your claim, and you don&apos;t have
+          to take shortcuts with your compensation either.
         </Text>
         <Text style={bodyTextStyle}>
-          We built a simple tool to show you what your compensation could look
-          like over time — no sign-ups, no commitments, just math.
+          While your claim is processing, we built a simple tool to show you
+          what your compensation could look like over time — no sign-ups, no
+          commitments, just math.
         </Text>
       </Section>
 

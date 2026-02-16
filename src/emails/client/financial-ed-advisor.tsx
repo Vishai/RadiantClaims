@@ -25,13 +25,16 @@ export const FinancialEdAdvisorEmail = ({
     >
       <Section style={introSection}>
         <Text style={bodyTextStyle}>
-          {claimantName}, it&apos;s been about a month since you submitted your
-          claim. Some people prefer to figure things out on their own — and
-          that&apos;s completely fine. Others like having a sounding board.
+          {claimantName}, it&apos;s been a few months since you submitted your
+          claim. While RECA processing takes time, many recipients use this
+          period to start thinking about their financial plan — so the money is
+          working for them from day one.
         </Text>
         <Text style={bodyTextStyle}>
-          If you&apos;re in the second group, we wanted to let you know about a
-          resource that&apos;s available to you.
+          Some people prefer to figure things out on their own — and that&apos;s
+          completely fine. Others like having a sounding board. If you&apos;re
+          in the second group, we wanted to let you know about a resource
+          available to you.
         </Text>
       </Section>
 

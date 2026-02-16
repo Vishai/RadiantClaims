@@ -12,10 +12,12 @@ import {
  * Cron job that sends emails 2-4 of the financial education drip sequence
  * based on days elapsed since the trigger (DOJ claim number submission).
  *
- * Email 1 (celebration) is sent immediately at trigger time.
- * Email 2 (calculator): Day 5
- * Email 3 (tips): Day 14
- * Email 4 (advisor): Day 30
+ * RECA claims take ~12 months to process, so the drip is paced accordingly:
+ *
+ * Email 1 (celebration): Sent immediately at trigger time
+ * Email 2 (calculator): Day 14 — first nudge to explore compound growth
+ * Email 3 (tips): Day 60 — practical planning tips mid-wait
+ * Email 4 (advisor): Day 180 — warm P4 Wealth intro at ~6 months
  *
  * Schedule: Daily at 4 PM UTC (noon EST) via Vercel Cron
  */
@@ -29,9 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date();
-    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * DAY_MS);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * DAY_MS);
+    const oneEightyDaysAgo = new Date(now.getTime() - 180 * DAY_MS);
 
     const results = {
       email2Sent: 0,
@@ -40,12 +43,12 @@ export async function POST(request: NextRequest) {
       errors: [] as string[],
     };
 
-    // ── Email 2: Calculator (Day 5) ──
+    // ── Email 2: Calculator (Day 14) ──
     const email2Candidates = await prisma.financialEdDrip.findMany({
       where: {
         email1SentAt: { not: null },
         email2SentAt: null,
-        triggeredAt: { lte: fiveDaysAgo },
+        triggeredAt: { lte: fourteenDaysAgo },
       },
       include: {
         claimant: {
@@ -85,12 +88,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Email 3: Tips (Day 14) ──
+    // ── Email 3: Tips (Day 60) ──
     const email3Candidates = await prisma.financialEdDrip.findMany({
       where: {
         email2SentAt: { not: null },
         email3SentAt: null,
-        triggeredAt: { lte: fourteenDaysAgo },
+        triggeredAt: { lte: sixtyDaysAgo },
       },
       include: {
         claimant: {
@@ -130,12 +133,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Email 4: Advisor (Day 30) ──
+    // ── Email 4: Advisor (Day 180) ──
     const email4Candidates = await prisma.financialEdDrip.findMany({
       where: {
         email3SentAt: { not: null },
         email4SentAt: null,
-        triggeredAt: { lte: thirtyDaysAgo },
+        triggeredAt: { lte: oneEightyDaysAgo },
       },
       include: {
         claimant: {

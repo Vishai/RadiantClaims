@@ -23,9 +23,10 @@ export const FinancialEdTipsEmail = ({
     >
       <Section style={introSection}>
         <Text style={bodyTextStyle}>
-          {claimantName}, we&apos;ve helped hundreds of RECA recipients through
-          this process. Here are three things many of them wish they&apos;d
-          known sooner.
+          {claimantName}, your claim is still being processed — and that&apos;s
+          normal. RECA claims take time. While you wait, here are three things
+          other recipients wish they&apos;d known before their compensation
+          arrived.
         </Text>
       </Section>
 

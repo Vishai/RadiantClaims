@@ -23,9 +23,9 @@ export const FinancialEdCalculatorEmail = ({
     >
       <Section style={introSection}>
         <Text style={bodyTextStyle}>
-          {claimantName}, one of the most powerful things about your RECA
-          compensation is what it can become if even a portion of it has time to
-          grow.
+          {claimantName}, while your claim is being processed, it&apos;s a great
+          time to start thinking about what your compensation could become —
+          even if the money isn&apos;t here yet.
         </Text>
         <Text style={bodyTextStyle}>
           Here&apos;s a quick look at what $100,000 could become at a moderate
