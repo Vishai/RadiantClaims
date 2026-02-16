@@ -799,7 +799,9 @@ export default function CustomerPortal() {
                               />
 
                               <DOJUploadChecklist
-                                uploadedFiles={intakeSession.uploadedFiles}
+                                uploadedFiles={
+                                  intakeSession.uploadedFiles as any
+                                }
                                 packetReady={
                                   derivedPacketStatus === "READY_FOR_DOJ"
                                 }

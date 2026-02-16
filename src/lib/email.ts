@@ -31,6 +31,10 @@ import type {
 } from "@/emails/attorney/activity-summary";
 import FirmOnboardingEmail from "@/emails/firm-onboarding";
 import AttorneyWelcomeEmail from "@/emails/attorney-welcome";
+import { FinancialEdCelebrationEmail } from "@/emails/client/financial-ed-celebration";
+import { FinancialEdCalculatorEmail } from "@/emails/client/financial-ed-calculator";
+import { FinancialEdTipsEmail } from "@/emails/client/financial-ed-tips";
+import { FinancialEdAdvisorEmail } from "@/emails/client/financial-ed-advisor";
 import { EmailType } from "@prisma/client";
 import {
   isUnsubscribed,
@@ -1364,6 +1368,236 @@ export async function sendAttorneyWelcomeEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending attorney welcome email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send financial education celebration email (Day 1 of drip)
+ */
+export async function sendFinancialEdCelebrationEmail(params: {
+  to: string;
+  claimantName?: string;
+  sessionId: string;
+}) {
+  const { to, claimantName, sessionId } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.FINANCIAL_ED_CELEBRATION
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from FINANCIAL_ED_CELEBRATION emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const whatComesNextUrl = `${baseUrl}/reca/what-comes-next/${sessionId}`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.FINANCIAL_ED_CELEBRATION
+    );
+    const emailHtml = await render(
+      FinancialEdCelebrationEmail({
+        claimantName,
+        whatComesNextUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: `You did it, ${claimantName || "friend"} — your claim is submitted`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send financial ed celebration email:", error);
+      throw new Error(
+        `Failed to send financial ed celebration email: ${error.message}`
+      );
+    }
+
+    console.log("Financial ed celebration email sent:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending financial ed celebration email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send financial education calculator email (Day 5 of drip)
+ */
+export async function sendFinancialEdCalculatorEmail(params: {
+  to: string;
+  claimantName?: string;
+  sessionId: string;
+}) {
+  const { to, claimantName, sessionId } = params;
+
+  const unsubscribed = await isUnsubscribed(
+    to,
+    EmailType.FINANCIAL_ED_CALCULATOR
+  );
+  if (unsubscribed) {
+    console.log(
+      `User ${to} has unsubscribed from FINANCIAL_ED_CALCULATOR emails`
+    );
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const calculatorUrl = `${baseUrl}/reca/what-comes-next/${sessionId}#calculator`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.FINANCIAL_ED_CALCULATOR
+    );
+    const emailHtml = await render(
+      FinancialEdCalculatorEmail({
+        claimantName,
+        calculatorUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "What could $100K become?",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send financial ed calculator email:", error);
+      throw new Error(
+        `Failed to send financial ed calculator email: ${error.message}`
+      );
+    }
+
+    console.log("Financial ed calculator email sent:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending financial ed calculator email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send financial education tips email (Day 14 of drip)
+ */
+export async function sendFinancialEdTipsEmail(params: {
+  to: string;
+  claimantName?: string;
+  sessionId: string;
+}) {
+  const { to, claimantName, sessionId } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.FINANCIAL_ED_TIPS);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from FINANCIAL_ED_TIPS emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const whatComesNextUrl = `${baseUrl}/reca/what-comes-next/${sessionId}`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.FINANCIAL_ED_TIPS
+    );
+    const emailHtml = await render(
+      FinancialEdTipsEmail({
+        claimantName,
+        whatComesNextUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "3 things RECA recipients wish they knew sooner",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send financial ed tips email:", error);
+      throw new Error(
+        `Failed to send financial ed tips email: ${error.message}`
+      );
+    }
+
+    console.log("Financial ed tips email sent:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending financial ed tips email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send financial education advisor email (Day 30 of drip)
+ */
+export async function sendFinancialEdAdvisorEmail(params: {
+  to: string;
+  claimantName?: string;
+  sessionId: string;
+}) {
+  const { to, claimantName, sessionId } = params;
+
+  const unsubscribed = await isUnsubscribed(to, EmailType.FINANCIAL_ED_ADVISOR);
+  if (unsubscribed) {
+    console.log(`User ${to} has unsubscribed from FINANCIAL_ED_ADVISOR emails`);
+    return { success: false, reason: "unsubscribed" };
+  }
+
+  const baseUrl = getBaseUrl();
+  const whatComesNextUrl = `${baseUrl}/reca/what-comes-next/${sessionId}#advisor`;
+
+  try {
+    const unsubscribeUrl = generateUnsubscribeUrl(
+      to,
+      EmailType.FINANCIAL_ED_ADVISOR
+    );
+    const emailHtml = await render(
+      FinancialEdAdvisorEmail({
+        claimantName,
+        whatComesNextUrl,
+        unsubscribeUrl,
+      }),
+      { pretty: true }
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to,
+      subject: "If you'd like to talk to someone who specializes in this",
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send financial ed advisor email:", error);
+      throw new Error(
+        `Failed to send financial ed advisor email: ${error.message}`
+      );
+    }
+
+    console.log("Financial ed advisor email sent:", data?.id);
+    return { success: true, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending financial ed advisor email:", error);
     throw error;
   }
 }

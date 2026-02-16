@@ -16,7 +16,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   DOCUMENT_CHECKLIST,
-  type ChecklistSection,
   type DocumentRequirement,
 } from "@/lib/document-checklist";
 import type { FileCategory } from "@/lib/intake-upload";
@@ -37,10 +36,7 @@ interface DOJUploadChecklistProps {
 
 type ItemStatus = "uploaded" | "partial" | "missing" | "optional";
 
-function getItemStatus(
-  req: DocumentRequirement,
-  count: number
-): ItemStatus {
+function getItemStatus(req: DocumentRequirement, count: number): ItemStatus {
   if (req.minRequired === 0) {
     return count > 0 ? "uploaded" : "optional";
   }
@@ -65,7 +61,7 @@ const STATUS_LABEL: Record<ItemStatus, string> = {
 
 export function DOJUploadChecklist({
   uploadedFiles,
-  packetReady = false,
+  packetReady: _packetReady = false,
 }: DOJUploadChecklistProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()

@@ -169,6 +169,8 @@ model Claimant {
   notificationPreferences LifecycleNotificationPreference?
   // PER-CLAIM SUBSCRIPTION
   claimSubscription       ClaimSubscription?
+  // FINANCIAL EDUCATION DRIP
+  financialEdDrip         FinancialEdDrip?
   createdAt               DateTime                         @default(now())
   updatedAt               DateTime                         @updatedAt
 
@@ -547,6 +549,10 @@ enum EmailType {
   PASSWORD_CHANGED // Password change confirmation
   FIRM_ONBOARDING // Law firm onboarding
   ATTORNEY_WELCOME // Attorney account welcome
+  FINANCIAL_ED_CELEBRATION // Financial ed drip: Day 1 celebration
+  FINANCIAL_ED_CALCULATOR // Financial ed drip: Day 5 calculator CTA
+  FINANCIAL_ED_TIPS // Financial ed drip: Day 14 practical tips
+  FINANCIAL_ED_ADVISOR // Financial ed drip: Day 30 advisor handoff
 }
 
 model EmailPreference {
@@ -2654,4 +2660,22 @@ model DOJProcessingMetrics {
 
   @@index([claimCategory, windowType])
   @@index([calculatedAt])
+}
+
+// Financial Education Drip Sequence Tracking
+model FinancialEdDrip {
+  id                  String    @id @default(cuid())
+  claimantId          String    @unique
+  claimant            Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  triggeredAt         DateTime  @default(now())
+  email1SentAt        DateTime? // FINANCIAL_ED_CELEBRATION (Day 1)
+  email2SentAt        DateTime? // FINANCIAL_ED_CALCULATOR (Day 5)
+  email3SentAt        DateTime? // FINANCIAL_ED_TIPS (Day 14)
+  email4SentAt        DateTime? // FINANCIAL_ED_ADVISOR (Day 30)
+  calculatorVisitedAt DateTime?
+  advisorCTAClickedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([triggeredAt])
 }

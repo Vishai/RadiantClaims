@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { sendFinancialEdCelebrationEmail } from "@/lib/email";
 
 /**
  * GET /api/claims/[claimId]/doj-claim-number
@@ -220,6 +221,41 @@ export async function PUT(
         }),
       },
     });
+
+    // ── Trigger financial education drip (Email 1) ──
+    try {
+      const drip = await db.financialEdDrip.upsert({
+        where: { claimantId },
+        create: { claimantId },
+        update: {},
+      });
+
+      // Only send email 1 if it hasn't been sent yet
+      if (!drip.email1SentAt) {
+        // Get the intake session for the What Comes Next URL
+        const intakeSession = await db.intakeSession.findFirst({
+          where: { claimantId },
+          select: { id: true },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (intakeSession && claimant.user?.email) {
+          await sendFinancialEdCelebrationEmail({
+            to: claimant.user.email,
+            claimantName: claimant.firstName || undefined,
+            sessionId: intakeSession.id,
+          });
+
+          await db.financialEdDrip.update({
+            where: { claimantId },
+            data: { email1SentAt: new Date() },
+          });
+        }
+      }
+    } catch (dripError) {
+      // Non-critical — don't fail the main DOJ claim number update
+      console.error("Error triggering financial ed drip:", dripError);
+    }
 
     return NextResponse.json({
       success: true,

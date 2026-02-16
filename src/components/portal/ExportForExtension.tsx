@@ -51,7 +51,7 @@ interface ExportForExtensionProps {
 
 export function ExportForExtension({
   sessionId,
-  claimId,
+  claimId: _claimId,
   formData,
   uploadedFiles,
 }: ExportForExtensionProps) {
