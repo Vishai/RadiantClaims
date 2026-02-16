@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
+import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
@@ -748,26 +749,45 @@ export default function CustomerPortal() {
                             </div>
                           )}
                           {intakeSession && (
-                            <PacketDeliveryCard
-                              status={derivedPacketStatus}
-                              warnings={packetWarnings}
-                              lastGeneratedAt={packetLastGeneratedAt}
-                              readyAt={packetReadyAt}
-                              history={packetHistory}
-                              downloadDisabled={
-                                derivedPacketStatus !== "READY_FOR_DOJ"
-                              }
-                              onDownload={
-                                derivedPacketStatus === "READY_FOR_DOJ"
-                                  ? () => handleDownloadPacket(intakeSession.id)
-                                  : undefined
-                              }
-                              onRegenerate={() =>
-                                handleRegeneratePacket(intakeSession.id)
-                              }
-                              isDownloading={currentAction === "downloading"}
-                              isRegenerating={currentAction === "regenerating"}
-                            />
+                            <>
+                              <PacketDeliveryCard
+                                status={derivedPacketStatus}
+                                warnings={packetWarnings}
+                                lastGeneratedAt={packetLastGeneratedAt}
+                                readyAt={packetReadyAt}
+                                history={packetHistory}
+                                downloadDisabled={
+                                  derivedPacketStatus !== "READY_FOR_DOJ"
+                                }
+                                onDownload={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                    ? () =>
+                                        handleDownloadPacket(intakeSession.id)
+                                    : undefined
+                                }
+                                onRegenerate={() =>
+                                  handleRegeneratePacket(intakeSession.id)
+                                }
+                                isDownloading={currentAction === "downloading"}
+                                isRegenerating={
+                                  currentAction === "regenerating"
+                                }
+                              />
+
+                              <DOJSubmissionCard
+                                packetReady={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                }
+                                onDownloadPacket={
+                                  derivedPacketStatus === "READY_FOR_DOJ"
+                                    ? () =>
+                                        handleDownloadPacket(intakeSession.id)
+                                    : undefined
+                                }
+                                isDownloading={currentAction === "downloading"}
+                                uploadedFiles={intakeSession.uploadedFiles}
+                              />
+                            </>
                           )}
                         </>
                       )}

@@ -56,9 +56,9 @@ const STATUS_COPY: Record<
     icon: <Clock className="h-4 w-4" />,
   },
   READY_FOR_DOJ: {
-    label: "Ready to Send",
+    label: "Ready to Submit",
     description:
-      "All checks passed! You can download the full packet and send it to the DOJ.",
+      "All checks passed! Download your upload packet and submit to DOJ online (recommended) or by mail.",
     badgeClass: "bg-emerald-100 text-emerald-700",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
@@ -160,7 +160,7 @@ export function PacketDeliveryCard({
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
             <p className="mb-2 flex items-center gap-2 font-semibold">
               <AlertTriangle className="h-4 w-4" />
-              Action needed before mailing
+              Action needed before submitting
             </p>
             <ul className="list-disc space-y-1 pl-5">
               {warningList.map((warning, idx) => (
