@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { claimantId, event } = body;
+    const { claimantId, event, source } = body;
 
     if (!claimantId || !event) {
       return NextResponse.json(
@@ -44,11 +44,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const updateData: Record<string, Date> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: Record<string, any> = {};
     if (event === "calculator_visited") {
       updateData.calculatorVisitedAt = new Date();
     } else if (event === "advisor_cta_clicked") {
       updateData.advisorCTAClickedAt = new Date();
+      updateData.referralStatus = "CTA_CLICKED";
+      if (source) {
+        updateData.referralClickSource = source;
+      }
     }
 
     // Upsert — create if no drip record yet (user visited page directly)

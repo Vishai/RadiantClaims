@@ -13,7 +13,7 @@ export interface FinancialEdAdvisorProps {
 export const FinancialEdAdvisorEmail = ({
   previewText = "If you'd like to talk to someone who specializes in this.",
   claimantName = "there",
-  advisorUrl = "https://p4wealth.com",
+  advisorUrl = "https://p4wealth.com?utm_source=radiantclaims&utm_medium=email&utm_campaign=reca_financial_ed&utm_content=day30_advisor",
   whatComesNextUrl = "https://app.radiantclaims.com/reca/what-comes-next#advisor",
   unsubscribeUrl,
 }: FinancialEdAdvisorProps) => {

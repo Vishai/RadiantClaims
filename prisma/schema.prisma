@@ -2664,18 +2664,37 @@ model DOJProcessingMetrics {
 
 // Financial Education Drip Sequence Tracking
 model FinancialEdDrip {
-  id                  String    @id @default(cuid())
-  claimantId          String    @unique
-  claimant            Claimant  @relation(fields: [claimantId], references: [id], onDelete: Cascade)
-  triggeredAt         DateTime  @default(now())
+  id                  String          @id @default(cuid())
+  claimantId          String          @unique
+  claimant            Claimant        @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+  triggeredAt         DateTime        @default(now())
   email1SentAt        DateTime? // FINANCIAL_ED_CELEBRATION (Day 1)
   email2SentAt        DateTime? // FINANCIAL_ED_CALCULATOR (Day 5)
   email3SentAt        DateTime? // FINANCIAL_ED_TIPS (Day 14)
   email4SentAt        DateTime? // FINANCIAL_ED_ADVISOR (Day 30)
   calculatorVisitedAt DateTime?
   advisorCTAClickedAt DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  // Referral tracking — lifecycle after CTA click
+  referralStatus      ReferralStatus  @default(NOT_REFERRED)
+  referralClickSource String? // "email" | "page_website" | "page_email"
+  consultationBookedAt DateTime?
+  consultationCompletedAt DateTime?
+  clientConvertedAt   DateTime?
+  estimatedAUM        Float? // Estimated assets under management
+  referralFeeEarned   Float? // Actual fee received
+  referralNotes       String? // Admin notes on this referral
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   @@index([triggeredAt])
+  @@index([referralStatus])
+}
+
+enum ReferralStatus {
+  NOT_REFERRED
+  CTA_CLICKED
+  CONSULTATION_BOOKED
+  CONSULTATION_COMPLETED
+  CLIENT_CONVERTED
+  DECLINED
 }

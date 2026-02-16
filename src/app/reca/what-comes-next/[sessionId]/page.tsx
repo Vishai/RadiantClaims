@@ -56,19 +56,23 @@ export default function WhatComesNextPage() {
   }, [session, sessionId]);
 
   const trackEvent = async (
-    event: "calculator_visited" | "advisor_cta_clicked"
+    event: "calculator_visited" | "advisor_cta_clicked",
+    source?: string
   ) => {
     if (!claimantId) return;
     try {
       await fetch("/api/financial-ed/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ claimantId, event }),
+        body: JSON.stringify({ claimantId, event, source }),
       });
     } catch {
       // Non-critical
     }
   };
+
+  const advisorUrl =
+    "https://p4wealth.com?utm_source=radiantclaims&utm_medium=referral&utm_campaign=reca_financial_ed";
 
   if (status === "loading") {
     return (
@@ -255,12 +259,8 @@ export default function WhatComesNextPage() {
               <Button
                 className="gap-2 rounded-full"
                 onClick={() => {
-                  trackEvent("advisor_cta_clicked");
-                  window.open(
-                    "https://p4wealth.com",
-                    "_blank",
-                    "noopener,noreferrer"
-                  );
+                  trackEvent("advisor_cta_clicked", "page_website");
+                  window.open(advisorUrl, "_blank", "noopener,noreferrer");
                 }}
               >
                 <ExternalLink className="h-4 w-4" />
@@ -270,9 +270,9 @@ export default function WhatComesNextPage() {
                 variant="outline"
                 className="gap-2 rounded-full"
                 onClick={() => {
-                  trackEvent("advisor_cta_clicked");
+                  trackEvent("advisor_cta_clicked", "page_email");
                   window.open(
-                    "mailto:darin.arnell@p4wealth.com?subject=RECA%20Compensation%20Planning",
+                    "mailto:darin.arnell@p4wealth.com?subject=RECA%20Compensation%20Planning%20-%20RadiantClaims%20Referral",
                     "_self"
                   );
                 }}
