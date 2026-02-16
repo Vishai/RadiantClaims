@@ -33,9 +33,9 @@ const EVENT_DEFINITIONS: Record<
       "Notify your team when a claimant uploads documents, makes revisions, or advances workflow stages.",
   },
   PACKET_READY: {
-    title: "Packet ready to mail",
+    title: "Packet ready to submit",
     description:
-      "Send a heads-up when a packet is ready for attorney approval / mailing.",
+      "Send a heads-up when a packet is ready for final DOJ submission (online or by mail).",
   },
 };
 

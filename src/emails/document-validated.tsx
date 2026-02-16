@@ -25,9 +25,7 @@ export const DocumentValidatedEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>
-        Documents Validated - Next Steps - RadiantClaims
-      </Preview>
+      <Preview>Documents Validated - Next Steps - RadiantClaims</Preview>
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
@@ -42,8 +40,8 @@ export const DocumentValidatedEmail = ({
               Great News, {name}!
             </Heading>
             <Text style={text}>
-              Our team has reviewed and validated your uploaded documents. Everything
-              looks good and is ready for lawyer review!
+              Our team has reviewed and validated your uploaded documents.
+              Everything looks good and is ready for lawyer review!
             </Text>
 
             {/* Status Box */}
@@ -57,7 +55,7 @@ export const DocumentValidatedEmail = ({
                 <br />
                 <strong>→ Lawyer Review</strong> - In Progress
                 <br />
-                <strong>□ Ready to Mail</strong> - Coming Soon
+                <strong>□ Ready to Submit</strong> - Coming Soon
               </Text>
             </Section>
 
@@ -65,21 +63,22 @@ export const DocumentValidatedEmail = ({
             <Section style={nextBox}>
               <Text style={nextTitle}>What Happens Next?</Text>
               <Text style={text}>
-                Your digital copies are now being printed for our lawyer's final
-                review and approval. This is a quick "rubber stamp" process to ensure
-                everything is correct before you mail the originals.
+                Your documents are now going through a final lawyer review. This
+                is a quick "rubber stamp" process to ensure everything is
+                correct before you submit to DOJ (online or by mail).
               </Text>
               <Text style={text}>
-                Once approved, we'll send you:
+                Once approved, we'll send you instructions for submitting to
+                DOJ:
               </Text>
               <Text style={listText}>
-                • A prepaid envelope addressed to the Department of Justice
+                • A clear upload checklist for filing online (DOJ portal)
                 <br />
-                • Clear instructions on which documents need certified copies or originals
+                • Mail-in instructions (if you prefer mailing)
                 <br />
-                • An instruction slip to include in your mailing
-                <br />
-                • Specific guidance for your jurisdiction
+                • Guidance on originals/certified copies (DOJ may request them
+                later)
+                <br />• Specific guidance for your jurisdiction
               </Text>
             </Section>
 
@@ -87,10 +86,10 @@ export const DocumentValidatedEmail = ({
             <Section style={actionBox}>
               <Text style={actionTitle}>⏰ What You Can Do Now</Text>
               <Text style={actionText}>
-                While waiting for final approval, you can start requesting certified
-                copies of your medical records and other required documents from the
-                relevant institutions. This will save time once you receive your
-                mailing instructions!
+                While waiting for final approval, you can gather any key
+                originals or certified records you may need later. If you file
+                online, DOJ allows you to upload scans, but they may request
+                originals/certified copies to validate authenticity.
               </Text>
             </Section>
 
@@ -102,19 +101,18 @@ export const DocumentValidatedEmail = ({
             </Section>
 
             <Text style={text}>
-              We'll notify you as soon as your packet is approved and ready to mail.
-              Thank you for your patience!
+              We'll notify you as soon as your packet is approved and ready to
+              submit. Thank you for your patience!
             </Text>
-            <Text style={signature}>
-              - The RadiantClaims Team
-            </Text>
+            <Text style={signature}>- The RadiantClaims Team</Text>
           </Section>
 
           {/* Footer */}
           <Hr style={divider} />
           <Section style={footer}>
             <Text style={footerText}>
-              This notification was sent regarding your RadiantClaims application.
+              This notification was sent regarding your RadiantClaims
+              application.
             </Text>
             <Text style={footerText}>
               © {new Date().getFullYear()} RadiantClaims. All rights reserved.

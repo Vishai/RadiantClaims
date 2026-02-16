@@ -29,14 +29,12 @@ export const ReadyToMailEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>
-        Ready to Mail - Final Instructions - RadiantClaims
-      </Preview>
+      <Preview>Ready to Submit - Final Instructions - RadiantClaims</Preview>
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
           <Section style={header}>
-            <Heading style={h1}>📬 Ready to Mail!</Heading>
+            <Heading style={h1}>✅ Ready to Submit!</Heading>
             <Text style={tagline}>RadiantClaims</Text>
           </Section>
 
@@ -46,9 +44,9 @@ export const ReadyToMailEmail = ({
               Congratulations, {name}!
             </Heading>
             <Text style={text}>
-              Your documents have been validated and approved by our lawyer. Your
-              claim packet is now ready for final submission to the Department of
-              Justice!
+              Your documents have been validated and approved by our lawyer.
+              Your claim packet is now ready for final submission to the
+              Department of Justice!
             </Text>
 
             {/* Success Box */}
@@ -68,50 +66,46 @@ export const ReadyToMailEmail = ({
             {/* Mailing Instructions */}
             <Section style={instructionsBox}>
               <Heading as="h3" style={h3}>
-                📋 Mailing Instructions
+                📋 How to Submit to DOJ (Online or by Mail)
               </Heading>
               <Text style={text}>
-                <strong>Your prepaid envelope is on its way!</strong> We've mailed you a
-                prepaid envelope with printed copies of your documents and an
-                instruction slip. Here's what to do when you receive it:
+                You can submit your claim electronically through the DOJ portal,
+                or submit by mail. If you file online, DOJ allows you to upload
+                scans of original/certified supporting documentation to expedite
+                processing — and may request originals/certified copies later to
+                validate authenticity.
+                <br />
+                <br />
+                Choose the option that works best for you:
               </Text>
 
-              {/* Step by Step */}
+              {/* Option A: File Online */}
               <Section style={stepBox}>
-                <Text style={stepNumber}>STEP 1</Text>
-                <Text style={stepTitle}>Gather Required Originals/Certified Copies</Text>
+                <Text style={stepNumber}>OPTION A</Text>
+                <Text style={stepTitle}>File Online (Recommended)</Text>
                 <Text style={stepText}>
-                  Review the instruction slip in your envelope. It lists which
-                  documents need to be replaced with certified copies or originals
-                  (marked with a ⚠️ symbol).
+                  Use the DOJ claim portal and upload scans of your supporting
+                  documents. If DOJ later requests originals/certified copies,
+                  you can mail them at that time.
                 </Text>
+                <Section style={{ marginTop: 12 }}>
+                  <Button
+                    style={primaryButton}
+                    href="https://reca.justice.gov/"
+                  >
+                    Open DOJ Claim Portal
+                  </Button>
+                </Section>
               </Section>
 
+              {/* Option B: Mail */}
               <Section style={stepBox}>
-                <Text style={stepNumber}>STEP 2</Text>
-                <Text style={stepTitle}>Replace Printed Copies</Text>
+                <Text style={stepNumber}>OPTION B</Text>
+                <Text style={stepTitle}>Mail Your Packet</Text>
                 <Text style={stepText}>
-                  Remove our printed copies for documents that require originals.
-                  Replace them with your actual certified copies or original documents.
-                  Keep documents that accept copies as-is.
-                </Text>
-              </Section>
-
-              <Section style={stepBox}>
-                <Text style={stepNumber}>STEP 3</Text>
-                <Text style={stepTitle}>Include the Instruction Slip</Text>
-                <Text style={stepText}>
-                  Place the instruction slip we provided on top of your document stack.
-                  This helps the DOJ process your claim correctly.
-                </Text>
-              </Section>
-
-              <Section style={stepBox}>
-                <Text style={stepNumber}>STEP 4</Text>
-                <Text style={stepTitle}>Seal & Mail</Text>
-                <Text style={stepText}>
-                  Seal the prepaid envelope and drop it in any USPS mailbox or take it
-                  to your local post office. No postage needed!
+                  If you prefer to mail your packet, follow the steps in the
+                  instruction slip (including any originals/certified copies),
+                  then mail to the address below.
                 </Text>
               </Section>
             </Section>
@@ -119,7 +113,9 @@ export const ReadyToMailEmail = ({
             {/* Tracking Info */}
             {trackingNumber && (
               <Section style={trackingBox}>
-                <Text style={trackingTitle}>📦 Tracking Information</Text>
+                <Text style={trackingTitle}>
+                  📦 Tracking Information (Mail Option)
+                </Text>
                 <Hr style={divider} />
                 <Text style={trackingText}>
                   <strong>Prepaid Envelope Tracking:</strong>
@@ -127,7 +123,10 @@ export const ReadyToMailEmail = ({
                   {trackingNumber}
                   <br />
                   <br />
-                  <Link href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber.replace(/\s/g, '')}`} style={link}>
+                  <Link
+                    href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber.replace(/\s/g, "")}`}
+                    style={link}
+                  >
                     Track Your Envelope →
                   </Link>
                 </Text>
@@ -140,26 +139,26 @@ export const ReadyToMailEmail = ({
               <Text style={notesText}>
                 • <strong>Keep copies:</strong> Make copies of everything before
                 mailing (especially originals)
-                <br />
-                • <strong>Certified copies:</strong> Medical records and government IDs
-                must be certified by the issuing institution
-                <br />
-                • <strong>Historical docs:</strong> Original residence documents from
-                1951-1962 are preferred but copies acceptable if originals unavailable
-                <br />
-                • <strong>Timing:</strong> Mail within 30 days to ensure timely
-                processing
+                <br />• <strong>Certified copies:</strong> Medical records and
+                government IDs must be certified by the issuing institution
+                <br />• <strong>Historical docs:</strong> Original residence
+                documents from 1951-1962 are preferred but copies acceptable if
+                originals unavailable
+                <br />• <strong>Timing:</strong> Mail within 30 days to ensure
+                timely processing
               </Text>
             </Section>
 
             {/* DOJ Address */}
             <Section style={addressBox}>
-              <Text style={addressTitle}>Mailing To:</Text>
+              <Text style={addressTitle}>
+                Mailing Address (if you choose to mail):
+              </Text>
               <Text style={addressText}>
-                {dojAddress.split('\n').map((line, i) => (
+                {dojAddress.split("\n").map((line, i) => (
                   <React.Fragment key={i}>
                     {line}
-                    {i < dojAddress.split('\n').length - 1 && <br />}
+                    {i < dojAddress.split("\n").length - 1 && <br />}
                   </React.Fragment>
                 ))}
               </Text>
@@ -176,26 +175,25 @@ export const ReadyToMailEmail = ({
             <Section style={supportBox}>
               <Text style={supportTitle}>Need Help?</Text>
               <Text style={supportText}>
-                If you have questions about which documents need originals, need help
-                obtaining certified copies, or have any other questions, please don't
-                hesitate to contact us. We're here to help!
+                If you have questions about which documents need originals, need
+                help obtaining certified copies, or have any other questions,
+                please don't hesitate to contact us. We're here to help!
               </Text>
             </Section>
 
             <Text style={text}>
-              Thank you for trusting RadiantClaims with your RECA claim. We wish you
-              the best in your pursuit of compensation!
+              Thank you for trusting RadiantClaims with your RECA claim. We wish
+              you the best in your pursuit of compensation!
             </Text>
-            <Text style={signature}>
-              - The RadiantClaims Team
-            </Text>
+            <Text style={signature}>- The RadiantClaims Team</Text>
           </Section>
 
           {/* Footer */}
           <Hr style={divider} />
           <Section style={footer}>
             <Text style={footerText}>
-              This notification was sent regarding your RadiantClaims application.
+              This notification was sent regarding your RadiantClaims
+              application.
             </Text>
             <Text style={footerText}>
               © {new Date().getFullYear()} RadiantClaims. All rights reserved.

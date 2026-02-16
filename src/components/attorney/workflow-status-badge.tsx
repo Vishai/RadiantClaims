@@ -90,11 +90,11 @@ const STATUS_CONFIG: Record<
     description: "Physical packet printed",
   },
   MAILING_READY: {
-    label: "Ready to Mail",
+    label: "Ready to Submit",
     color: "text-cyan-700",
     bgColor: "bg-cyan-50 border-cyan-300",
     icon: Mail,
-    description: "Ready for client to mail",
+    description: "Ready for client to submit to DOJ (online or by mail)",
   },
   CLIENT_MAILED: {
     label: "Client Mailed",
