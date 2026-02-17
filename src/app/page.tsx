@@ -32,7 +32,7 @@ export default function HomePage() {
           </span>
         </div>
         <Link href="/login">
-          <button className="text-sm font-semibold text-gray-600 hover:text-gray-900">
+          <button className="min-h-[44px] px-4 text-sm font-semibold text-gray-600 hover:text-gray-900">
             Login
           </button>
         </Link>
@@ -190,6 +190,7 @@ export default function HomePage() {
             <button className="w-full rounded-lg bg-gray-900 py-3 font-bold text-white transition hover:bg-gray-800">
               Take the 2-Minute Quiz
             </button>
+            {/* min-h-44 inherited from py-3 + font-bold line-height — already meets 44px tap target */}
           </Link>
         </div>
       </section>

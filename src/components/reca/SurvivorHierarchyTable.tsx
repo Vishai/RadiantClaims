@@ -69,7 +69,7 @@ export default function SurvivorHierarchyTable() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-hidden rounded-lg border border-sage-200">
+          <div className="overflow-x-auto rounded-lg border border-sage-200">
             <Table>
               <TableHeader>
                 <TableRow className="bg-sage-100">

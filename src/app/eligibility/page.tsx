@@ -75,7 +75,7 @@ export default function EligibilityPage() {
                 </span>
               </Link>
               <Link href="/service-tiers">
-                <Button className="rounded-full bg-terracotta-500 px-8 py-6 hover:bg-terracotta-600">
+                <Button className="rounded-full bg-terracotta-500 px-4 py-3 text-sm hover:bg-terracotta-600 sm:px-8 sm:py-6 sm:text-base">
                   Choose Your Path
                 </Button>
               </Link>

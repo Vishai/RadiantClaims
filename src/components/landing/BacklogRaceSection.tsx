@@ -130,7 +130,7 @@ export function BacklogRaceSection() {
           </div>
           <Link
             href="/eligibility-check"
-            className="font-bold text-terracotta-500 hover:text-terracotta-600 hover:underline"
+            className="inline-block min-h-[44px] py-2 font-bold text-terracotta-500 hover:text-terracotta-600 hover:underline"
           >
             Start your claim →
           </Link>

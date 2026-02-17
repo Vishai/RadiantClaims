@@ -46,7 +46,7 @@ export function DOJStickyBanner() {
   const waitMonths = Math.round(metrics.estimatedWaitDays / 30);
 
   return (
-    <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-gray-900 px-4 py-3 text-xs text-white shadow-md transition-all md:text-sm">
+    <div className="sticky top-0 z-50 flex items-center justify-center gap-3 bg-gray-900 px-4 py-3 text-sm text-white shadow-md transition-all">
       <span className="relative flex h-2 w-2 flex-shrink-0">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
         <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
