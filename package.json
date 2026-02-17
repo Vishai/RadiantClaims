@@ -50,6 +50,7 @@
     "@types/pdfkit": "^0.17.3",
     "@upstash/ratelimit": "^2.0.6",
     "@upstash/redis": "^1.35.6",
+    "@vercel/analytics": "^1.6.1",
     "bcryptjs": "^2.4.3",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
