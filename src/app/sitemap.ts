@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/service-tiers", priority: 0.9, changefreq: "weekly" },
     { path: "/resources", priority: 0.6, changefreq: "weekly" },
     { path: "/downwinders", priority: 0.9, changefreq: "weekly" },
+    { path: "/privacy-extension", priority: 0.3, changefreq: "monthly" },
   ];
 
   return routes.map((r) => ({

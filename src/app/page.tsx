@@ -15,8 +15,25 @@ export const metadata: Metadata = {
 export default function HomePage() {
   const diyBeta = getBetaPricing(499);
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "RadiantClaims",
+    url: "https://www.radiantclaims.com",
+    description:
+      "Check RECA eligibility and prepare your Downwinder claim packet step-by-step. We help you gather the right documents and submit a complete application.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.radiantclaims.com/eligibility-check",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#FFFBF9]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       <BetaBanner />
       {/* Sticky Alert Banner */}
       <DOJStickyBanner />

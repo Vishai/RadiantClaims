@@ -50,6 +50,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "RadiantClaims",
+              url: "https://www.radiantclaims.com",
+              description:
+                "Guided RECA claim preparation — from eligibility to submission",
+              sameAs: ["https://x.com/BramboArmstrong"],
+            }),
+          }}
+        />
         <Providers>{children}</Providers>
         <Analytics />
       </body>
