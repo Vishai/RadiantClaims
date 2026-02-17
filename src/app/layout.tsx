@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s | RadiantClaims",
   },
   description:
-    "Fast, guided RECA claim preparation for Downwinders—eligibility check, document checklist, and step-by-step packet building.",
+    "Fast, guided RECA claim preparation for Downwinders — eligibility check, document organization, and step-by-step online filing through the DOJ portal.",
   alternates: {
     canonical: "/",
   },
@@ -22,13 +22,22 @@ export const metadata: Metadata = {
     siteName: "RadiantClaims",
     title: "RadiantClaims",
     description:
-      "Fast, guided RECA claim preparation for Downwinders—eligibility check, document checklist, and step-by-step packet building.",
+      "Fast, guided RECA claim preparation for Downwinders — eligibility check, document organization, and step-by-step online filing through the DOJ portal.",
+    images: [
+      {
+        url: "https://www.radiantclaims.com/og-image.png",
+        width: 1200,
+        height: 630,
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "RadiantClaims",
     description:
-      "Fast, guided RECA claim preparation for Downwinders—eligibility check, document checklist, and step-by-step packet building.",
+      "Fast, guided RECA claim preparation for Downwinders — eligibility check, document organization, and step-by-step online filing through the DOJ portal.",
+    images: ["https://www.radiantclaims.com/og-image.png"],
   },
 };
 
