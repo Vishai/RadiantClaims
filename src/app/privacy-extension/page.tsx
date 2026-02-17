@@ -1,4 +1,4 @@
-import { Metadata } from "next/metadata";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Chrome Extension | RadiantClaims",
