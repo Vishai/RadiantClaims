@@ -34,7 +34,7 @@ export default function AcceptInvitePage() {
 
         if (!res.ok) {
           setStatus("error");
-          setMessage(data?.error || "Failed to accept invite.");
+          setMessage(data?.error || "Failed to open invite.");
           return;
         }
 
@@ -45,13 +45,13 @@ export default function AcceptInvitePage() {
 
         setTimeout(() => {
           const target = data?.inviteName
-            ? `/portal/contribute/${data.intakeSessionId}?sibling=${encodeURIComponent(data.inviteName)}`
-            : `/portal/contribute/${data.intakeSessionId}`;
+            ? `/portal/contribute/${data.intakeSessionId}?token=${encodeURIComponent(token)}&sibling=${encodeURIComponent(data.inviteName)}`
+            : `/portal/contribute/${data.intakeSessionId}?token=${encodeURIComponent(token)}`;
           router.push(target as Route);
         }, 1200);
-      } catch (e) {
+      } catch {
         setStatus("error");
-        setMessage("Failed to accept invite. Please try again.");
+        setMessage("Failed to open invite. Please try again.");
       }
     };
 
@@ -63,7 +63,8 @@ export default function AcceptInvitePage() {
       <div className="w-full max-w-md rounded-3xl border-2 border-cream-200 bg-white p-8 text-center shadow-lg">
         <h1 className="text-2xl font-bold text-sage-900">Accept Invitation</h1>
         <p className="mt-3 text-sm text-sage-600">
-          {status === "accepting" && "Accepting your invitation..."}
+          {status === "accepting" &&
+            "Opening your secure contributor workspace..."}
           {status === "accepted" && message}
           {status === "error" && message}
           {status === "idle" && "Preparing..."}
@@ -72,16 +73,20 @@ export default function AcceptInvitePage() {
         {status === "error" && (
           <div className="mt-6 space-y-3">
             <a
-              href="/login"
+              href={
+                token
+                  ? `/portal/invites/accept?token=${encodeURIComponent(token)}`
+                  : "/"
+              }
               className="block rounded-full bg-terracotta-500 px-5 py-3 text-sm font-semibold text-white hover:bg-terracotta-600"
             >
-              Sign in and try again
+              Try again
             </a>
             <a
-              href="/portal"
+              href="/"
               className="block text-sm text-sage-600 hover:text-terracotta-600"
             >
-              Go to portal
+              Go to home
             </a>
           </div>
         )}

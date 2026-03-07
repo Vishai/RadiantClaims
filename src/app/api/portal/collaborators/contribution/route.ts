@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { assertCanAccessIntakeSession } from "@/lib/collaboration";
+import {
+  assertCanAccessIntakeSession,
+  assertInviteTokenAccess,
+} from "@/lib/collaboration";
 import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
 
 const nameChangeSchema = z.object({
@@ -17,6 +20,7 @@ const nameChangeSchema = z.object({
 
 const schema = z.object({
   intakeSessionId: z.string(),
+  inviteToken: z.string().optional(),
   siblingIndex: z.number().int().min(0),
   sibling: z.object({
     dateOfBirth: z.string().optional().default(""),
@@ -41,11 +45,6 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerAuthSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const parsed = schema.safeParse(await req.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -54,15 +53,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { intakeSessionId, siblingIndex, sibling, beneficiary } = parsed.data;
+    const { intakeSessionId, inviteToken, siblingIndex, sibling, beneficiary } =
+      parsed.data;
 
-    const access = await assertCanAccessIntakeSession({
-      intakeSessionId,
-      userId: session.user.id,
-    });
+    let access:
+      | Awaited<ReturnType<typeof assertCanAccessIntakeSession>>
+      | Awaited<ReturnType<typeof assertInviteTokenAccess>>;
+
+    if (inviteToken) {
+      access = await assertInviteTokenAccess({
+        intakeSessionId,
+        token: inviteToken,
+      });
+    } else {
+      const session = await getServerAuthSession();
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      access = await assertCanAccessIntakeSession({
+        intakeSessionId,
+        userId: session.user.id,
+      });
+    }
 
     if (!access.ok) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            "reason" in access && access.reason === "expired"
+              ? "Invite expired"
+              : "Forbidden",
+        },
+        {
+          status: "reason" in access && access.reason === "expired" ? 410 : 403,
+        }
+      );
     }
 
     const intakeSession = await db.intakeSession.findUnique({

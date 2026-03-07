@@ -31,8 +31,9 @@ export const ClientCollaboratorInviteEmail = ({
             : "A family member invited you to help with a RECA claim in RadiantClaims."}
         </Text>
         <Text style={textStyle}>
-          You’ll be able to view the claim, upload supporting documents, and
-          leave notes. You won’t be able to edit answers.
+          This secure link opens a contributor workspace where you can provide
+          your details and upload only the supporting documents that apply to
+          you.
         </Text>
       </Section>
 

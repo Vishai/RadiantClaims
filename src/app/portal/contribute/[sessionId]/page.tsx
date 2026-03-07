@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import type { Route } from "next";
 import {
   Card,
@@ -105,12 +104,12 @@ function buildChecklist(sibling: SiblingContributor | null) {
 }
 
 export default function CollaboratorContributionPage() {
-  const { data: session, status } = useSession();
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = params.sessionId;
   const requestedSibling = searchParams.get("sibling");
+  const inviteToken = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,7 +129,7 @@ export default function CollaboratorContributionPage() {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/portal/collaborators/session?intakeSessionId=${sessionId}`
+        `/api/portal/collaborators/session?intakeSessionId=${sessionId}&inviteToken=${encodeURIComponent(inviteToken || "")}`
       );
       const data = await res.json();
 
@@ -144,11 +143,7 @@ export default function CollaboratorContributionPage() {
       const matchedIndex = sessionData.siblings.findIndex((sibling) => {
         const siblingName = normalizeName(sibling.name);
         const requestedName = normalizeName(requestedSibling);
-        const sessionName = normalizeName(session?.user?.name);
-        return (
-          (!!requestedName && siblingName === requestedName) ||
-          (!!sessionName && siblingName === sessionName)
-        );
+        return !!requestedName && siblingName === requestedName;
       });
 
       const nextIndex =
@@ -169,17 +164,13 @@ export default function CollaboratorContributionPage() {
   };
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push(
-        `/login?callbackUrl=/portal/contribute/${sessionId}` as Route
-      );
+    if (!inviteToken) {
+      router.push("/" as Route);
       return;
     }
 
-    if (status === "authenticated") {
-      void loadContext();
-    }
-  }, [status, router, sessionId, requestedSibling, session?.user?.name]);
+    void loadContext();
+  }, [router, sessionId, requestedSibling, inviteToken]);
 
   useEffect(() => {
     if (!context) return;
@@ -267,6 +258,7 @@ export default function CollaboratorContributionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           intakeSessionId: sessionId,
+          inviteToken,
           siblingIndex: formData.index,
           sibling: {
             dateOfBirth: formData.dateOfBirth,
@@ -300,7 +292,7 @@ export default function CollaboratorContributionPage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50">
         <div className="text-center">
@@ -325,8 +317,16 @@ export default function CollaboratorContributionPage() {
                 We could not load your family contribution page. Please reopen
                 the invite link or ask the claim owner to send a new invite.
               </p>
-              <Button onClick={() => router.push("/login")}>
-                Sign in again
+              <Button
+                onClick={() =>
+                  router.push(
+                    inviteToken
+                      ? (`/portal/invites/accept?token=${encodeURIComponent(inviteToken)}` as Route)
+                      : ("/" as Route)
+                  )
+                }
+              >
+                Reopen invite
               </Button>
             </CardContent>
           </Card>
@@ -353,7 +353,7 @@ export default function CollaboratorContributionPage() {
             </div>
           </div>
           <div className="text-right text-sm text-sage-600">
-            {session?.user?.name || session?.user?.email}
+            {requestedSibling || "Family contributor"}
           </div>
         </div>
       </nav>

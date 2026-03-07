@@ -104,8 +104,8 @@ export function InviteCollaboratorDialog({
           </DialogTitle>
           <DialogDescription>
             {generatedUrl
-              ? "We emailed the invite. If they don’t see it, you can copy the link below. They’ll need to sign in (or create an account) to view the claim and upload documents."
-              : "Invite a family member to view this claim, upload documents, and leave notes. They cannot edit your answers."}
+              ? "We emailed the invite. If they don’t see it, you can copy the secure contributor link below."
+              : "Invite a family member to contribute only their sibling details and the documents that apply to them. They cannot edit the rest of your claim."}
           </DialogDescription>
         </DialogHeader>
 

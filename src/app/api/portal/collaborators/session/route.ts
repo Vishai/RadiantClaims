@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { assertCanAccessIntakeSession } from "@/lib/collaboration";
+import {
+  assertCanAccessIntakeSession,
+  assertInviteTokenAccess,
+} from "@/lib/collaboration";
 import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
 
 const schema = z.object({
   intakeSessionId: z.string(),
+  inviteToken: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerAuthSession();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const url = new URL(req.url);
     const intakeSessionId = url.searchParams.get("intakeSessionId");
-    const parsed = schema.safeParse({ intakeSessionId });
+    const inviteToken = url.searchParams.get("inviteToken") || undefined;
+    const parsed = schema.safeParse({ intakeSessionId, inviteToken });
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -27,13 +27,39 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const access = await assertCanAccessIntakeSession({
-      intakeSessionId: parsed.data.intakeSessionId,
-      userId: session.user.id,
-    });
+    let access:
+      | Awaited<ReturnType<typeof assertCanAccessIntakeSession>>
+      | Awaited<ReturnType<typeof assertInviteTokenAccess>>;
+
+    if (parsed.data.inviteToken) {
+      access = await assertInviteTokenAccess({
+        intakeSessionId: parsed.data.intakeSessionId,
+        token: parsed.data.inviteToken,
+      });
+    } else {
+      const session = await getServerAuthSession();
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      access = await assertCanAccessIntakeSession({
+        intakeSessionId: parsed.data.intakeSessionId,
+        userId: session.user.id,
+      });
+    }
 
     if (!access.ok) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            "reason" in access && access.reason === "expired"
+              ? "Invite expired"
+              : "Forbidden",
+        },
+        {
+          status: "reason" in access && access.reason === "expired" ? 410 : 403,
+        }
+      );
     }
 
     const intakeSession = await db.intakeSession.findUnique({
@@ -117,6 +143,7 @@ export async function GET(req: NextRequest) {
         beneficiaries:
           supportingForms?.survivingBeneficiariesSignatures?.beneficiaries ??
           [],
+        inviteName: "invite" in access ? (access.invite.name ?? null) : null,
         uploadedFiles: intakeSession.uploadedFiles,
       },
     });
