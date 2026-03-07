@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assertCanAccessIntakeSession } from "@/lib/collaboration";
+import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
 
 const schema = z.object({
   intakeSessionId: z.string(),
@@ -72,10 +73,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, collaborators, invites });
   } catch (error) {
-    console.error("List collaborators error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createCollaborationErrorResponse(error, "list");
   }
 }

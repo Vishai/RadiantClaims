@@ -9,6 +9,7 @@ import {
 import * as React from "react";
 import { sendEmail } from "@/lib/resend";
 import ClientCollaboratorInviteEmail from "@/emails/client/collaborator-invite";
+import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
 
 const schema = z.object({
   intakeSessionId: z.string(),
@@ -92,10 +93,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Invite collaborator error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createCollaborationErrorResponse(error, "invite");
   }
 }

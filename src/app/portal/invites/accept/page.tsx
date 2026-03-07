@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import type { Route } from "next";
 
 export default function AcceptInvitePage() {
   const searchParams = useSearchParams();
@@ -38,10 +39,15 @@ export default function AcceptInvitePage() {
         }
 
         setStatus("accepted");
-        setMessage("Invite accepted! Redirecting you to the portal...");
+        setMessage(
+          "Invite accepted! Redirecting you to your contributor workspace..."
+        );
 
         setTimeout(() => {
-          router.push("/portal");
+          const target = data?.inviteName
+            ? `/portal/contribute/${data.intakeSessionId}?sibling=${encodeURIComponent(data.inviteName)}`
+            : `/portal/contribute/${data.intakeSessionId}`;
+          router.push(target as Route);
         }, 1200);
       } catch (e) {
         setStatus("error");

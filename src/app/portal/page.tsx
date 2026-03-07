@@ -247,6 +247,9 @@ export default function CustomerPortal() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDOJMetrics, setShowDOJMetrics] = useState(false);
   const [inviteSessionId, setInviteSessionId] = useState<string | null>(null);
+  const [inviteSiblingOptions, setInviteSiblingOptions] = useState<string[]>(
+    []
+  );
   const [manageSessionId, setManageSessionId] = useState<string | null>(null);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showManageDialog, setShowManageDialog] = useState(false);
@@ -712,6 +715,22 @@ export default function CustomerPortal() {
                                   className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
                                   onClick={() => {
                                     setInviteSessionId(intakeSession.id);
+                                    setInviteSiblingOptions(
+                                      Array.isArray(
+                                        intakeSession.recaFormData?.part_6
+                                          ?.siblings
+                                      )
+                                        ? intakeSession.recaFormData.part_6.siblings
+                                            .map((sibling: { name?: string }) =>
+                                              sibling?.name?.trim()
+                                            )
+                                            .filter(
+                                              (
+                                                name: string | undefined
+                                              ): name is string => !!name
+                                            )
+                                        : []
+                                    );
                                     setShowInviteDialog(true);
                                   }}
                                 >
@@ -1039,6 +1058,7 @@ export default function CustomerPortal() {
         open={showInviteDialog}
         onOpenChange={setShowInviteDialog}
         intakeSessionId={inviteSessionId}
+        siblingOptions={inviteSiblingOptions}
       />
       <ManageCollaboratorsDialog
         open={showManageDialog}

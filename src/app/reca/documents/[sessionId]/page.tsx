@@ -278,6 +278,13 @@ export default function SessionDocumentsPage() {
           open={showInviteDialog}
           onOpenChange={setShowInviteDialog}
           intakeSessionId={sessionId}
+          siblingOptions={
+            Array.isArray(formData?.part_6?.siblings)
+              ? formData.part_6.siblings
+                  .map((sibling: { name?: string }) => sibling?.name?.trim())
+                  .filter((name: string | undefined): name is string => !!name)
+              : []
+          }
         />
         <ManageCollaboratorsDialog
           open={showManageDialog}

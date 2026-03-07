@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
 
 const schema = z.object({
   token: z.string(),
@@ -86,12 +87,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       intakeSessionId: result.intakeSessionId,
+      inviteName: invite.name,
     });
   } catch (error) {
-    console.error("Accept invite error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createCollaborationErrorResponse(error, "accept");
   }
 }

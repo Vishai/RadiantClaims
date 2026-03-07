@@ -13,18 +13,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function InviteCollaboratorDialog({
   open,
   onOpenChange,
   intakeSessionId,
+  siblingOptions = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   intakeSessionId: string | null;
+  siblingOptions?: string[];
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [selectedSibling, setSelectedSibling] = useState("");
   const [sending, setSending] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -32,12 +42,14 @@ export function InviteCollaboratorDialog({
   useEffect(() => {
     if (open) {
       setEmail("");
-      setName("");
+      const defaultSibling = siblingOptions[0] || "";
+      setSelectedSibling(defaultSibling);
+      setName(defaultSibling);
       setSending(false);
       setGeneratedUrl(null);
       setCopied(false);
     }
-  }, [open]);
+  }, [open, siblingOptions]);
 
   const handleSend = async () => {
     if (!email || !intakeSessionId) return;
@@ -110,14 +122,43 @@ export function InviteCollaboratorDialog({
               </Button>
             </div>
             <p className="text-xs text-sage-500">
-              (Email sending can be wired up next. For now, copy/paste this
-              link.)
+              Copy this link if they need a direct path into the contributor
+              workspace.
             </p>
           </div>
         ) : (
           <div className="grid gap-4 py-2">
+            {siblingOptions.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="sibling">Who is this invite for?</Label>
+                <Select
+                  value={selectedSibling}
+                  onValueChange={(value) => {
+                    setSelectedSibling(value);
+                    setName(value);
+                  }}
+                >
+                  <SelectTrigger id="sibling">
+                    <SelectValue placeholder="Select a sibling" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {siblingOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-sage-500">
+                  We use this to open the contributor on the correct sibling
+                  section and checklist.
+                </p>
+              </div>
+            )}
             <div className="grid gap-2">
-              <Label htmlFor="name">Name (optional)</Label>
+              <Label htmlFor="name">
+                {siblingOptions.length > 0 ? "Display name" : "Name (optional)"}
+              </Label>
               <Input
                 id="name"
                 value={name}

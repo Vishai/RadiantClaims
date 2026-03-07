@@ -1206,6 +1206,13 @@ export default function RECAReviewPage({ params }: PageProps) {
         open={showInviteDialog}
         onOpenChange={setShowInviteDialog}
         intakeSessionId={params.sessionId}
+        siblingOptions={
+          Array.isArray(workflowState?.formData?.part_6?.siblings)
+            ? workflowState.formData.part_6.siblings
+                .map((sibling: { name?: string }) => sibling?.name?.trim())
+                .filter((name): name is string => !!name)
+            : []
+        }
       />
       <ManageCollaboratorsDialog
         open={showManageDialog}
