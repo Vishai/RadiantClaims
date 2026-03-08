@@ -7,6 +7,7 @@ import {
   assertInviteTokenAccess,
 } from "@/lib/collaboration";
 import { createCollaborationErrorResponse } from "@/lib/prisma-error-response";
+import { getContributorUploadAttribution } from "@/lib/uploaded-file-metadata";
 
 const schema = z.object({
   intakeSessionId: z.string(),
@@ -86,11 +87,11 @@ export async function GET(req: NextRequest) {
             category: true,
             originalFilename: true,
             uploadedAt: true,
+            metadata: true,
           },
           orderBy: {
             uploadedAt: "desc",
           },
-          take: 12,
         },
       },
     });
@@ -144,7 +145,15 @@ export async function GET(req: NextRequest) {
           supportingForms?.survivingBeneficiariesSignatures?.beneficiaries ??
           [],
         inviteName: "invite" in access ? (access.invite.name ?? null) : null,
-        uploadedFiles: intakeSession.uploadedFiles,
+        uploadedFiles: intakeSession.uploadedFiles.map((file) => ({
+          id: file.id,
+          category: file.category,
+          originalFilename: file.originalFilename,
+          uploadedAt: file.uploadedAt,
+          contributorAttribution: getContributorUploadAttribution(
+            file.metadata
+          ),
+        })),
       },
     });
   } catch (error) {

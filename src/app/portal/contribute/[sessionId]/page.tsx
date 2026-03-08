@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import type { FileCategory } from "@/components/documents/DocumentCategorySelector";
+import type { ContributorUploadAttribution } from "@/lib/uploaded-file-metadata";
 import {
   CheckCircle2,
   FileText,
@@ -70,6 +71,7 @@ type ContributorContext = {
     category: string | null;
     originalFilename: string;
     uploadedAt: string;
+    contributorAttribution: ContributorUploadAttribution | null;
   }>;
 };
 
@@ -80,7 +82,7 @@ type ContributorDocumentTask = {
   category: FileCategory;
   buttonLabel: string;
   helpText: string;
-  claimUploadCount: number;
+  uploadedCount: number;
   blockedByDetails?: boolean;
   blockedReason?: string;
 };
@@ -118,12 +120,24 @@ function buildChecklist(sibling: SiblingContributor | null) {
   return items;
 }
 
-function countClaimUploads(
+function countContributorUploads(
   uploadedFiles: ContributorContext["uploadedFiles"],
-  categories: FileCategory[]
+  siblingIndex: number,
+  categories: FileCategory[],
+  taskId?: string
 ) {
   return uploadedFiles.filter((file) => {
     if (!file.category) return false;
+    const attribution = file.contributorAttribution;
+
+    if (!attribution || attribution.siblingIndex !== siblingIndex) {
+      return false;
+    }
+
+    if (taskId) {
+      return attribution.taskId === taskId;
+    }
+
     return categories.includes(file.category as FileCategory);
   }).length;
 }
@@ -144,7 +158,12 @@ function buildDocumentTasks(
       buttonLabel: "Upload birth certificate",
       helpText:
         "This should show the parent names that establish the sibling relationship for DOJ.",
-      claimUploadCount: countClaimUploads(uploadedFiles, ["BIRTH_CERTIFICATE"]),
+      uploadedCount: countContributorUploads(
+        uploadedFiles,
+        sibling.index,
+        ["BIRTH_CERTIFICATE"],
+        "birth-certificate"
+      ),
     },
     {
       id: "photo-id",
@@ -155,7 +174,12 @@ function buildDocumentTasks(
       buttonLabel: "Upload photo ID",
       helpText:
         "Use this when an extra ID document is helpful to tie your current identity to the claim packet.",
-      claimUploadCount: countClaimUploads(uploadedFiles, ["IDENTITY"]),
+      uploadedCount: countContributorUploads(
+        uploadedFiles,
+        sibling.index,
+        ["IDENTITY"],
+        "photo-id"
+      ),
     },
   ];
 
@@ -172,7 +196,7 @@ function buildDocumentTasks(
       buttonLabel: "Add name changes first",
       helpText:
         "Once the prior names are listed below, this page will break the upload requests out one by one.",
-      claimUploadCount: countClaimUploads(uploadedFiles, [
+      uploadedCount: countContributorUploads(uploadedFiles, sibling.index, [
         "MARRIAGE_CERTIFICATE",
         "OTHER",
       ]),
@@ -207,7 +231,12 @@ function buildDocumentTasks(
       buttonLabel: `Upload ${reasonLabel.toLowerCase()}`,
       helpText:
         "Provide one document for each name change so your current name can be traced back to your birth certificate.",
-      claimUploadCount: countClaimUploads(uploadedFiles, [category]),
+      uploadedCount: countContributorUploads(
+        uploadedFiles,
+        sibling.index,
+        [category],
+        `name-change-${index}`
+      ),
     });
   });
 
@@ -380,6 +409,14 @@ export default function CollaboratorContributionPage() {
   );
   const activeUploadTask =
     documentTasks.find((task) => task.id === activeUploadTaskId) || null;
+  const contributorUploads = useMemo(
+    () =>
+      (context?.uploadedFiles || []).filter(
+        (file) =>
+          file.contributorAttribution?.siblingIndex === selectedSiblingIndex
+      ),
+    [context?.uploadedFiles, selectedSiblingIndex]
+  );
   const returnLink = `/portal/contribute/${sessionId}?token=${encodeURIComponent(inviteToken || "")}${
     requestedSibling ? `&sibling=${encodeURIComponent(requestedSibling)}` : ""
   }`;
@@ -696,12 +733,11 @@ export default function CollaboratorContributionPage() {
                               {task.blockedReason}
                             </p>
                           )}
-                          {task.claimUploadCount > 0 && (
+                          {task.uploadedCount > 0 && (
                             <p className="text-xs text-sage-500">
-                              This claim already has {task.claimUploadCount}{" "}
-                              file
-                              {task.claimUploadCount === 1 ? "" : "s"} saved
-                              under this document type.
+                              You already uploaded {task.uploadedCount} file
+                              {task.uploadedCount === 1 ? "" : "s"} for this
+                              request.
                             </p>
                           )}
                         </div>
@@ -1166,6 +1202,15 @@ export default function CollaboratorContributionPage() {
                     defaultCategoryLabel={activeUploadTask?.title}
                     defaultCategoryDescription={activeUploadTask?.description}
                     onClearDefaultCategory={() => setActiveUploadTaskId(null)}
+                    uploadContext={{
+                      inviteToken: inviteToken || undefined,
+                      contributorSiblingIndex: formData?.index,
+                      contributorSiblingName:
+                        formData?.name || requestedSibling || undefined,
+                      contributorTaskId: activeUploadTask?.id,
+                      contributorTaskTitle: activeUploadTask?.title,
+                      contributorWorkspace: "family_contributor",
+                    }}
                     onUploadComplete={() => {
                       void loadContext();
                     }}
@@ -1224,16 +1269,16 @@ export default function CollaboratorContributionPage() {
 
             <Card className="rounded-3xl border-2 border-cream-200">
               <CardHeader>
-                <CardTitle className="text-sage-900">Recent uploads</CardTitle>
+                <CardTitle className="text-sage-900">Your uploads</CardTitle>
               </CardHeader>
               <CardContent>
-                {context.uploadedFiles.length === 0 ? (
+                {contributorUploads.length === 0 ? (
                   <p className="text-sm text-sage-600">
-                    No documents have been uploaded yet for this claim.
+                    No documents uploaded from this contributor workspace yet.
                   </p>
                 ) : (
                   <ul className="space-y-3 text-sm text-sage-700">
-                    {context.uploadedFiles.map((file) => (
+                    {contributorUploads.map((file) => (
                       <li
                         key={file.id}
                         className="rounded-xl border border-cream-200 p-3"
@@ -1242,7 +1287,10 @@ export default function CollaboratorContributionPage() {
                           {file.originalFilename}
                         </div>
                         <div className="text-xs text-sage-500">
-                          {file.category || "UNCATEGORIZED"} •{" "}
+                          {file.contributorAttribution?.taskTitle ||
+                            file.category ||
+                            "UNCATEGORIZED"}{" "}
+                          • {file.category || "UNCATEGORIZED"} •{" "}
                           {new Date(file.uploadedAt).toLocaleDateString()}
                         </div>
                       </li>

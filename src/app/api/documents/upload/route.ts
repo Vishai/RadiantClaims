@@ -14,6 +14,11 @@ import { analyzeRisks } from "@/lib/document-intelligence/risk-analysis";
 import { detectCategoryFromText } from "@/lib/document-intelligence/heuristic-categorization";
 import { analyzeOtherDocument } from "@/lib/document-intelligence/other-document-analyzer";
 import { sendUploadConfirmationEmail } from "@/lib/email";
+import { assertInviteTokenAccess } from "@/lib/collaboration";
+import {
+  parseUploadedFileMetadata,
+  type ContributorUploadAttribution,
+} from "@/lib/uploaded-file-metadata";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -33,6 +38,12 @@ export async function POST(req: NextRequest) {
     const sessionId = formData.get("sessionId") as string;
     const category = formData.get("category") as string | null;
     const requiresOriginal = formData.get("requiresOriginal") === "true";
+    const inviteToken = formData.get("inviteToken") as string | null;
+    const contributorSiblingIndex = formData.get("contributorSiblingIndex");
+    const contributorSiblingName = formData.get("contributorSiblingName");
+    const contributorTaskId = formData.get("contributorTaskId");
+    const contributorTaskTitle = formData.get("contributorTaskTitle");
+    const contributorWorkspace = formData.get("contributorWorkspace");
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -84,6 +95,62 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let contributorAttribution: ContributorUploadAttribution | undefined;
+    if (inviteToken) {
+      const access = await assertInviteTokenAccess({
+        intakeSessionId: sessionId,
+        token: inviteToken,
+      });
+
+      if (!access.ok) {
+        return NextResponse.json(
+          {
+            error:
+              "reason" in access && access.reason === "expired"
+                ? "Invite expired"
+                : "Forbidden",
+          },
+          {
+            status:
+              "reason" in access && access.reason === "expired" ? 410 : 403,
+          }
+        );
+      }
+
+      const parsedSiblingIndex =
+        contributorSiblingIndex !== null &&
+        contributorSiblingIndex !== undefined &&
+        contributorSiblingIndex !== ""
+          ? Number(contributorSiblingIndex)
+          : undefined;
+
+      contributorAttribution = {
+        source: "collaborator_invite",
+        inviteId: access.invite.id,
+        inviteName: access.invite.name ?? null,
+        siblingIndex:
+          parsedSiblingIndex !== undefined &&
+          Number.isFinite(parsedSiblingIndex)
+            ? parsedSiblingIndex
+            : undefined,
+        siblingName:
+          typeof contributorSiblingName === "string"
+            ? contributorSiblingName
+            : undefined,
+        taskId:
+          typeof contributorTaskId === "string" ? contributorTaskId : undefined,
+        taskTitle:
+          typeof contributorTaskTitle === "string"
+            ? contributorTaskTitle
+            : undefined,
+        workspace:
+          typeof contributorWorkspace === "string"
+            ? contributorWorkspace
+            : undefined,
+        uploadedAt: new Date().toISOString(),
+      };
+    }
+
     // Generate unique file key for R2
     const fileExtension = file.name.split(".").pop();
     const fileKey = `${sessionId}/${nanoid()}.${fileExtension}`;
@@ -103,6 +170,11 @@ export async function POST(req: NextRequest) {
         status: "UPLOADING",
         requiresOriginal: requiresOriginal,
         uploadedAt: new Date(),
+        metadata: contributorAttribution
+          ? JSON.stringify({
+              contributorAttribution,
+            })
+          : null,
       },
     });
 
@@ -204,6 +276,7 @@ async function processDocumentInBackground(
         category: true,
         originalFilename: true,
         categoryLocked: true,
+        metadata: true,
       },
     });
 
@@ -387,7 +460,9 @@ async function processDocumentInBackground(
     }
 
     // STEP 7: Store Results
+    const existingMetadata = parseUploadedFileMetadata(currentFile?.metadata);
     const metadata = {
+      ...existingMetadata,
       ocrConfidence: ocrResult.confidence,
       processingTimeMs: ocrResult.processingTimeMs,
       pageCount: ocrResult.pageCount,

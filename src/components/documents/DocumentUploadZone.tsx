@@ -47,6 +47,7 @@ interface DocumentUploadZoneProps {
   defaultCategoryLabel?: string;
   defaultCategoryDescription?: string;
   onClearDefaultCategory?: () => void;
+  uploadContext?: Record<string, string | number | boolean | undefined>;
 }
 
 // Documents that require original copies
@@ -74,6 +75,7 @@ export function DocumentUploadZone({
   defaultCategoryLabel,
   defaultCategoryDescription,
   onClearDefaultCategory,
+  uploadContext,
 }: DocumentUploadZoneProps) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -217,6 +219,12 @@ export function DocumentUploadZone({
     formData.append("category", pendingFile.category);
     if (pendingFile.requiresOriginal) {
       formData.append("requiresOriginal", "true");
+    }
+    if (uploadContext) {
+      for (const [key, value] of Object.entries(uploadContext)) {
+        if (value === undefined) continue;
+        formData.append(key, String(value));
+      }
     }
 
     try {
