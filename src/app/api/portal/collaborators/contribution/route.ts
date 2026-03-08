@@ -23,6 +23,7 @@ const schema = z.object({
   inviteToken: z.string().optional(),
   siblingIndex: z.number().int().min(0),
   sibling: z.object({
+    name: z.string().optional().default(""),
     dateOfBirth: z.string().optional().default(""),
     cityOfBirth: z.string().optional().default(""),
     stateOfBirth: z.string().optional().default(""),
@@ -117,16 +118,38 @@ export async function POST(req: NextRequest) {
       ? [...formData.part_6.siblings]
       : [];
 
-    if (!siblings[siblingIndex]) {
-      return NextResponse.json(
-        { error: "Sibling entry not found" },
-        { status: 404 }
-      );
+    let resolvedSiblingIndex = siblingIndex;
+
+    if (!siblings[resolvedSiblingIndex]) {
+      if (inviteToken && "invite" in access) {
+        siblings.push({
+          name: sibling.name || access.invite.name || "",
+          dateOfBirth: "",
+          cityOfBirth: "",
+          stateOfBirth: "",
+          isDeceased: "NO",
+          currentAddress: "",
+          phoneNumber: "",
+          hadNameChange: "NO",
+          originalLastName: "",
+          nameChangeHistory: [],
+        });
+        resolvedSiblingIndex = siblings.length - 1;
+      } else {
+        return NextResponse.json(
+          { error: "Sibling entry not found" },
+          { status: 404 }
+        );
+      }
     }
 
-    const existingSibling = siblings[siblingIndex] as Record<string, unknown>;
-    siblings[siblingIndex] = {
+    const existingSibling = siblings[resolvedSiblingIndex] as Record<
+      string,
+      unknown
+    >;
+    siblings[resolvedSiblingIndex] = {
       ...existingSibling,
+      name: sibling.name || existingSibling.name || "",
       dateOfBirth: sibling.dateOfBirth,
       cityOfBirth: sibling.cityOfBirth,
       stateOfBirth: sibling.stateOfBirth,
@@ -156,7 +179,8 @@ export async function POST(req: NextRequest) {
     };
 
     const beneficiaryName =
-      (siblings[siblingIndex]?.name as string | undefined)?.trim() || "";
+      (siblings[resolvedSiblingIndex]?.name as string | undefined)?.trim() ||
+      "";
     const existingBeneficiaries = Array.isArray(
       supportingForms?.survivingBeneficiariesSignatures?.beneficiaries
     )
@@ -214,7 +238,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sibling: siblings[siblingIndex],
+      sibling: siblings[resolvedSiblingIndex],
+      siblingIndex: resolvedSiblingIndex,
     });
   } catch (error) {
     return createCollaborationErrorResponse(error, "contribution");

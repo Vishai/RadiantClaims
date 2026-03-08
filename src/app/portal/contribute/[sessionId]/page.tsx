@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import type { Route } from "next";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import type { FileCategory } from "@/components/documents/DocumentCategorySelector";
 import {
   CheckCircle2,
   FileText,
@@ -26,6 +27,7 @@ import {
   ShieldCheck,
   Upload,
   UserRound,
+  Copy,
 } from "lucide-react";
 
 type NameChangeRecord = {
@@ -53,6 +55,7 @@ type ContributorContext = {
   id: string;
   claimantName: string;
   relationship: string | null;
+  inviteName?: string | null;
   siblings: SiblingContributor[];
   beneficiaries: Array<{
     beneficiaryName: string;
@@ -68,6 +71,18 @@ type ContributorContext = {
     originalFilename: string;
     uploadedAt: string;
   }>;
+};
+
+type ContributorDocumentTask = {
+  id: string;
+  title: string;
+  description: string;
+  category: FileCategory;
+  buttonLabel: string;
+  helpText: string;
+  claimUploadCount: number;
+  blockedByDetails?: boolean;
+  blockedReason?: string;
 };
 
 const NAME_CHANGE_OPTIONS: Array<NameChangeRecord["reasonForChange"]> = [
@@ -103,6 +118,149 @@ function buildChecklist(sibling: SiblingContributor | null) {
   return items;
 }
 
+function countClaimUploads(
+  uploadedFiles: ContributorContext["uploadedFiles"],
+  categories: FileCategory[]
+) {
+  return uploadedFiles.filter((file) => {
+    if (!file.category) return false;
+    return categories.includes(file.category as FileCategory);
+  }).length;
+}
+
+function buildDocumentTasks(
+  sibling: SiblingContributor | null,
+  uploadedFiles: ContributorContext["uploadedFiles"]
+): ContributorDocumentTask[] {
+  if (!sibling) return [];
+
+  const tasks: ContributorDocumentTask[] = [
+    {
+      id: "birth-certificate",
+      title: "Birth certificate",
+      description:
+        "Upload your birth certificate so the claim can connect you to the same parent(s).",
+      category: "BIRTH_CERTIFICATE",
+      buttonLabel: "Upload birth certificate",
+      helpText:
+        "This should show the parent names that establish the sibling relationship for DOJ.",
+      claimUploadCount: countClaimUploads(uploadedFiles, ["BIRTH_CERTIFICATE"]),
+    },
+    {
+      id: "photo-id",
+      title: "Government-issued photo ID",
+      description:
+        "Upload a driver's license, passport, tribal ID, or state ID if your family member asked for identity proof or your current name is not obvious from the rest of your records.",
+      category: "IDENTITY",
+      buttonLabel: "Upload photo ID",
+      helpText:
+        "Use this when an extra ID document is helpful to tie your current identity to the claim packet.",
+      claimUploadCount: countClaimUploads(uploadedFiles, ["IDENTITY"]),
+    },
+  ];
+
+  if (
+    sibling.hadNameChange === "YES" &&
+    sibling.nameChangeHistory.length === 0
+  ) {
+    tasks.push({
+      id: "name-change-details",
+      title: "Name change documents",
+      description:
+        "Tell us each prior name first, then upload one supporting record for every name change in the chain.",
+      category: "OTHER",
+      buttonLabel: "Add name changes first",
+      helpText:
+        "Once the prior names are listed below, this page will break the upload requests out one by one.",
+      claimUploadCount: countClaimUploads(uploadedFiles, [
+        "MARRIAGE_CERTIFICATE",
+        "OTHER",
+      ]),
+      blockedByDetails: true,
+      blockedReason:
+        "Add each prior name and the reason for the change before uploading supporting records.",
+    });
+  }
+
+  sibling.nameChangeHistory.forEach((change, index) => {
+    const reasonLabel =
+      change.reasonForChange === "MARRIAGE"
+        ? "Marriage certificate"
+        : change.reasonForChange === "DIVORCE"
+          ? "Divorce decree"
+          : change.reasonForChange === "LEGAL_NAME_CHANGE"
+            ? "Legal name change order"
+            : "Name change document";
+    const category: FileCategory =
+      change.reasonForChange === "MARRIAGE" ? "MARRIAGE_CERTIFICATE" : "OTHER";
+
+    tasks.push({
+      id: `name-change-${index}`,
+      title:
+        sibling.nameChangeHistory.length > 1
+          ? `${reasonLabel} #${index + 1}`
+          : reasonLabel,
+      description: change.previousName
+        ? `Upload the record that ties "${change.previousName}" to the next legal name in your history.`
+        : `Upload the record for this ${reasonLabel.toLowerCase()} so DOJ can follow your name history.`,
+      category,
+      buttonLabel: `Upload ${reasonLabel.toLowerCase()}`,
+      helpText:
+        "Provide one document for each name change so your current name can be traced back to your birth certificate.",
+      claimUploadCount: countClaimUploads(uploadedFiles, [category]),
+    });
+  });
+
+  return tasks;
+}
+
+function createEmptySibling(
+  index: number,
+  inviteName?: string | null
+): SiblingContributor {
+  return {
+    index,
+    name: inviteName || "",
+    dateOfBirth: "",
+    cityOfBirth: "",
+    stateOfBirth: "",
+    isDeceased: "NO",
+    currentAddress: "",
+    phoneNumber: "",
+    hadNameChange: "NO",
+    originalLastName: "",
+    nameChangeHistory: [],
+  };
+}
+
+function buildOwnerSummary(
+  sibling: SiblingContributor | null,
+  inviteName?: string | null
+) {
+  if (!sibling) {
+    return [
+      `Invited contributor: ${inviteName || "Family member"}`,
+      "The claim owner has not filled in your sibling row yet.",
+      "Start by entering your legal name, birth details, and current contact information.",
+    ];
+  }
+
+  return [
+    `Name on file: ${sibling.name || inviteName || "Missing"}`,
+    `Date of birth on file: ${sibling.dateOfBirth || "Missing"}`,
+    `Birthplace on file: ${
+      sibling.cityOfBirth || sibling.stateOfBirth
+        ? `${sibling.cityOfBirth || "Unknown city"}, ${sibling.stateOfBirth || "Unknown state"}`
+        : "Missing"
+    }`,
+    `Current address on file: ${sibling.currentAddress || "Missing"}`,
+    `Phone on file: ${sibling.phoneNumber || "Missing"}`,
+    sibling.hadNameChange === "YES" || sibling.nameChangeHistory.length > 0
+      ? "The claim indicates you have name changes to document."
+      : "No name changes are currently marked for you.",
+  ];
+}
+
 export default function CollaboratorContributionPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
@@ -124,6 +282,13 @@ export default function CollaboratorContributionPage() {
     attorneyPhone: "",
   });
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [activeUploadTaskId, setActiveUploadTaskId] = useState<string | null>(
+    null
+  );
+  const detailsSectionRef = useRef<HTMLDivElement>(null);
+  const signatureSectionRef = useRef<HTMLDivElement>(null);
+  const uploadSectionRef = useRef<HTMLDivElement>(null);
 
   const loadContext = async () => {
     setLoading(true);
@@ -154,7 +319,13 @@ export default function CollaboratorContributionPage() {
       const selectedSibling = sessionData.siblings.find(
         (sibling) => sibling.index === nextIndex
       );
-      setFormData(selectedSibling ?? null);
+      setFormData(
+        selectedSibling ??
+          createEmptySibling(
+            nextIndex,
+            sessionData.inviteName || requestedSibling
+          )
+      );
     } catch (error) {
       console.error(error);
       setContext(null);
@@ -177,7 +348,13 @@ export default function CollaboratorContributionPage() {
     const sibling = context.siblings.find(
       (entry) => entry.index === selectedSiblingIndex
     );
-    setFormData(sibling ?? null);
+    setFormData(
+      sibling ??
+        createEmptySibling(
+          selectedSiblingIndex,
+          context.inviteName || requestedSibling
+        )
+    );
 
     const beneficiary = context.beneficiaries.find(
       (entry) =>
@@ -193,6 +370,36 @@ export default function CollaboratorContributionPage() {
   }, [context, selectedSiblingIndex]);
 
   const checklist = useMemo(() => buildChecklist(formData), [formData]);
+  const ownerSummary = useMemo(
+    () => buildOwnerSummary(formData, context?.inviteName),
+    [formData, context?.inviteName]
+  );
+  const documentTasks = useMemo(
+    () => buildDocumentTasks(formData, context?.uploadedFiles || []),
+    [formData, context?.uploadedFiles]
+  );
+  const activeUploadTask =
+    documentTasks.find((task) => task.id === activeUploadTaskId) || null;
+  const returnLink = `/portal/contribute/${sessionId}?token=${encodeURIComponent(inviteToken || "")}${
+    requestedSibling ? `&sibling=${encodeURIComponent(requestedSibling)}` : ""
+  }`;
+
+  useEffect(() => {
+    if (
+      activeUploadTaskId &&
+      documentTasks.some((task) => task.id === activeUploadTaskId)
+    ) {
+      return;
+    }
+
+    const firstUploadableTask =
+      documentTasks.find((task) => !task.blockedByDetails)?.id || null;
+    setActiveUploadTaskId(firstUploadableTask);
+  }, [documentTasks, activeUploadTaskId]);
+
+  const scrollToSection = (element: HTMLDivElement | null) => {
+    element?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const handleChange = (
     field: keyof SiblingContributor,
@@ -261,6 +468,7 @@ export default function CollaboratorContributionPage() {
           inviteToken,
           siblingIndex: formData.index,
           sibling: {
+            name: formData.name,
             dateOfBirth: formData.dateOfBirth,
             cityOfBirth: formData.cityOfBirth,
             stateOfBirth: formData.stateOfBirth,
@@ -279,6 +487,9 @@ export default function CollaboratorContributionPage() {
         throw new Error(data?.error || "Failed to save your information");
       }
 
+      if (typeof data?.siblingIndex === "number") {
+        setSelectedSiblingIndex(data.siblingIndex);
+      }
       setSaveMessage("Your contribution was saved.");
       await loadContext();
     } catch (error) {
@@ -380,9 +591,10 @@ export default function CollaboratorContributionPage() {
                       What to do here
                     </p>
                     <p className="mt-1">
-                      Fill in your sibling details, then upload the birth
-                      certificate and any name-change documents that apply to
-                      you. The claim owner will keep the main application; you
+                      Review the details your family member entered, correct
+                      anything that is wrong, and then use the document request
+                      cards on this page to upload each record you were asked to
+                      provide. The claim owner keeps the main application; you
                       are only supplying your piece of the record.
                     </p>
                   </div>
@@ -413,416 +625,600 @@ export default function CollaboratorContributionPage() {
                 Requested from you
               </CardTitle>
               <CardDescription>
-                Based on the current sibling section in the claim.
+                Based on what the claim owner entered for your sibling section.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {checklist.length === 0 ? (
-                <p className="text-sm text-sage-600">
-                  The claim owner has not listed sibling-specific details yet.
-                  You can still upload documents below.
-                </p>
-              ) : (
-                <ul className="space-y-3 text-sm text-sage-700">
-                  {checklist.map((item) => (
-                    <li key={item} className="flex gap-3">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                      <span>{item}</span>
-                    </li>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-cream-200 bg-cream-50 p-4">
+                  <p className="mb-2 text-sm font-semibold text-sage-900">
+                    What is already on file
+                  </p>
+                  <ul className="space-y-2 text-sm text-sage-700">
+                    {ownerSummary.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-cream-200 bg-white p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-sage-900">
+                        Correct your personal details
+                      </p>
+                      <p className="mt-1 text-sm text-sage-600">
+                        Fix your legal name, birth details, address, phone
+                        number, and name history if anything above is wrong or
+                        incomplete.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => scrollToSection(detailsSectionRef.current)}
+                    >
+                      Update details
+                    </Button>
+                  </div>
+
+                  {checklist.length > 0 && (
+                    <ul className="space-y-3 text-sm text-sage-700">
+                      {checklist.map((item) => (
+                        <li key={item} className="flex gap-3">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {documentTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="rounded-2xl border border-cream-200 bg-white p-4"
+                    >
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-sage-900">
+                            {task.title}
+                          </p>
+                          <p className="text-sm text-sage-700">
+                            {task.description}
+                          </p>
+                          <p className="text-xs text-sage-500">
+                            {task.helpText}
+                          </p>
+                          {task.blockedReason && (
+                            <p className="text-xs text-amber-700">
+                              {task.blockedReason}
+                            </p>
+                          )}
+                          {task.claimUploadCount > 0 && (
+                            <p className="text-xs text-sage-500">
+                              This claim already has {task.claimUploadCount}{" "}
+                              file
+                              {task.claimUploadCount === 1 ? "" : "s"} saved
+                              under this document type.
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant={
+                            task.blockedByDetails ? "outline" : "default"
+                          }
+                          onClick={() => {
+                            if (task.blockedByDetails) {
+                              scrollToSection(detailsSectionRef.current);
+                              return;
+                            }
+
+                            setActiveUploadTaskId(task.id);
+                            scrollToSection(uploadSectionRef.current);
+                          }}
+                        >
+                          {task.buttonLabel}
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              )}
+                </div>
+
+                {context.relationship === "Child" && (
+                  <div className="rounded-2xl border border-cream-200 bg-white p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-sage-900">
+                          Beneficiary signature
+                        </p>
+                        <p className="mt-1 text-sm text-sage-600">
+                          Add your signature details so DOJ does not have to
+                          chase each sibling separately later.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          scrollToSection(signatureSectionRef.current)
+                        }
+                      >
+                        Complete signature
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-          <Card className="rounded-3xl border-2 border-cream-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sage-900">
-                <UserRound className="h-5 w-5 text-terracotta-500" />
-                Your sibling information
-              </CardTitle>
-              <CardDescription>
-                Update only the sibling entry that belongs to you.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {context.siblings.length > 0 && (
-                <div className="grid gap-2">
-                  <Label htmlFor="siblingSelect">Which sibling are you?</Label>
-                  <select
-                    id="siblingSelect"
-                    className="h-11 rounded-md border border-input bg-background px-3 text-sm"
-                    value={selectedSiblingIndex}
-                    onChange={(event) =>
-                      setSelectedSiblingIndex(Number(event.target.value))
-                    }
-                  >
-                    {context.siblings.map((sibling) => (
-                      <option key={sibling.index} value={sibling.index}>
-                        {sibling.name || `Sibling ${sibling.index + 1}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {!formData ? (
-                <p className="text-sm text-sage-600">
-                  No sibling-specific entry is available yet. You can still
-                  upload documents below and ask the claim owner to finish Part
-                  6.
-                </p>
-              ) : (
-                <>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="dateOfBirth">Date of birth</Label>
-                      <Input
-                        id="dateOfBirth"
-                        value={formData.dateOfBirth}
-                        onChange={(event) =>
-                          handleChange("dateOfBirth", event.target.value)
-                        }
-                        placeholder="MM/DD/YYYY"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="cityOfBirth">City of birth</Label>
-                      <Input
-                        id="cityOfBirth"
-                        value={formData.cityOfBirth}
-                        onChange={(event) =>
-                          handleChange("cityOfBirth", event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="stateOfBirth">State of birth</Label>
-                      <Input
-                        id="stateOfBirth"
-                        value={formData.stateOfBirth}
-                        onChange={(event) =>
-                          handleChange("stateOfBirth", event.target.value)
-                        }
-                      />
-                    </div>
+          <div ref={detailsSectionRef}>
+            <Card className="rounded-3xl border-2 border-cream-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sage-900">
+                  <UserRound className="h-5 w-5 text-terracotta-500" />
+                  Your sibling information
+                </CardTitle>
+                <CardDescription>
+                  Update only the sibling entry that belongs to you.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {context.siblings.length > 0 && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="siblingSelect">
+                      Which sibling are you?
+                    </Label>
+                    <select
+                      id="siblingSelect"
+                      className="h-11 rounded-md border border-input bg-background px-3 text-sm"
+                      value={selectedSiblingIndex}
+                      onChange={(event) =>
+                        setSelectedSiblingIndex(Number(event.target.value))
+                      }
+                    >
+                      {context.siblings.map((sibling) => (
+                        <option key={sibling.index} value={sibling.index}>
+                          {sibling.name || `Sibling ${sibling.index + 1}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                )}
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                {!formData ? (
+                  <p className="text-sm text-sage-600">
+                    Loading your sibling entry...
+                  </p>
+                ) : (
+                  <>
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                      We prefilled this section from the claim owner&apos;s
+                      current information. Please correct anything that is wrong
+                      or incomplete.
+                    </div>
+
                     <div className="grid gap-2">
-                      <Label htmlFor="phoneNumber">Phone number</Label>
+                      <Label htmlFor="fullName">Your legal name</Label>
                       <Input
-                        id="phoneNumber"
-                        value={formData.phoneNumber}
+                        id="fullName"
+                        value={formData.name}
                         onChange={(event) =>
-                          handleChange("phoneNumber", event.target.value)
+                          handleChange("name", event.target.value)
                         }
-                        placeholder="(555) 555-5555"
+                        placeholder={
+                          context.inviteName || "Your full legal name"
+                        }
                       />
                     </div>
-                    <div className="grid gap-2 md:col-span-1">
-                      <Label htmlFor="currentAddress">
-                        Current mailing address
-                      </Label>
-                      <Textarea
-                        id="currentAddress"
-                        value={formData.currentAddress}
-                        onChange={(event) =>
-                          handleChange("currentAddress", event.target.value)
-                        }
-                        rows={3}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-cream-200 bg-cream-50 p-4">
-                    <p className="mb-3 text-sm font-semibold text-sage-900">
-                      Have you ever changed your name?
-                    </p>
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant={
-                          formData.hadNameChange === "YES"
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => handleChange("hadNameChange", "YES")}
-                      >
-                        Yes
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          formData.hadNameChange === "NO"
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => handleChange("hadNameChange", "NO")}
-                      >
-                        No
-                      </Button>
-                    </div>
-                  </div>
-
-                  {formData.hadNameChange === "YES" && (
-                    <div className="space-y-4 rounded-2xl border border-cream-200 bg-white p-4">
+                    <div className="grid gap-4 md:grid-cols-3">
                       <div className="grid gap-2">
-                        <Label htmlFor="originalLastName">
-                          Last name at birth
-                        </Label>
+                        <Label htmlFor="dateOfBirth">Date of birth</Label>
                         <Input
-                          id="originalLastName"
-                          value={formData.originalLastName}
+                          id="dateOfBirth"
+                          value={formData.dateOfBirth}
                           onChange={(event) =>
-                            handleChange("originalLastName", event.target.value)
+                            handleChange("dateOfBirth", event.target.value)
+                          }
+                          placeholder="MM/DD/YYYY"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="cityOfBirth">City of birth</Label>
+                        <Input
+                          id="cityOfBirth"
+                          value={formData.cityOfBirth}
+                          onChange={(event) =>
+                            handleChange("cityOfBirth", event.target.value)
                           }
                         />
                       </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="stateOfBirth">State of birth</Label>
+                        <Input
+                          id="stateOfBirth"
+                          value={formData.stateOfBirth}
+                          onChange={(event) =>
+                            handleChange("stateOfBirth", event.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
 
-                      <div className="space-y-4">
-                        {formData.nameChangeHistory.map((change, index) => (
-                          <div
-                            key={`${index}-${change.previousName}`}
-                            className="rounded-2xl border border-cream-200 bg-cream-50 p-4"
-                          >
-                            <div className="mb-3 flex items-center justify-between">
-                              <p className="text-sm font-semibold text-sage-900">
-                                Name change {index + 1}
-                              </p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeNameChange(index)}
-                              >
-                                Remove
-                              </Button>
-                            </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-2">
+                        <Label htmlFor="phoneNumber">Phone number</Label>
+                        <Input
+                          id="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={(event) =>
+                            handleChange("phoneNumber", event.target.value)
+                          }
+                          placeholder="(555) 555-5555"
+                        />
+                      </div>
+                      <div className="grid gap-2 md:col-span-1">
+                        <Label htmlFor="currentAddress">
+                          Current mailing address
+                        </Label>
+                        <Textarea
+                          id="currentAddress"
+                          value={formData.currentAddress}
+                          onChange={(event) =>
+                            handleChange("currentAddress", event.target.value)
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <div className="grid gap-2">
-                                <Label>Previous name</Label>
-                                <Input
-                                  value={change.previousName}
-                                  onChange={(event) =>
-                                    updateNameChange(
-                                      index,
-                                      "previousName",
-                                      event.target.value
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <Label>Date of change</Label>
-                                <Input
-                                  value={change.dateOfChange}
-                                  onChange={(event) =>
-                                    updateNameChange(
-                                      index,
-                                      "dateOfChange",
-                                      event.target.value
-                                    )
-                                  }
-                                  placeholder="MM/DD/YYYY"
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <Label>Reason</Label>
-                                <select
-                                  className="h-11 rounded-md border border-input bg-background px-3 text-sm"
-                                  value={change.reasonForChange}
-                                  onChange={(event) =>
-                                    updateNameChange(
-                                      index,
-                                      "reasonForChange",
-                                      event.target.value
-                                    )
-                                  }
+                    <div className="rounded-2xl border border-cream-200 bg-cream-50 p-4">
+                      <p className="mb-3 text-sm font-semibold text-sage-900">
+                        Have you ever changed your name?
+                      </p>
+                      <div className="flex gap-3">
+                        <Button
+                          type="button"
+                          variant={
+                            formData.hadNameChange === "YES"
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => handleChange("hadNameChange", "YES")}
+                        >
+                          Yes
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={
+                            formData.hadNameChange === "NO"
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => handleChange("hadNameChange", "NO")}
+                        >
+                          No
+                        </Button>
+                      </div>
+                    </div>
+
+                    {formData.hadNameChange === "YES" && (
+                      <div className="space-y-4 rounded-2xl border border-cream-200 bg-white p-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="originalLastName">
+                            Last name at birth
+                          </Label>
+                          <Input
+                            id="originalLastName"
+                            value={formData.originalLastName}
+                            onChange={(event) =>
+                              handleChange(
+                                "originalLastName",
+                                event.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-4">
+                          {formData.nameChangeHistory.map((change, index) => (
+                            <div
+                              key={`${index}-${change.previousName}`}
+                              className="rounded-2xl border border-cream-200 bg-cream-50 p-4"
+                            >
+                              <div className="mb-3 flex items-center justify-between">
+                                <p className="text-sm font-semibold text-sage-900">
+                                  Name change {index + 1}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeNameChange(index)}
                                 >
-                                  {NAME_CHANGE_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>
-                                      {option.replaceAll("_", " ")}
-                                    </option>
-                                  ))}
-                                </select>
+                                  Remove
+                                </Button>
                               </div>
-                              {change.reasonForChange === "OTHER" && (
+
+                              <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
-                                  <Label>Other reason</Label>
+                                  <Label>Previous name</Label>
                                   <Input
-                                    value={change.otherReason || ""}
+                                    value={change.previousName}
                                     onChange={(event) =>
                                       updateNameChange(
                                         index,
-                                        "otherReason",
+                                        "previousName",
                                         event.target.value
                                       )
                                     }
                                   />
                                 </div>
-                              )}
+                                <div className="grid gap-2">
+                                  <Label>Date of change</Label>
+                                  <Input
+                                    value={change.dateOfChange}
+                                    onChange={(event) =>
+                                      updateNameChange(
+                                        index,
+                                        "dateOfChange",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="MM/DD/YYYY"
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label>Reason</Label>
+                                  <select
+                                    className="h-11 rounded-md border border-input bg-background px-3 text-sm"
+                                    value={change.reasonForChange}
+                                    onChange={(event) =>
+                                      updateNameChange(
+                                        index,
+                                        "reasonForChange",
+                                        event.target.value
+                                      )
+                                    }
+                                  >
+                                    {NAME_CHANGE_OPTIONS.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option.replaceAll("_", " ")}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                {change.reasonForChange === "OTHER" && (
+                                  <div className="grid gap-2">
+                                    <Label>Other reason</Label>
+                                    <Input
+                                      value={change.otherReason || ""}
+                                      onChange={(event) =>
+                                        updateNameChange(
+                                          index,
+                                          "otherReason",
+                                          event.target.value
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addNameChange}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add name change
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addNameChange}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add name change
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="text-sm text-sage-600">
+                        Save your details before uploading documents so the
+                        claim owner sees the latest information.
+                      </div>
+                      <Button onClick={saveContribution} disabled={saving}>
+                        <Save className="mr-2 h-4 w-4" />
+                        {saving ? "Saving..." : "Save my information"}
                       </Button>
                     </div>
-                  )}
-
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="text-sm text-sage-600">
-                      Save your details before uploading documents so the claim
-                      owner sees the latest information.
-                    </div>
-                    <Button onClick={saveContribution} disabled={saving}>
-                      <Save className="mr-2 h-4 w-4" />
-                      {saving ? "Saving..." : "Save my information"}
-                    </Button>
-                  </div>
-                  {saveMessage && (
-                    <p className="text-sm text-sage-700">{saveMessage}</p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                    {saveMessage && (
+                      <p className="text-sm text-sage-700">{saveMessage}</p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="space-y-6">
             {context.relationship === "Child" && formData && (
+              <div ref={signatureSectionRef}>
+                <Card className="rounded-3xl border-2 border-cream-200">
+                  <CardHeader>
+                    <CardTitle className="text-sage-900">
+                      Beneficiary signature
+                    </CardTitle>
+                    <CardDescription>
+                      This is the sibling signature step that can help the claim
+                      move faster by reducing DOJ follow-up.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                      Only one claim is filed for all surviving children. If you
+                      sign here, your information is added to the existing
+                      surviving beneficiaries form for {context.claimantName}.
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-2">
+                        <Label htmlFor="beneficiarySsn">
+                          Social Security number
+                        </Label>
+                        <Input
+                          id="beneficiarySsn"
+                          value={beneficiaryForm.beneficiarySsn}
+                          onChange={(event) =>
+                            setBeneficiaryForm((current) => ({
+                              ...current,
+                              beneficiarySsn: event.target.value,
+                            }))
+                          }
+                          placeholder="123-45-6789"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="signatureDate">Signature date</Label>
+                        <Input
+                          id="signatureDate"
+                          value={beneficiaryForm.signatureDate}
+                          onChange={(event) =>
+                            setBeneficiaryForm((current) => ({
+                              ...current,
+                              signatureDate: event.target.value,
+                            }))
+                          }
+                          placeholder="MM/DD/YYYY"
+                        />
+                      </div>
+                      <div className="grid gap-2 md:col-span-2">
+                        <Label htmlFor="signature">Your signature</Label>
+                        <Input
+                          id="signature"
+                          value={beneficiaryForm.signature}
+                          onChange={(event) =>
+                            setBeneficiaryForm((current) => ({
+                              ...current,
+                              signature: event.target.value,
+                            }))
+                          }
+                          placeholder={
+                            formData.name || "Type your full legal name"
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="attorneyName">
+                          Attorney name (optional)
+                        </Label>
+                        <Input
+                          id="attorneyName"
+                          value={beneficiaryForm.attorneyName}
+                          onChange={(event) =>
+                            setBeneficiaryForm((current) => ({
+                              ...current,
+                              attorneyName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="attorneyPhone">
+                          Attorney phone (optional)
+                        </Label>
+                        <Input
+                          id="attorneyPhone"
+                          value={beneficiaryForm.attorneyPhone}
+                          onChange={(event) =>
+                            setBeneficiaryForm((current) => ({
+                              ...current,
+                              attorneyPhone: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            <div ref={uploadSectionRef}>
               <Card className="rounded-3xl border-2 border-cream-200">
                 <CardHeader>
-                  <CardTitle className="text-sage-900">
-                    Beneficiary signature
+                  <CardTitle className="flex items-center gap-2 text-sage-900">
+                    <Upload className="h-5 w-5 text-terracotta-500" />
+                    Upload your documents
                   </CardTitle>
                   <CardDescription>
-                    This is the sibling signature step that can help the claim
-                    move faster by reducing DOJ follow-up.
+                    {activeUploadTask
+                      ? `Currently preparing the ${activeUploadTask.title.toLowerCase()} request.`
+                      : "Upload only the records that apply to you."}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <DocumentUploadZone
+                    sessionId={sessionId}
+                    defaultCategory={activeUploadTask?.category}
+                    defaultCategoryLabel={activeUploadTask?.title}
+                    defaultCategoryDescription={activeUploadTask?.description}
+                    onClearDefaultCategory={() => setActiveUploadTaskId(null)}
+                    onUploadComplete={() => {
+                      void loadContext();
+                    }}
+                  />
+
                   <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                    Only one claim is filed for all surviving children. If you
-                    sign here, your information is added to the existing
-                    surviving beneficiaries form for {context.claimantName}.
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
-                      <Label htmlFor="beneficiarySsn">
-                        Social Security number
-                      </Label>
-                      <Input
-                        id="beneficiarySsn"
-                        value={beneficiaryForm.beneficiarySsn}
-                        onChange={(event) =>
-                          setBeneficiaryForm((current) => ({
-                            ...current,
-                            beneficiarySsn: event.target.value,
-                          }))
-                        }
-                        placeholder="123-45-6789"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="signatureDate">Signature date</Label>
-                      <Input
-                        id="signatureDate"
-                        value={beneficiaryForm.signatureDate}
-                        onChange={(event) =>
-                          setBeneficiaryForm((current) => ({
-                            ...current,
-                            signatureDate: event.target.value,
-                          }))
-                        }
-                        placeholder="MM/DD/YYYY"
-                      />
-                    </div>
-                    <div className="grid gap-2 md:col-span-2">
-                      <Label htmlFor="signature">Your signature</Label>
-                      <Input
-                        id="signature"
-                        value={beneficiaryForm.signature}
-                        onChange={(event) =>
-                          setBeneficiaryForm((current) => ({
-                            ...current,
-                            signature: event.target.value,
-                          }))
-                        }
-                        placeholder={
-                          formData.name || "Type your full legal name"
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="attorneyName">
-                        Attorney name (optional)
-                      </Label>
-                      <Input
-                        id="attorneyName"
-                        value={beneficiaryForm.attorneyName}
-                        onChange={(event) =>
-                          setBeneficiaryForm((current) => ({
-                            ...current,
-                            attorneyName: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="attorneyPhone">
-                        Attorney phone (optional)
-                      </Label>
-                      <Input
-                        id="attorneyPhone"
-                        value={beneficiaryForm.attorneyPhone}
-                        onChange={(event) =>
-                          setBeneficiaryForm((current) => ({
-                            ...current,
-                            attorneyPhone: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+                    {activeUploadTask ? (
+                      <>
+                        You are currently uploading{" "}
+                        <strong>{activeUploadTask.title}</strong>. If you need
+                        to send a different type of record, switch back to the
+                        general uploader or choose another request card above.
+                      </>
+                    ) : (
+                      <>
+                        Choose one of the request cards above if you want us to
+                        map a specific document to the right upload bucket for
+                        you.
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
 
             <Card className="rounded-3xl border-2 border-cream-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sage-900">
-                  <Upload className="h-5 w-5 text-terracotta-500" />
-                  Upload your documents
+                <CardTitle className="text-sage-900">
+                  Return to this page
                 </CardTitle>
                 <CardDescription>
-                  Upload only the records that apply to you.
+                  The original invite email remains a valid way back here. You
+                  can also copy this contributor link for yourself.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <DocumentUploadZone
-                  sessionId={sessionId}
-                  onUploadComplete={() => {
-                    void loadContext();
-                  }}
-                />
-
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
-                  Birth certificates usually belong under{" "}
-                  <strong>Birth Certificate</strong>. Marriage certificates and
-                  court orders should go under the applicable name-change
-                  document type.
+              <CardContent className="space-y-3">
+                <div className="rounded-2xl border border-cream-200 bg-cream-50 p-3 text-xs text-sage-600">
+                  {returnLink}
                 </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(
+                      `${window.location.origin}${returnLink}`
+                    );
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 1500);
+                  }}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  {copiedLink ? "Link copied" : "Copy return link"}
+                </Button>
               </CardContent>
             </Card>
 

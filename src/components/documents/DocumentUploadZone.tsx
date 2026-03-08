@@ -43,6 +43,10 @@ interface DocumentUploadZoneProps {
   maxSize?: number; // in bytes
   multiple?: boolean;
   className?: string;
+  defaultCategory?: FileCategory;
+  defaultCategoryLabel?: string;
+  defaultCategoryDescription?: string;
+  onClearDefaultCategory?: () => void;
 }
 
 // Documents that require original copies
@@ -66,6 +70,10 @@ export function DocumentUploadZone({
   maxSize = 10 * 1024 * 1024, // 10MB default
   multiple = true,
   className,
+  defaultCategory,
+  defaultCategoryLabel,
+  defaultCategoryDescription,
+  onClearDefaultCategory,
 }: DocumentUploadZoneProps) {
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -84,6 +92,8 @@ export function DocumentUploadZone({
 
       // Validate files
       const validFiles: PendingFile[] = [];
+      const autoUploadFiles: Array<PendingFile & { category: FileCategory }> =
+        [];
       for (const file of filesToProcess) {
         // Check file size
         if (file.size > maxSize) {
@@ -109,17 +119,31 @@ export function DocumentUploadZone({
           continue;
         }
 
-        // Auto-detect category from filename
-        const detectedCategory = detectCategoryFromFilename(file.name);
-
-        validFiles.push({
+        const assignedCategory =
+          defaultCategory || detectCategoryFromFilename(file.name);
+        const nextFile: PendingFile = {
           id: Math.random().toString(36).substring(7),
           file,
-          category: detectedCategory,
-        });
+          category: assignedCategory,
+          requiresOriginal: assignedCategory
+            ? ORIGINAL_REQUIRED_CATEGORIES.includes(assignedCategory)
+            : undefined,
+        };
+
+        if (defaultCategory && assignedCategory) {
+          autoUploadFiles.push({
+            ...nextFile,
+            category: assignedCategory,
+          });
+          continue;
+        }
+
+        validFiles.push(nextFile);
       }
 
-      setPendingFiles((prev) => [...prev, ...validFiles]);
+      if (validFiles.length > 0) {
+        setPendingFiles((prev) => [...prev, ...validFiles]);
+      }
 
       if (validFiles.length === 1) {
         const onlyFile = validFiles[0];
@@ -133,8 +157,12 @@ export function DocumentUploadZone({
           setCategorizingFile(firstUncategorized);
         }
       }
+
+      for (const file of autoUploadFiles) {
+        await uploadFile(file);
+      }
     },
-    [maxSize, acceptedTypes, onUploadError]
+    [maxSize, acceptedTypes, defaultCategory, onUploadError]
   );
 
   const handleCategoryConfirm = async (category: FileCategory) => {
@@ -284,6 +312,33 @@ export function DocumentUploadZone({
 
   return (
     <div className={cn("space-y-4", className)}>
+      {defaultCategory && defaultCategoryLabel && (
+        <div className="rounded-xl border-2 border-terracotta-200 bg-terracotta-50 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-sm">
+              <p className="font-semibold text-terracotta-900">
+                Uploading for: {defaultCategoryLabel}
+              </p>
+              <p className="mt-1 text-terracotta-800">
+                {defaultCategoryDescription ||
+                  "Files chosen here will be saved under the selected document type."}
+              </p>
+            </div>
+            {onClearDefaultCategory && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClearDefaultCategory}
+                className="border-terracotta-200 bg-white text-terracotta-800 hover:bg-terracotta-100"
+              >
+                Use general uploader
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Important Notice */}
       <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
         <div className="flex gap-3">
@@ -337,11 +392,14 @@ export function DocumentUploadZone({
         </div>
 
         <h3 className="mb-2 text-lg font-semibold text-sage-900">
-          Upload Your Documents
+          {defaultCategoryLabel
+            ? `Upload ${defaultCategoryLabel}`
+            : "Upload Your Documents"}
         </h3>
         <p className="mb-4 text-sm text-sage-600">
-          Upload scans or photos to help organize your claim packet and verify
-          you have everything needed.
+          {defaultCategoryLabel
+            ? `Choose scans or photos for ${defaultCategoryLabel.toLowerCase()}.`
+            : "Upload scans or photos to help organize your claim packet and verify you have everything needed."}
         </p>
 
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -351,7 +409,9 @@ export function DocumentUploadZone({
             className="rounded-full bg-terracotta-500 hover:bg-terracotta-600"
           >
             <Upload className="mr-2 h-4 w-4" />
-            Choose Files
+            {defaultCategoryLabel
+              ? `Choose ${defaultCategoryLabel}`
+              : "Choose Files"}
           </Button>
 
           {/* Mobile Camera Button (only shows on mobile) */}
