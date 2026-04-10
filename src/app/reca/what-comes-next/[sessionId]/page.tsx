@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CompoundInterestCalculator } from "@/components/financial/CompoundInterestCalculator";
+import { ClaimJourney } from "@/components/reca/ClaimJourney";
 
 export default function WhatComesNextPage() {
   const { data: session, status } = useSession();
@@ -85,6 +86,9 @@ export default function WhatComesNextPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-cream-50 to-white">
       <div className="mx-auto max-w-3xl px-4 py-12">
+        {/* Claim Journey Stepper */}
+        <ClaimJourney currentStage="confirmation" />
+
         {/* Back link */}
         <Link
           href="/portal"

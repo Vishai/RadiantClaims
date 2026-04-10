@@ -59,6 +59,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
+import { ClaimJourney } from "@/components/reca/ClaimJourney";
 
 // ============================================================================
 // Section metadata for completion analysis
@@ -1221,6 +1222,9 @@ export default function RECAReviewPage({ params }: PageProps) {
       />
 
       <div className="container mx-auto max-w-4xl px-6 py-8">
+        {/* Claim Journey Stepper */}
+        <ClaimJourney currentStage="review" />
+
         {/* ================================================================ */}
         {/* Header — adapts to completion state */}
         {/* ================================================================ */}
@@ -2154,6 +2158,37 @@ export default function RECAReviewPage({ params }: PageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* ================================================================ */}
+        {/* What Comes Next CTA (links to financial planning page) */}
+        {/* ================================================================ */}
+        {isComplete && (
+          <Card className="mb-6 border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-emerald-900">
+                    After You File: Plan for Your $100,000
+                  </h3>
+                  <p className="text-sm text-emerald-700">
+                    See estimated timelines, explore growth options, and learn
+                    about the 90-day rule.
+                  </p>
+                </div>
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `/reca/what-comes-next/${params.sessionId}` as any
+                    )
+                  }
+                  className="flex-shrink-0 rounded-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                  What Comes Next →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ================================================================ */}
         {/* Navigation */}

@@ -28,6 +28,7 @@ import { Progress } from "@/components/ui/progress";
 import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
 import { DocumentDashboard } from "@/components/documents/DocumentDashboard";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
+import { ClaimJourney } from "@/components/reca/ClaimJourney";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 import {
   generateDocumentRequirements,
@@ -253,6 +254,9 @@ export default function SessionDocumentsPage() {
       <Nav name={session?.user?.name || session?.user?.email} />
 
       <main className="container mx-auto max-w-7xl px-6 py-12">
+        {/* Claim Journey Stepper */}
+        <ClaimJourney currentStage="documents" />
+
         {/* Back */}
         <Button
           variant="ghost"
