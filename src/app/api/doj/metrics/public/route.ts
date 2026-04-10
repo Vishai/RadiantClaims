@@ -24,19 +24,15 @@ export async function GET() {
     });
 
     if (!latestData) {
-      // Fallback data for Beta Launch / Empty DB
-      // Based on DOJ data from January 2026 (PL 119-21):
-      // - Pending: 2,214 Downwinder claims
-      // - Approved: 509 (100% approval rate)
-      // - Total: 2,723
-      // Estimated ~39 new applications/day, ~9 processed/day
+      // Fallback data for empty DB — last updated April 2026
+      // Real numbers will be served once GitHub Actions scraper populates DB
       return NextResponse.json({
-        queueSize: 2214,
-        estimatedWaitDays: 246, // 2214 pending / 9 approvals per day = ~246 days (~8 months)
-        applicationsPerDay: 39.3,
-        approvalsPerDay: 9.0,
-        ratio: 4.4,
-        asOfDate: new Date().toISOString(),
+        queueSize: 7917,
+        estimatedWaitDays: 413,
+        applicationsPerDay: 162.6,
+        approvalsPerDay: 15.3,
+        ratio: 10.6,
+        asOfDate: "2026-04-09T07:00:00.000Z",
         isFallback: true,
       });
     }

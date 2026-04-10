@@ -10,6 +10,8 @@ interface UrgencyMetrics {
   applicationsPerDay: number;
   approvalsPerDay: number;
   ratio: number;
+  asOfDate?: string;
+  isFallback?: boolean;
 }
 
 export function BacklogRaceSection() {
@@ -115,6 +117,19 @@ export function BacklogRaceSection() {
             </div>
           </div>
         </div>
+
+        {/* Data attribution */}
+        {metrics.asOfDate && (
+          <p className="mt-6 text-center text-xs text-gray-400">
+            Source: U.S. Department of Justice, RECA Program. Data as of{" "}
+            {new Date(metrics.asOfDate).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+            .
+          </p>
+        )}
 
         {/* Footer CTA */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-100 bg-gray-50 px-8 py-6 md:flex-row">
