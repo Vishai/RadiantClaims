@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Info, MapPin } from "lucide-react";
+import { FIELD_HELP } from "@/lib/reca/field-help-content";
 
 // Validation schema
 const affectedAreaSchema = z.object({
@@ -413,13 +414,14 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   <FieldLabel
                     htmlFor={`affectedAreas.${index}.timePeriod`}
                     importance="required"
+                    helpTooltip={FIELD_HELP.part8_timePeriod}
                   >
                     Time Period <span className="text-red-600">*</span>
                   </FieldLabel>
                   <input
                     id={`affectedAreas.${index}.timePeriod`}
                     type="text"
-                    placeholder="e.g., January 1952 - December 1955"
+                    placeholder="e.g., 1953 - 1968"
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
                     {...form.register(`affectedAreas.${index}.timePeriod`)}
                   />

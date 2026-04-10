@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { FieldLabel } from "@/components/reca/FieldLabel";
+import { FIELD_HELP } from "@/lib/reca/field-help-content";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
@@ -298,6 +299,7 @@ export default function Part11Form({
             <FieldLabel
               importance="required"
               className="text-base font-semibold text-sage-900"
+              helpTooltip={FIELD_HELP.part11_medicalRecords}
             >
               Medical Records Confirmation{" "}
               <span className="text-red-600">*</span>

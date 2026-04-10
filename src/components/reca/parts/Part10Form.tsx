@@ -15,6 +15,7 @@ import {
 import { FieldLabel } from "@/components/reca/FieldLabel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Activity, Info } from "lucide-react";
+import { FIELD_HELP } from "@/lib/reca/field-help-content";
 
 // Validation schema - at least 1 disease must be selected
 const part10Schema = z.object({
@@ -210,6 +211,7 @@ export default function Part10Form({
             <FieldLabel
               importance="required"
               className="text-base font-semibold text-sage-900"
+              helpTooltip={FIELD_HELP.part10_diseaseSelection}
             >
               Check all diseases that apply ({selectedDiseases?.length || 0}{" "}
               selected)
