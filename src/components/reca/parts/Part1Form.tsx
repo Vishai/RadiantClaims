@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Part1FilerInfo, FormerName } from "@/lib/reca/types";
 import { FormField } from "@/components/form-field";
+import { FIELD_HELP } from "@/lib/reca/field-help-content";
 import {
   Card,
   CardContent,
@@ -537,6 +538,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               label="Social Security Number"
               type="ssn"
               importance="required"
+              helpTooltip={FIELD_HELP.part1_ssn}
               placeholder="XXX-XX-XXXX"
               helperText="Format: XXX-XX-XXXX"
             />
@@ -546,6 +548,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
               label="Date of Birth"
               type="date"
               importance="required"
+              helpTooltip={FIELD_HELP.part1_dateOfBirth}
             />
           </div>
         </CardContent>
@@ -566,6 +569,8 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
             label="Mailing Address"
             importance="required"
             maxLength={60}
+            placeholder="e.g., 123 Main Street, Apt 4B"
+            helpTooltip={FIELD_HELP.part1_mailingAddress}
             helperText="Street address where you receive mail"
           />
 
@@ -672,6 +677,7 @@ export function Part1Form({ initialData, onSubmit }: Part1FormProps) {
                   label="Census Number"
                   maxLength={20}
                   helperText="If known"
+                  helpTooltip={FIELD_HELP.part1_tribalCensusNumber}
                 />
               </div>
 

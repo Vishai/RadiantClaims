@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Save, AlertCircle } from "lucide-react";
 import { ProgressBar } from "./ProgressBar";
 import { AccountCreationModal } from "./AccountCreationModal";
+import { ENCOURAGEMENT_MESSAGES } from "@/lib/reca/encouragement-messages";
 import {
   RECAWorkflowSection,
   RECAWorkflowState,
@@ -73,6 +74,7 @@ export function FormWizard({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [hasPromptedAccount, setHasPromptedAccount] = useState(false);
+  const [encouragementMsg, setEncouragementMsg] = useState<string | null>(null);
 
   // Use refs to access latest state in callbacks without recreating them
   const workflowStateRef = useRef(workflowState);
@@ -249,6 +251,14 @@ export function FormWizard({
       return;
     }
 
+    // Show encouragement message for this section
+    const encouragement = ENCOURAGEMENT_MESSAGES[currentSection];
+    if (encouragement) {
+      setEncouragementMsg(encouragement.message);
+      // Auto-clear after 4 seconds
+      setTimeout(() => setEncouragementMsg(null), 4000);
+    }
+
     // Reload the latest state from the server to ensure we have the most up-to-date data
     let latestState = workflowState;
     try {
@@ -423,6 +433,24 @@ export function FormWizard({
 
       {/* Main Content */}
       <div className="container mx-auto flex-1 px-6 py-8">
+        {/* Encouragement Banner */}
+        {encouragementMsg && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-5 py-3 shadow-sm duration-300 animate-in fade-in slide-in-from-top-2">
+            <span className="text-lg">✨</span>
+            <p className="text-sm font-medium text-emerald-800">
+              {encouragementMsg}
+            </p>
+            <button
+              type="button"
+              onClick={() => setEncouragementMsg(null)}
+              className="ml-auto text-emerald-400 hover:text-emerald-600"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Save Status */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-sage-900">

@@ -32,6 +32,9 @@ function ResultContent() {
   useEffect(() => {
     if (eligibility === "likely" || eligibility === "unlikely") {
       sessionStorage.setItem("eligibility_verified", "true");
+      // Also persist to localStorage so it survives tab close/refresh
+      localStorage.setItem("eligibility_verified", "true");
+      localStorage.setItem("eligibility_result", eligibility);
     }
 
     // Trigger confetti animation for likely eligibility

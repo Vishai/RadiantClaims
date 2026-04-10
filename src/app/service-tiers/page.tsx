@@ -74,16 +74,19 @@ function ServiceTiersContent() {
     try {
       console.log("handleSelectTier called with:", tierId);
 
-      // Check eligibility first
-      const eligibilityVerified = sessionStorage.getItem(
-        "eligibility_verified"
-      );
-      console.log("Eligibility verified status:", eligibilityVerified);
+      // Check eligibility — try sessionStorage first, fall back to localStorage
+      const eligibilityVerified =
+        sessionStorage.getItem("eligibility_verified") ||
+        localStorage.getItem("eligibility_verified");
 
       if (!eligibilityVerified) {
-        console.log("Eligibility not verified, showing prompt");
         setShowEligibilityPrompt(true);
         return;
+      }
+
+      // Restore sessionStorage from localStorage if it was lost (tab close/refresh)
+      if (!sessionStorage.getItem("eligibility_verified")) {
+        sessionStorage.setItem("eligibility_verified", "true");
       }
 
       console.log("User status:", status);
