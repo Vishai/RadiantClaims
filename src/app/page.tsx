@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DOJStickyBanner } from "@/components/landing/DOJStickyBanner";
 import { BacklogRaceSection } from "@/components/landing/BacklogRaceSection";
 import { SocialProof } from "@/components/landing/SocialProof";
+import { AuthNavLink } from "@/components/landing/AuthNavLink";
 import { getBetaPricing } from "@/lib/constants/beta-config";
 import { BetaBanner, BetaBadge, BetaPrice } from "@/components/BetaBanner";
 
@@ -49,11 +50,7 @@ export default function HomePage() {
             RadiantClaims
           </span>
         </div>
-        <Link href="/login">
-          <button className="min-h-[44px] px-4 text-sm font-semibold text-gray-600 hover:text-gray-900">
-            Login
-          </button>
-        </Link>
+        <AuthNavLink />
       </nav>
 
       {/* Hero Section */}
