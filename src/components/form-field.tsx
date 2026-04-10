@@ -2,6 +2,7 @@ import * as React from "react";
 import { UseFormReturn, FieldPath, FieldValues } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { FieldLabel, type FieldImportance } from "@/components/reca/FieldLabel";
+import type { HelpTooltipProps } from "@/components/reca/HelpTooltip";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -23,6 +24,8 @@ interface FormFieldProps<T extends FieldValues> {
   importance?: FieldImportance;
   maxLength?: number;
   helperText?: string;
+  /** Contextual help popover — explanation, example, and where-to-find hints */
+  helpTooltip?: HelpTooltipProps;
 }
 
 export function FormField<T extends FieldValues>({
@@ -36,13 +39,18 @@ export function FormField<T extends FieldValues>({
   importance,
   maxLength,
   helperText,
+  helpTooltip,
 }: FormFieldProps<T>) {
   const error = form.formState.errors[name];
 
   // Render the label — use FieldLabel when importance is set, otherwise plain Label
   const renderLabel = () =>
-    importance ? (
-      <FieldLabel htmlFor={name} importance={importance}>
+    importance || helpTooltip ? (
+      <FieldLabel
+        htmlFor={name}
+        importance={importance}
+        helpTooltip={helpTooltip}
+      >
         {label}
       </FieldLabel>
     ) : (

@@ -106,10 +106,10 @@ export function ExportForExtension({
           </div>
           <div>
             <CardTitle className="text-sm font-semibold text-purple-900">
-              Chrome Extension Helper
+              E-File with DOJ Portal
             </CardTitle>
             <CardDescription className="text-xs text-purple-700">
-              Auto-fill your data into the DOJ portal
+              File your claim electronically (recommended)
             </CardDescription>
           </div>
         </div>
@@ -117,24 +117,45 @@ export function ExportForExtension({
       <CardContent className="space-y-3">
         <div className="space-y-2">
           <p className="text-xs text-purple-800">
-            Install the{" "}
-            <a
-              href="https://chromewebstore.google.com/detail/kdbankgnojlkljikngcmcfopiakkdmhe"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-purple-600 underline hover:text-purple-800"
-            >
-              RadiantClaims Chrome Extension
-            </a>
-            , then click{" "}
-            <span className="font-semibold">Connect &amp; Load Data</span> in
-            the extension popup. Your claim data will be loaded automatically.
+            The DOJ accepts claims electronically — you can upload scans or
+            photos of your documents. No certified originals needed for initial
+            filing.
           </p>
+          <ol className="list-inside list-decimal space-y-1 text-xs text-purple-800">
+            <li>
+              Install the{" "}
+              <a
+                href="https://chromewebstore.google.com/detail/kdbankgnojlkljikngcmcfopiakkdmhe"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-purple-600 underline hover:text-purple-800"
+              >
+                RadiantClaims Filing Assistant
+              </a>
+            </li>
+            <li>
+              Click{" "}
+              <span className="font-semibold">Connect &amp; Load Data</span> in
+              the extension popup
+            </li>
+            <li>
+              Open{" "}
+              <a
+                href="https://reca.justice.gov"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-purple-600 underline hover:text-purple-800"
+              >
+                reca.justice.gov
+              </a>{" "}
+              — the extension will guide you through each field
+            </li>
+          </ol>
           <div className="flex items-center gap-2 rounded-lg bg-purple-50 px-3 py-2">
             <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-purple-500" />
             <p className="text-[11px] text-purple-700">
-              The extension will connect securely using your current login
-              session — no copying needed.
+              Connects securely using your login session. Your data stays on
+              your device.
             </p>
           </div>
         </div>

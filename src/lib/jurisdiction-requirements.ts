@@ -333,29 +333,29 @@ export function getHelpfulLinks(
  * Mail-in process explanation message
  */
 export const MAIL_IN_PROCESS_EXPLANATION = `
-## Why Upload Digital Copies?
+## E-File Your Claim (Recommended)
 
-**Important Update:** The Department of Justice requires certain documents to be submitted as certified copies or originals. Until the new digital portal opens in December, we're using this temporary process:
+The DOJ now accepts RECA claims electronically through their online portal at [reca.justice.gov](https://reca.justice.gov). **This is the fastest way to file.**
 
-### How It Works:
+### How E-Filing Works:
 
-1. **Upload Digital Copies** - Take photos or scans of all your documents and upload them here
-2. **We Validate** - Our team reviews your digital uploads to ensure everything is correct
-3. **Lawyer Review** - After validation, our lawyer reviews printed copies for approval
-4. **You Mail Originals** - Once approved, we'll provide you with:
-   - A prepaid envelope addressed to the DOJ
-   - Clear instructions on which documents need originals/certified copies
-   - An instruction slip to include in your mailing
+1. **Upload Digital Copies Here** — Take photos or scans of all your documents and upload them to RadiantClaims
+2. **We Help You Prepare** — Our system organizes your documents by the DOJ portal's categories
+3. **File Through the DOJ Portal** — Use our Chrome extension to auto-fill your information and upload your documents directly to the DOJ
+4. **Keep Your Originals Safe** — The DOJ may contact you later to verify specific documents, so hold onto your originals
 
-### Why This Process?
+### Why E-Filing Is Easier:
 
-This ensures your documents are complete and correct before you go through the effort of obtaining certified copies and mailing originals. It's more convenient for you and helps us catch any issues early.
+- **Scans and photos are accepted** — You do NOT need certified copies or originals to file electronically. Clear scans or phone photos are fine for initial submission.
+- **Faster processing** — Electronic submissions are typically reviewed sooner than mailed claims.
+- **The DOJ will request originals only if needed** — Most claims are processed from the scanned copies alone.
 
-### What You Need to Do:
+### Prefer to Mail Your Claim?
 
-- **Now:** Upload clear photos/scans of all documents
-- **After Validation:** Request certified copies from relevant institutions (hospitals, schools, etc.)
-- **Final Step:** Replace our printed copies with your certified copies/originals and mail in the prepaid envelope
+You can also download your completed form and mail it with supporting documents to the DOJ. Note that mail-in filing generally requires certified copies of most documents up front, while e-filing accepts scans.
 
-This process is temporary until the digital portal launches. We'll shift to fully digital submission as soon as it's available.
+**DOJ Mailing Address:**
+U.S. Department of Justice, Radiation Exposure Compensation Program
+P.O. Box 146, Ben Franklin Station
+Washington, DC 20044-0146
 `;

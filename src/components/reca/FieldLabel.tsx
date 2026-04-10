@@ -1,6 +1,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { HelpTooltip, type HelpTooltipProps } from "./HelpTooltip";
 
 export type FieldImportance = "required" | "recommended" | "optional";
 
@@ -9,6 +10,8 @@ interface FieldLabelProps {
   importance?: FieldImportance;
   children: React.ReactNode;
   className?: string;
+  /** Optional contextual help popover shown via a help icon */
+  helpTooltip?: HelpTooltipProps;
 }
 
 const importanceConfig: Record<
@@ -37,27 +40,31 @@ export function FieldLabel({
   importance,
   children,
   className,
+  helpTooltip,
 }: FieldLabelProps) {
   const config = importance ? importanceConfig[importance] : null;
 
   return (
-    <Label
-      htmlFor={htmlFor}
-      className={cn("flex items-center gap-1.5", className)}
-    >
-      {children}
-      {config && (
-        <>
-          <span
-            className={cn(
-              "inline-block h-2 w-2 flex-shrink-0 rounded-full",
-              config.dot
-            )}
-            aria-hidden="true"
-          />
-          <span className="sr-only">{config.srLabel}</span>
-        </>
-      )}
-    </Label>
+    <div className="flex items-center gap-0.5">
+      <Label
+        htmlFor={htmlFor}
+        className={cn("flex items-center gap-1.5", className)}
+      >
+        {children}
+        {config && (
+          <>
+            <span
+              className={cn(
+                "inline-block h-2 w-2 flex-shrink-0 rounded-full",
+                config.dot
+              )}
+              aria-hidden="true"
+            />
+            <span className="sr-only">{config.srLabel}</span>
+          </>
+        )}
+      </Label>
+      {helpTooltip && <HelpTooltip {...helpTooltip} />}
+    </div>
   );
 }

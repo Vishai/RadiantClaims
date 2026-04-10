@@ -4,14 +4,40 @@ import { Check } from "lucide-react";
 import { RECAWorkflowSection } from "@/lib/reca/types";
 import { getSectionDisplayName, getSectionStage } from "@/lib/reca/workflow";
 
+/** Estimated minutes per section (used for "About X min remaining") */
+const SECTION_MINUTES: Partial<Record<RECAWorkflowSection, number>> = {
+  part_1: 3,
+  part_2: 2,
+  part_3: 1,
+  part_4: 3,
+  part_5: 4,
+  part_6: 5,
+  part_7: 4,
+  part_8: 3,
+  part_9: 3,
+  part_10: 2,
+  part_11: 3,
+  part_12: 2,
+  part_13: 2,
+  part_14: 1,
+  part_15: 2,
+  part_16: 2,
+};
+
 interface ProgressBarProps {
   currentSection: RECAWorkflowSection;
   completionPercentage: number;
+  /** 1-based index of current section within the applicable section list */
+  currentSectionIndex?: number;
+  /** Total number of applicable sections for this user */
+  totalApplicableSections?: number;
 }
 
 export function ProgressBar({
   currentSection,
   completionPercentage,
+  currentSectionIndex,
+  totalApplicableSections,
 }: ProgressBarProps) {
   const stages = [
     { stage: 1, name: "Eligibility", sections: ["eligibility"] },
@@ -63,6 +89,33 @@ export function ProgressBar({
               style={{ width: `${completionPercentage}%` }}
             />
           </div>
+          {/* Section context: "Section 5 of 10 · About 15 min remaining" */}
+          {currentSectionIndex != null && totalApplicableSections != null && (
+            <p className="mt-1 text-xs text-sage-500">
+              Section {currentSectionIndex} of {totalApplicableSections}
+              {(() => {
+                // Calculate remaining minutes from current section onward
+                const allSections = stages[1]?.sections ?? [];
+                const currentIdx = allSections.indexOf(currentSection);
+                if (currentIdx === -1) return null;
+                const remaining = allSections
+                  .slice(currentIdx)
+                  .reduce(
+                    (sum, s) =>
+                      sum + (SECTION_MINUTES[s as RECAWorkflowSection] ?? 2),
+                    0
+                  );
+                // Only show time estimate in the first 75% of the form
+                if (
+                  currentSectionIndex <=
+                  Math.ceil(totalApplicableSections * 0.75)
+                ) {
+                  return <span> · About {remaining} min remaining</span>;
+                }
+                return null;
+              })()}
+            </p>
+          )}
         </div>
 
         {/* Stage Indicators */}

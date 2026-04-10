@@ -417,6 +417,8 @@ export function FormWizard({
       <ProgressBar
         currentSection={currentSection}
         completionPercentage={workflowState.completionPercentage}
+        currentSectionIndex={RESOLVE_SECTION_ORDER.indexOf(currentSection) + 1}
+        totalApplicableSections={RESOLVE_SECTION_ORDER.length}
       />
 
       {/* Main Content */}
