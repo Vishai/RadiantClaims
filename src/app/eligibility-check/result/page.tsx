@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import confetti from "canvas-confetti";
+import { trackEligibilityComplete } from "@/lib/analytics/meta-pixel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,6 +36,8 @@ function ResultContent() {
       // Also persist to localStorage so it survives tab close/refresh
       localStorage.setItem("eligibility_verified", "true");
       localStorage.setItem("eligibility_result", eligibility);
+      // Fire Meta Pixel Lead event
+      trackEligibilityComplete(eligibility);
     }
 
     // Trigger confetti animation for likely eligibility

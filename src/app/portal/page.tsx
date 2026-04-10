@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { trackPurchase } from "@/lib/analytics/meta-pixel";
 import type { Route } from "next";
 import { useEffect, useState, useCallback } from "react";
 
@@ -233,8 +234,16 @@ function buildNextSteps(
 export default function CustomerPortal() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [claims, setClaims] = useState<Claimant[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track purchase conversion from Stripe redirect
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      trackPurchase(249.99, "DIY_PREP");
+    }
+  }, [searchParams]);
   const [packetActions, setPacketActions] = useState<
     Record<string, "downloading" | "regenerating" | null>
   >({});

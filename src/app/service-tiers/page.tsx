@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import { trackTierSelected } from "@/lib/analytics/meta-pixel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -102,6 +103,7 @@ function ServiceTiersContent() {
       setErrorMessage(null);
       setInfoMessage(null);
       setSelectedTier(tierId);
+      trackTierSelected(tierId);
 
       // Show appropriate agreement dialog
       if (tierId === "DIY_PREP") {

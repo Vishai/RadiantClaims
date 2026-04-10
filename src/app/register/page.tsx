@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
+import { trackRegistration } from "@/lib/analytics/meta-pixel";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,9 @@ function RegisterForm() {
         setError(data.error || "Failed to create account");
         return;
       }
+
+      // Fire Meta Pixel registration event
+      trackRegistration();
 
       // Auto-login after successful registration
       const result = await signIn("credentials", {
