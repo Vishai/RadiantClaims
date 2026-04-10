@@ -118,9 +118,14 @@ export function ExportForExtension({
         <div className="space-y-2">
           <p className="text-xs text-purple-800">
             Install the{" "}
-            <span className="font-semibold">
+            <a
+              href="https://chromewebstore.google.com/detail/kdbankgnojlkljikngcmcfopiakkdmhe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-purple-600 underline hover:text-purple-800"
+            >
               RadiantClaims Chrome Extension
-            </span>
+            </a>
             , then click{" "}
             <span className="font-semibold">Connect &amp; Load Data</span> in
             the extension popup. Your claim data will be loaded automatically.

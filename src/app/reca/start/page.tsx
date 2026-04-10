@@ -85,6 +85,18 @@ function RECAStartContent() {
       return;
     }
 
+    // Enforce payment gate — redirect unpaid users to service tiers
+    if (subscriptionStatus && !subscriptionStatus.canAccessForms) {
+      if (subscriptionStatus.needsToSelectTier) {
+        router.push("/service-tiers");
+      } else if (subscriptionStatus.needsPayment) {
+        router.push("/service-tiers?resumePayment=true");
+      } else {
+        router.push("/service-tiers");
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -336,13 +348,35 @@ function RECAStartContent() {
         {status === "authenticated" && (
           <div className="text-center">
             <>
+              {subscriptionStatus && !subscriptionStatus.canAccessForms && (
+                <Card className="mb-6 rounded-3xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-white shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
+                      <div className="text-sm text-sage-700">
+                        <p className="mb-1 font-semibold text-sage-900">
+                          Select a Service Plan to Continue
+                        </p>
+                        <p>
+                          Choose a service tier to unlock the RECA form and
+                          start preparing your claim.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <Button
                 size="lg"
                 onClick={handleStart}
                 disabled={isLoading}
                 className="gap-2 rounded-full bg-terracotta-500 px-12 py-6 text-lg hover:bg-terracotta-600"
               >
-                {isLoading ? "Loading..." : "Start RECA Form"}
+                {isLoading
+                  ? "Loading..."
+                  : subscriptionStatus && !subscriptionStatus.canAccessForms
+                    ? "Select a Plan"
+                    : "Start RECA Form"}
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <p className="mt-4 text-sm text-sage-600">
