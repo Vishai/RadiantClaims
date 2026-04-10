@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DOJStickyBanner } from "@/components/landing/DOJStickyBanner";
 import { BacklogRaceSection } from "@/components/landing/BacklogRaceSection";
+import { SocialProof } from "@/components/landing/SocialProof";
 import { getBetaPricing } from "@/lib/constants/beta-config";
 import { BetaBanner, BetaBadge, BetaPrice } from "@/components/BetaBanner";
 
@@ -93,6 +94,9 @@ export default function HomePage() {
 
       {/* Backlog Race Section */}
       <BacklogRaceSection />
+
+      {/* Social Proof & Credibility */}
+      <SocialProof />
 
       {/* What is RECA - Clean Explanation */}
       <section className="bg-gray-50 py-20">

@@ -2099,20 +2099,25 @@ export default function RECAReviewPage({ params }: PageProps) {
               </div>
             </details>
 
-            {/* Important Notice */}
-            <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
-                <div>
-                  <p className="mb-1 font-semibold text-blue-900">Important</p>
-                  <p className="text-sm text-blue-800">
-                    RadiantClaims prepares your claim — you file it with the DOJ
-                    yourself through their online portal. Install the{" "}
-                    <strong>Radiant Claims Filing Assistant</strong> Chrome
-                    extension to make e-filing quick and easy.
-                  </p>
-                </div>
-              </div>
+            {/* Filed confirmation CTA */}
+            <div className="mt-6 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-5">
+              <p className="mb-3 text-sm font-semibold text-emerald-900">
+                Already filed with the DOJ?
+              </p>
+              <p className="mb-4 text-sm text-emerald-800">
+                Once you&apos;ve submitted your claim through the DOJ portal (or
+                mailed it), let us know so we can update your claim status and
+                show you what to expect next.
+              </p>
+              <Button
+                onClick={() =>
+                  router.push(`/reca/confirmation/${params.sessionId}` as any)
+                }
+                className="rounded-full bg-emerald-600 hover:bg-emerald-700"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                I&apos;ve Filed My Claim
+              </Button>
             </div>
           </CardContent>
         </Card>

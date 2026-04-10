@@ -547,6 +547,55 @@ export default function CustomerPortal() {
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Your Next Step — contextual banner based on first claim's progress */}
+            {claims.length > 0 &&
+              (() => {
+                const firstClaim = claims[0];
+                const pct =
+                  firstClaim?.intakeSession?.recaCompletionPercent ?? 0;
+                const stage = firstClaim?.intakeSession?.recaWorkflowStage;
+                const sid = firstClaim?.intakeSession?.id;
+                if (!sid) return null;
+
+                let message = "";
+                let cta = "";
+                let href = "";
+
+                if (pct < 50) {
+                  message = `You're ${pct}% through your RECA form. Keep going — most people finish in about 30 minutes.`;
+                  cta = "Continue Form";
+                  href = `/reca/form/${sid}?section=${firstClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
+                } else if (pct < 100) {
+                  message = `You're ${pct}% done — almost there! Complete the remaining sections to unlock your review.`;
+                  cta = "Continue Form";
+                  href = `/reca/form/${sid}?section=${firstClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
+                } else if (stage && stage >= 4) {
+                  message =
+                    "Your form is complete! Review your answers, upload documents, and file with the DOJ.";
+                  cta = "Go to Review";
+                  href = `/reca/review/${sid}`;
+                } else {
+                  return null;
+                }
+
+                return (
+                  <div className="flex items-center justify-between gap-4 rounded-3xl border-2 border-terracotta-200 bg-gradient-to-r from-terracotta-50 to-white px-6 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-terracotta-600">
+                        Your Next Step
+                      </p>
+                      <p className="text-sm text-sage-800">{message}</p>
+                    </div>
+                    <a
+                      href={href}
+                      className="flex-shrink-0 rounded-full bg-terracotta-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-terracotta-600"
+                    >
+                      {cta} →
+                    </a>
+                  </div>
+                );
+              })()}
+
             {packetActionError && (
               <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
                 {packetActionError}

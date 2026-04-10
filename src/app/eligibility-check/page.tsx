@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveUserData } from "@/lib/user-data-manager";
@@ -162,6 +162,32 @@ export default function EligibilityCheckPage() {
     referrerPhone: "",
     referrerConsent: false,
   });
+
+  // Restore saved progress from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("eligibility_check_progress");
+      if (saved) {
+        const { step: savedStep, formData: savedData } = JSON.parse(saved);
+        if (savedStep) setStep(savedStep);
+        if (savedData) setFormData((prev) => ({ ...prev, ...savedData }));
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
+  // Save progress to localStorage whenever step or formData changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "eligibility_check_progress",
+        JSON.stringify({ step, formData })
+      );
+    } catch {
+      // Ignore storage errors
+    }
+  }, [step, formData]);
 
   // Update form data
   const updateFormData = (field: keyof FormData, value: any) => {
