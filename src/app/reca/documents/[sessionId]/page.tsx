@@ -10,7 +10,6 @@ import {
   AlertCircle,
   ArrowLeft,
   ExternalLink,
-  Phone,
   HelpCircle,
   ShieldCheck,
   FolderOpen,
@@ -32,10 +31,11 @@ import { ClaimJourney } from "@/components/reca/ClaimJourney";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 import {
   generateDocumentRequirements,
+  generatePortalRequirements,
   applyUploadsToRequirements,
   calculateSubmissionReadiness,
-  getDocumentAssistance,
   type DocumentRequirement,
+  type PortalRequiredDocument,
 } from "@/lib/reca/document-tracking";
 import type { RelationshipType } from "@/lib/reca/types";
 
@@ -43,48 +43,22 @@ import type { RelationshipType } from "@/lib/reca/types";
 
 function categoryLabel(cat: string): string {
   const map: Record<string, string> = {
+    // Abstract categories (from generateDocumentRequirements)
     identity: "Identity & Vital Records",
     relationship: "Relationship Proof",
     medical: "Medical Documentation",
     presence: "Proof of Presence",
     legal: "Legal & Name Changes",
+    // File categories (from generatePortalRequirements)
+    BIRTH_CERTIFICATE: "Identity & Vital Records",
+    DEATH_CERTIFICATE: "Identity & Vital Records",
+    MARRIAGE_CERTIFICATE: "Legal & Name Changes",
+    MEDICAL_RECORDS: "Medical Documentation",
+    PATHOLOGY_REPORT: "Medical Documentation",
+    PROOF_OF_RESIDENCE: "Proof of Presence",
+    OTHER: "Additional Documents",
   };
   return map[cat] || cat;
-}
-
-function statusBadge(status: string) {
-  switch (status) {
-    case "verified":
-      return (
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-          Verified
-        </span>
-      );
-    case "uploaded":
-      return (
-        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
-          Uploaded
-        </span>
-      );
-    case "confirmed":
-      return (
-        <span className="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] font-medium text-sage-700">
-          Confirmed
-        </span>
-      );
-    case "in_progress":
-      return (
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-          In Progress
-        </span>
-      );
-    default:
-      return (
-        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-700">
-          Needed
-        </span>
-      );
-  }
 }
 
 // ---------- component ----------
@@ -105,9 +79,10 @@ export default function SessionDocumentsPage() {
 
   // Requirements derived from document-tracking.ts
   const [requirements, setRequirements] = useState<DocumentRequirement[]>([]);
-
-  // Help panel
-  const [helpDocId, setHelpDocId] = useState<string | null>(null);
+  // Detailed portal requirements (per-document, form-data-aware)
+  const [portalRequirements, setPortalRequirements] = useState<
+    PortalRequiredDocument[]
+  >([]);
 
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showManageDialog, setShowManageDialog] = useState(false);
@@ -146,21 +121,33 @@ export default function SessionDocumentsPage() {
       );
 
       // Hydrate requirement statuses from actual uploaded files
+      let uploadedFiles: any[] = [];
       try {
         const docsRes = await fetch(`/api/documents?sessionId=${sessionId}`);
         if (docsRes.ok) {
           const docsData = await docsRes.json();
-          const files = (docsData.files || []) as Array<{
-            category?: string | null;
-            validation?: { status?: string | null } | null;
-          }>;
-          reqs = applyUploadsToRequirements(reqs, files);
+          uploadedFiles = docsData.files || [];
+          reqs = applyUploadsToRequirements(
+            reqs,
+            uploadedFiles as Array<{
+              category?: string | null;
+              validation?: { status?: string | null } | null;
+            }>
+          );
         }
       } catch (e) {
         console.warn("Failed to hydrate document requirement statuses:", e);
       }
 
       setRequirements(reqs);
+
+      // Generate detailed portal requirements (per-document, form-aware)
+      const portalReqs = generatePortalRequirements(
+        claim.claimType || "DOWNWINDER",
+        fd,
+        uploadedFiles
+      );
+      setPortalRequirements(portalReqs);
     } catch (err) {
       console.error("Failed to load session data:", err);
     } finally {
@@ -183,20 +170,16 @@ export default function SessionDocumentsPage() {
     [requirements]
   );
 
-  const groupedRequirements = useMemo(() => {
-    const groups: Record<string, DocumentRequirement[]> = {};
-    for (const req of requirements) {
-      const cat = req.category;
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(req);
+  // Group portal requirements by display category for sidebar
+  const groupedPortalRequirements = useMemo(() => {
+    const groups: Record<string, PortalRequiredDocument[]> = {};
+    for (const req of portalRequirements.filter((r) => r.required)) {
+      const displayCat = categoryLabel(req.category);
+      if (!groups[displayCat]) groups[displayCat] = [];
+      groups[displayCat].push(req);
     }
     return groups;
-  }, [requirements]);
-
-  const helpResources = useMemo(() => {
-    if (!helpDocId) return null;
-    return getDocumentAssistance(helpDocId);
-  }, [helpDocId]);
+  }, [portalRequirements]);
 
   // ------- handlers -------
 
@@ -433,33 +416,28 @@ export default function SessionDocumentsPage() {
               <CardHeader>
                 <CardTitle className="text-base">Required Documents</CardTitle>
                 <CardDescription>
-                  Based on your claim type and relationship info.
+                  Personalized based on your application details.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
-                {Object.entries(groupedRequirements).map(([category, reqs]) => (
-                  <div key={category}>
-                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-sage-500">
-                      {categoryLabel(category)}
-                    </h4>
-                    <div className="space-y-2">
-                      {reqs.map((req) => {
-                        const resolved =
-                          req.status === "confirmed" ||
-                          req.status === "uploaded" ||
-                          req.status === "verified";
-
-                        return (
+                {Object.entries(groupedPortalRequirements).map(
+                  ([displayCategory, reqs]) => (
+                    <div key={displayCategory}>
+                      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-sage-500">
+                        {displayCategory}
+                      </h4>
+                      <div className="space-y-2">
+                        {reqs.map((req, idx) => (
                           <div
-                            key={req.id}
+                            key={`${req.category}-${idx}`}
                             className={`rounded-lg border-2 p-3 transition-colors ${
-                              resolved
+                              req.uploaded
                                 ? "border-emerald-200 bg-emerald-50"
                                 : "border-sage-200 bg-white"
                             }`}
                           >
                             <div className="flex items-start gap-2">
-                              {resolved ? (
+                              {req.uploaded ? (
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
                               ) : (
                                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-sage-400" />
@@ -467,84 +445,37 @@ export default function SessionDocumentsPage() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2">
                                   <p className="text-sm font-semibold text-sage-900">
-                                    {req.name}
-                                    {req.quantity && req.quantity > 1 && (
-                                      <span className="ml-1 text-xs text-sage-500">
-                                        ×{req.quantity}
-                                      </span>
-                                    )}
+                                    {req.label}
                                   </p>
-                                  {statusBadge(req.status)}
+                                  {req.uploaded ? (
+                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                                      Uploaded
+                                    </span>
+                                  ) : (
+                                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-700">
+                                      Needed
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="mt-0.5 text-xs text-sage-600">
                                   {req.description}
                                 </p>
-
-                                {/* Help button */}
-                                {!resolved && (
-                                  <button
-                                    onClick={() =>
-                                      setHelpDocId(
-                                        helpDocId === req.id ? null : req.id
-                                      )
-                                    }
-                                    className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-terracotta-600 hover:text-terracotta-700"
-                                  >
-                                    <HelpCircle className="h-3 w-3" />
-                                    How do I get this?
-                                  </button>
+                                {!req.uploaded && req.helpText && (
+                                  <p className="mt-1.5 flex items-start gap-1 text-[11px] text-amber-700">
+                                    <HelpCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                    {req.helpText}
+                                  </p>
                                 )}
                               </div>
                             </div>
-
-                            {/* Inline help resources */}
-                            {helpDocId === req.id && helpResources && (
-                              <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                                <p className="mb-2 text-xs font-semibold text-blue-900">
-                                  Resources for {req.name}:
-                                </p>
-                                <ul className="space-y-1.5">
-                                  {helpResources.resources.map(
-                                    (resource, i) => (
-                                      <li key={i} className="text-xs">
-                                        <span className="font-medium text-blue-900">
-                                          {resource.title}
-                                        </span>
-                                        <span className="block text-blue-700">
-                                          {resource.description}
-                                        </span>
-                                        {resource.url &&
-                                          resource.url !== "#" && (
-                                            <a
-                                              href={resource.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="mt-0.5 inline-flex items-center gap-1 text-blue-600 underline hover:text-blue-800"
-                                            >
-                                              <ExternalLink className="h-3 w-3" />
-                                              Visit
-                                            </a>
-                                          )}
-                                        {resource.phone && (
-                                          <span className="mt-0.5 flex items-center gap-1 text-blue-600">
-                                            <Phone className="h-3 w-3" />
-                                            {resource.phone}
-                                          </span>
-                                        )}
-                                      </li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
 
-                {requirements.length === 0 && (
+                {portalRequirements.length === 0 && (
                   <p className="text-center text-sm text-sage-500">
                     Complete more of the RECA form to see document requirements.
                   </p>

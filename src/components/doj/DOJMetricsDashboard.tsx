@@ -362,61 +362,68 @@ export function DOJMetricsDashboard() {
             {/* Divider */}
             <div className="border-t border-sage-200" />
 
-            {/* Data Quality */}
-            <div className="rounded-lg border border-sage-200/50 bg-white/60 p-6">
-              <div className="mb-4">
-                <h3 className="flex items-center gap-2 text-base font-semibold text-sage-800">
-                  <AlertCircle className="h-5 w-5 text-sage-500" />
-                  Data Quality (Last 7 Calendar Days)
-                </h3>
-                <p className="mt-1 text-xs text-sage-600">
-                  DOJ doesn’t publish every day (weekends/holidays). We compute
-                  deltas vs the previous publish day.
-                </p>
-              </div>
+            {/* Data Freshness */}
+            {(() => {
+              const {
+                publishDays,
+                imputedDays,
+                negativeDeltaDays,
+                totalDecreasedDays,
+              } = metrics.dataQuality;
+              const hasIssues =
+                imputedDays > 0 ||
+                negativeDeltaDays > 0 ||
+                totalDecreasedDays > 0;
+              const status = hasIssues ? "caution" : "good";
+              const statusColor =
+                status === "good" ? "text-green-700" : "text-amber-700";
+              const statusBg =
+                status === "good"
+                  ? "bg-green-50 border-green-200"
+                  : "bg-amber-50 border-amber-200";
+              const statusIcon = status === "good" ? "✓" : "!";
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
-                  <div className="text-xs text-sage-500">Publish days</div>
-                  <div className="text-lg font-semibold text-sage-800">
-                    {metrics.dataQuality.publishDays}
+              return (
+                <div className={`rounded-lg border p-6 ${statusBg}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-base font-semibold text-sage-800">
+                        <span
+                          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${status === "good" ? "bg-green-200 text-green-800" : "bg-amber-200 text-amber-800"}`}
+                        >
+                          {statusIcon}
+                        </span>
+                        Data Freshness
+                      </h3>
+                      <p className={`mt-1 text-sm ${statusColor}`}>
+                        {status === "good"
+                          ? `All data verified — ${publishDays} updates in the last 7 days`
+                          : `${publishDays} updates in the last 7 days — some data points were estimated`}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-sage-500">
+                      {new Date(
+                        metrics.dataQuality.windowStart
+                      ).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {" – "}
+                      {new Date(
+                        metrics.dataQuality.windowEnd
+                      ).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
                   </div>
+                  <p className="mt-2 text-xs text-sage-500">
+                    We pull numbers directly from the DOJ website. This tells
+                    you how fresh and reliable the data above is.
+                  </p>
                 </div>
-                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
-                  <div className="text-xs text-sage-500">Imputed days</div>
-                  <div className="text-lg font-semibold text-sage-800">
-                    {metrics.dataQuality.imputedDays}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
-                  <div className="text-xs text-sage-500">
-                    Negative delta days
-                  </div>
-                  <div className="text-lg font-semibold text-sage-800">
-                    {metrics.dataQuality.negativeDeltaDays}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-sage-100 bg-cream-50/50 p-3">
-                  <div className="text-xs text-sage-500">
-                    Total decreased days
-                  </div>
-                  <div className="text-lg font-semibold text-sage-800">
-                    {metrics.dataQuality.totalDecreasedDays}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 text-[11px] text-sage-500">
-                Window:{" "}
-                {new Date(metrics.dataQuality.windowStart).toLocaleDateString(
-                  "en-US"
-                )}{" "}
-                –{" "}
-                {new Date(metrics.dataQuality.windowEnd).toLocaleDateString(
-                  "en-US"
-                )}
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Detailed Metrics Table */}
             <div className="rounded-lg border border-sage-200/50 bg-white/60 p-6">

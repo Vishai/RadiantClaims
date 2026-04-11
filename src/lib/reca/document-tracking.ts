@@ -380,6 +380,24 @@ export function generatePortalRequirements(
             "Must show parents' names to establish sibling relationship",
         });
 
+        // Deceased siblings need a death certificate when a child is filing
+        // for compensation from their deceased parent
+        if (sibling.isDeceased === "YES") {
+          requirements.push({
+            category: "DEATH_CERTIFICATE",
+            label: `${siblingName} - Death Certificate`,
+            description: `Death certificate for ${siblingName} (deceased sibling)`,
+            uploaded: uploadedFiles.some(
+              (f) =>
+                f.category === "DEATH_CERTIFICATE" &&
+                f.originalFilename?.toLowerCase().includes(firstName)
+            ),
+            required: true,
+            helpText:
+              "Required to document all siblings when a child is filing for a deceased parent's compensation",
+          });
+        }
+
         if (sibling.nameChangeHistory && sibling.nameChangeHistory.length > 0) {
           // Generate one document requirement per name change
           sibling.nameChangeHistory.forEach(

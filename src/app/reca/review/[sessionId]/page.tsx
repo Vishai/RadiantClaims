@@ -30,6 +30,7 @@ import {
   ExternalLink,
   Phone,
   FolderSearch,
+  Upload,
 } from "lucide-react";
 import {
   generateDocumentRequirements,
@@ -1766,6 +1767,15 @@ export default function RECAReviewPage({ params }: PageProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Upload Documents CTA */}
+              <a
+                href={`/reca/documents/${params.sessionId}`}
+                className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-terracotta-300 bg-terracotta-50 px-4 py-2.5 text-sm font-semibold text-terracotta-800 transition-colors hover:bg-terracotta-100"
+              >
+                <Upload className="h-4 w-4" />
+                Upload Documents
+              </a>
+
               {/* Task summary */}
               {documentHelp.taskList.urgentTasks.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">

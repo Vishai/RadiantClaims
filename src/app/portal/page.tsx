@@ -33,11 +33,12 @@ import {
 import Link from "next/link";
 import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
-import { DOJUploadChecklist } from "@/components/portal/DOJUploadChecklist";
+import { DocumentReadinessCard } from "@/components/portal/DocumentReadinessCard";
 import { FinancialPlanningCard } from "@/components/portal/FinancialPlanningCard";
 import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
 import { ExportForExtension } from "@/components/portal/ExportForExtension";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
+import { FilingFlowEducation } from "@/components/portal/FilingFlowEducation";
 import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
@@ -498,6 +499,9 @@ export default function CustomerPortal() {
           </p>
         </div>
 
+        {/* Filing Flow Education */}
+        <FilingFlowEducation />
+
         {/* DOJ Metrics Dashboard */}
         <div className="mb-8">
           <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
@@ -546,7 +550,7 @@ export default function CustomerPortal() {
                 Start your first claim to begin the process
               </p>
               <Button
-                onClick={() => router.push("/intake")}
+                onClick={() => setShowNewClaimDialog(true)}
                 className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
               >
                 <Plus className="h-4 w-4" />
@@ -556,16 +560,58 @@ export default function CustomerPortal() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {/* Your Next Step — contextual banner based on first claim's progress */}
+            {/* Your Next Step — contextual banner based on most actionable claim */}
             {claims.length > 0 &&
               (() => {
-                const firstClaim = claims[0];
+                // Pick the claim that most needs attention:
+                // prefer incomplete claims (lowest %), then most recently updated
+                const activeClaim =
+                  claims.find(
+                    (c) =>
+                      c.intakeSession &&
+                      (c.intakeSession.recaCompletionPercent ?? 0) < 100
+                  ) || claims[0];
                 const pct =
-                  firstClaim?.intakeSession?.recaCompletionPercent ?? 0;
-                const stage = firstClaim?.intakeSession?.recaWorkflowStage;
-                const sid = firstClaim?.intakeSession?.id;
+                  activeClaim?.intakeSession?.recaCompletionPercent ?? 0;
+                const stage = activeClaim?.intakeSession?.recaWorkflowStage;
+                const sid = activeClaim?.intakeSession?.id;
                 if (!sid) return null;
 
+                // Completed form — show filing-focused banner
+                if (stage && stage >= 4) {
+                  return (
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-white px-6 py-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-purple-600">
+                          Your Next Step
+                        </p>
+                        <p className="text-sm text-sage-800">
+                          Your preparation is complete! Next: file your claim on
+                          the official DOJ website. Our Chrome extension will
+                          walk you through it step by step.
+                        </p>
+                      </div>
+                      <div className="flex flex-shrink-0 flex-wrap gap-2">
+                        <a
+                          href="https://chromewebstore.google.com/detail/kdbankgnojlkljikngcmcfopiakkdmhe"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-700"
+                        >
+                          Install Chrome Extension →
+                        </a>
+                        <a
+                          href={`/reca/review/${sid}`}
+                          className="inline-flex items-center rounded-full border-2 border-sage-300 px-5 py-2.5 text-sm font-semibold text-sage-700 hover:bg-sage-50"
+                        >
+                          Go to Review
+                        </a>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // In-progress form — show progress banner
                 let message = "";
                 let cta = "";
                 let href = "";
@@ -573,16 +619,11 @@ export default function CustomerPortal() {
                 if (pct < 50) {
                   message = `You're ${pct}% through your RECA form. Keep going — most people finish in about 30 minutes.`;
                   cta = "Continue Form";
-                  href = `/reca/form/${sid}?section=${firstClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
+                  href = `/reca/form/${sid}?section=${activeClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
                 } else if (pct < 100) {
                   message = `You're ${pct}% done — almost there! Complete the remaining sections to unlock your review.`;
                   cta = "Continue Form";
-                  href = `/reca/form/${sid}?section=${firstClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
-                } else if (stage && stage >= 4) {
-                  message =
-                    "Your form is complete! Review your answers, upload documents, and file with the DOJ.";
-                  cta = "Go to Review";
-                  href = `/reca/review/${sid}`;
+                  href = `/reca/form/${sid}?section=${activeClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
                 } else {
                   return null;
                 }
@@ -807,6 +848,15 @@ export default function CustomerPortal() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Document Readiness — personalized checklist */}
+                          <DocumentReadinessCard
+                            formData={intakeSession.recaFormData ?? {}}
+                            uploadedFiles={intakeSession.uploadedFiles}
+                            sessionId={intakeSession.id}
+                            claimType={claim.claimType}
+                          />
+
                           {nextSteps && (
                             <div className="rounded-2xl border border-sage-200 bg-white p-4">
                               <div className="mb-2 flex items-center justify-between">
@@ -833,6 +883,13 @@ export default function CustomerPortal() {
                             <>
                               <DOJAnswerSheet
                                 formData={intakeSession.recaFormData ?? {}}
+                              />
+
+                              <ExportForExtension
+                                sessionId={intakeSession.id}
+                                claimId={claim.id}
+                                formData={intakeSession.recaFormData ?? {}}
+                                uploadedFiles={intakeSession.uploadedFiles}
                               />
 
                               <DOJSubmissionCard
@@ -875,27 +932,11 @@ export default function CustomerPortal() {
                                 }
                               />
 
-                              <DOJUploadChecklist
-                                uploadedFiles={
-                                  intakeSession.uploadedFiles as any
-                                }
-                                packetReady={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                }
-                              />
-
                               <FinancialPlanningCard
                                 sessionId={intakeSession.id}
                                 visible={
                                   derivedPacketStatus === "READY_FOR_DOJ"
                                 }
-                              />
-
-                              <ExportForExtension
-                                sessionId={intakeSession.id}
-                                claimId={claim.id}
-                                formData={intakeSession.recaFormData ?? {}}
-                                uploadedFiles={intakeSession.uploadedFiles}
                               />
                             </>
                           )}
@@ -972,10 +1013,10 @@ export default function CustomerPortal() {
                               )
                             }
                             className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                            title="Complete after the RECA application to generate hospital/registry request packets"
+                            title="Generate pre-filled request letters to send to hospitals and registries for your medical records"
                           >
-                            <Upload className="h-4 w-4" />
-                            Document Request Forms
+                            <FileText className="h-4 w-4" />
+                            Request Medical Records
                           </Button>
                         )}
 
@@ -1009,9 +1050,10 @@ export default function CustomerPortal() {
                         </Button>
                       </div>
                       <p className="text-xs text-sage-600">
-                        Finish the RECA application first. Then complete the
-                        Document Request Forms to generate and send your
-                        hospital and registry packets.
+                        <strong>Documents</strong> = upload your supporting
+                        files. <strong>Request Medical Records</strong> =
+                        generate pre-filled letters to send to hospitals and
+                        registries.
                       </p>
                     </div>
                   </CardContent>

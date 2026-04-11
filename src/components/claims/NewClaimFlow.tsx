@@ -18,6 +18,14 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { ClaimSubscriptionFlow } from "@/components/subscriptions/ClaimSubscriptionFlow";
 
 type FlowStep = "eligibility" | "payment" | "complete";
@@ -189,70 +197,79 @@ export function NewClaimFlow({
             </Alert>
 
             {/* Simple eligibility form */}
-            <div className="space-y-4 rounded-lg border-2 border-sage-200 bg-sage-50 p-4">
+            <div className="space-y-5 rounded-2xl border-2 border-sage-200 bg-sage-50 p-5">
               <h3 className="font-semibold text-sage-900">
                 Quick Eligibility Check
               </h3>
 
-              <div>
-                <label className="block text-sm font-medium text-sage-700">
-                  Your relationship to the exposed individual:
-                </label>
-                <select
-                  className="mt-1 block w-full rounded-md border-sage-300 shadow-sm"
-                  onChange={(e) =>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-sage-700">
+                  Your relationship to the exposed individual
+                </Label>
+                <Select
+                  onValueChange={(value) =>
                     setEligibilityData({
                       ...eligibilityData,
-                      relationship: e.target.value,
+                      relationship: value,
                     })
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="SELF">Myself</option>
-                  <option value="SPOUSE">Spouse</option>
-                  <option value="CHILD">Child</option>
-                  <option value="PARENT">Parent</option>
-                  <option value="GRANDCHILD">Grandchild</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SELF">Myself</SelectItem>
+                    <SelectItem value="SPOUSE">Spouse</SelectItem>
+                    <SelectItem value="CHILD">Child</SelectItem>
+                    <SelectItem value="PARENT">Parent</SelectItem>
+                    <SelectItem value="GRANDCHILD">Grandchild</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-sage-700">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-sage-700">
                   Did they live in one of the designated exposure areas during
                   the testing period?
-                </label>
-                <select
-                  className="mt-1 block w-full rounded-md border-sage-300 shadow-sm"
-                  onChange={(e) =>
+                </Label>
+                <Select
+                  onValueChange={(value) =>
                     setEligibilityData({
                       ...eligibilityData,
-                      exposure: e.target.value === "yes",
+                      exposure: value === "yes",
                     })
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-sage-700">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-sage-700">
                   Was a compensable disease diagnosed?
-                </label>
-                <select
-                  className="mt-1 block w-full rounded-md border-sage-300 shadow-sm"
-                  onChange={(e) =>
+                </Label>
+                <Select
+                  onValueChange={(value) =>
                     setEligibilityData({
                       ...eligibilityData,
-                      disease: e.target.value === "yes",
+                      disease: value === "yes",
                     })
                   }
                 >
-                  <option value="">Select...</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
