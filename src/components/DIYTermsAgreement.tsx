@@ -145,6 +145,21 @@ export function DIYTermsAgreement({
                   automatically cancels after 2 payments)
                 </li>
               </ul>
+
+              <div className="mt-4 rounded-lg border border-terracotta-200 bg-terracotta-50 p-4">
+                <p className="font-semibold text-terracotta-900">
+                  * Promotional Pricing
+                </p>
+                <p className="mt-1 text-terracotta-900">
+                  You may be receiving a promotional or early-access discount.
+                  If so, your actual charge amount will be{" "}
+                  <strong>lower</strong> than the standard pricing listed above.
+                  The exact amount you will be charged is displayed on the
+                  checkout screen that follows this agreement. All other terms —
+                  including refund rights, cancellation policy, and service
+                  scope — apply equally regardless of the price paid.
+                </p>
+              </div>
             </section>
 
             <section>

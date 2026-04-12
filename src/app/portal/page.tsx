@@ -39,7 +39,6 @@ import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
 import { ExportForExtension } from "@/components/portal/ExportForExtension";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
 import { FilingFlowEducation } from "@/components/portal/FilingFlowEducation";
-import { NewClaimDialog } from "@/components/claims/NewClaimDialog";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
 import { generateDocumentRequirements } from "@/lib/reca/document-tracking";
@@ -251,7 +250,6 @@ export default function CustomerPortal() {
   const [packetActionError, setPacketActionError] = useState<string | null>(
     null
   );
-  const [showNewClaimDialog, setShowNewClaimDialog] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState<string | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -550,7 +548,7 @@ export default function CustomerPortal() {
                 Start your first claim to begin the process
               </p>
               <Button
-                onClick={() => setShowNewClaimDialog(true)}
+                onClick={() => router.push("/service-tiers")}
                 className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
               >
                 <Plus className="h-4 w-4" />
@@ -1063,7 +1061,7 @@ export default function CustomerPortal() {
 
             {/* Add New Claim */}
             <Button
-              onClick={() => setShowNewClaimDialog(true)}
+              onClick={() => router.push("/service-tiers")}
               variant="outline"
               className="w-full gap-2 rounded-full border-2 border-dashed border-sage-300 py-6 text-sage-700 hover:border-terracotta-400 hover:bg-terracotta-50 hover:text-terracotta-700"
             >
@@ -1140,19 +1138,6 @@ export default function CustomerPortal() {
           </div>
         )}
       </main>
-
-      {/* New Claim Dialog */}
-      <NewClaimDialog
-        open={showNewClaimDialog}
-        onOpenChange={(open) => {
-          setShowNewClaimDialog(open);
-          if (!open) {
-            // Reload claims when dialog closes (in case they completed payment)
-            loadClaims();
-          }
-        }}
-        existingClaimCount={claims.length}
-      />
 
       <InviteCollaboratorDialog
         open={showInviteDialog}
