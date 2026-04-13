@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, Trash2, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,13 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   );
   const { data: session } = useSession();
 
+  // Track polling interval in state so it can react to 202 responses
+  const [pollInterval, setPollInterval] = useState(
+    document.status === "PROCESSING" || document.status === "UPLOADING"
+      ? 3000
+      : 0
+  );
+
   // Fetch intelligence data with auto-polling when processing
   const {
     data: rawIntelligence,
@@ -64,11 +71,7 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     mutate,
   } = useSWR(`/api/documents/${document.id}/intelligence`, fetcher, {
     revalidateOnFocus: false,
-    // Poll every 3s while document is processing or intelligence returns processing status
-    refreshInterval:
-      document.status === "PROCESSING" || document.status === "UPLOADING"
-        ? 3000
-        : 0,
+    refreshInterval: pollInterval,
   });
 
   // Separate processing sentinel from real intelligence data
@@ -77,6 +80,48 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     rawIntelligence && !rawIntelligence.__processing
       ? rawIntelligence
       : undefined;
+
+  // Track how long we've been polling so we can show "stuck" UI
+  const pollCountRef = useRef(0);
+  const [isStuck, setIsStuck] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  useEffect(() => {
+    if (isProcessing) {
+      setPollInterval(3000);
+      pollCountRef.current += 1;
+      // After ~30s of polling (10 polls at 3s interval), consider it stuck
+      if (pollCountRef.current >= 10) {
+        setIsStuck(true);
+      }
+    } else if (rawIntelligence && !rawIntelligence.__processing) {
+      // Data loaded, stop polling
+      setPollInterval(0);
+      pollCountRef.current = 0;
+      setIsStuck(false);
+    }
+  }, [isProcessing, rawIntelligence]);
+
+  const handleRetryProcessing = async () => {
+    try {
+      setIsRetrying(true);
+      const res = await fetch(`/api/documents/process/${document.id}`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error("Retry failed:", body.error);
+      }
+      // Reset stuck state and start polling again
+      pollCountRef.current = 0;
+      setIsStuck(false);
+      await mutate();
+    } catch (err) {
+      console.error("Retry error:", err);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   const aiSuggestedCategory =
     intelligence?.aiCategorization?.suggestedCategory ?? null;
@@ -526,22 +571,64 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
             {!isLoading && isProcessing && (
               <div className="rounded-lg border border-sage-200 bg-white p-8">
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <div className="relative">
-                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-sage-200 border-t-sage-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-sage-900">
-                      Analyzing Document
-                    </h3>
-                    <p className="mt-1 text-sm text-sage-600">
-                      {rawIntelligence?.message ||
-                        "AI is extracting text, identifying entities, and checking compliance. This typically takes 10-30 seconds."}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-sage-500">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Auto-refreshing...
-                  </div>
+                  {!isStuck ? (
+                    <>
+                      <div className="h-12 w-12 animate-spin rounded-full border-4 border-sage-200 border-t-sage-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-sage-900">
+                          Analyzing Document
+                        </h3>
+                        <p className="mt-1 text-sm text-sage-600">
+                          {rawIntelligence?.message ||
+                            "AI is extracting text, identifying entities, and checking compliance. This typically takes 10-30 seconds."}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-sage-500">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Auto-refreshing...
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-10 w-10 text-yellow-500" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-sage-900">
+                          Processing is taking longer than expected
+                        </h3>
+                        <p className="mt-1 text-sm text-sage-600">
+                          The document analysis may have encountered an issue.
+                          You can retry the analysis or wait a bit longer.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleRetryProcessing}
+                          disabled={isRetrying}
+                        >
+                          {isRetrying ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Retrying...
+                            </>
+                          ) : (
+                            "Retry Analysis"
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            pollCountRef.current = 0;
+                            setIsStuck(false);
+                          }}
+                        >
+                          Keep Waiting
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
