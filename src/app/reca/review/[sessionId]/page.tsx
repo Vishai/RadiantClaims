@@ -1028,9 +1028,13 @@ export default function RECAReviewPage({ params }: PageProps) {
     }
   }, [status, params.sessionId, router, loadWorkflowState, loadPaymentInfo]);
 
-  // Trigger confetti only when form is substantially complete
+  // Trigger confetti only once when form is first completed (not on every page load)
   useEffect(() => {
     if (!isLoading && workflowState && completion?.isFormComplete) {
+      const confettiKey = `rc-confetti-played-${params.sessionId}`;
+      if (sessionStorage.getItem(confettiKey)) return;
+      sessionStorage.setItem(confettiKey, "true");
+
       const timer = setTimeout(() => {
         const duration = 3000;
         const end = Date.now() + duration;
@@ -1060,7 +1064,7 @@ export default function RECAReviewPage({ params }: PageProps) {
 
       return () => clearTimeout(timer);
     }
-  }, [isLoading, workflowState, completion?.isFormComplete]);
+  }, [isLoading, workflowState, completion?.isFormComplete, params.sessionId]);
 
   const handleDownloadPDF = async () => {
     if (paymentInfo?.isInstallmentPlan && !paymentInfo?.hasDownloadedPDF) {
@@ -1235,7 +1239,7 @@ export default function RECAReviewPage({ params }: PageProps) {
           </h1>
           <p className="text-sage-600">
             {isComplete
-              ? "Your RECA form information is complete and will now be reviewed by RadiantClaims"
+              ? "Your RECA form is complete — review your answers, verify your documents, and file with the DOJ"
               : "Review your progress and complete any remaining sections"}
           </p>
         </div>
@@ -1245,42 +1249,73 @@ export default function RECAReviewPage({ params }: PageProps) {
         {/* ================================================================ */}
         {isComplete ? (
           /* ——— COMPLETE STATE ——— */
-          <Card className="mb-6 border-2 border-terracotta-400 bg-gradient-to-br from-terracotta-50 to-white">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <CheckCircle2 className="h-12 w-12 flex-shrink-0 text-terracotta-600" />
-                <div>
-                  <h2 className="mb-2 text-2xl font-bold text-terracotta-900">
-                    🎉 Form Data Complete!
-                  </h2>
-                  <p className="mb-2 text-terracotta-800">
-                    Congratulations! You&apos;ve successfully completed all
-                    required sections of the RECA form. Your information has
-                    been saved and will now be reviewed by RadiantClaims and our
-                    law firm partners.
-                  </p>
-                  <p className="mb-3 text-terracotta-800">
-                    <strong>Next Steps:</strong> Install the{" "}
-                    <strong>Radiant Claims Filing Assistant</strong> Chrome
-                    extension and file your claim online through the DOJ portal
-                    at{" "}
-                    <a
-                      href="https://reca.justice.gov"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold underline"
-                    >
-                      reca.justice.gov
-                    </a>
-                    . See the steps below to get started.
-                  </p>
-                  <p className="text-sm text-terracotta-700">
-                    Form completion: {completion.overallPercentage}%
-                  </p>
+          <>
+            <Card className="mb-6 border-2 border-terracotta-400 bg-gradient-to-br from-terracotta-50 to-white">
+              <CardContent className="pt-6">
+                <div className="flex gap-4">
+                  <CheckCircle2 className="h-12 w-12 flex-shrink-0 text-terracotta-600" />
+                  <div>
+                    <h2 className="mb-2 text-2xl font-bold text-terracotta-900">
+                      🎉 Form Data Complete!
+                    </h2>
+                    <p className="mb-2 text-terracotta-800">
+                      Congratulations! You&apos;ve successfully completed all
+                      required sections of the RECA form. Your information has
+                      been saved. Before filing, make sure to verify your
+                      documents and review everything below.
+                    </p>
+                    <p className="mb-3 text-terracotta-800">
+                      <strong>Next Steps:</strong> Install the{" "}
+                      <strong>Radiant Claims Filing Assistant</strong> Chrome
+                      extension and file your claim online through the DOJ
+                      portal at{" "}
+                      <a
+                        href="https://reca.justice.gov"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold underline"
+                      >
+                        reca.justice.gov
+                      </a>
+                      . See the steps below to get started.
+                    </p>
+                    <p className="text-sm text-terracotta-700">
+                      Form completion: {completion.overallPercentage}%
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Document Verification Prompt */}
+            <Card className="mb-6 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="pt-6">
+                <div className="flex gap-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100">
+                    <FileText className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="mb-1 text-lg font-bold text-purple-900">
+                      Have You Verified Your Documents?
+                    </h3>
+                    <p className="mb-3 text-sm text-purple-800">
+                      Before filing with the DOJ, use our AI document
+                      verification tool to check that your uploaded documents
+                      meet requirements. Head to the Documents section in your
+                      portal to run verification.
+                    </p>
+                    <a
+                      href={`/reca/documents/${params.sessionId}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-purple-700"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Go to Documents
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
         ) : (
           /* ——— IN-PROGRESS STATE ——— */
           <Card className="mb-6 border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white">
@@ -2166,8 +2201,14 @@ export default function RECAReviewPage({ params }: PageProps) {
                   RadiantClaims Support
                 </p>
                 <p className="text-sage-700">
-                  If you have questions about this form or need assistance,
-                  please contact our support team.
+                  Questions about your form or documents? Email us at{" "}
+                  <a
+                    href="mailto:support@radiantclaims.com"
+                    className="font-medium text-terracotta-600 underline hover:text-terracotta-700"
+                  >
+                    support@radiantclaims.com
+                  </a>{" "}
+                  or use the chat widget in the bottom-right corner of any page.
                 </p>
               </div>
             </div>
