@@ -548,6 +548,84 @@ export async function analyzeImageQuality(
 }
 
 /**
+ * Generate quality metrics for PDF documents based on OCR results
+ */
+function generatePdfQualityMetrics(ocrResult: OCRResult): ImageQualityMetrics {
+  const recommendations: string[] = [];
+  let qualityScore = 1.0;
+
+  // Native text extraction (pdf-parse/pdfjs) indicates born-digital PDF
+  const isBornDigital =
+    ocrResult.method === "pdf-parse" || ocrResult.method === "pdfjs";
+
+  // Evaluate text extraction success
+  const charsPerPage = ocrResult.pageCount
+    ? ocrResult.text.length / ocrResult.pageCount
+    : ocrResult.text.length;
+
+  if (ocrResult.text.length === 0) {
+    qualityScore = 0;
+    recommendations.push(
+      "No text could be extracted from this PDF. The file may be corrupted or contain only images without embedded text."
+    );
+  } else if (
+    charsPerPage < 50 &&
+    ocrResult.pageCount &&
+    ocrResult.pageCount > 0
+  ) {
+    qualityScore -= 0.3;
+    recommendations.push(
+      "Very little text was extracted per page. This may be a scanned document with limited readable content."
+    );
+  }
+
+  // Factor in OCR confidence
+  if (ocrResult.confidence < 0.6) {
+    qualityScore -= 0.3;
+    recommendations.push(
+      "Text recognition confidence is low. Some extracted information may be inaccurate."
+    );
+  } else if (ocrResult.confidence < 0.8) {
+    qualityScore -= 0.1;
+    recommendations.push(
+      "Text recognition confidence is moderate. Most information should be accurate."
+    );
+  }
+
+  // Scanned PDFs that needed OCR fallback get lower scores
+  if (!isBornDigital && ocrResult.method !== "none") {
+    qualityScore -= 0.15;
+    recommendations.push(
+      "This appears to be a scanned document. Text was extracted using OCR, which may have minor inaccuracies."
+    );
+  }
+
+  // Good quality messages
+  if (qualityScore >= 0.85) {
+    if (isBornDigital) {
+      recommendations.push(
+        "This is a born-digital PDF with excellent text quality. All text was extracted natively."
+      );
+    } else {
+      recommendations.push(
+        "Good document quality. Text extraction completed successfully."
+      );
+    }
+  }
+
+  qualityScore = Math.max(0, Math.min(1, qualityScore));
+
+  return {
+    resolution: { width: 0, height: 0 }, // Not applicable for PDFs
+    size: 0,
+    isBlurry: false,
+    isLowContrast: false,
+    qualityScore,
+    recommendations,
+  };
+}
+
+/**
  * Main processing function - determines file type and extracts text
  */
 export async function processDocument(
@@ -560,7 +638,8 @@ export async function processDocument(
   // Handle PDFs
   if (mimeType === "application/pdf") {
     const ocrResult = await extractTextFromPDF(fileBuffer);
-    return { ocrResult };
+    const qualityMetrics = generatePdfQualityMetrics(ocrResult);
+    return { ocrResult, qualityMetrics };
   }
 
   // Handle images

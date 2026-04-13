@@ -18,6 +18,7 @@ export interface IntelligenceResponse {
     qualityScore: number;
     isBlurry: boolean;
     isLowContrast: boolean;
+    recommendations?: string[];
   };
   aiCategorization?: {
     suggestedCategory: string;
@@ -78,10 +79,34 @@ export async function GET(
       );
     }
 
-    // Check if document has been processed
+    // If still processing, return 202 with status info
+    if (file.status === "PROCESSING" || file.status === "UPLOADING") {
+      return NextResponse.json(
+        {
+          status: "processing",
+          message:
+            "Document is being analyzed. This typically takes 10-30 seconds.",
+        },
+        { status: 202 }
+      );
+    }
+
+    // If failed, return specific error
+    if (file.status === "FAILED") {
+      return NextResponse.json(
+        {
+          status: "failed",
+          error:
+            "Document processing failed. Please try re-uploading the document.",
+        },
+        { status: 422 }
+      );
+    }
+
+    // Only proceed for READY documents
     if (file.status !== "READY") {
       return NextResponse.json(
-        { error: "Document is still processing" },
+        { error: "Document is in an unexpected state" },
         { status: 400 }
       );
     }

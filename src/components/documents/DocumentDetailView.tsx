@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, Download, Trash2, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OverviewTab } from "./intelligence/OverviewTab";
+import { SummaryTab } from "./intelligence/SummaryTab";
 import { EntitiesTab } from "./intelligence/EntitiesTab";
-import { QualityTab } from "./intelligence/QualityTab";
-import { ComplianceTab } from "./intelligence/ComplianceTab";
-import { RisksTab } from "./intelligence/RisksTab";
+import { ComplianceRisksTab } from "./intelligence/ComplianceRisksTab";
 import { ProvenanceTab } from "./intelligence/ProvenanceTab";
 import useSWR from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,7 +28,24 @@ interface DocumentDetailViewProps {
   document: any;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+
+  // 202 means still processing — return a sentinel so we can detect it
+  if (res.status === 202) {
+    const body = await res.json().catch(() => ({}));
+    return { __processing: true, message: body.message };
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error(body.error || "Failed to fetch intelligence data");
+    (err as any).status = res.status;
+    throw err;
+  }
+
+  return res.json();
+};
 
 export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   const router = useRouter();
@@ -41,19 +56,43 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   );
   const { data: session } = useSession();
 
-  // Fetch intelligence data
+  // Fetch intelligence data with auto-polling when processing
   const {
-    data: intelligence,
+    data: rawIntelligence,
     error,
     isLoading,
     mutate,
   } = useSWR(`/api/documents/${document.id}/intelligence`, fetcher, {
     revalidateOnFocus: false,
+    // Poll every 3s while document is processing or intelligence returns processing status
+    refreshInterval:
+      document.status === "PROCESSING" || document.status === "UPLOADING"
+        ? 3000
+        : 0,
   });
+
+  // Separate processing sentinel from real intelligence data
+  const isProcessing = rawIntelligence?.__processing === true;
+  const intelligence =
+    rawIntelligence && !rawIntelligence.__processing
+      ? rawIntelligence
+      : undefined;
 
   const aiSuggestedCategory =
     intelligence?.aiCategorization?.suggestedCategory ?? null;
   const aiCategoryConfidence = intelligence?.aiCategorization?.confidence ?? 0;
+
+  // Determine which adaptive tabs to show
+  const hasEntities =
+    intelligence?.entities &&
+    (intelligence.entities.persons?.length > 0 ||
+      intelligence.entities.dates?.length > 0 ||
+      intelligence.entities.addresses?.length > 0 ||
+      intelligence.entities.medical?.length > 0 ||
+      intelligence.entities.employment?.length > 0);
+
+  const hasComplianceOrRisks =
+    Boolean(intelligence?.compliance) || Boolean(intelligence?.risks);
 
   const handleDownload = async () => {
     window.open(`/api/documents/${document.id}/download`, "_blank");
@@ -230,7 +269,7 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
 
           {qualification.matchedRequirement && (
             <p className="text-xs font-semibold">
-              ✓ Satisfies: {qualification.matchedRequirement.name}
+              Satisfies: {qualification.matchedRequirement.name}
             </p>
           )}
 
@@ -327,6 +366,13 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
       </Alert>
     );
   };
+
+  // Calculate adaptive tab count for grid layout
+  const tabCount =
+    1 + // Summary (always)
+    (hasEntities ? 1 : 0) +
+    (hasComplianceOrRisks ? 1 : 0) +
+    1; // Details (always)
 
   return (
     <div className="min-h-screen bg-sage-50">
@@ -466,6 +512,7 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
               </div>
             )}
 
+            {/* Loading state */}
             {isLoading && (
               <div className="space-y-3 rounded-lg border border-sage-200 bg-white p-6">
                 <Skeleton className="h-8 w-3/4" />
@@ -475,64 +522,115 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
               </div>
             )}
 
-            {error && (
+            {/* Processing state */}
+            {!isLoading && isProcessing && (
+              <div className="rounded-lg border border-sage-200 bg-white p-8">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div className="relative">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-sage-200 border-t-sage-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-sage-900">
+                      Analyzing Document
+                    </h3>
+                    <p className="mt-1 text-sm text-sage-600">
+                      {rawIntelligence?.message ||
+                        "AI is extracting text, identifying entities, and checking compliance. This typically takes 10-30 seconds."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-sage-500">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Auto-refreshing...
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error state */}
+            {error && !isProcessing && (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
                 <AlertTitle>Error loading intelligence data</AlertTitle>
                 <AlertDescription>
-                  Could not load AI analysis for this document. Please try again
-                  later.
+                  {error.message ||
+                    "Could not load AI analysis for this document."}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => mutate()}
+                  >
+                    Retry
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}
 
+            {/* Intelligence tabs - adaptive */}
             {intelligence && (
               <div className="rounded-lg border border-sage-200 bg-white shadow-sm">
-                <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-6 rounded-t-lg">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="entities">Entities</TabsTrigger>
-                    <TabsTrigger value="quality">Quality</TabsTrigger>
-                    <TabsTrigger value="compliance">Compliance</TabsTrigger>
-                    <TabsTrigger value="risks">Risks</TabsTrigger>
-                    <TabsTrigger value="provenance">Info</TabsTrigger>
+                <Tabs defaultValue="summary" className="w-full">
+                  <TabsList
+                    className="grid w-full rounded-t-lg"
+                    style={{
+                      gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    {hasEntities && (
+                      <TabsTrigger value="entities">Extracted Data</TabsTrigger>
+                    )}
+                    {hasComplianceOrRisks && (
+                      <TabsTrigger value="compliance-risks">
+                        Compliance & Risks
+                      </TabsTrigger>
+                    )}
+                    <TabsTrigger value="details">Details</TabsTrigger>
                   </TabsList>
 
                   <div className="max-h-[700px] overflow-y-auto p-6">
-                    <TabsContent value="overview">
-                      <OverviewTab data={intelligence} />
-                    </TabsContent>
-
-                    <TabsContent value="entities">
-                      <EntitiesTab data={intelligence} />
-                    </TabsContent>
-
-                    <TabsContent value="quality">
-                      <QualityTab data={intelligence} />
-                    </TabsContent>
-
-                    <TabsContent value="compliance">
-                      <ComplianceTab data={intelligence} />
-                    </TabsContent>
-
-                    <TabsContent value="risks">
-                      <RisksTab
+                    <TabsContent value="summary">
+                      <SummaryTab
                         data={intelligence}
-                        documentId={document.id}
-                        userRole={session?.user?.role}
-                        onRefresh={mutate}
+                        mimeType={document.mimeType}
                       />
                     </TabsContent>
 
-                    <TabsContent value="provenance">
-                      <ProvenanceTab data={intelligence} />
+                    {hasEntities && (
+                      <TabsContent value="entities">
+                        <EntitiesTab data={intelligence} />
+                      </TabsContent>
+                    )}
+
+                    {hasComplianceOrRisks && (
+                      <TabsContent value="compliance-risks">
+                        <ComplianceRisksTab
+                          data={intelligence}
+                          documentId={document.id}
+                          userRole={session?.user?.role}
+                          onRefresh={mutate}
+                        />
+                      </TabsContent>
+                    )}
+
+                    <TabsContent value="details">
+                      <ProvenanceTab
+                        data={intelligence}
+                        documentData={{
+                          id: document.id,
+                          originalFilename: document.originalFilename,
+                          fileSize: document.sizeBytes,
+                          uploadedAt: document.uploadedAt,
+                          status: document.status,
+                        }}
+                      />
                     </TabsContent>
                   </div>
                 </Tabs>
               </div>
             )}
 
-            {!isLoading && !error && !intelligence && (
+            {!isLoading && !error && !intelligence && !isProcessing && (
               <Alert>
                 <AlertDescription>
                   No AI intelligence data available for this document yet.
