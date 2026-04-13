@@ -38,6 +38,23 @@ export async function extractEntities(
   documentType: FileCategory,
   pageCount: number = 1
 ): Promise<EntityExtractionResult> {
+  // Guard: skip extraction if OCR text is too short to contain meaningful data.
+  // This prevents GPT-4o from hallucinating placeholder entities when given empty input.
+  const trimmedText = ocrText.trim();
+  if (trimmedText.length < 50) {
+    console.warn(
+      `⚠️ Skipping entity extraction: insufficient OCR text (${trimmedText.length} chars). ` +
+        "Returning empty entities to avoid hallucination."
+    );
+    return {
+      persons: [],
+      dates: [],
+      addresses: [],
+      medical: [],
+      employment: [],
+    };
+  }
+
   const openai = getOpenAIClient();
 
   // Build context-aware system prompt based on document type
@@ -86,7 +103,14 @@ export async function extractEntities(
  */
 function buildSystemPrompt(documentType: FileCategory): string {
   const basePrompt = `You are an expert data extraction system for RECA (Radiation Exposure Compensation Act) claims.
-Your job is to extract structured information from document text with high accuracy.
+Your job is to extract structured information from the provided document text with high accuracy.
+
+CRITICAL RULES:
+- ONLY extract information that is EXPLICITLY present in the document text below.
+- NEVER invent, guess, or hallucinate data. If information is not in the text, return empty arrays.
+- If the document text is empty, very short, or unreadable, return empty arrays for ALL entity types.
+- Do NOT use placeholder names like "John Doe", "Jane Doe", or generic addresses like "123 Main St".
+- Do NOT generate example data. Only extract what you can directly quote from the text.
 
 Extract the following entities:
 1. **Persons**: Names of claimants, witnesses, doctors, employers, family members
@@ -96,12 +120,12 @@ Extract the following entities:
 5. **Employment**: Employers, job titles, locations, dates, nuclear facility involvement
 
 Key Requirements:
-- Be extremely accurate - only extract information you're confident about
+- Be extremely accurate - only extract information you can point to in the actual text
 - Include page numbers for all entities (estimate based on text position if not explicit)
 - For dates, use ISO 8601 format (YYYY-MM-DD) or partial dates (YYYY-MM, YYYY)
 - For addresses, extract county information - this is critical for RECA jurisdiction checks
-- Set confidence scores: 0.9+ for explicit info, 0.7-0.9 for inferred, 0.5-0.7 for uncertain
-- For persons, include all mentions with context for verification`;
+- Set confidence scores: 0.9+ for explicit verbatim info, 0.7-0.9 for inferred from context, below 0.7 for uncertain
+- If the text quality is poor or ambiguous, prefer returning fewer entities with lower confidence over guessing`;
 
   // Add document-specific guidance
   const specificGuidance: Record<FileCategory, string> = {
@@ -239,9 +263,11 @@ function buildUserPrompt(
 Page Count: ${pageCount}
 
 Document Text:
+---
 ${truncatedText}
+---
 
-Extract all entities following the schema. Be thorough but only extract information you're confident about.`;
+Extract all entities from the text above. ONLY extract information that appears verbatim or can be directly inferred from the text. If the text is empty or too short to contain meaningful data, return empty arrays for all entity types. Do NOT make up or guess any data.`;
 }
 
 /**
@@ -250,23 +276,48 @@ Extract all entities following the schema. Be thorough but only extract informat
 function validateAndCleanEntities(
   result: EntityExtractionResult
 ): EntityExtractionResult {
+  // Use higher confidence threshold (0.6) to filter out hallucinated data.
+  // Hallucinated entities typically get 0.5-0.7 confidence when text is sparse.
+  const MIN_CONFIDENCE = 0.6;
+
+  // Also filter out obvious placeholder names
+  const PLACEHOLDER_NAMES = new Set([
+    "john doe",
+    "jane doe",
+    "richard roe",
+    "john smith",
+    "jane smith",
+    "n/a",
+    "unknown",
+    "test",
+    "sample",
+  ]);
+
   return {
     persons: result.persons.filter(
-      (p) => p.name && p.name.length > 1 && p.confidence >= 0.5
+      (p) =>
+        p.name &&
+        p.name.length > 1 &&
+        p.confidence >= MIN_CONFIDENCE &&
+        !PLACEHOLDER_NAMES.has(p.name.toLowerCase().trim())
     ),
     dates: result.dates
-      .filter((d) => d.value && d.confidence >= 0.5)
+      .filter((d) => d.value && d.confidence >= MIN_CONFIDENCE)
       .map((d) => ({
         ...d,
-        // Ensure dates are in a valid format
         value: normalizeDate(d.value),
       })),
     addresses: result.addresses.filter(
-      (a) => a.full_address && a.full_address.length > 5 && a.confidence >= 0.5
+      (a) =>
+        a.full_address &&
+        a.full_address.length > 5 &&
+        a.confidence >= MIN_CONFIDENCE &&
+        !a.full_address.toLowerCase().includes("123 main st")
     ),
-    medical: result.medical.filter((m) => m.confidence >= 0.5),
+    medical: result.medical.filter((m) => m.confidence >= MIN_CONFIDENCE),
     employment: result.employment.filter(
-      (e) => e.employer && e.employer.length > 1 && e.confidence >= 0.5
+      (e) =>
+        e.employer && e.employer.length > 1 && e.confidence >= MIN_CONFIDENCE
     ),
   };
 }

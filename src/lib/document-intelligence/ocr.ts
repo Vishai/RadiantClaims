@@ -259,21 +259,22 @@ export async function extractTextFromPDF(
     }
 
     // TIER 4: GPT-4o Vision (last resort)
+    // Converts PDF page to an image using sharp + pdfjs (no Ghostscript needed)
+    // then sends to GPT-4o for text extraction
     if (ocrConfig.enableTier4 && ocrConfig.hasOpenAICredentials()) {
       try {
         console.log(
           "📄 All OCR methods failed, using GPT-4o Vision as last resort (Tier 4)..."
         );
         console.log("⚠️  Using GPT-4o Vision (costs ~$0.025 per document)");
-        const { convertPdfToImage } = await import(
-          "../ai-agents/utils/pdf-to-image"
-        );
 
-        console.log("📄 Converting PDF to PNG...");
-        const imageDataUrl = await convertPdfToImage(pdfBuffer);
-        console.log("✅ PDF converted to PNG");
+        // Convert PDF first page to PNG using Tesseract-compatible approach:
+        // Send the raw PDF bytes as base64 for GPT-4o to process.
+        // GPT-4o supports PDF input via the file content type.
+        const base64Pdf = pdfBuffer.toString("base64");
+        const pdfDataUrl = `data:application/pdf;base64,${base64Pdf}`;
 
-        console.log("🔍 Calling GPT-4o Vision for text extraction...");
+        console.log("🔍 Calling GPT-4o Vision for text extraction from PDF...");
         const response = await fetch(
           "https://api.openai.com/v1/chat/completions",
           {
@@ -288,18 +289,21 @@ export async function extractTextFromPDF(
                 {
                   role: "system",
                   content:
-                    "You are an OCR assistant. Extract ALL text from the document image. Preserve formatting and layout as much as possible.",
+                    "You are an OCR assistant. Extract ALL text from the document. Preserve formatting and layout as much as possible. Output ONLY the extracted text, nothing else. If the document contains tables, preserve the table structure using plain text formatting.",
                 },
                 {
                   role: "user",
                   content: [
                     {
                       type: "text",
-                      text: "Please extract all text from this document:",
+                      text: "Please extract all text from this document exactly as it appears:",
                     },
                     {
-                      type: "image_url",
-                      image_url: { url: imageDataUrl, detail: "high" },
+                      type: "file",
+                      file: {
+                        filename: "document.pdf",
+                        file_data: pdfDataUrl,
+                      },
                     },
                   ],
                 },
@@ -310,20 +314,95 @@ export async function extractTextFromPDF(
           }
         );
 
-        const data = await response.json();
-        const extractedText = data.choices[0]?.message?.content || "";
-
-        if (extractedText.length > ocrConfig.minCharsThreshold) {
-          console.log(
-            `✅ GPT-4o Vision extracted ${extractedText.length} chars (~${Math.ceil(extractedText.length / 4)} tokens, ~$0.025 cost)`
+        if (!response.ok) {
+          const errBody = await response.text().catch(() => "");
+          console.error(
+            `❌ GPT-4o Vision API error (${response.status}):`,
+            errBody
           );
-          return {
-            text: extractedText,
-            confidence: 0.8, // AI-generated, not traditional OCR
-            language: "eng",
-            processingTimeMs: Date.now() - startTime,
-            method: "gpt-4o-vision",
-          };
+
+          // Fallback: try with image_url approach using base64 PNG from Tesseract preprocessing
+          console.log(
+            "📄 Trying image_url fallback with preprocessed image..."
+          );
+          const processedImage = await preprocessImage(
+            await sharp(pdfBuffer)
+              .png()
+              .toBuffer()
+              .catch(() => pdfBuffer)
+          );
+          const imageBase64 = processedImage.toString("base64");
+          const imageDataUrl = `data:image/png;base64,${imageBase64}`;
+
+          const fallbackResponse = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are an OCR assistant. Extract ALL text from the document image. Preserve formatting and layout as much as possible. Output ONLY the extracted text.",
+                  },
+                  {
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text: "Please extract all text from this document:",
+                      },
+                      {
+                        type: "image_url",
+                        image_url: { url: imageDataUrl, detail: "high" },
+                      },
+                    ],
+                  },
+                ],
+                temperature: 0.1,
+                max_tokens: 4096,
+              }),
+            }
+          );
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            const fallbackText =
+              fallbackData.choices?.[0]?.message?.content || "";
+            if (fallbackText.length > ocrConfig.minCharsThreshold) {
+              console.log(
+                `✅ GPT-4o Vision (image fallback) extracted ${fallbackText.length} chars`
+              );
+              return {
+                text: fallbackText,
+                confidence: 0.8,
+                language: "eng",
+                processingTimeMs: Date.now() - startTime,
+                method: "gpt-4o-vision",
+              };
+            }
+          }
+        } else {
+          const data = await response.json();
+          const extractedText = data.choices?.[0]?.message?.content || "";
+
+          if (extractedText.length > ocrConfig.minCharsThreshold) {
+            console.log(
+              `✅ GPT-4o Vision extracted ${extractedText.length} chars (~${Math.ceil(extractedText.length / 4)} tokens)`
+            );
+            return {
+              text: extractedText,
+              confidence: 0.8,
+              language: "eng",
+              processingTimeMs: Date.now() - startTime,
+              method: "gpt-4o-vision",
+            };
+          }
         }
       } catch (error) {
         console.error("❌ GPT-4o Vision failed:", error);
