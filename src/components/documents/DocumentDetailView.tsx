@@ -37,6 +37,12 @@ const fetcher = async (url: string) => {
     return { __processing: true, message: body.message };
   }
 
+  // 422 = processing failed, surface as a failed state (not an SWR error)
+  if (res.status === 422) {
+    const body = await res.json().catch(() => ({}));
+    return { __failed: true, message: body.error || "Processing failed." };
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const err = new Error(body.error || "Failed to fetch intelligence data");
@@ -74,10 +80,14 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     refreshInterval: pollInterval,
   });
 
-  // Separate processing sentinel from real intelligence data
+  // Separate processing/failed sentinels from real intelligence data
   const isProcessing = rawIntelligence?.__processing === true;
+  const isFailed = rawIntelligence?.__failed === true;
+  const failedMessage = isFailed ? rawIntelligence?.message : null;
   const intelligence =
-    rawIntelligence && !rawIntelligence.__processing
+    rawIntelligence &&
+    !rawIntelligence.__processing &&
+    !rawIntelligence.__failed
       ? rawIntelligence
       : undefined;
 
@@ -633,8 +643,41 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
               </div>
             )}
 
-            {/* Error state */}
-            {error && !isProcessing && (
+            {/* Failed state — processing crashed, offer retry */}
+            {!isLoading && isFailed && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-8">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <XCircle className="h-10 w-10 text-red-500" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-sage-900">
+                      Analysis Failed
+                    </h3>
+                    <p className="mt-1 text-sm text-sage-600">
+                      {failedMessage ||
+                        "The document analysis encountered an error."}
+                    </p>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleRetryProcessing}
+                    disabled={isRetrying}
+                  >
+                    {isRetrying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Re-analyzing...
+                      </>
+                    ) : (
+                      "Retry Analysis"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Error state — network/unexpected errors */}
+            {error && !isProcessing && !isFailed && (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
                 <AlertTitle>Error loading intelligence data</AlertTitle>

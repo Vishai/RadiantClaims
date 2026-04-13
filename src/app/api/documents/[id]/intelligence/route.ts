@@ -79,8 +79,36 @@ export async function GET(
       );
     }
 
-    // If still processing, return 202 with status info
+    // If still processing, check if it's been stuck too long
     if (file.status === "PROCESSING" || file.status === "UPLOADING") {
+      const uploadTime = file.uploadedAt
+        ? new Date(file.uploadedAt).getTime()
+        : 0;
+      const stuckThresholdMs = 5 * 60 * 1000; // 5 minutes
+      const isStuck =
+        uploadTime > 0 && Date.now() - uploadTime > stuckThresholdMs;
+
+      if (isStuck) {
+        // Auto-mark as FAILED so the user gets a retry option
+        try {
+          await db.uploadedFile.update({
+            where: { id },
+            data: { status: "FAILED" },
+          });
+        } catch (updateErr) {
+          console.error("Failed to auto-fail stuck document:", updateErr);
+        }
+
+        return NextResponse.json(
+          {
+            status: "failed",
+            error:
+              "Document processing timed out. Please click Retry to re-analyze.",
+          },
+          { status: 422 }
+        );
+      }
+
       return NextResponse.json(
         {
           status: "processing",
@@ -96,8 +124,7 @@ export async function GET(
       return NextResponse.json(
         {
           status: "failed",
-          error:
-            "Document processing failed. Please try re-uploading the document.",
+          error: "Document processing failed. Click Retry to re-analyze.",
         },
         { status: 422 }
       );

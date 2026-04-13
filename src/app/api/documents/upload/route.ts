@@ -20,6 +20,9 @@ import {
   type ContributorUploadAttribution,
 } from "@/lib/uploaded-file-metadata";
 
+// Allow up to 60 seconds for upload + AI processing on Vercel
+export const maxDuration = 60;
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const ALLOWED_MIME_TYPES = [
@@ -192,13 +195,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Trigger document intelligence processing asynchronously
-    // Process in background without blocking the response
-    processDocumentInBackground(uploadedFile.id, r2Key, file.type).catch(
-      (error) => {
-        console.error("Background document processing failed:", error);
-      }
-    );
+    // Process document synchronously so Vercel doesn't kill the function.
+    // The frontend shows a "Processing" state and polls for completion.
+    // maxDuration=60 gives us enough time for OCR + AI analysis.
+    let processingError: string | null = null;
+    try {
+      await processDocumentInBackground(uploadedFile.id, r2Key, file.type);
+    } catch (error) {
+      console.error("Document processing failed:", error);
+      processingError =
+        error instanceof Error ? error.message : "Processing failed";
+    }
 
     return NextResponse.json(
       {
@@ -206,7 +213,10 @@ export async function POST(req: NextRequest) {
         fileId: uploadedFile.id,
         category: uploadedFile.category,
         requiresOriginal: uploadedFile.requiresOriginal,
-        message: "File uploaded successfully. AI analysis in progress...",
+        message: processingError
+          ? "File uploaded but AI analysis encountered an error. You can retry from the document page."
+          : "File uploaded and analyzed successfully.",
+        processingComplete: !processingError,
       },
       { status: 201 }
     );

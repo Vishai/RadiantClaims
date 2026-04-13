@@ -1,6 +1,8 @@
 /**
  * Document Intelligence Processing API
- * Processes uploaded documents with OCR, AI categorization, and quality analysis
+ * Re-processes uploaded documents with the full AI pipeline:
+ * OCR, categorization, entity extraction, compliance, and risk analysis.
+ * Used for retrying failed or stuck documents.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,6 +16,12 @@ import {
   generateDocumentTags,
   type FileCategory,
 } from "@/lib/document-intelligence/ai-categorization";
+import { extractEntities } from "@/lib/document-intelligence/entity-extraction";
+import { checkRECACompliance } from "@/lib/document-intelligence/reca-compliance";
+import { analyzeRisks } from "@/lib/document-intelligence/risk-analysis";
+import { detectCategoryFromText } from "@/lib/document-intelligence/heuristic-categorization";
+import { analyzeOtherDocument } from "@/lib/document-intelligence/other-document-analyzer";
+import { parseUploadedFileMetadata } from "@/lib/uploaded-file-metadata";
 import { createAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
@@ -54,14 +62,6 @@ export async function POST(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Check if already processed
-    if (uploadedFile.ocrText && uploadedFile.status === "READY") {
-      return NextResponse.json({
-        message: "File already processed",
-        file: uploadedFile,
-      });
-    }
-
     // Update status to PROCESSING
     await db.uploadedFile.update({
       where: { id: fileId },
@@ -74,16 +74,25 @@ export async function POST(
       throw new Error("Failed to download file from storage");
     }
 
+    const userSelectedCategory = uploadedFile.category as FileCategory | null;
+    const categoryIsLocked = uploadedFile.categoryLocked ?? false;
+
     // STEP 1: OCR & Quality Analysis
     const { ocrResult, qualityMetrics } = await processDocument(
       fileBuffer,
       uploadedFile.mimeType
     );
 
-    // STEP 2: AI Categorization (if not already categorized)
-    let finalCategory: FileCategory =
-      (uploadedFile.category as FileCategory) || "OTHER";
+    console.log(
+      `✓ OCR completed for ${fileId}: ${ocrResult.text.length} chars extracted`
+    );
+
+    // STEP 2: AI Categorization
+    let finalCategory: FileCategory = userSelectedCategory ?? "OTHER";
     let categorizationResult;
+    let categoryAutoCorrected = false;
+    let categoryAutoCorrectionSource: "ai" | "heuristic" | undefined;
+    let heuristicCategorization;
 
     if (ocrResult.text.length > 20) {
       categorizationResult = await categorizeDocument(
@@ -92,13 +101,35 @@ export async function POST(
         uploadedFile.category as FileCategory | undefined
       );
 
-      // Use AI category if confidence is high and no manual category set
-      if (
-        categorizationResult.confidence > 0.7 &&
-        (!uploadedFile.category || uploadedFile.category === "OTHER")
-      ) {
+      if (!categoryIsLocked && categorizationResult.confidence > 0.75) {
+        if (categorizationResult.category !== finalCategory) {
+          finalCategory = categorizationResult.category;
+          categoryAutoCorrected =
+            (!!userSelectedCategory &&
+              userSelectedCategory !== categorizationResult.category) ||
+            finalCategory === "OTHER";
+          categoryAutoCorrectionSource = "ai";
+        }
+      } else if (!userSelectedCategory && !categoryIsLocked) {
         finalCategory = categorizationResult.category;
       }
+
+      console.log(
+        `✓ AI categorization: ${finalCategory} (${(categorizationResult.confidence * 100).toFixed(0)}%)`
+      );
+    }
+
+    heuristicCategorization = detectCategoryFromText(ocrResult.text);
+
+    if (
+      heuristicCategorization &&
+      heuristicCategorization.confidence >= 0.85 &&
+      heuristicCategorization.category !== finalCategory &&
+      !categoryIsLocked
+    ) {
+      finalCategory = heuristicCategorization.category;
+      categoryAutoCorrected = true;
+      categoryAutoCorrectionSource = "heuristic";
     }
 
     // STEP 3: Generate Smart Tags
@@ -109,11 +140,109 @@ export async function POST(
       qualityMetrics?.qualityScore || ocrResult.confidence
     );
 
-    // STEP 4: Store Results in Database
+    // STEP 4: Extract Entities
+    let entities;
+    try {
+      entities = await extractEntities(
+        ocrResult.text,
+        finalCategory,
+        ocrResult.pageCount || 1
+      );
+      console.log(
+        `✓ Entity extraction: ${entities.persons.length} persons, ${entities.dates.length} dates`
+      );
+    } catch (error) {
+      console.error(`⚠️ Entity extraction failed:`, error);
+      entities = {
+        persons: [],
+        dates: [],
+        addresses: [],
+        medical: [],
+        employment: [],
+      };
+    }
+
+    // STEP 5: RECA Compliance Check
+    let complianceResult;
+    try {
+      if (uploadedFile.intakeSessionId) {
+        const allDocuments = await db.uploadedFile.findMany({
+          where: { intakeSessionId: uploadedFile.intakeSessionId },
+          select: { id: true, category: true, ocrText: true, metadata: true },
+        });
+
+        complianceResult = await checkRECACompliance(
+          entities,
+          allDocuments as any,
+          ocrResult.text,
+          finalCategory,
+          {
+            userSelectedCategory,
+            aiCategorizationResult: categorizationResult,
+            heuristicReason: heuristicCategorization?.reason,
+            heuristicSignals: heuristicCategorization?.matchedSignals,
+            autoCorrected: categoryAutoCorrected,
+            categoryLocked: categoryIsLocked,
+          }
+        );
+        console.log(
+          `✓ Compliance check: ${complianceResult.claimTypeSuspected}, ${(complianceResult.checklistCoverage * 100).toFixed(0)}% complete`
+        );
+      }
+    } catch (error) {
+      console.error(`⚠️ Compliance check failed:`, error);
+    }
+
+    // STEP 6: Risk Analysis
+    let riskAnalysis;
+    if (complianceResult) {
+      try {
+        const riskOptions: Parameters<typeof analyzeRisks>[2] = {
+          documentText: ocrResult.text,
+        };
+
+        if (qualityMetrics) {
+          riskOptions.qualityMetrics = {
+            qualityScore: qualityMetrics.qualityScore,
+            isBlurry: qualityMetrics.isBlurry || false,
+            isLowContrast: qualityMetrics.isLowContrast || false,
+            recommendations: qualityMetrics.recommendations,
+          };
+        }
+
+        riskAnalysis = await analyzeRisks(
+          entities,
+          complianceResult,
+          riskOptions
+        );
+        console.log(
+          `✓ Risk analysis: ${riskAnalysis.totalRisks} risks (${riskAnalysis.highSeverityCount} high)`
+        );
+      } catch (error) {
+        console.error(`⚠️ Risk analysis failed:`, error);
+      }
+    }
+
+    let otherDocumentAnalysis;
+    if (finalCategory === "OTHER") {
+      try {
+        otherDocumentAnalysis = await analyzeOtherDocument(
+          ocrResult.text,
+          uploadedFile.originalFilename
+        );
+      } catch (error) {
+        console.error("OTHER document analysis failed:", error);
+      }
+    }
+
+    // STEP 7: Store Results
+    const existingMetadata = parseUploadedFileMetadata(uploadedFile.metadata);
     const metadata = {
+      ...existingMetadata,
       ocrConfidence: ocrResult.confidence,
       processingTimeMs: ocrResult.processingTimeMs,
       pageCount: ocrResult.pageCount,
+      textLength: ocrResult.text.length,
       qualityMetrics: qualityMetrics
         ? {
             resolution: qualityMetrics.resolution,
@@ -131,9 +260,27 @@ export async function POST(
             alternatives: categorizationResult.alternativeCategories,
           }
         : undefined,
+      categoryInsights: {
+        userSelectedCategory,
+        finalCategory,
+        autoCorrected: categoryAutoCorrected,
+        autoCorrectionSource: categoryAutoCorrectionSource,
+        heuristicReason: heuristicCategorization?.reason,
+        heuristicSignals: heuristicCategorization?.matchedSignals,
+        categoryLocked: categoryIsLocked,
+      },
+      entities,
+      entitiesExtractedAt: new Date().toISOString(),
+      compliance: complianceResult,
+      complianceCheckedAt: complianceResult
+        ? new Date().toISOString()
+        : undefined,
+      documentQualification: complianceResult?.documentQualification,
+      risks: riskAnalysis,
+      risksAnalyzedAt: riskAnalysis ? new Date().toISOString() : undefined,
+      otherDocumentAnalysis,
     };
 
-    // Update file record with OCR results
     const updatedFile = await db.uploadedFile.update({
       where: { id: fileId },
       data: {
@@ -146,7 +293,7 @@ export async function POST(
       },
     });
 
-    // Delete existing tags and create new ones
+    // Update tags
     await db.documentTag.deleteMany({
       where: { uploadedFileId: fileId },
     });
@@ -174,8 +321,11 @@ export async function POST(
         ocrConfidence: ocrResult.confidence,
         textLength: ocrResult.text.length,
         tagsCount: documentTags.length,
+        reprocessed: true,
       },
     });
+
+    console.log(`✅ Re-processing complete for ${fileId}`);
 
     return NextResponse.json({
       success: true,
@@ -186,7 +336,9 @@ export async function POST(
         category: finalCategory,
         qualityScore: qualityMetrics?.qualityScore,
         tags: documentTags,
-        recommendations: qualityMetrics?.recommendations || [],
+        entitiesExtracted: !!entities,
+        complianceChecked: !!complianceResult,
+        risksAnalyzed: !!riskAnalysis,
       },
     });
   } catch (error) {
@@ -196,9 +348,7 @@ export async function POST(
     try {
       await db.uploadedFile.update({
         where: { id: params.fileId },
-        data: {
-          status: "FAILED",
-        },
+        data: { status: "FAILED" },
       });
     } catch (dbError) {
       console.error("Failed to update file status:", dbError);
@@ -250,9 +400,17 @@ export async function GET(
     }
 
     // Parse metadata
-    const metadata = uploadedFile.metadata
-      ? JSON.parse(uploadedFile.metadata)
-      : {};
+    let metadata: Record<string, any> = {};
+    if (uploadedFile.metadata) {
+      try {
+        metadata =
+          typeof uploadedFile.metadata === "string"
+            ? JSON.parse(uploadedFile.metadata)
+            : (uploadedFile.metadata as Record<string, any>);
+      } catch {
+        metadata = {};
+      }
+    }
 
     return NextResponse.json({
       file: uploadedFile,
