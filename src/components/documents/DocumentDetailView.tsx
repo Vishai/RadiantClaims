@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   HelpCircle,
+  Sparkles,
   Info,
 } from "lucide-react";
 import type { DocumentQualification } from "@/lib/document-intelligence/schemas/compliance-schema";
@@ -60,6 +61,8 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
   const [categoryUpdateError, setCategoryUpdateError] = useState<string | null>(
     null
   );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { data: session } = useSession();
 
   // Track polling interval in state so it can react to 202 responses
@@ -153,9 +156,8 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
     window.open(`/api/documents/${document.id}/download`, "_blank");
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this document?")) return;
-
+  const handleDeleteConfirmed = async () => {
+    setIsDeleting(true);
     try {
       const res = await fetch(`/api/documents/${document.id}`, {
         method: "DELETE",
@@ -163,9 +165,17 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
 
       if (res.ok) {
         router.push("/portal/documents");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        console.error("Delete failed:", body.error);
+        alert("Failed to delete document. Please try again.");
       }
     } catch (error) {
       console.error("Error deleting document:", error);
+      alert("Failed to delete document. Please try again.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -460,15 +470,46 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                className="text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
+              {!showDeleteConfirm ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-600">
+                    Delete this document?
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteConfirmed}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      "Yes, Delete"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -556,9 +597,33 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
 
           {/* Intelligence Panel */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-sage-900">
-              AI Intelligence
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-sage-900">
+                AI Intelligence
+              </h2>
+              {/* Always-visible re-analyze button */}
+              {!isProcessing && !isLoading && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetryProcessing}
+                  disabled={isRetrying}
+                  className="text-xs"
+                >
+                  {isRetrying ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-1 h-3 w-3" />
+                      {intelligence ? "Re-analyze" : "Analyze"}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
 
             {/* Document Qualification Alert */}
             {intelligence?.qualification && (

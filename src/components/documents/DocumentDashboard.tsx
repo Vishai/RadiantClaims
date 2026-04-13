@@ -4,7 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { DocumentCard } from "./DocumentCard";
 import { DocumentListItem } from "./DocumentListItem";
 import type { FileCategory } from "./DocumentCategorySelector";
-import { Loader2, FileX, Search, Grid, List, Sparkles } from "lucide-react";
+import {
+  Loader2,
+  FileX,
+  Search,
+  Grid,
+  List,
+  Sparkles,
+  AlertTriangle,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ValidationProgress } from "@/components/validation";
@@ -20,6 +28,14 @@ import type {
   SupportingDocumentInsight,
 } from "./types";
 import { RecategorizeModal } from "./RecategorizeModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -81,6 +97,8 @@ export function DocumentDashboard({
   const [categorizingDoc, setCategorizingDoc] = useState<UploadedFile | null>(
     null
   );
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [recategorizing, setRecategorizing] = useState(false);
   const [validating, setValidating] = useState(false);
   const [showValidationProgress, setShowValidationProgress] = useState(false);
@@ -145,11 +163,12 @@ export function DocumentDashboard({
     }
   };
 
-  const handleDelete = async (fileId: string): Promise<boolean> => {
-    if (!confirm("Are you sure you want to delete this document?")) {
-      return false;
-    }
+  const handleDeleteRequest = (fileId: string) => {
+    setDeleteConfirmId(fileId);
+  };
 
+  const handleDeleteConfirmed = async (fileId: string): Promise<boolean> => {
+    setDeletingDocId(fileId);
     try {
       const response = await fetch(`/api/documents/${fileId}`, {
         method: "DELETE",
@@ -159,9 +178,14 @@ export function DocumentDashboard({
         setDocuments((prev) => prev.filter((doc) => doc.id !== fileId));
         onRefresh?.();
         return true;
+      } else {
+        console.error("Delete failed with status:", response.status);
       }
     } catch (error) {
       console.error("Failed to delete document:", error);
+    } finally {
+      setDeletingDocId(null);
+      setDeleteConfirmId(null);
     }
 
     return false;
@@ -453,7 +477,7 @@ export function DocumentDashboard({
               qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
-              onDelete={() => handleDelete(doc.id)}
+              onDelete={() => handleDeleteRequest(doc.id)}
               onRecategorize={() => handleRecategorize(doc)}
             />
           ))}
@@ -476,7 +500,7 @@ export function DocumentDashboard({
               qualification={doc.qualification || undefined}
               onView={() => handleView(doc.id)}
               onDownload={() => handleDownload(doc.id, doc.originalFilename)}
-              onDelete={() => handleDelete(doc.id)}
+              onDelete={() => handleDeleteRequest(doc.id)}
               onRecategorize={() => handleRecategorize(doc)}
             />
           ))}
@@ -512,7 +536,7 @@ export function DocumentDashboard({
         onDelete={
           categorizingDoc
             ? async () => {
-                const deleted = await handleDelete(categorizingDoc.id);
+                const deleted = await handleDeleteConfirmed(categorizingDoc.id);
                 if (deleted) {
                   setCategorizingDoc(null);
                 }
@@ -521,6 +545,56 @@ export function DocumentDashboard({
         }
         isSubmitting={recategorizing}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => {
+          if (!open && !deletingDocId) setDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Document
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-sage-900">
+                {documents.find((d) => d.id === deleteConfirmId)
+                  ?.originalFilename ?? "this document"}
+              </span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={!!deletingDocId}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmId) handleDeleteConfirmed(deleteConfirmId);
+              }}
+              disabled={!!deletingDocId}
+            >
+              {deletingDocId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
