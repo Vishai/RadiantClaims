@@ -472,8 +472,8 @@ export function MedicalDocumentUpload({
               <p>
                 You've successfully uploaded and saved {successfulUploads}{" "}
                 medical document{successfulUploads !== 1 ? "s" : ""} to your
-                claim. These are securely stored and will be reviewed by our
-                team.
+                claim. These are securely stored in your profile and can be
+                reviewed to ensure you’re ready to file your RECA application.
               </p>
             </div>
           </div>

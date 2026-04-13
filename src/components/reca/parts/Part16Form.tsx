@@ -470,10 +470,13 @@ export default function Part16Form({
                 1
               </div>
               <div>
-                <p className="font-medium text-sage-900">Form Review</p>
+                <p className="font-medium text-sage-900">
+                  Review Your Application
+                </p>
                 <p className="text-sm text-sage-700">
-                  RadiantClaims will review your completed form for completeness
-                  and accuracy
+                  Head to your Review page in the portal to check your form for
+                  completeness. Our system highlights any missing or incomplete
+                  sections so you can address them before filing.
                 </p>
               </div>
             </div>
@@ -483,10 +486,13 @@ export default function Part16Form({
                 2
               </div>
               <div>
-                <p className="font-medium text-sage-900">Attorney Review</p>
+                <p className="font-medium text-sage-900">
+                  Verify Your Documents
+                </p>
                 <p className="text-sm text-sage-700">
-                  Our partner attorney will review and sign Part 14 (Attorney
-                  Acknowledgment)
+                  Use the Documents section in your portal to upload any
+                  remaining files. Our AI verification tool can help check that
+                  your documents match DOJ requirements.
                 </p>
               </div>
             </div>
@@ -496,10 +502,14 @@ export default function Part16Form({
                 3
               </div>
               <div>
-                <p className="font-medium text-sage-900">PDF Generation</p>
+                <p className="font-medium text-sage-900">
+                  File on the DOJ Website
+                </p>
                 <p className="text-sm text-sage-700">
-                  We will generate your complete RECA claim packet with all
-                  required supporting documents
+                  When you&apos;re ready, file your claim on the official DOJ
+                  portal at reca.justice.gov. Our Chrome extension can auto-fill
+                  your data and guide you through each step — no retyping
+                  needed.
                 </p>
               </div>
             </div>
@@ -509,11 +519,11 @@ export default function Part16Form({
                 4
               </div>
               <div>
-                <p className="font-medium text-sage-900">Submit to the DOJ</p>
+                <p className="font-medium text-sage-900">Track Your Claim</p>
                 <p className="text-sm text-sage-700">
-                  You will submit your claim to the Department of Justice
-                  through their online portal (recommended) or by mail. The DOJ
-                  portal accepts electronic signatures for online submissions
+                  After submitting on the DOJ portal, come back to your
+                  RadiantClaims portal to record your DOJ claim number and track
+                  your claim status.
                 </p>
               </div>
             </div>
@@ -524,11 +534,12 @@ export default function Part16Form({
               </div>
               <div>
                 <p className="font-medium text-terracotta-900">
-                  Claim Submitted
+                  DOJ Reviews Your Claim
                 </p>
                 <p className="text-sm text-terracotta-700">
-                  Your complete RECA claim will be mailed to DOJ and the review
-                  process will begin
+                  The Department of Justice will process your claim and send you
+                  an acknowledgement letter with your official RECA claim
+                  number. Processing times vary.
                 </p>
               </div>
             </div>

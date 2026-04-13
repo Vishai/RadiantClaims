@@ -22,7 +22,7 @@ export function AuthNavLink() {
     return (
       <Link href="/portal">
         <button className="min-h-[44px] rounded-full bg-[#D65F4D] px-5 py-2 text-sm font-semibold text-white hover:bg-[#c4523f]">
-          My Dashboard
+          My Portal
         </button>
       </Link>
     );

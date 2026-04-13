@@ -521,8 +521,8 @@ export default function Part9Form({
                     </p>
                     <p>
                       <strong>Don't have them yet?</strong> That's okay! You can
-                      continue with the form and upload documents later from
-                      your dashboard's document section.
+                      continue with the form and upload documents later from the
+                      Documents section in your portal.
                     </p>
                   </div>
                 </div>
@@ -562,8 +562,8 @@ export default function Part9Form({
                       {failedUploads > 0 ? ` • ${failedUploads} failed` : ""}
                     </p>
                     <p className="text-xs text-sage-600">
-                      Saved documents are attached to your claim and pending
-                      RECA verification.
+                      Saved documents are stored in your Radiant Claims profile
+                      and ready for review and verification.
                     </p>
                   </>
                 ) : (
@@ -683,7 +683,7 @@ export default function Part9Form({
                 <p className="text-sm text-sage-600">
                   If you have proof of presence documents ready, use the upload
                   section above to add them now. Otherwise, you can upload
-                  documents anytime from your dashboard.
+                  documents anytime from your portal.
                 </p>
               </div>
             )}
@@ -699,9 +699,10 @@ export default function Part9Form({
                     </p>
                     <p className="text-sm text-green-800">
                       You've uploaded and saved {successfulUploads} documents to
-                      your claim. These are securely stored and linked to your
-                      RECA application. Our team will review them to verify they
-                      meet requirements.
+                      your claim. These are securely stored in your Radiant
+                      Claims profile to help you prepare your RECA application.
+                      Run the AI Document Verification tool in your portal to
+                      confirm your documents meet DOJ requirements.
                     </p>
                   </div>
                 </div>
