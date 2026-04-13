@@ -313,17 +313,51 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
             )}
           </div>
 
-          {/* Affected Areas (Idaho, New Mexico, Utah) */}
+          {/* Exposure Locations — unified section for all 5 states */}
           <div className="space-y-4 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold text-sage-900">
-                  Designated Affected Areas
-                </Label>
-                <p className="mt-1 text-sm text-sage-600">
-                  Idaho, New Mexico, or Utah locations
-                </p>
-              </div>
+            <div>
+              <Label className="text-base font-semibold text-sage-900">
+                Where Were You (or the Exposed Person) Located?
+              </Label>
+              <p className="mt-1 text-sm text-sage-600">
+                Add each location where you lived during the exposure period.
+                Eligible areas include parts of Idaho, New Mexico, Utah,
+                Arizona, and Nevada.
+              </p>
+            </div>
+
+            {/* Eligible states quick-add buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  appendAffectedArea({
+                    state: "Idaho",
+                    townCity: "",
+                    timePeriod: "",
+                  })
+                }
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Idaho
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  appendAffectedArea({
+                    state: "New Mexico",
+                    townCity: "",
+                    timePeriod: "",
+                  })
+                }
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                New Mexico
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -337,10 +371,43 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                 }
               >
                 <Plus className="mr-1 h-4 w-4" />
-                Add Location
+                Utah
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-amber-300 text-amber-800 hover:bg-amber-50"
+                onClick={() =>
+                  appendArizonaCounty({
+                    county: "Coconino",
+                    townCity: "",
+                    timePeriod: "",
+                  })
+                }
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Arizona (select counties)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-amber-300 text-amber-800 hover:bg-amber-50"
+                onClick={() =>
+                  appendNevadaCounty({
+                    county: "Nye",
+                    townCity: "",
+                    timePeriod: "",
+                  })
+                }
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Nevada (select counties)
               </Button>
             </div>
 
+            {/* Idaho / New Mexico / Utah location cards */}
             {affectedAreasFields.map((field, index) => (
               <div
                 key={field.id}
@@ -348,7 +415,10 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
               >
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-sm font-medium text-sage-700">
-                    Location {index + 1}
+                    <MapPin className="mr-1 inline h-4 w-4" />
+                    {form.watch(`affectedAreas.${index}.state`) ||
+                      "Location"}{" "}
+                    {affectedAreasFields.length > 1 ? `(${index + 1})` : ""}
                   </span>
                   <Button
                     type="button"
@@ -440,50 +510,19 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
               </div>
             ))}
 
-            {affectedAreasFields.length === 0 && (
-              <p className="text-sm italic text-sage-600">
-                No locations added yet. Click "Add Location" to begin.
-              </p>
-            )}
-          </div>
-
-          {/* Arizona Counties */}
-          <div className="space-y-4 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold text-sage-900">
-                  Arizona Locations
-                </Label>
-                <p className="mt-1 text-sm text-sage-600">
-                  Specific counties: Coconino, Yavapai, Navajo, Apache, Gila,
-                  Mohave
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  appendArizonaCounty({
-                    county: "Coconino",
-                    townCity: "",
-                    timePeriod: "",
-                  })
-                }
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Arizona Location
-              </Button>
-            </div>
-
+            {/* Arizona county cards */}
             {arizonaCountiesFields.map((field, index) => (
               <div
                 key={field.id}
-                className="space-y-3 rounded-md border border-sage-200 p-4"
+                className="space-y-3 rounded-md border border-amber-200 bg-amber-50/30 p-4"
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-medium text-sage-700">
-                    Arizona Location {index + 1}
+                  <span className="text-sm font-medium text-amber-800">
+                    <MapPin className="mr-1 inline h-4 w-4" />
+                    Arizona —{" "}
+                    {form.watch(`arizonaCounties.${index}.county`) ||
+                      "County"}{" "}
+                    County
                   </span>
                   <Button
                     type="button"
@@ -500,7 +539,7 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                     htmlFor={`arizonaCounties.${index}.county`}
                     importance="required"
                   >
-                    County <span className="text-red-600">*</span>
+                    Eligible County <span className="text-red-600">*</span>
                   </FieldLabel>
                   <select
                     id={`arizonaCounties.${index}.county`}
@@ -515,6 +554,9 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                     <option value="Gila">Gila</option>
                     <option value="Mohave">Mohave</option>
                   </select>
+                  <p className="text-xs text-amber-700">
+                    Only these Arizona counties are eligible under RECA
+                  </p>
                   {form.formState.errors.arizonaCounties?.[index]?.county && (
                     <p className="text-sm text-red-600">
                       {
@@ -558,7 +600,7 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   <input
                     id={`arizonaCounties.${index}.timePeriod`}
                     type="text"
-                    placeholder="e.g., January 1952 - December 1955"
+                    placeholder="e.g., 1953 - 1962"
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
                     {...form.register(`arizonaCounties.${index}.timePeriod`)}
                   />
@@ -578,50 +620,19 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
               </div>
             ))}
 
-            {arizonaCountiesFields.length === 0 && (
-              <p className="text-sm italic text-sage-600">
-                No Arizona locations added yet.
-              </p>
-            )}
-          </div>
-
-          {/* Nevada Counties */}
-          <div className="space-y-4 border-t pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold text-sage-900">
-                  Nevada Locations
-                </Label>
-                <p className="mt-1 text-sm text-sage-600">
-                  Specific counties: White Pine, Nye, Lander, Lincoln, Eureka,
-                  Clark
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  appendNevadaCounty({
-                    county: "Nye",
-                    townCity: "",
-                    timePeriod: "",
-                  })
-                }
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Nevada Location
-              </Button>
-            </div>
-
+            {/* Nevada county cards */}
             {nevadaCountiesFields.map((field, index) => (
               <div
                 key={field.id}
-                className="space-y-3 rounded-md border border-sage-200 p-4"
+                className="space-y-3 rounded-md border border-amber-200 bg-amber-50/30 p-4"
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-medium text-sage-700">
-                    Nevada Location {index + 1}
+                  <span className="text-sm font-medium text-amber-800">
+                    <MapPin className="mr-1 inline h-4 w-4" />
+                    Nevada —{" "}
+                    {form.watch(`nevadaCounties.${index}.county`) ||
+                      "County"}{" "}
+                    County
                   </span>
                   <Button
                     type="button"
@@ -638,7 +649,7 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                     htmlFor={`nevadaCounties.${index}.county`}
                     importance="required"
                   >
-                    County <span className="text-red-600">*</span>
+                    Eligible County <span className="text-red-600">*</span>
                   </FieldLabel>
                   <select
                     id={`nevadaCounties.${index}.county`}
@@ -655,6 +666,9 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                       Clark (townships 13-16, ranges 63-71)
                     </option>
                   </select>
+                  <p className="text-xs text-amber-700">
+                    Only these Nevada counties are eligible under RECA
+                  </p>
                   {form.formState.errors.nevadaCounties?.[index]?.county && (
                     <p className="text-sm text-red-600">
                       {
@@ -698,7 +712,7 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
                   <input
                     id={`nevadaCounties.${index}.timePeriod`}
                     type="text"
-                    placeholder="e.g., January 1952 - December 1955"
+                    placeholder="e.g., 1953 - 1962"
                     className="flex h-10 w-full rounded-md border border-sage-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta-500"
                     {...form.register(`nevadaCounties.${index}.timePeriod`)}
                   />
@@ -718,11 +732,15 @@ export default function Part8Form({ initialData, onSubmit }: Part8FormProps) {
               </div>
             ))}
 
-            {nevadaCountiesFields.length === 0 && (
-              <p className="text-sm italic text-sage-600">
-                No Nevada locations added yet.
-              </p>
-            )}
+            {/* Empty state */}
+            {affectedAreasFields.length === 0 &&
+              arizonaCountiesFields.length === 0 &&
+              nevadaCountiesFields.length === 0 && (
+                <p className="text-sm italic text-sage-600">
+                  No locations added yet. Click a state above to add your first
+                  location.
+                </p>
+              )}
           </div>
 
           {/* General validation error */}

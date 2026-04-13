@@ -82,9 +82,32 @@ async function main() {
     });
 
     if (existing) {
-      console.log(
-        `Skipping ${profile.firstName} ${profile.lastName} — already exists`
-      );
+      const existingSession = await db.intakeSession.findUnique({
+        where: { claimantId: existing.id },
+      });
+      if (!existingSession) {
+        const token = `test-${profile.firstName.toLowerCase()}-${Date.now()}`;
+        await db.intakeSession.create({
+          data: {
+            claimantId: existing.id,
+            resumeToken: token,
+            currentStep: "SCREENING",
+            status: "IN_PROGRESS",
+            recaWorkflowStage: 1,
+            recaWorkflowSection: "part_1",
+            recaCompletionPercent: 0,
+            recaFormData: {},
+            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          },
+        });
+        console.log(
+          `✓ Created missing session for ${profile.firstName} ${profile.lastName}`
+        );
+      } else {
+        console.log(
+          `Skipping ${profile.firstName} ${profile.lastName} — already exists`
+        );
+      }
       continue;
     }
 
@@ -95,8 +118,13 @@ async function main() {
         firstName: profile.firstName,
         lastName: profile.lastName,
         email: email,
-        state: "UT",
+        phone: "000-000-0000",
+        dob: new Date("1950-01-01"),
+        address1: "123 Test St",
+        city: "St. George",
         county: "Washington",
+        state: "UT",
+        postalCode: "84770",
         claimType: "DOWNWINDER",
       },
     });
@@ -108,7 +136,7 @@ async function main() {
       data: {
         claimantId: claimant.id,
         resumeToken,
-        currentStep: "RECA_FORM",
+        currentStep: "SCREENING",
         status: "IN_PROGRESS",
         recaWorkflowStage: 1,
         recaWorkflowSection: "part_1",
