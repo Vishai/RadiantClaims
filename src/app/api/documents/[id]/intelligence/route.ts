@@ -12,8 +12,8 @@ export interface IntelligenceResponse {
   ocrConfidence: number;
   textLength: number;
   entities: EntityExtractionResult;
-  compliance: RECAComplianceResult;
-  risks: RiskAnalysisResult;
+  compliance: RECAComplianceResult | null;
+  risks: RiskAnalysisResult | null;
   quality?: {
     qualityScore: number;
     isBlurry: boolean;
@@ -127,24 +127,21 @@ export async function GET(
       );
     }
 
-    // Check if intelligence has been run
-    if (!metadata.entities || !metadata.compliance || !metadata.risks) {
-      return NextResponse.json(
-        {
-          error:
-            "Document has not been fully analyzed yet. Please try again shortly.",
-        },
-        { status: 404 }
-      );
-    }
+    // Build response — return whatever data is available (partial is OK)
+    const emptyEntities = {
+      persons: [],
+      dates: [],
+      addresses: [],
+      medical: [],
+      employment: [],
+    };
 
-    // Build response
     const response: IntelligenceResponse = {
       ocrConfidence: metadata.ocrConfidence || 0,
       textLength: metadata.textLength || 0,
-      entities: metadata.entities,
-      compliance: metadata.compliance,
-      risks: metadata.risks,
+      entities: metadata.entities || emptyEntities,
+      compliance: metadata.compliance || null,
+      risks: metadata.risks || null,
       quality: metadata.qualityMetrics,
       aiCategorization: metadata.aiCategorization,
       qualification:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   Image as ImageIcon,
@@ -22,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { AIIntelligenceModal } from "./AIIntelligenceModal";
 import type { DocumentQualificationSummary } from "./types";
 import { QUALIFICATION_COPY } from "./qualification-utils";
-import { DocumentStatusBadge } from "@/components/validation";
 
 interface AIIntelligence {
   ocrConfidence?: number;
@@ -76,7 +76,6 @@ export function DocumentListItem({
   uploadedAt,
   mimeType,
   aiIntelligence,
-  validation,
   qualification,
   onView,
   onDownload,
@@ -84,11 +83,16 @@ export function DocumentListItem({
   onRecategorize,
   onViewIntelligence,
 }: DocumentListItemProps) {
+  const router = useRouter();
   const [intelligenceModalOpen, setIntelligenceModalOpen] = useState(false);
 
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith("image/")) return ImageIcon;
-    if (mimeType === "application/pdf") return FileText;
+  const handleRowClick = () => {
+    router.push(`/portal/documents/${id}`);
+  };
+
+  const getFileIcon = (mime: string) => {
+    if (mime.startsWith("image/")) return ImageIcon;
+    if (mime === "application/pdf") return FileText;
     return File;
   };
 
@@ -101,8 +105,7 @@ export function DocumentListItem({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -110,54 +113,39 @@ export function DocumentListItem({
     });
   };
 
-  const getCategoryLabel = (category?: string) => {
-    if (!category) return "Uncategorized";
-    return category
+  const getCategoryLabel = (cat?: string) => {
+    if (!cat) return "Uncategorized";
+    return cat
       .split("_")
-      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+      .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
       .join(" ");
   };
 
-  const getStatusIcon = (status: string) => {
-    const icons: Record<string, any> = {
-      UPLOADING: Clock,
-      PROCESSING: Clock,
-      READY: CheckCircle,
-      VALIDATED: CheckCircle,
-      AWAITING_REVIEW: Clock,
-      PENDING: Clock,
-      APPROVED: CheckCircle,
-      REJECTED: XCircle,
-      NEEDS_ATTENTION: AlertCircle,
-      FAILED: XCircle,
+  const getStatusConfig = (s: string) => {
+    const configs: Record<string, { color: string; icon: any }> = {
+      UPLOADING: { color: "text-blue-600", icon: Clock },
+      PROCESSING: { color: "text-blue-600", icon: Clock },
+      READY: { color: "text-emerald-600", icon: CheckCircle },
+      FAILED: { color: "text-red-600", icon: XCircle },
+      APPROVED: { color: "text-emerald-600", icon: CheckCircle },
+      REJECTED: { color: "text-red-600", icon: XCircle },
+      NEEDS_ATTENTION: { color: "text-orange-600", icon: AlertCircle },
     };
-    return icons[status] || Clock;
+    return configs[s] || { color: "text-gray-600", icon: Clock };
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      UPLOADING: "text-blue-600",
-      PROCESSING: "text-blue-600",
-      READY: "text-emerald-600",
-      VALIDATED: "text-emerald-600",
-      AWAITING_REVIEW: "text-amber-600",
-      PENDING: "text-amber-600",
-      APPROVED: "text-emerald-600",
-      REJECTED: "text-red-600",
-      NEEDS_ATTENTION: "text-orange-600",
-      FAILED: "text-red-600",
-    };
-    return colors[status] || "text-gray-600";
-  };
-
-  const StatusIcon = getStatusIcon(status);
+  const statusCfg = getStatusConfig(status);
+  const StatusIcon = statusCfg.icon;
   const qualificationCopy = qualification
     ? QUALIFICATION_COPY[qualification.status]
     : null;
   const needsRecategorize = qualification?.userActionNeeded === "RECATEGORIZE";
 
   return (
-    <div className="flex items-center gap-4 rounded-lg border border-sage-200 bg-white p-3 transition-shadow hover:shadow-md">
+    <div
+      className="flex cursor-pointer items-center gap-4 rounded-lg border border-sage-200 bg-white p-3 transition-shadow hover:shadow-md"
+      onClick={handleRowClick}
+    >
       {/* Icon */}
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-sage-100">
         <Icon className="h-5 w-5 text-sage-600" />
@@ -170,7 +158,7 @@ export function DocumentListItem({
             {originalFilename}
           </h3>
           <StatusIcon
-            className={cn("h-4 w-4 flex-shrink-0", getStatusColor(status))}
+            className={cn("h-4 w-4 flex-shrink-0", statusCfg.color)}
           />
           {qualificationCopy && (
             <span
@@ -190,48 +178,43 @@ export function DocumentListItem({
               <Lock className="h-3 w-3" /> Locked
             </span>
           )}
-          <span>•</span>
+          <span>&middot;</span>
           <span>{formatFileSize(sizeBytes)}</span>
-          <span>•</span>
+          <span>&middot;</span>
           <span>{formatDate(uploadedAt)}</span>
         </div>
       </div>
 
-      {/* Validation Status Badge */}
-      {validation && (
-        <DocumentStatusBadge
-          status={validation.status}
-          category={validation.category}
-          confidence={validation.confidence}
-          showCategory={false}
-          showConfidence={validation.status === "VERIFIED"}
-          size="sm"
-          className="flex-shrink-0"
-        />
-      )}
-
-      {/* AI Intelligence Badge - Minimal */}
+      {/* AI Badge */}
       {aiIntelligence && status === "READY" && (
         <Badge
           variant="outline"
           className="flex-shrink-0 border-purple-300 bg-purple-50 text-purple-700"
         >
           <Sparkles className="mr-1 h-3 w-3" />
-          AI Analyzed
+          AI
           {aiIntelligence.ocrConfidence !== undefined &&
-            ` · ${(aiIntelligence.ocrConfidence * 100).toFixed(0)}%`}
+            ` ${(aiIntelligence.ocrConfidence * 100).toFixed(0)}%`}
         </Badge>
       )}
 
-      {/* Actions */}
-      <div className="flex flex-shrink-0 items-center gap-1">
+      {/* Actions - stop propagation so clicks don't navigate */}
+      <div
+        className="flex flex-shrink-0 items-center gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
         {aiIntelligence && status === "READY" && (
           <Button
             size="sm"
             variant="ghost"
-            onClick={
-              onViewIntelligence || (() => setIntelligenceModalOpen(true))
-            }
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewIntelligence) {
+                onViewIntelligence();
+              } else {
+                setIntelligenceModalOpen(true);
+              }
+            }}
             className="h-8 px-2 text-purple-600 hover:bg-purple-50"
             title="View AI Intelligence"
           >
@@ -242,9 +225,12 @@ export function DocumentListItem({
           <Button
             size="sm"
             variant="ghost"
-            onClick={onView}
+            onClick={(e) => {
+              e.stopPropagation();
+              onView();
+            }}
             className="h-8 px-2"
-            title="View"
+            title="View PDF"
           >
             <Eye className="h-4 w-4" />
           </Button>
@@ -253,7 +239,10 @@ export function DocumentListItem({
           <Button
             size="sm"
             variant="ghost"
-            onClick={onDownload}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload();
+            }}
             className="h-8 px-2"
             title="Download"
           >
@@ -264,7 +253,10 @@ export function DocumentListItem({
           <Button
             size="sm"
             variant={needsRecategorize ? "destructive" : "ghost"}
-            onClick={onRecategorize}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRecategorize();
+            }}
             className="h-8 px-2"
             title={needsRecategorize ? "Fix category" : "Change category"}
           >
@@ -275,7 +267,10 @@ export function DocumentListItem({
           <Button
             size="sm"
             variant="ghost"
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             className="h-8 px-2 text-red-600 hover:bg-red-50"
             title="Delete"
           >
@@ -284,9 +279,9 @@ export function DocumentListItem({
         )}
       </div>
 
-      {/* AI Intelligence Modal */}
       <AIIntelligenceModal
         documentId={id}
+        documentMimeType={mimeType}
         isOpen={intelligenceModalOpen}
         onClose={() => setIntelligenceModalOpen(false)}
       />
