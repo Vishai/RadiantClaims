@@ -625,12 +625,21 @@ export function DocumentDetailView({ document }: DocumentDetailViewProps) {
               )}
             </div>
 
-            {/* Document Qualification Alert */}
-            {intelligence?.qualification && (
-              <div className="mb-4">
-                {renderQualificationAlert(intelligence.qualification)}
-              </div>
-            )}
+            {/* Document Qualification Alert — hidden when blocking risks exist (SummaryTab shows those) */}
+            {intelligence?.qualification &&
+              !intelligence.risks?.risks?.some(
+                (r: any) =>
+                  r.severity === "high" &&
+                  ["authenticity", "quality", "consistency"].includes(
+                    r.category
+                  ) &&
+                  r.disposition !== "RESOLVED" &&
+                  r.disposition !== "WAIVED"
+              ) && (
+                <div className="mb-4">
+                  {renderQualificationAlert(intelligence.qualification)}
+                </div>
+              )}
 
             {/* Loading state */}
             {isLoading && (

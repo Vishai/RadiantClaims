@@ -24,8 +24,7 @@ import {
   DocumentRiskItem,
 } from "./risks/useDocumentRiskData";
 import { RiskSummaryPanel } from "./risks/RiskSummaryPanel";
-import { RiskWorkflowSummary } from "./risks/RiskWorkflowSummary";
-import { RiskCategoryFilter } from "./risks/RiskCategoryFilter";
+// RiskWorkflowSummary and RiskCategoryFilter removed — risks are now split by scope
 import { RiskTable } from "./risks/RiskTable";
 import { RiskActionDialog } from "./risks/RiskActionDialog";
 
@@ -43,7 +42,7 @@ export function ComplianceRisksTab({
   onRefresh,
 }: ComplianceRisksTabProps) {
   const { compliance, risks: riskAnalysis } = data;
-  const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
+  const [filterCategory] = useState<FilterCategory>("all");
   const [actionStatus, setActionStatus] = useState<{
     type: "success" | "error";
     message: string;
@@ -491,30 +490,85 @@ export function ComplianceRisksTab({
         </>
       )}
 
-      {/* ─── RISKS SECTION ─── */}
+      {/* ─── DOCUMENT RISKS SECTION ─── */}
       {hasRisks && riskAnalysis && (
         <>
           <div className="mt-2 flex items-center gap-2 border-b pb-2">
             <AlertTriangle className="h-5 w-5 text-sage-600" />
-            <h3 className="text-lg font-semibold">Risks & Actions</h3>
+            <h3 className="text-lg font-semibold">Document Risks</h3>
           </div>
 
           <RiskSummaryPanel summary={summary} lastAnalyzedAt={lastAnalyzed} />
-          <RiskWorkflowSummary summary={summary} />
-          <RiskCategoryFilter
-            value={filterCategory}
-            summary={summary}
-            onChange={setFilterCategory}
-          />
-          <RiskTable
-            risks={filteredItems}
-            actor={userActor}
-            canMutate={canMutate}
-            processingIndex={processingIndex}
-            onActionSelect={(item, action) =>
-              setPendingAction({ item, action })
-            }
-          />
+
+          {/* Document-specific risks (authenticity, quality, consistency) */}
+          {(() => {
+            const DOCUMENT_RISK_CATEGORIES = new Set([
+              "authenticity",
+              "quality",
+              "consistency",
+            ]);
+            const docRisks = filteredItems.filter((item) =>
+              DOCUMENT_RISK_CATEGORIES.has(item.risk.category)
+            );
+            const claimRisks = filteredItems.filter(
+              (item) => !DOCUMENT_RISK_CATEGORIES.has(item.risk.category)
+            );
+
+            return (
+              <>
+                {docRisks.length > 0 && (
+                  <>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Issues with this document
+                    </p>
+                    <RiskTable
+                      risks={docRisks}
+                      actor={userActor}
+                      canMutate={canMutate}
+                      processingIndex={processingIndex}
+                      onActionSelect={(item, action) =>
+                        setPendingAction({ item, action })
+                      }
+                    />
+                  </>
+                )}
+
+                {docRisks.length === 0 && (
+                  <div className="rounded-lg border bg-green-50 p-4 dark:bg-green-950">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <p className="text-sm font-medium text-green-800">
+                        No document-level issues detected
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {claimRisks.length > 0 && (
+                  <>
+                    <div className="mt-4 rounded-lg border border-dashed border-sage-300 bg-sage-50/50 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Claim-wide issues (not specific to this document)
+                      </p>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        These relate to your overall claim packet, not this
+                        individual document.
+                      </p>
+                      <RiskTable
+                        risks={claimRisks}
+                        actor={userActor}
+                        canMutate={canMutate}
+                        processingIndex={processingIndex}
+                        onActionSelect={(item, action) =>
+                          setPendingAction({ item, action })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {riskAnalysis.recommendedActions.length > 0 && (
             <div className="rounded-lg border bg-blue-50 p-4 dark:bg-blue-950">

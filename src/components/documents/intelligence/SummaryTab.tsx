@@ -34,6 +34,21 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
 
   const isPdf = mimeType === "application/pdf";
 
+  // Check for blocking document-level risks that override qualification
+  const DOCUMENT_RISK_CATEGORIES = new Set([
+    "authenticity",
+    "quality",
+    "consistency",
+  ]);
+  const blockingDocRisks = (risks?.risks ?? []).filter(
+    (r) =>
+      DOCUMENT_RISK_CATEGORIES.has(r.category) &&
+      r.severity === "high" &&
+      r.disposition !== "RESOLVED" &&
+      r.disposition !== "WAIVED"
+  );
+  const hasBlockingDocIssues = blockingDocRisks.length > 0;
+
   // Quality metrics
   const ocrPercent = Math.round((ocrConfidence ?? 0) * 100);
   const qualityPercent = quality?.qualityScore
@@ -77,22 +92,58 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
         .slice(0, 3)
     : [];
 
-  const topRisks = risks
-    ? (risks.risks ?? [])
-        .sort((a, b) => {
-          const s = { high: 0, medium: 1, low: 2 } as const;
-          return (
-            (s[a.severity as keyof typeof s] ?? 2) -
-            (s[b.severity as keyof typeof s] ?? 2)
-          );
-        })
-        .slice(0, 3)
-    : [];
+  // Filter to only document-level issues for the summary
+  const docTopRisks = (risks?.risks ?? [])
+    .filter((r) => DOCUMENT_RISK_CATEGORIES.has(r.category))
+    .sort((a, b) => {
+      const s = { high: 0, medium: 1, low: 2 } as const;
+      return (
+        (s[a.severity as keyof typeof s] ?? 2) -
+        (s[b.severity as keyof typeof s] ?? 2)
+      );
+    })
+    .slice(0, 3);
 
   return (
     <div className="space-y-5 py-4">
-      {/* Qualification Alert */}
-      {qualification && qualificationCopy && (
+      {/* BLOCKING ISSUES FIRST — show before any positive signals */}
+      {hasBlockingDocIssues && (
+        <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+            <div className="flex-1 space-y-2">
+              <h3 className="text-base font-semibold text-red-900">
+                Blocking Issues Found
+              </h3>
+              <p className="text-sm text-red-800">
+                This document has critical issues that must be resolved before
+                it can count toward your claim.
+              </p>
+              <div className="space-y-2">
+                {blockingDocRisks.map((risk, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2 rounded bg-red-100/50 p-2"
+                  >
+                    <span className="mt-0.5 text-sm">{"\u{1F534}"}</span>
+                    <div>
+                      <p className="text-sm font-medium text-red-900">
+                        {risk.message}
+                      </p>
+                      <p className="text-xs text-red-700">
+                        {risk.actionRequired}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Qualification Alert — shown after blocking issues if any */}
+      {qualification && qualificationCopy && !hasBlockingDocIssues && (
         <div
           className={cn("rounded-lg border p-4", qualificationCopy.className)}
         >
@@ -291,15 +342,15 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
         </div>
       )}
 
-      {/* Top Risks */}
-      {topRisks.length > 0 && (
+      {/* Top Document-Level Risks (not claim-wide ones) */}
+      {docTopRisks.length > 0 && !hasBlockingDocIssues && (
         <div className="rounded-lg border p-4">
           <h3 className="mb-3 flex items-center gap-2 text-base font-semibold">
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
-            Top Issues
+            Document Issues
           </h3>
           <div className="space-y-2">
-            {topRisks.map((risk, idx) => (
+            {docTopRisks.map((risk, idx) => (
               <div key={idx} className="flex items-start gap-2">
                 <span className="mt-0.5 text-sm">
                   {risk.severity === "high"

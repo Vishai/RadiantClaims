@@ -1,13 +1,5 @@
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Loader2, MoreHorizontal } from "lucide-react";
 import {
@@ -30,7 +22,6 @@ import {
   getActionOptionsForUser,
   getActorLabel,
   isClosed,
-  resolveAvailableActions,
   resolveBlockingLevel,
   resolveDisposition,
   resolveFixableBy,
@@ -48,10 +39,10 @@ interface RiskTableProps {
   onActionSelect: (item: DocumentRiskItem, action: RiskAction) => void;
 }
 
-const severityEmoji = {
-  high: "🔴",
-  medium: "🟡",
-  low: "🟢",
+const severityEmoji: Record<string, string> = {
+  high: "\u{1F534}",
+  medium: "\u{1F7E1}",
+  low: "\u{1F7E2}",
 };
 
 export function RiskTable({
@@ -89,257 +80,193 @@ export function RiskTable({
     return result;
   }, [risks, sortField, sortOrder]);
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
-  };
-
   const toggleExpanded = (index: number) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
       return next;
     });
   };
 
   if (sortedRisks.length === 0) {
     return (
-      <div className="rounded-lg border p-8 text-center text-muted-foreground">
-        No document-level risks found in this category.
+      <div className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+        No risks found in this category.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <SortableHeader
-              label="Severity"
-              field="severity"
-              sortField={sortField}
-              sortOrder={sortOrder}
-              className="w-28"
-              onClick={toggleSort}
-            />
-            <SortableHeader
-              label="Category"
-              field="category"
-              sortField={sortField}
-              sortOrder={sortOrder}
-              onClick={toggleSort}
-            />
-            <SortableHeader
-              label="Issue"
-              field="message"
-              sortField={sortField}
-              sortOrder={sortOrder}
-              onClick={toggleSort}
-            />
-            <TableHead>Impact</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Next Step</TableHead>
-            <TableHead className="w-12" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedRisks.map((item) => {
-            const { risk, index } = item;
-            const isExpanded = expanded.has(index);
-            const blockingLevel = resolveBlockingLevel(risk);
-            const disposition = resolveDisposition(risk);
-            const nextActor = resolveNextActionBy(risk);
-            const availableActions = resolveAvailableActions(risk);
-            const actionOptions = getActionOptionsForUser(risk, actor);
-            const userCanAct = canUserActOnRisk(risk, actor, canMutate);
-            const showActionMenu = userCanAct && actionOptions.length > 0;
-            const isProcessing = processingIndex === index;
-
-            return (
-              <Fragment key={`${risk.flag}-${index}`}>
-                <TableRow className="cursor-pointer hover:bg-muted/50">
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">
-                        {severityEmoji[risk.severity]}
-                      </span>
-                      <Badge
-                        variant={
-                          risk.severity === "high"
-                            ? "destructive"
-                            : risk.severity === "medium"
-                              ? "default"
-                              : "secondary"
-                        }
-                      >
-                        {risk.severity}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="capitalize">{risk.category}</TableCell>
-                  <TableCell className="font-medium">
-                    <div className="space-y-1">
-                      <p>{risk.message}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {risk.actionRequired}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        blockingLevel === "BLOCKING"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200"
-                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
-                      }
-                    >
-                      {blockingLevel === "BLOCKING" ? "Blocking" : "Advisory"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={`font-medium ${dispositionMeta[disposition].className}`}
-                    >
-                      {dispositionMeta[disposition].label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">
-                        {nextActor
-                          ? `${actorLabels[nextActor]} action needed`
-                          : "No further action"}
-                      </p>
-                      {availableActions.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {availableActions.map((action) => (
-                            <Badge
-                              key={action}
-                              variant="outline"
-                              className="border-dashed px-2 text-xs"
-                            >
-                              {actionLabels[action]}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          No actions configured
-                        </p>
-                      )}
-                      {showActionMenu ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-2"
-                              disabled={isProcessing}
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <MoreHorizontal className="mr-2 h-3 w-3" />
-                              )}
-                              Take action
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            {actionOptions.map((option) => (
-                              <DropdownMenuItem
-                                key={option}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  if (!isProcessing) {
-                                    onActionSelect(item, option);
-                                  }
-                                }}
-                              >
-                                {actionLabels[option]}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {hasExpandableDetails(risk) ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => toggleExpanded(index)}
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-                {isExpanded ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="bg-muted/30">
-                      <RiskExpandedDetails risk={risk} />
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-function SortableHeader({
-  label,
-  field,
-  sortField,
-  sortOrder,
-  onClick,
-  className = "",
-}: {
-  label: string;
-  field: SortField;
-  sortField: SortField;
-  sortOrder: SortOrder;
-  onClick: (field: SortField) => void;
-  className?: string;
-}) {
-  return (
-    <TableHead
-      className={`cursor-pointer select-none ${className}`}
-      onClick={() => onClick(field)}
-    >
-      <div className="flex items-center gap-1">
-        {label}
-        {sortField === field ? (
-          sortOrder === "asc" ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )
-        ) : null}
+    <div className="space-y-3">
+      {/* Sort controls */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Sort by:</span>
+        {(["severity", "category"] as SortField[]).map((field) => (
+          <button
+            key={field}
+            onClick={() => {
+              if (sortField === field) {
+                setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+              } else {
+                setSortField(field);
+                setSortOrder("asc");
+              }
+            }}
+            className={`rounded px-2 py-0.5 capitalize hover:bg-sage-100 ${
+              sortField === field ? "bg-sage-100 font-medium text-sage-900" : ""
+            }`}
+          >
+            {field}
+            {sortField === field &&
+              (sortOrder === "asc" ? " \u2191" : " \u2193")}
+          </button>
+        ))}
       </div>
-    </TableHead>
+
+      {/* Risk cards */}
+      {sortedRisks.map((item) => {
+        const { risk, index } = item;
+        const isExpanded = expanded.has(index);
+        const blockingLevel = resolveBlockingLevel(risk);
+        const disposition = resolveDisposition(risk);
+        const nextActor = resolveNextActionBy(risk);
+        const actionOptions = getActionOptionsForUser(risk, actor);
+        const userCanAct = canUserActOnRisk(risk, actor, canMutate);
+        const showActionMenu = userCanAct && actionOptions.length > 0;
+        const isProcessing = processingIndex === index;
+        const closed = isClosed(disposition);
+
+        return (
+          <div
+            key={`${risk.flag}-${index}`}
+            className={`rounded-lg border p-4 ${
+              closed
+                ? "border-sage-200 bg-sage-50/50 opacity-75"
+                : blockingLevel === "BLOCKING"
+                  ? "border-red-200 bg-red-50/30"
+                  : "border-sage-200"
+            }`}
+          >
+            {/* Top row: severity + category + impact + status */}
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="text-base">{severityEmoji[risk.severity]}</span>
+              <Badge
+                variant={
+                  risk.severity === "high"
+                    ? "destructive"
+                    : risk.severity === "medium"
+                      ? "default"
+                      : "secondary"
+                }
+                className="text-xs"
+              >
+                {risk.severity}
+              </Badge>
+              <span className="text-xs capitalize text-muted-foreground">
+                {risk.category}
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <Badge
+                  className={`text-xs ${
+                    blockingLevel === "BLOCKING"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {blockingLevel === "BLOCKING" ? "Blocking" : "Advisory"}
+                </Badge>
+                <Badge
+                  className={`text-xs ${dispositionMeta[disposition].className}`}
+                >
+                  {dispositionMeta[disposition].label}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Issue description */}
+            <p className="text-sm font-medium text-sage-900">{risk.message}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {risk.actionRequired}
+            </p>
+
+            {/* Actions row */}
+            {!closed && (
+              <div className="mt-3 flex items-center gap-2">
+                {nextActor && (
+                  <span className="text-xs text-muted-foreground">
+                    {actorLabels[nextActor]} action needed
+                  </span>
+                )}
+                {showActionMenu && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto h-7 text-xs"
+                        disabled={isProcessing}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <MoreHorizontal className="mr-1 h-3 w-3" />
+                        )}
+                        Actions
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {actionOptions.map((option) => (
+                        <DropdownMenuItem
+                          key={option}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isProcessing) onActionSelect(item, option);
+                          }}
+                        >
+                          {actionLabels[option]}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Expand toggle */}
+                {hasExpandableDetails(risk) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => toggleExpanded(index)}
+                  >
+                    {isExpanded ? (
+                      <>
+                        Less <ChevronUp className="ml-1 h-3 w-3" />
+                      </>
+                    ) : (
+                      <>
+                        Details <ChevronDown className="ml-1 h-3 w-3" />
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Expanded details */}
+            {isExpanded && (
+              <div className="mt-3 border-t pt-3">
+                <RiskExpandedDetails risk={risk} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -356,102 +283,51 @@ function hasExpandableDetails(risk: DocumentRiskItem["risk"]) {
 
 function RiskExpandedDetails({ risk }: { risk: DocumentRiskItem["risk"] }) {
   return (
-    <div className="space-y-4 p-4 text-sm">
-      {risk.details ? (
-        <div>
-          <p className="font-medium">Details</p>
-          <p className="mt-1 text-muted-foreground">{risk.details}</p>
-        </div>
-      ) : null}
+    <div className="space-y-3 text-sm">
+      {risk.details && <p className="text-muted-foreground">{risk.details}</p>}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded border border-dashed bg-white/40 p-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded border border-dashed p-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Fixable By
           </p>
-          <p className="mt-1 font-semibold">
-            {actorLabels[resolveFixableBy(risk)]}
-          </p>
-          {risk.nextActionBy && !isClosed(risk.disposition) ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Next actor: {actorLabels[risk.nextActionBy]}
-            </p>
-          ) : null}
+          <p className="font-medium">{actorLabels[resolveFixableBy(risk)]}</p>
         </div>
-
-        <div className="rounded border border-dashed bg-white/40 p-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="rounded border border-dashed p-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Evidence
           </p>
-          <p className="mt-1 font-semibold">
+          <p className="font-medium">
             {(risk.linkedDocumentIds ?? []).length > 0
               ? `${risk.linkedDocumentIds?.length} linked`
-              : "No evidence linked"}
+              : "None"}
           </p>
-          {risk.linkedDocumentIds && risk.linkedDocumentIds.length > 0 ? (
-            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-              {risk.linkedDocumentIds.map((docId) => (
-                <li key={docId} className="font-mono">
-                  {docId}
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </div>
-
-        <div className="rounded border border-dashed bg-white/40 p-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Timeline
+        <div className="rounded border border-dashed p-2">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Updated
           </p>
-          <p className="mt-1 font-semibold">
+          <p className="font-medium">
             {formatTimestamp(risk.lastUpdatedAt) ?? "Unknown"}
           </p>
-          {risk.waiverExpiration || risk.acknowledgedAt ? (
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              {risk.waiverExpiration ? (
-                <p>
-                  Dismissal expires: {formatTimestamp(risk.waiverExpiration)}
-                </p>
-              ) : null}
-              {risk.acknowledgedAt ? (
-                <p>Acknowledged: {formatTimestamp(risk.acknowledgedAt)}</p>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </div>
 
-      {risk.history && risk.history.length > 0 ? (
+      {risk.history && risk.history.length > 0 && (
         <div>
-          <p className="font-medium">History</p>
-          <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
-            {risk.history.map((entry, entryIdx) => (
-              <li key={entryIdx}>
-                <span className="font-medium text-slate-600 dark:text-slate-200">
-                  {dispositionMeta[entry.disposition]?.label ??
-                    entry.disposition}
-                </span>
-                {" • "}
-                <span>{getActorLabel(entry.actorRole)}</span>
-                {" • "}
-                <span>{formatTimestamp(entry.timestamp)}</span>
-                {entry.comment ? (
-                  <>
-                    <br />
-                    <span>{entry.comment}</span>
-                  </>
-                ) : null}
+          <p className="text-xs font-medium">History</p>
+          <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+            {risk.history.map((entry, i) => (
+              <li key={i}>
+                {dispositionMeta[entry.disposition]?.label ?? entry.disposition}{" "}
+                &middot; {getActorLabel(entry.actorRole)} &middot;{" "}
+                {formatTimestamp(entry.timestamp)}
+                {entry.comment && <> &mdash; {entry.comment}</>}
               </li>
             ))}
           </ul>
         </div>
-      ) : null}
-
-      {risk.affectedPages && risk.affectedPages.length > 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Affected pages: {risk.affectedPages.join(", ")}
-        </p>
-      ) : null}
+      )}
     </div>
   );
 }
