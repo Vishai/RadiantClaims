@@ -2,7 +2,7 @@
 
 import { IntelligenceResponse } from "@/app/api/documents/[id]/intelligence/route";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileText, Zap, DollarSign } from "lucide-react";
+import { Clock, FileText, Zap } from "lucide-react";
 
 interface ProvenanceTabProps {
   data: IntelligenceResponse;
@@ -17,47 +17,6 @@ interface ProvenanceTabProps {
 
 export function ProvenanceTab({ data, documentData }: ProvenanceTabProps) {
   const { metadata, textLength } = data;
-
-  // Calculate estimated costs (rough estimates)
-  const estimateOCRCost = () => {
-    // Assume $0.01 per page for OCR
-    return 0.01;
-  };
-
-  const estimateEntityCost = () => {
-    // Assume GPT-4o structured output ~$5/M input tokens, ~$15/M output tokens
-    // Rough estimate: 1000 chars ≈ 250 tokens
-    const inputTokens = Math.ceil(textLength / 4);
-    const outputTokens = 500; // Typical entity extraction output
-    return (inputTokens / 1000000) * 5 + (outputTokens / 1000000) * 15;
-  };
-
-  const estimateComplianceCost = () => {
-    const inputTokens = Math.ceil(textLength / 4);
-    const outputTokens = 800; // Typical compliance check output
-    return (inputTokens / 1000000) * 5 + (outputTokens / 1000000) * 15;
-  };
-
-  const estimateRiskCost = () => {
-    const inputTokens = Math.ceil(textLength / 4);
-    const outputTokens = 600; // Typical risk analysis output
-    return (inputTokens / 1000000) * 5 + (outputTokens / 1000000) * 15;
-  };
-
-  const ocrCost = estimateOCRCost();
-  const entityCost = estimateEntityCost();
-  const complianceCost = estimateComplianceCost();
-  const riskCost = estimateRiskCost();
-  const totalCost = ocrCost + entityCost + complianceCost + riskCost;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4,
-    }).format(amount);
-  };
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -239,40 +198,7 @@ export function ProvenanceTab({ data, documentData }: ProvenanceTabProps) {
         </div>
       )}
 
-      {/* Estimated Costs */}
-      <div className="rounded-lg border bg-green-50 p-4 dark:bg-green-950">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-          <DollarSign className="h-5 w-5" />
-          Estimated API Costs
-        </h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">OCR Processing</span>
-            <span className="font-mono">{formatCurrency(ocrCost)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Entity Extraction</span>
-            <span className="font-mono">{formatCurrency(entityCost)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Compliance Check</span>
-            <span className="font-mono">{formatCurrency(complianceCost)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Risk Analysis</span>
-            <span className="font-mono">{formatCurrency(riskCost)}</span>
-          </div>
-          <div className="mt-2 flex items-center justify-between border-t pt-2 font-medium">
-            <span>Total Estimated Cost</span>
-            <span className="font-mono text-lg">
-              {formatCurrency(totalCost)}
-            </span>
-          </div>
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          * Costs are estimates based on current API pricing and may vary.
-        </p>
-      </div>
+      {/* API cost estimates hidden from customer view — available in admin dashboard */}
     </div>
   );
 }

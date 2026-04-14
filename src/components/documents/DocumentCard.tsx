@@ -296,28 +296,48 @@ export function DocumentCard({
             )}
           </div>
 
-          {/* Qualification summary (compact) */}
-          {qualificationCopy && qualification && (
-            <div
-              className={cn(
-                "rounded-md border px-3 py-2 text-xs",
-                qualificationCopy.className
-              )}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{qualificationCopy.icon}</span>
-                <span className="font-semibold">{qualificationCopy.label}</span>
-              </div>
-              {qualification.issues && qualification.issues.length > 0 && (
-                <p className="mt-1 text-[11px] opacity-80">
-                  {qualification.issues[0]}
-                  {qualification.issues.length > 1 &&
-                    ` (+${qualification.issues.length - 1} more)`}
-                </p>
-              )}
-            </div>
-          )}
+          {/* Qualification summary (compact) — suppress green if issues exist */}
+          {qualificationCopy &&
+            qualification &&
+            (() => {
+              const hasIssues =
+                qualification.issues && qualification.issues.length > 0;
+              const needsAction =
+                qualification.userActionNeeded !== "NONE" &&
+                qualification.userActionNeeded;
+              // If qualification says "QUALIFIES" but there are issues, show a cautious amber instead of green
+              const showCautious =
+                qualification.status === "QUALIFIES" &&
+                (hasIssues || needsAction);
+
+              return (
+                <div
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-xs",
+                    showCautious
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : qualificationCopy.className
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">
+                      {showCautious ? "\u{1F7E1}" : qualificationCopy.icon}
+                    </span>
+                    <span className="font-semibold">
+                      {showCautious ? "Needs Review" : qualificationCopy.label}
+                    </span>
+                  </div>
+                  {hasIssues && (
+                    <p className="mt-1 text-[11px] opacity-80">
+                      {qualification.issues![0]}
+                      {qualification.issues!.length > 1 &&
+                        ` (+${qualification.issues!.length - 1} more)`}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
           {/* Rejection reason */}
           {status === "REJECTED" && rejectionReason && (

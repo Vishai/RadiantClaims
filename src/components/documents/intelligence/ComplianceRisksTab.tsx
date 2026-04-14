@@ -510,9 +510,7 @@ export function ComplianceRisksTab({
             const docRisks = filteredItems.filter((item) =>
               DOCUMENT_RISK_CATEGORIES.has(item.risk.category)
             );
-            const claimRisks = filteredItems.filter(
-              (item) => !DOCUMENT_RISK_CATEGORIES.has(item.risk.category)
-            );
+            // Claim-wide risks excluded from document view
 
             return (
               <>
@@ -544,28 +542,7 @@ export function ComplianceRisksTab({
                   </div>
                 )}
 
-                {claimRisks.length > 0 && (
-                  <>
-                    <div className="mt-4 rounded-lg border border-dashed border-sage-300 bg-sage-50/50 p-3">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Claim-wide issues (not specific to this document)
-                      </p>
-                      <p className="mb-3 text-xs text-muted-foreground">
-                        These relate to your overall claim packet, not this
-                        individual document.
-                      </p>
-                      <RiskTable
-                        risks={claimRisks}
-                        actor={userActor}
-                        canMutate={canMutate}
-                        processingIndex={processingIndex}
-                        onActionSelect={(item, action) =>
-                          setPendingAction({ item, action })
-                        }
-                      />
-                    </div>
-                  </>
-                )}
+                {/* Claim-wide risks omitted — those belong on the documents overview page */}
               </>
             );
           })()}

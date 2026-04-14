@@ -75,22 +75,7 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
     return "bg-red-500";
   };
 
-  // Compliance metrics
-  const completenessPercent = compliance
-    ? Math.round((compliance.checklistCoverage ?? 0) * 100)
-    : null;
-
-  const topMissing = compliance
-    ? (compliance.missingRequirements ?? [])
-        .sort((a, b) => {
-          const p = { high: 0, medium: 1, low: 2 } as const;
-          return (
-            (p[a.priority as keyof typeof p] ?? 2) -
-            (p[b.priority as keyof typeof p] ?? 2)
-          );
-        })
-        .slice(0, 3)
-    : [];
+  // Compliance metrics moved to packet-level view
 
   // Filter to only document-level issues for the summary
   const docTopRisks = (risks?.risks ?? [])
@@ -116,8 +101,8 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
                 Blocking Issues Found
               </h3>
               <p className="text-sm text-red-800">
-                This document has critical issues that must be resolved before
-                it can count toward your claim.
+                This document has critical issues that must be resolved or
+                addressed before it can count toward your claim.
               </p>
               <div className="space-y-2">
                 {blockingDocRisks.map((risk, idx) => (
@@ -126,7 +111,7 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
                     className="flex items-start gap-2 rounded bg-red-100/50 p-2"
                   >
                     <span className="mt-0.5 text-sm">{"\u{1F534}"}</span>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-red-900">
                         {risk.message}
                       </p>
@@ -137,6 +122,12 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
                   </div>
                 ))}
               </div>
+              <p className="mt-1 text-xs text-red-700">
+                Go to the{" "}
+                <span className="font-semibold">Compliance &amp; Risks</span>{" "}
+                tab to dismiss, provide explanation, or take action on these
+                issues.
+              </p>
             </div>
           </div>
         </div>
@@ -275,72 +266,8 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
         )}
       </div>
 
-      {/* Claim Completeness (if compliance data available) */}
-      {compliance && completenessPercent !== null && (
-        <div className="rounded-lg border p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-semibold">Claim Completeness</h3>
-            <span
-              className={`text-xl font-bold ${
-                completenessPercent >= 80
-                  ? "text-green-500"
-                  : completenessPercent >= 50
-                    ? "text-yellow-500"
-                    : "text-red-500"
-              }`}
-            >
-              {completenessPercent}%
-            </span>
-          </div>
-          <Progress
-            value={completenessPercent}
-            className="h-2"
-            indicatorClassName={getProgressColor(completenessPercent)}
-          />
-          {compliance.claimTypeSuspected && (
-            <div className="mt-2 flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Claim type:</span>
-              <Badge variant="outline" className="capitalize">
-                {compliance.claimTypeSuspected}
-              </Badge>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Top Missing Requirements */}
-      {topMissing.length > 0 && (
-        <div className="rounded-lg border p-4">
-          <h3 className="mb-3 flex items-center gap-2 text-base font-semibold">
-            <XCircle className="h-4 w-4 text-red-500" />
-            Missing Requirements
-          </h3>
-          <div className="space-y-2">
-            {topMissing.map((req, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                <Badge
-                  variant={
-                    req.priority === "high"
-                      ? "destructive"
-                      : req.priority === "medium"
-                        ? "default"
-                        : "secondary"
-                  }
-                  className="mt-0.5 text-xs"
-                >
-                  {req.priority}
-                </Badge>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{req.item}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {req.suggestion}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Claim Completeness and Missing Requirements are packet-level metrics
+          and belong on the /portal/documents overview page, not here. */}
 
       {/* Top Document-Level Risks (not claim-wide ones) */}
       {docTopRisks.length > 0 && !hasBlockingDocIssues && (
@@ -371,22 +298,36 @@ export function SummaryTab({ data, mimeType }: SummaryTabProps) {
         </div>
       )}
 
-      {/* Recommended Actions */}
-      {risks && (risks.recommendedActions ?? []).length > 0 && (
-        <div className="rounded-lg border bg-blue-50 p-4 dark:bg-blue-950">
-          <h3 className="mb-2 flex items-center gap-2 text-base font-semibold">
-            <CheckCircle2 className="h-4 w-4 text-blue-500" />
-            Next Steps
-          </h3>
-          <ul className="list-inside list-disc space-y-1">
-            {(risks.recommendedActions ?? []).map((action, idx) => (
-              <li key={idx} className="text-sm">
-                {action}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Recommended Actions — filter to document-specific only */}
+      {risks &&
+        (() => {
+          // Filter out claim-wide recommendations (about uploading other docs, claim completeness)
+          const claimWidePatterns = [
+            /upload.*remaining/i,
+            /claim.*complete/i,
+            /missing.*document/i,
+            /increase.*completeness/i,
+            /upload.*required/i,
+          ];
+          const docActions = (risks.recommendedActions ?? []).filter(
+            (a) => !claimWidePatterns.some((p) => p.test(a))
+          );
+          return docActions.length > 0 ? (
+            <div className="rounded-lg border bg-blue-50 p-4 dark:bg-blue-950">
+              <h3 className="mb-2 flex items-center gap-2 text-base font-semibold">
+                <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                Next Steps
+              </h3>
+              <ul className="list-inside list-disc space-y-1">
+                {docActions.map((action, idx) => (
+                  <li key={idx} className="text-sm">
+                    {action}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null;
+        })()}
 
       {/* No data fallback */}
       {!qualification && !aiCategorization && !compliance && !risks && (
