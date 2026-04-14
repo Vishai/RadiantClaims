@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trackPurchase } from "@/lib/analytics/meta-pixel";
-import type { Route } from "next";
 import { useEffect, useState, useCallback } from "react";
 
 export const dynamic = "force-dynamic";
@@ -22,27 +21,27 @@ import {
   Clock,
   AlertCircle,
   Plus,
-  Upload,
-  BookOpen,
   Menu,
-  Trash2,
   ChevronDown,
   ChevronUp,
   Activity,
 } from "lucide-react";
 import Link from "next/link";
-import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
-import { DOJSubmissionCard } from "@/components/portal/DOJSubmissionCard";
-import { DocumentReadinessCard } from "@/components/portal/DocumentReadinessCard";
-import { FinancialPlanningCard } from "@/components/portal/FinancialPlanningCard";
-import { DOJAnswerSheet } from "@/components/portal/DOJAnswerSheet";
-import { ExportForExtension } from "@/components/portal/ExportForExtension";
 import { DOJMetricsDashboard } from "@/components/doj/DOJMetricsDashboard";
-import { FilingFlowEducation } from "@/components/portal/FilingFlowEducation";
 import { InviteCollaboratorDialog } from "@/components/portal/InviteCollaboratorDialog";
 import { ManageCollaboratorsDialog } from "@/components/portal/ManageCollaboratorsDialog";
+import {
+  ClaimSummaryCard,
+  type ClaimSummaryData,
+  type PacketStatus,
+  type PacketSubmissionMeta,
+} from "@/components/portal/ClaimSummaryCard";
 import { generateDocumentRequirements } from "@/lib/reca/document-tracking";
-import { RelationshipType } from "@/lib/reca/types";
+import type { RelationshipType } from "@/lib/reca/types";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface Claimant {
   id: string;
@@ -75,25 +74,18 @@ interface Claimant {
   } | null;
 }
 
-type PacketStatus =
-  | "NOT_READY"
-  | "PROCESSING"
-  | "READY_FOR_DOJ"
-  | "OUTDATED"
-  | "UNKNOWN";
+const VALID_RELATIONSHIPS: RelationshipType[] = [
+  "Self",
+  "Spouse",
+  "Child",
+  "Parent",
+  "Grandchild",
+  "Grandparent",
+];
 
-interface PacketSubmissionMeta {
-  status?: string | null;
-  warnings?: unknown;
-  generatedAt?: string | null;
-  readyAt?: string | null;
-  generations?: Array<{
-    version: number;
-    generatedAt: string;
-    status: string;
-    generatedBy?: string | null;
-  }>;
-}
+// ============================================================================
+// Helpers
+// ============================================================================
 
 const mapPacketStatus = (status?: string | null): PacketStatus => {
   switch (status) {
@@ -114,122 +106,29 @@ const mapPacketStatus = (status?: string | null): PacketStatus => {
   }
 };
 
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getPartLabel(section: string): string {
-  const partNum = section.replace("part_", "");
-  const labels: Record<string, string> = {
-    "1": "Filer Info",
-    "2": "Deceased Info",
-    "3": "Relationship",
-    "4": "Self-Filer",
-    "5": "Surviving Spouse",
-    "6": "Surviving Child",
-    "7": "Other Relatives",
-    "8": "Exposure Info",
-    "9": "Proof of Presence",
-    "10": "Diseases",
-    "11": "Proof of Disease",
-    "12": "Previous Payments",
-    "13": "Attorney",
-    "14": "Attorney Ack.",
-    "15": "Legal Guardian",
-    "16": "Signature",
-  };
-  return labels[partNum] || section.replace(/_/g, " ");
-}
-
-const RELATIONSHIP_TYPES: RelationshipType[] = [
-  "Self",
-  "Spouse",
-  "Child",
-  "Parent",
-  "Grandchild",
-  "Grandparent",
-];
-const VERIFIED_FILE_STATUSES = new Set(["VALIDATED", "APPROVED"]);
-
-function buildNextSteps(
-  intakeSession: Claimant["intakeSession"],
-  shouldPreferReview: boolean
-) {
-  if (!intakeSession || !shouldPreferReview) return null;
-
-  const formData = intakeSession.recaFormData ?? {};
+/**
+ * Compute the number of required documents for a claim based on the
+ * claimant's relationship and filer info. Returns 0 when relationship
+ * isn't yet set.
+ */
+function computeRequiredDocCount(formData: any): number {
   const relationshipCandidate = formData?.part_3?.relationship;
-  const relationship = RELATIONSHIP_TYPES.includes(relationshipCandidate)
+  const relationship: RelationshipType | null = VALID_RELATIONSHIPS.includes(
+    relationshipCandidate
+  )
     ? relationshipCandidate
     : null;
-
-  const requirements = relationship
-    ? generateDocumentRequirements(
-        relationship,
-        formData.part_1,
-        formData.part_4
-      ).filter((req) => req.required)
-    : [];
-
-  const uploadedDocs = intakeSession.uploadedFiles.length;
-  const verifiedDocs = intakeSession.uploadedFiles.filter((file) =>
-    VERIFIED_FILE_STATUSES.has(file.status)
-  ).length;
-  const estimatedRequiredDocs = requirements.length;
-  const remainingUploadEstimate = Math.max(
-    estimatedRequiredDocs - uploadedDocs,
-    0
-  );
-  const pendingVerification = Math.max(uploadedDocs - verifiedDocs, 0);
-
-  const checklist: string[] = [];
-  if ((intakeSession.recaCompletionPercent ?? 0) < 100) {
-    checklist.push("Confirm remaining form details on Review.");
-  }
-  if (!relationship) {
-    checklist.push(
-      "Set claimant relationship to finalize your required document list."
-    );
-  }
-  if (remainingUploadEstimate > 0) {
-    checklist.push(
-      `Upload approximately ${remainingUploadEstimate} more required document${remainingUploadEstimate === 1 ? "" : "s"}.`
-    );
-  }
-  if (uploadedDocs === 0) {
-    checklist.push("Upload your first document packet for this claim.");
-  }
-  if (pendingVerification > 0) {
-    checklist.push(
-      `${pendingVerification} uploaded document${pendingVerification === 1 ? "" : "s"} awaiting staff verification.`
-    );
-  }
-  if (
-    remainingUploadEstimate === 0 &&
-    pendingVerification === 0 &&
-    uploadedDocs > 0
-  ) {
-    checklist.push("All uploaded documents are currently verified/reviewed.");
-  }
-
-  return {
-    estimatedRequiredDocs,
-    uploadedDocs,
-    verifiedDocs,
-    checklist,
-  };
+  if (!relationship) return 0;
+  return generateDocumentRequirements(
+    relationship,
+    formData?.part_1,
+    formData?.part_4
+  ).filter((req) => req.required).length;
 }
+
+// ============================================================================
+// Component
+// ============================================================================
 
 export default function CustomerPortal() {
   const { data: session, status } = useSession();
@@ -244,6 +143,7 @@ export default function CustomerPortal() {
       trackPurchase(249.99, "DIY_PREP");
     }
   }, [searchParams]);
+
   const [packetActions, setPacketActions] = useState<
     Record<string, "downloading" | "regenerating" | null>
   >({});
@@ -356,8 +256,6 @@ export default function CustomerPortal() {
     const claim = claims.find((c) => c.id === claimId);
     if (!claim) return;
 
-    // For pending claims, require "DELETE" confirmation
-    // For named claims, require exact name match
     const expectedConfirmation =
       claim.firstName === "Pending"
         ? "DELETE"
@@ -497,44 +395,11 @@ export default function CustomerPortal() {
           </p>
         </div>
 
-        {/* Filing Flow Education */}
-        <FilingFlowEducation />
-
-        {/* DOJ Metrics Dashboard */}
-        <div className="mb-8">
-          <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-sage-900">
-                    <Activity className="h-5 w-5 text-terracotta-500" />
-                    DOJ Processing Metrics
-                  </CardTitle>
-                  <CardDescription className="text-sage-600">
-                    National processing trends and backlog insights
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDOJMetrics((prev) => !prev)}
-                  className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                >
-                  {showDOJMetrics ? "Hide Metrics" : "Show Metrics"}
-                  {showDOJMetrics ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-          {showDOJMetrics && (
-            <div className="mt-4">
-              <DOJMetricsDashboard />
-            </div>
-          )}
-        </div>
+        {packetActionError && (
+          <div className="mb-6 rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+            {packetActionError}
+          </div>
+        )}
 
         {/* Claims List */}
         {claims.length === 0 ? (
@@ -558,98 +423,7 @@ export default function CustomerPortal() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {/* Your Next Step — contextual banner based on most actionable claim */}
-            {claims.length > 0 &&
-              (() => {
-                // Pick the claim that most needs attention:
-                // prefer incomplete claims (lowest %), then most recently updated
-                const activeClaim =
-                  claims.find(
-                    (c) =>
-                      c.intakeSession &&
-                      (c.intakeSession.recaCompletionPercent ?? 0) < 100
-                  ) || claims[0];
-                const pct =
-                  activeClaim?.intakeSession?.recaCompletionPercent ?? 0;
-                const stage = activeClaim?.intakeSession?.recaWorkflowStage;
-                const sid = activeClaim?.intakeSession?.id;
-                if (!sid) return null;
-
-                // Completed form — show filing-focused banner
-                if (stage && stage >= 4) {
-                  return (
-                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-white px-6 py-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wider text-purple-600">
-                          Your Next Step
-                        </p>
-                        <p className="text-sm text-sage-800">
-                          Your preparation is complete! Next: file your claim on
-                          the official DOJ website. Our Chrome extension will
-                          walk you through it step by step.
-                        </p>
-                      </div>
-                      <div className="flex flex-shrink-0 flex-wrap gap-2">
-                        <a
-                          href="https://chromewebstore.google.com/detail/kdbankgnojlkljikngcmcfopiakkdmhe"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-700"
-                        >
-                          Install Chrome Extension →
-                        </a>
-                        <a
-                          href={`/reca/review/${sid}`}
-                          className="inline-flex items-center rounded-full border-2 border-sage-300 px-5 py-2.5 text-sm font-semibold text-sage-700 hover:bg-sage-50"
-                        >
-                          Go to Review
-                        </a>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // In-progress form — show progress banner
-                let message = "";
-                let cta = "";
-                let href = "";
-
-                if (pct < 50) {
-                  message = `You're ${pct}% through your RECA form. Keep going — most people finish in about 30 minutes.`;
-                  cta = "Continue Form";
-                  href = `/reca/form/${sid}?section=${activeClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
-                } else if (pct < 100) {
-                  message = `You're ${pct}% done — almost there! Complete the remaining sections to unlock your review.`;
-                  cta = "Continue Form";
-                  href = `/reca/form/${sid}?section=${activeClaim?.intakeSession?.recaWorkflowSection || "part_1"}`;
-                } else {
-                  return null;
-                }
-
-                return (
-                  <div className="flex items-center justify-between gap-4 rounded-3xl border-2 border-terracotta-200 bg-gradient-to-r from-terracotta-50 to-white px-6 py-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-terracotta-600">
-                        Your Next Step
-                      </p>
-                      <p className="text-sm text-sage-800">{message}</p>
-                    </div>
-                    <a
-                      href={href}
-                      className="flex-shrink-0 rounded-full bg-terracotta-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-terracotta-600"
-                    >
-                      {cta} →
-                    </a>
-                  </div>
-                );
-              })()}
-
-            {packetActionError && (
-              <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-                {packetActionError}
-              </div>
-            )}
-            {claims.map((claim) => {
+            {claims.map((claim, index) => {
               const intakeSession = claim.intakeSession;
               const packetSubmission = intakeSession?.packetSubmission;
               const derivedPacketStatus = mapPacketStatus(
@@ -671,391 +445,60 @@ export default function CustomerPortal() {
               const currentAction = intakeSession
                 ? packetActions[intakeSession.id]
                 : null;
-              const completionPercent =
-                intakeSession?.recaCompletionPercent ?? 0;
-              const reviewPreferredStatuses = [
-                "READY_FOR_REVIEW",
-                "UNDER_REVIEW",
-                "APPROVED",
-                "SUBMITTED",
-              ];
-              const shouldPreferReview = intakeSession
-                ? completionPercent >= 95 ||
-                  reviewPreferredStatuses.includes(intakeSession.status)
-                : false;
-              const reviewRoute = intakeSession
-                ? (`/reca/review/${intakeSession.id}` as Route)
-                : null;
-              const formRoute = intakeSession
-                ? intakeSession.recaWorkflowStage
-                  ? `/reca/form/${intakeSession.id}?section=${intakeSession.recaWorkflowSection || "part_1"}`
-                  : `/reca/start?sessionId=${intakeSession.id}`
-                : null;
-              const nextSteps = buildNextSteps(
-                intakeSession,
-                shouldPreferReview
+              const requiredDocCount = computeRequiredDocCount(
+                intakeSession?.recaFormData ?? {}
               );
 
+              const claimData: ClaimSummaryData = {
+                ...claim,
+                claimIndex: index,
+              };
+
               return (
-                <Card
+                <ClaimSummaryCard
                   key={claim.id}
-                  className="overflow-hidden rounded-3xl border-2 border-cream-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-sage-900">
-                          {claim.firstName === "Pending"
-                            ? `Claim #${claims.indexOf(claim) + 1} (Name Pending)`
-                            : `${claim.firstName} ${claim.lastName}`}
-                        </CardTitle>
-                        <CardDescription className="text-sage-600">
-                          Started on{" "}
-                          {new Date(claim.createdAt).toLocaleDateString()}
-                        </CardDescription>
-                      </div>
-                      {claim.intakeSession &&
-                        getStatusBadge(claim.intakeSession.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Progress Info */}
-                      {intakeSession && (
-                        <>
-                          <div className="space-y-3 rounded-2xl bg-cream-50 p-4">
-                            {/* Completion Progress Bar */}
-                            {intakeSession.recaWorkflowStage != null && (
-                              <div>
-                                <div className="mb-1.5 flex items-center justify-between text-sm">
-                                  <span className="font-medium text-sage-700">
-                                    Application Progress
-                                  </span>
-                                  <span className="font-semibold text-sage-900">
-                                    {intakeSession.recaCompletionPercent ?? 0}%
-                                  </span>
-                                </div>
-                                <div className="h-2.5 w-full overflow-hidden rounded-full bg-sage-200">
-                                  <div
-                                    className="h-full rounded-full bg-gradient-to-r from-terracotta-400 to-terracotta-500 transition-all duration-500"
-                                    style={{
-                                      width: `${Math.min(100, Math.max(0, intakeSession.recaCompletionPercent ?? 0))}%`,
-                                    }}
-                                  />
-                                </div>
-                                {intakeSession.recaWorkflowSection && (
-                                  <p className="mt-1 text-xs text-sage-500">
-                                    Currently on: Part{" "}
-                                    {intakeSession.recaWorkflowSection.replace(
-                                      "part_",
-                                      ""
-                                    )}{" "}
-                                    &mdash;{" "}
-                                    {getPartLabel(
-                                      intakeSession.recaWorkflowSection
-                                    )}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Last Saved */}
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-1.5 font-medium text-sage-700">
-                                <Clock className="h-3.5 w-3.5" />
-                                Last Saved
-                              </span>
-                              <span
-                                className="text-sage-600"
-                                title={new Date(
-                                  intakeSession.updatedAt
-                                ).toLocaleString()}
-                              >
-                                {formatTimeAgo(intakeSession.updatedAt)}
-                              </span>
-                            </div>
-
-                            {/* Documents Uploaded */}
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-1.5 font-medium text-sage-700">
-                                <Upload className="h-3.5 w-3.5" />
-                                Documents Uploaded
-                              </span>
-                              <span
-                                className={
-                                  intakeSession.uploadedFiles.length > 0
-                                    ? "font-medium text-emerald-700"
-                                    : "text-sage-500"
-                                }
-                              >
-                                {intakeSession.uploadedFiles.length > 0
-                                  ? `${intakeSession.uploadedFiles.length} file${intakeSession.uploadedFiles.length !== 1 ? "s" : ""}`
-                                  : "None yet"}
-                              </span>
-                            </div>
-
-                            {/* Family / sibling help */}
-                            <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-sage-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="text-sm text-sage-700">
-                                <div className="font-semibold text-sage-900">
-                                  Family / Sibling Help
-                                </div>
-                                <div className="text-xs text-sage-600">
-                                  Invite a family member to view this claim,
-                                  upload documents, and leave notes. They can’t
-                                  edit your answers.
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                                  onClick={() => {
-                                    setInviteSessionId(intakeSession.id);
-                                    setInviteSiblingOptions(
-                                      Array.isArray(
-                                        intakeSession.recaFormData?.part_6
-                                          ?.siblings
-                                      )
-                                        ? intakeSession.recaFormData.part_6.siblings
-                                            .map((sibling: { name?: string }) =>
-                                              sibling?.name?.trim()
-                                            )
-                                            .filter(
-                                              (
-                                                name: string | undefined
-                                              ): name is string => !!name
-                                            )
-                                        : []
-                                    );
-                                    setShowInviteDialog(true);
-                                  }}
-                                >
-                                  Invite
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  className="rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                                  onClick={() => {
-                                    setManageSessionId(intakeSession.id);
-                                    setShowManageDialog(true);
-                                  }}
-                                >
-                                  Manage
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Document Readiness — personalized checklist */}
-                          <DocumentReadinessCard
-                            formData={intakeSession.recaFormData ?? {}}
-                            uploadedFiles={intakeSession.uploadedFiles}
-                            sessionId={intakeSession.id}
-                            claimType={claim.claimType}
-                          />
-
-                          {nextSteps && (
-                            <div className="rounded-2xl border border-sage-200 bg-white p-4">
-                              <div className="mb-2 flex items-center justify-between">
-                                <h4 className="text-sm font-semibold text-sage-900">
-                                  What&apos;s Left
-                                </h4>
-                                <span className="text-xs text-sage-500">
-                                  Docs verified: {nextSteps.verifiedDocs}/
-                                  {nextSteps.uploadedDocs}
-                                </span>
-                              </div>
-                              <div className="mb-2 text-xs text-sage-600">
-                                Estimated required docs:{" "}
-                                {nextSteps.estimatedRequiredDocs}
-                              </div>
-                              <ul className="space-y-1 text-sm text-sage-700">
-                                {nextSteps.checklist.map((item) => (
-                                  <li key={item}>• {item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {intakeSession && (
-                            <>
-                              <DOJAnswerSheet
-                                formData={intakeSession.recaFormData ?? {}}
-                              />
-
-                              <ExportForExtension
-                                sessionId={intakeSession.id}
-                                claimId={claim.id}
-                                formData={intakeSession.recaFormData ?? {}}
-                                uploadedFiles={intakeSession.uploadedFiles}
-                              />
-
-                              <DOJSubmissionCard
-                                packetReady={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                }
-                                onDownloadPacket={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                    ? () =>
-                                        handleDownloadPacket(intakeSession.id)
-                                    : undefined
-                                }
-                                isDownloading={currentAction === "downloading"}
-                                uploadedFiles={intakeSession.uploadedFiles}
-                                claimantId={claim.id}
-                                onMarkedAsSubmitted={() => loadClaims()}
-                              />
-
-                              <PacketDeliveryCard
-                                status={derivedPacketStatus}
-                                warnings={packetWarnings}
-                                lastGeneratedAt={packetLastGeneratedAt}
-                                readyAt={packetReadyAt}
-                                history={packetHistory}
-                                downloadDisabled={
-                                  derivedPacketStatus !== "READY_FOR_DOJ"
-                                }
-                                onDownload={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                    ? () =>
-                                        handleDownloadPacket(intakeSession.id)
-                                    : undefined
-                                }
-                                onRegenerate={() =>
-                                  handleRegeneratePacket(intakeSession.id)
-                                }
-                                isDownloading={currentAction === "downloading"}
-                                isRegenerating={
-                                  currentAction === "regenerating"
-                                }
-                              />
-
-                              <FinancialPlanningCard
-                                sessionId={intakeSession.id}
-                                visible={
-                                  derivedPacketStatus === "READY_FOR_DOJ"
-                                }
-                              />
-                            </>
-                          )}
-                        </>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-3">
-                        {intakeSession && (
-                          <>
-                            {shouldPreferReview ? (
-                              <>
-                                <Button
-                                  onClick={() =>
-                                    reviewRoute && router.push(reviewRoute)
-                                  }
-                                  className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  Review Application
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button
-                                  onClick={() =>
-                                    formRoute && router.push(formRoute as Route)
-                                  }
-                                  className="gap-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  {intakeSession.recaWorkflowStage
-                                    ? "Continue Application"
-                                    : "Start Application"}
-                                </Button>
-
-                                <Button
-                                  variant="outline"
-                                  onClick={() =>
-                                    reviewRoute && router.push(reviewRoute)
-                                  }
-                                  className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                  Review Application
-                                </Button>
-                              </>
-                            )}
-                          </>
-                        )}
-
-                        {/* Upload Documents (Session-specific) */}
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const docsPath = intakeSession
-                              ? `/reca/documents/${intakeSession.id}`
-                              : "/portal/documents";
-                            router.push(docsPath as Route);
-                          }}
-                          className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                        >
-                          <Upload className="h-4 w-4" />
-                          Documents
-                        </Button>
-
-                        {/* Direct link to Intake Step 2 (document upload flow) */}
-                        {intakeSession?.resumeToken && (
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              router.push(
-                                `/intake/step2?token=${intakeSession.resumeToken}`
-                              )
-                            }
-                            className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                            title="Generate pre-filled request letters to send to hospitals and registries for your medical records"
-                          >
-                            <FileText className="h-4 w-4" />
-                            Request Medical Records
-                          </Button>
-                        )}
-
-                        {/* Resources Button */}
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const params = new URLSearchParams();
-                            if (claim.state)
-                              params.append("state", claim.state);
-                            if (claim.county)
-                              params.append("county", claim.county);
-                            router.push(
-                              `/resources${params.toString() ? `?${params.toString()}` : ""}` as unknown as Route
-                            );
-                          }}
-                          className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
-                        >
-                          <BookOpen className="h-4 w-4" />
-                          Resources
-                        </Button>
-
-                        {/* Delete Claim Button */}
-                        <Button
-                          variant="outline"
-                          onClick={() => setClaimToDelete(claim.id)}
-                          className="gap-2 rounded-full border-rose-300 text-rose-700 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
-                        </Button>
-                      </div>
-                      <p className="text-xs text-sage-600">
-                        <strong>Documents</strong> = upload your supporting
-                        files. <strong>Request Medical Records</strong> =
-                        generate pre-filled letters to send to hospitals and
-                        registries.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                  claim={claimData}
+                  packetStatus={derivedPacketStatus}
+                  packetWarnings={packetWarnings}
+                  packetLastGeneratedAt={packetLastGeneratedAt}
+                  packetReadyAt={packetReadyAt}
+                  packetHistory={packetHistory}
+                  currentAction={currentAction ?? null}
+                  requiredDocCount={requiredDocCount}
+                  onDownloadPacket={() =>
+                    intakeSession && handleDownloadPacket(intakeSession.id)
+                  }
+                  onRegeneratePacket={() =>
+                    intakeSession && handleRegeneratePacket(intakeSession.id)
+                  }
+                  onDelete={() => setClaimToDelete(claim.id)}
+                  onInvite={() => {
+                    if (!intakeSession) return;
+                    setInviteSessionId(intakeSession.id);
+                    setInviteSiblingOptions(
+                      Array.isArray(
+                        intakeSession.recaFormData?.part_6?.siblings
+                      )
+                        ? intakeSession.recaFormData.part_6.siblings
+                            .map((sibling: { name?: string }) =>
+                              sibling?.name?.trim()
+                            )
+                            .filter(
+                              (name: string | undefined): name is string =>
+                                !!name
+                            )
+                        : []
+                    );
+                    setShowInviteDialog(true);
+                  }}
+                  onManage={() => {
+                    if (!intakeSession) return;
+                    setManageSessionId(intakeSession.id);
+                    setShowManageDialog(true);
+                  }}
+                  onMarkedAsSubmitted={() => loadClaims()}
+                  getStatusBadge={getStatusBadge}
+                />
               );
             })}
 
@@ -1069,71 +512,39 @@ export default function CustomerPortal() {
               Start Another Claim
             </Button>
 
-            <Card className="rounded-3xl border-2 border-cream-200 bg-white">
+            {/* Discoverable: DOJ processing trends — low-priority, tucked at bottom */}
+            <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sage-900">
-                  What Happens Next?
-                </CardTitle>
-                <CardDescription className="text-sage-600">
-                  Your path to compensation, explained in plain language.
-                </CardDescription>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-sage-900">
+                      <Activity className="h-5 w-5 text-terracotta-500" />
+                      DOJ Processing Metrics
+                    </CardTitle>
+                    <CardDescription className="text-sage-600">
+                      National processing trends and backlog insights — useful
+                      context, not required to file.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDOJMetrics((prev) => !prev)}
+                    className="gap-2 rounded-full border-sage-300 text-sage-700 hover:bg-sage-50"
+                  >
+                    {showDOJMetrics ? "Hide" : "View trends"}
+                    {showDOJMetrics ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-sage-700">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full bg-terracotta-50 p-2">
-                    <FileText className="h-4 w-4 text-terracotta-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sage-900">
-                      RECA Application
-                    </p>
-                    <p>
-                      Complete the form walkthrough first. This locks in
-                      eligibility details and sets your document requirements.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full bg-emerald-50 p-2">
-                    <Upload className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sage-900">
-                      Document Request Forms
-                    </p>
-                    <p>
-                      After the application, generate and send hospital/registry
-                      packets. This is paramount to start record retrieval.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full bg-sage-50 p-2">
-                    <CheckCircle className="h-4 w-4 text-sage-700" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sage-900">
-                      Document Uploader
-                    </p>
-                    <p>
-                      Upload IDs, birth/death certificates, and other proofs
-                      your path requires. We track completeness for you.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full bg-blue-50 p-2">
-                    <BookOpen className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sage-900">Sources</p>
-                    <p>
-                      Find where to request vital records and supporting docs.
-                      Tailored to your state/county.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
+              {showDOJMetrics && (
+                <CardContent>
+                  <DOJMetricsDashboard />
+                </CardContent>
+              )}
             </Card>
           </div>
         )}

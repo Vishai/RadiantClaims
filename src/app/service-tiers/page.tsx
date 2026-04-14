@@ -30,6 +30,12 @@ import {
   ShieldCheck,
   FileSearch,
   Scale,
+  Puzzle,
+  ClipboardList,
+  MessageSquareText,
+  FolderInput,
+  Save,
+  X,
 } from "lucide-react";
 import { SERVICE_TIERS } from "@/lib/constants/service-tiers";
 import { HERITAGE_LAW_OFFICES } from "@/lib/constants/heritage-law";
@@ -400,6 +406,80 @@ function ServiceTiersContent() {
                 difficult documents.
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Why prep with us vs. filing direct on justice.gov */}
+        <div className="mx-auto mb-12 max-w-5xl">
+          <div className="mb-6 text-center">
+            <h2 className="mb-2 text-2xl font-bold text-sage-900 md:text-3xl">
+              Why not just file directly on justice.gov?
+            </h2>
+            <p className="mx-auto max-w-2xl text-sage-700">
+              You can — it&apos;s free. But here&apos;s what you&apos;d be doing
+              without us, and what we do instead.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-sage-200">
+            {/* Column headers */}
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="border-b border-sage-200 bg-sage-50 px-6 py-4 md:border-b-0 md:border-r">
+                <p className="text-xs font-semibold uppercase tracking-wider text-sage-500">
+                  Filing direct on justice.gov
+                </p>
+                <p className="mt-1 text-sm font-medium text-sage-700">
+                  Free, but you&apos;re on your own
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-terracotta-50 to-white px-6 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-terracotta-600">
+                  Preparing with RadiantClaims
+                </p>
+                <p className="mt-1 text-sm font-medium text-sage-900">
+                  We do the heavy lifting
+                </p>
+              </div>
+            </div>
+
+            {/* Comparison rows */}
+            <ComparisonRow
+              icon={ClipboardList}
+              painTitle="Figure out which docs apply to you"
+              painBody="DOJ gives you a generic 100+ page guide. You sort out which items apply to your state, disease, and relationship."
+              solutionTitle="Personalized document checklist"
+              solutionBody="We tailor the required-document list to your situation as you answer questions — no guesswork."
+            />
+            <ComparisonRow
+              icon={Puzzle}
+              painTitle="Retype every answer into justice.gov"
+              painBody="When you're ready to file, you manually type every field into the DOJ portal — and hope you don't make a mistake."
+              solutionTitle="Chrome extension auto-fills the DOJ forms"
+              solutionBody="Our Filing Assistant for Chrome types your saved answers directly into justice.gov for you. Zero retyping."
+              highlight
+            />
+            <ComparisonRow
+              icon={FolderInput}
+              painTitle="Guess which tab each document belongs in"
+              painBody="The DOJ portal has multiple tabs for different document categories. Misfile a document and your claim can stall."
+              solutionTitle="Extension routes each document for you"
+              solutionBody="The Chrome extension tells you exactly which DOJ portal tab every document should be uploaded to."
+            />
+            <ComparisonRow
+              icon={MessageSquareText}
+              painTitle="Decode DOJ legalese alone"
+              painBody="The official form uses dense legal language. Misunderstand a question and you could delay or lose your claim."
+              solutionTitle="Plain-English questions, save &amp; resume"
+              solutionBody="Our wizard asks the same questions in plain English. Save progress, share with family, come back anytime."
+            />
+            <ComparisonRow
+              icon={Save}
+              painTitle="No save, no help, no second chances"
+              painBody="Lose your place, have a question, or need to check with family? You start over."
+              solutionTitle="Support and a 7-day money-back guarantee"
+              solutionBody="Support if you get stuck, and a full refund within 7 days if it turns out we can't help."
+              last
+            />
           </div>
         </div>
 
@@ -1157,6 +1237,73 @@ const Map = ({ className }: { className?: string }) => (
     <line x1="15" x2="15" y1="6" y2="21" />
   </svg>
 );
+
+/**
+ * One row in the "Why prep with us vs. filing direct" comparison.
+ * Left column = the pain of filing direct, right column = our solution.
+ */
+function ComparisonRow({
+  icon: Icon,
+  painTitle,
+  painBody,
+  solutionTitle,
+  solutionBody,
+  highlight = false,
+  last = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  painTitle: string;
+  painBody: string;
+  solutionTitle: string;
+  solutionBody: string;
+  highlight?: boolean;
+  last?: boolean;
+}) {
+  const borderClass = last ? "" : "border-b border-sage-200";
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${borderClass}`}>
+      {/* Pain (direct filing) */}
+      <div className="flex items-start gap-3 bg-sage-50/40 px-6 py-5 md:border-r md:border-sage-200">
+        <div className="flex-shrink-0 rounded-lg bg-white p-2 shadow-sm">
+          <X className="h-4 w-4 text-sage-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-sage-900">{painTitle}</p>
+          <p className="mt-1 text-xs leading-relaxed text-sage-600">
+            {painBody}
+          </p>
+        </div>
+      </div>
+
+      {/* Solution (with us) */}
+      <div
+        className={`flex items-start gap-3 px-6 py-5 ${
+          highlight
+            ? "bg-gradient-to-br from-purple-50 to-white"
+            : "bg-gradient-to-br from-terracotta-50/40 to-white"
+        }`}
+      >
+        <div
+          className={`flex-shrink-0 rounded-lg p-2 shadow-sm ${
+            highlight ? "bg-purple-100" : "bg-terracotta-100"
+          }`}
+        >
+          <Icon
+            className={`h-4 w-4 ${
+              highlight ? "text-purple-600" : "text-terracotta-600"
+            }`}
+          />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-sage-900">{solutionTitle}</p>
+          <p className="mt-1 text-xs leading-relaxed text-sage-700">
+            {solutionBody}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ServiceTiersPage() {
   return (

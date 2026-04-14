@@ -14,6 +14,7 @@ import {
   Loader2,
   PartyPopper,
 } from "lucide-react";
+import { trackClaimFiled } from "@/lib/analytics/meta-pixel";
 
 type UploadedFile = {
   id: string;
@@ -99,6 +100,10 @@ export function DOJSubmissionCard({
       }
 
       setSubmitted(true);
+      // Fire ClaimFiled custom event for Meta funnel optimization.
+      // Users file via the justice.gov portal (often with our Chrome
+      // extension), so the method is e-file.
+      trackClaimFiled("e-file");
       onMarkedAsSubmitted?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");

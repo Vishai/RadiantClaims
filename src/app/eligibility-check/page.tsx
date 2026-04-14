@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveUserData } from "@/lib/user-data-manager";
+import { trackEligibilityStart } from "@/lib/analytics/meta-pixel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -174,6 +175,22 @@ export default function EligibilityCheckPage() {
       }
     } catch {
       // Ignore parse errors
+    }
+  }, []);
+
+  // Fire EligibilityCheck "started" custom event — once per browser session
+  // so resumers don't inflate the top of the funnel
+  useEffect(() => {
+    try {
+      const alreadyTracked = sessionStorage.getItem(
+        "eligibility_start_tracked"
+      );
+      if (!alreadyTracked) {
+        trackEligibilityStart();
+        sessionStorage.setItem("eligibility_start_tracked", "true");
+      }
+    } catch {
+      // sessionStorage may be unavailable in some private-browsing modes; ignore
     }
   }, []);
 

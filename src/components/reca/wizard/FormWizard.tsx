@@ -25,6 +25,7 @@ import {
   getPreviousSection,
   getSectionDisplayName,
 } from "@/lib/reca/workflow";
+import { trackFormSection } from "@/lib/analytics/meta-pixel";
 
 interface FormWizardProps {
   sessionId: string;
@@ -272,6 +273,19 @@ export function FormWizard({
     } catch (error) {
       console.error("Failed to reload workflow state:", error);
       // Continue with existing state
+    }
+
+    // Fire FormSectionComplete custom event. We track the section the user
+    // JUST finished (currentSection), paired with the new completion % so
+    // Meta funnels can compute per-section drop-off.
+    try {
+      trackFormSection(
+        currentSection,
+        Math.round(latestState.completionPercentage ?? 0)
+      );
+    } catch (e) {
+      // Never block navigation on analytics failures
+      console.warn("[FormWizard] trackFormSection failed", e);
     }
 
     if (resolveMode) {

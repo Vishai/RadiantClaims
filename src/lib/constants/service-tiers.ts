@@ -25,10 +25,12 @@ export const SERVICE_TIERS = {
 
     features: [
       "Keep 100% of your award",
+      "Personalized document checklist — tailored to your state, relationship, and disease",
+      "Chrome extension auto-fills the DOJ filing forms and routes your documents to the right portal tab",
+      "Plain-English questions that translate DOJ legalese — save & resume any time",
+      "Pre-filled medical records request letters for hospitals and registries",
       "Instant PDF Packet Download",
-      "Step-by-step filing instructions",
-      "Document checklist & organization",
-      "Secure portal access",
+      "Secure portal with family collaboration",
       "Progress tracking",
     ],
 
@@ -79,13 +81,13 @@ export const SERVICE_TIERS = {
     },
 
     features: [
-      "Everything in DIY Path, plus:",
-      "Professional attorney review of all documents",
-      "Full legal representation throughout the process",
-      "Attorney submits claim to DOJ on your behalf",
-      "Resubmission assistance if claim is initially denied",
+      "Everything in the DIY path — plus an attorney handles the DOJ for you",
+      "Zero upfront cost — pay only 2% of your award if you win",
+      "Attorney reviews and submits your claim to the DOJ",
+      "Attorney handles all DOJ communication on your behalf",
+      "Denials, appeals & resubmissions handled for you",
+      "Complex case experience — missing records, multi-state exposure, unusual histories",
       "Legal guidance on complex eligibility issues",
-      "Direct communication with DOJ on your behalf",
     ],
 
     userResponsibilities: [

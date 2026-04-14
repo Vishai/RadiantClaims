@@ -90,3 +90,17 @@ export function trackClaimFiled(method: "e-file" | "mail") {
     method,
   });
 }
+
+/**
+ * Generic CTA click tracker. Use for A/B-testable buttons and links
+ * where you want to measure engagement without adding a bespoke event.
+ *
+ * @param ctaName  Short identifier for the CTA (e.g. "see-full-comparison")
+ * @param location Where the CTA lives (e.g. "homepage-two-ways", "portal-tracker")
+ */
+export function trackCtaClick(ctaName: string, location: string) {
+  fbq("trackCustom", "CtaClick", {
+    cta_name: ctaName,
+    location,
+  });
+}
