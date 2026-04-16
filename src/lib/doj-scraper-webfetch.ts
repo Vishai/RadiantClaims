@@ -8,52 +8,33 @@
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
 import { format, subDays, addDays } from "date-fns";
+import {
+  fetchAndParseDOJForDate,
+  type DOJClaimStats,
+  type DOJPageData,
+} from "./doj-scraper/parse";
 
-interface DOJClaimStats {
-  pending: number;
-  approved: number;
-  approvalPercent: number;
-  dollarsApproved: number;
-  denied: number;
-  totalClaims: number;
-}
-
-interface DOJPageData {
-  DOWNWINDER: DOJClaimStats;
-  ONSITE_PARTICIPANT: DOJClaimStats;
-  MANHATTAN_PROJECT_WASTE: DOJClaimStats;
-  URANIUM_WORKER: DOJClaimStats;
-}
+// Re-export types for callers that still import them from this file
+export type { DOJClaimStats, DOJPageData };
 
 /**
- * Fetch DOJ data using internal API endpoint
- * The API endpoint uses server-side fetch which has better success
+ * Fetch DOJ data for a specific date.
+ *
+ * Previously went through an internal HTTP hop (localhost:3001/api/doj/scrape)
+ * which worked in dev but silently failed in production. Now calls
+ * `fetchAndParseDOJForDate` directly — single fetch, no internal routing.
+ *
+ * Returns null when the DOJ page doesn't exist (e.g. weekends, holidays)
+ * or when the fetch fails. Callers should treat null as "no new data for
+ * this date" and move on.
  */
 export async function scrapeDOJDataForDateAPI(
   date: Date
 ): Promise<DOJPageData | null> {
-  const dateStr = format(date, "MMddyyyy");
-
-  try {
-    console.log(
-      `📥 Fetching DOJ data for ${format(date, "MM/dd/yyyy")} via API...`
-    );
-
-    // Call our internal API endpoint that does the scraping
-    const response = await fetch(
-      `http://localhost:3001/api/doj/scrape?date=${dateStr}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`❌ Failed to fetch via API:`, error);
-    return null;
-  }
+  console.log(
+    `📥 Fetching DOJ data for ${format(date, "MM/dd/yyyy")} directly...`
+  );
+  return fetchAndParseDOJForDate(date);
 }
 
 /**

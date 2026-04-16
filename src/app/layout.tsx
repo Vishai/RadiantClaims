@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/react";
 import { getSiteUrl } from "@/lib/seo/site-url";
+import { Footer } from "@/components/layout/Footer";
 
 const siteUrl = getSiteUrl();
 
@@ -95,7 +96,10 @@ fbq('track', 'PageView');`,
             }),
           }}
         />
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Footer />
+        </Providers>
         <Analytics />
       </body>
     </html>

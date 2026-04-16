@@ -270,13 +270,17 @@ export function ClaimSummaryCard({
   const documentsHref = `/reca/documents/${intakeSession.id}` as Route;
 
   // Post-eligibility band visibility:
-  // - relationship is set (user passed eligibility gate)
-  // - form not yet done
-  // - stage is past initial setup (have a recaWorkflowStage > 1)
+  // Show the roadmap if the user has committed to a relationship (meaning
+  // they're past Part 3 and therefore past the eligibility gate) AND the
+  // form isn't complete yet.
+  //
+  // We deliberately do NOT rely on `recaWorkflowStage` here: the backend
+  // can leave that field stale as users progress (e.g., a claim that's 96%
+  // complete with a relationship set may still report workflowStage: 1).
+  // The combination of `relationship !== null` and `completionPercent < 100`
+  // is the correct observable signal for "post-eligibility, pre-completion."
   const showPersonalizedPathBand =
-    relationship !== null &&
-    completionPercent < 100 &&
-    (intakeSession.recaWorkflowStage ?? 0) >= 2;
+    relationship !== null && completionPercent < 100;
 
   const claimSubmitted = intakeSession.status === "SUBMITTED";
   const packetReady = packetStatus === "READY_FOR_DOJ";
