@@ -171,6 +171,8 @@ model Claimant {
   claimSubscription       ClaimSubscription?
   // FINANCIAL EDUCATION DRIP
   financialEdDrip         FinancialEdDrip?
+  // USER-REPORTED OUTCOME (DOJ award / denial / still waiting)
+  outcome                 ClaimOutcome?
   createdAt               DateTime                         @default(now())
   updatedAt               DateTime                         @updatedAt
 
@@ -1494,6 +1496,9 @@ model ClaimLifecycle {
   // Timeline Events
   milestones ClaimMilestoneEvent[]
 
+  // User-reported outcome (see ClaimOutcome) — linked back-reference
+  outcome ClaimOutcome?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2697,4 +2702,65 @@ enum ReferralStatus {
   CONSULTATION_COMPLETED
   CLIENT_CONVERTED
   DECLINED
+}
+
+// ============================================================================
+// User-reported claim outcome
+// ----------------------------------------------------------------------------
+// One record per claimant, populated when the user self-reports what happened
+// after they filed with the DOJ. This is distinct from ClaimLifecycle, which
+// holds admin-verified milestone data. The two can be reconciled later via
+// the optional lifecycleId FK.
+//
+// The exact awardAmount is stored for internal analytics; only a bucketed
+// value is ever sent to third parties (Meta Pixel) or displayed publicly.
+// ============================================================================
+
+enum ClaimOutcomeStatus {
+  AWARDED
+  DENIED
+  WITHDRAWN
+  PENDING
+}
+
+enum PaidMethod {
+  CHECK
+  DIRECT_DEPOSIT
+  WIRE
+  OTHER
+}
+
+model ClaimOutcome {
+  id         String   @id @default(cuid())
+  claimantId String   @unique
+  claimant   Claimant @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  // Optional link to the admin-tracked lifecycle — populated when an admin
+  // verifies the self-report against DOJ correspondence.
+  lifecycleId String?         @unique
+  lifecycle   ClaimLifecycle? @relation(fields: [lifecycleId], references: [id], onDelete: SetNull)
+
+  // Primary status
+  outcome ClaimOutcomeStatus
+
+  // AWARDED branch (nullable unless outcome == AWARDED)
+  awardReceivedAt DateTime?
+  awardAmount     Float? // exact; bucketed before ever leaving our system
+  paidMethod      PaidMethod?
+
+  // DENIED branch (nullable unless outcome == DENIED)
+  denialReason String? @db.Text
+  appealed     Boolean @default(false)
+
+  // Provenance — separates user-reported from admin-verified data
+  selfReportedAt         DateTime?
+  verifiedAt             DateTime?
+  verifiedByUserId       String? // User id of admin who verified
+  verificationDocumentId String? // Document id of uploaded DOJ award letter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([outcome])
+  @@index([awardReceivedAt])
 }

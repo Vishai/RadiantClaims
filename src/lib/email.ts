@@ -35,6 +35,7 @@ import { FinancialEdCelebrationEmail } from "@/emails/client/financial-ed-celebr
 import { FinancialEdCalculatorEmail } from "@/emails/client/financial-ed-calculator";
 import { FinancialEdTipsEmail } from "@/emails/client/financial-ed-tips";
 import { FinancialEdAdvisorEmail } from "@/emails/client/financial-ed-advisor";
+import DailyDojPostDraftEmail from "@/emails/daily-doj-post-draft";
 import { EmailType } from "@prisma/client";
 import {
   isUnsubscribed,
@@ -1598,6 +1599,83 @@ export async function sendFinancialEdAdvisorEmail(params: {
     return { success: true, emailId: data?.id };
   } catch (error) {
     console.error("Error sending financial ed advisor email:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send the Daily DOJ Post Draft to operators each morning.
+ *
+ * Recipients come from the `DAILY_POST_RECIPIENTS` env var (comma-
+ * separated list). If the env var is unset, this function logs and
+ * returns without sending — the admin page at /admin/daily-post is
+ * always available as a fallback.
+ *
+ * Operators can click through the admin URL in the email to copy the
+ * live draft with one tap (useful on mobile).
+ */
+export async function sendDailyPostDraftEmail(params: {
+  postText: string;
+  dateLabel: string;
+  templateLabel: string;
+  warnings: string[];
+}) {
+  const { postText, dateLabel, templateLabel, warnings } = params;
+
+  const recipientsRaw = process.env.DAILY_POST_RECIPIENTS ?? "";
+  const recipients = recipientsRaw
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (recipients.length === 0) {
+    console.log(
+      "[sendDailyPostDraftEmail] DAILY_POST_RECIPIENTS not set — skipping"
+    );
+    return { success: false, reason: "no-recipients" as const };
+  }
+
+  const baseUrl = getBaseUrl();
+  const adminPostUrl = `${baseUrl}/admin/daily-post`;
+
+  try {
+    const emailHtml = await render(
+      DailyDojPostDraftEmail({
+        dateLabel,
+        templateLabel,
+        postText,
+        warnings,
+        adminPostUrl,
+      }),
+      { pretty: true }
+    );
+
+    const subjectPrefix = warnings.length > 0 ? "⚠ " : "📊 ";
+    const subject = `${subjectPrefix}Daily DOJ post draft — ${dateLabel}`;
+
+    const { data, error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to: recipients,
+      subject,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Failed to send daily DOJ post draft email:", error);
+      throw new Error(
+        `Failed to send daily DOJ post draft email: ${error.message}`
+      );
+    }
+
+    console.log(
+      "[sendDailyPostDraftEmail] sent to",
+      recipients.join(", "),
+      "id:",
+      data?.id
+    );
+    return { success: true as const, emailId: data?.id };
+  } catch (error) {
+    console.error("Error sending daily DOJ post draft email:", error);
     throw error;
   }
 }

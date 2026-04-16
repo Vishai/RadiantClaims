@@ -104,3 +104,41 @@ export function trackCtaClick(ctaName: string, location: string) {
     location,
   });
 }
+
+// ─── Claim Outcome (user-reported) ─────────────────────────────
+
+export type ClaimOutcomeKind = "awarded" | "denied" | "withdrawn" | "pending";
+
+/**
+ * Bucket an exact award amount into a compliance-safe range.
+ * We never send exact dollar amounts to third parties — both to avoid
+ * leaking PII-adjacent data and to reduce blast radius if a pixel event
+ * is ever exposed in logs. Buckets align with the RECA program's
+ * typical award tiers (Downwinder $50k, OSP $75k, Uranium Worker $100k).
+ */
+export function bucketAwardAmount(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) {
+    return "unknown";
+  }
+  if (amount < 25_000) return "<$25k";
+  if (amount < 50_000) return "$25k-$50k";
+  if (amount < 75_000) return "$50k-$75k";
+  if (amount < 100_000) return "$75k-$100k";
+  return "$100k+";
+}
+
+/**
+ * User self-reported the outcome of their DOJ claim. Fires a custom
+ * pixel event so we can build an aggregate "path to payout" funnel.
+ * Never send raw award amounts — only a bucketed range.
+ */
+export function trackClaimOutcome(
+  outcome: ClaimOutcomeKind,
+  awardAmount?: number | null
+) {
+  const payload: Record<string, string> = { outcome };
+  if (outcome === "awarded") {
+    payload.amount_range = bucketAwardAmount(awardAmount);
+  }
+  fbq("trackCustom", "ClaimOutcome", payload);
+}

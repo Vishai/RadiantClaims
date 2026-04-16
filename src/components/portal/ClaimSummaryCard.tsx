@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  MessageCircle,
   MoreHorizontal,
   Trash2,
   Upload,
@@ -29,6 +30,7 @@ import { PacketDeliveryCard } from "@/components/portal/PacketDeliveryCard";
 import { FinancialPlanningCard } from "@/components/portal/FinancialPlanningCard";
 import { FilingJourneyTracker } from "@/components/portal/FilingJourneyTracker";
 import { PersonalizedPathBand } from "@/components/portal/PersonalizedPathBand";
+import { ClaimOutcomeCard } from "@/components/portal/ClaimOutcomeCard";
 import type { RelationshipType } from "@/lib/reca/types";
 
 // ============================================================================
@@ -183,6 +185,7 @@ export function ClaimSummaryCard({
   const [showMoreTools, setShowMoreTools] = useState(false);
   const [showFamilyAccess, setShowFamilyAccess] = useState(false);
   const [showDocChecklist, setShowDocChecklist] = useState(false);
+  const [showOutcome, setShowOutcome] = useState(false);
 
   const intakeSession = claim.intakeSession;
 
@@ -350,6 +353,22 @@ export function ClaimSummaryCard({
           sessionId={intakeSession.id}
           visible={packetReady}
         />
+
+        {/* 4a. Collapsible: I heard back from the DOJ — only once submitted */}
+        {claimSubmitted && (
+          <CollapsibleSection
+            label="I heard back from the DOJ"
+            sublabel="Record your award, denial, or check-in"
+            icon={MessageCircle}
+            open={showOutcome}
+            onToggle={() => setShowOutcome((v) => !v)}
+          >
+            <ClaimOutcomeCard
+              claimantId={claim.id}
+              claimantName={`${claim.firstName} ${claim.lastName}`}
+            />
+          </CollapsibleSection>
+        )}
 
         {/* 5. Collapsible: Document checklist */}
         <CollapsibleSection

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeDOJDailyDataAPI } from "@/lib/doj-scraper-webfetch";
+import { generateDailyPost } from "@/lib/daily-post/generate";
+import { sendDailyPostDraftEmail } from "@/lib/email";
 
 /**
  * GET /api/cron/doj-scrape
@@ -40,11 +42,47 @@ export async function GET(request: NextRequest) {
     const result = await scrapeDOJDailyDataAPI(yesterday);
     const durationMs = Date.now() - started;
 
+    // After the scrape succeeds, generate the Daily DOJ post draft and
+    // email it to the operator(s) listed in DAILY_POST_RECIPIENTS. A
+    // failure here must NOT fail the whole cron — the scrape data is
+    // still valuable on its own, and the admin page remains available
+    // as a fallback.
+    let draftStatus: "sent" | "skipped" | "failed" = "skipped";
+    let draftError: string | undefined;
+    try {
+      const draft = await generateDailyPost(new Date());
+      const dateLabel = draft.referenceDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "America/Denver",
+      });
+      const templateLabel = `${draft.template.charAt(0).toUpperCase()}${draft.template.slice(1)} template`;
+
+      const emailResult = await sendDailyPostDraftEmail({
+        postText: draft.text,
+        dateLabel,
+        templateLabel,
+        warnings: draft.warnings,
+      });
+      draftStatus = emailResult.success ? "sent" : "skipped";
+    } catch (err) {
+      draftStatus = "failed";
+      draftError = err instanceof Error ? err.message : String(err);
+      console.error(
+        "[cron/doj-scrape] Draft email failed (scrape still succeeded):",
+        err
+      );
+    }
+
     return NextResponse.json({
       success: true,
       scrapedDate: yesterday.toISOString().slice(0, 10),
       durationMs,
       result,
+      draftStatus,
+      draftError,
     });
   } catch (error) {
     console.error("[cron/doj-scrape] Failed:", error);
