@@ -24,6 +24,9 @@ import {
 import { Heart, Info, X } from "lucide-react";
 import SurvivorHierarchyTable from "@/components/reca/SurvivorHierarchyTable";
 
+// FAQ schema — each question should map to a real search query we want
+// to rank for. Kept to 8 entries (Google displays up to ~4 in rich results
+// but indexes all of them, so density matters).
 const faqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -33,7 +36,39 @@ const faqJsonLd = {
       name: "Who qualifies for RECA as a Downwinder?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Downwinder eligibility generally depends on residence/presence in a covered area during the covered period and having a compensable disease. Survivor claims require additional relationship and vital records proof.",
+        text: "Downwinder eligibility depends on living in a covered area during the covered period and having a covered cancer. Under the 2025 expansion, all of Utah, Idaho, and New Mexico are covered, plus specific counties in Arizona (Apache, Coconino, Gila, Mohave, Navajo, Yavapai) and Nevada (Eureka, Lander, Lincoln, Nye, White Pine, plus parts of Clark). Survivor claims by a spouse, child, parent, grandchild, or grandparent are also accepted.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What cancers are covered by RECA?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The DOJ recognizes many primary cancers including leukemia (except chronic lymphocytic), lymphoma, multiple myeloma, and cancers of the thyroid, breast, lung, esophagus, stomach, pharynx, colon, pancreas, bile ducts, gall bladder, small intestine, brain, liver, salivary gland, urinary tract, and ovaries. The cancer must be a primary diagnosis, not metastatic.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "When is the RECA deadline?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The RECA program sunsets on December 22, 2027. Claims must be submitted to the Department of Justice before that date. Given the DOJ's current backlog of 20+ months per decision, families considering filing should begin gathering documents now.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I file a RECA claim for a deceased parent or grandparent?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Surviving spouses, children (biological or legally adopted), parents, grandchildren, and grandparents can file on behalf of an eligible person who has passed away. You will need the deceased's death certificate, proof of your relationship, and the same residency and medical documentation the original claimant would have needed.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is the latency period for RECA cancer claims?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "For leukemia, the cancer must be diagnosed at least 2 years after first exposure (the last date of residence in the covered area). For all other covered cancers, the minimum latency is 5 years after first exposure.",
       },
     },
     {
@@ -41,16 +76,70 @@ const faqJsonLd = {
       name: "What documents are required for a RECA Downwinder claim?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Typical requirements include identity/vital records (birth certificate, and death certificate for survivor claims), proof of residence/presence in an eligible area during the covered years, and medical documentation for the diagnosis.",
+        text: "You'll need identity and vital records (birth certificate, plus death certificate for survivor claims), at least two pieces of proof of residence during the covered years, and medical documentation confirming the diagnosis (pathology report, hospital records, or oncologist letter).",
       },
     },
     {
       "@type": "Question",
-      name: "What counts as proof of residence/presence?",
+      name: "What counts as proof of residence for RECA?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Examples may include school records, employment records, tax records, utility bills, and other dated documents linking you (or the deceased individual) to the covered area during the relevant years.",
+        text: "Acceptable proof includes school records, yearbooks, employment records, tax returns, church membership records, utility bills, marriage certificates, birth certificates of children born in the area, voting registration, and military or selective-service records. The DOJ typically wants at least two independent sources.",
       },
+    },
+    {
+      "@type": "Question",
+      name: "How much can a RECA claim pay out?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Downwinders receive up to $50,000, onsite participants up to $75,000, and uranium workers up to $100,000. All RECA compensation is tax-free at the federal level. Survivor awards for children are split equally among eligible siblings.",
+      },
+    },
+  ],
+} as const;
+
+// Service schema — tells Google what RadiantClaims does and where we
+// serve. Drives eligibility for local service panels and improves
+// relevance for "RECA help in Utah" style queries.
+const serviceJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  serviceType: "RECA claim preparation",
+  provider: {
+    "@type": "Organization",
+    name: "RadiantClaims",
+    url: "https://www.radiantclaims.com",
+  },
+  areaServed: [
+    { "@type": "State", name: "Utah" },
+    { "@type": "State", name: "Nevada" },
+    { "@type": "State", name: "Arizona" },
+    { "@type": "State", name: "New Mexico" },
+    { "@type": "State", name: "Idaho" },
+  ],
+  audience: {
+    "@type": "PeopleAudience",
+    audienceType:
+      "Downwinders, uranium workers, onsite participants, and their surviving family members",
+  },
+  description:
+    "Guided preparation of Radiation Exposure Compensation Act (RECA) claims for downwinder families. Includes eligibility screening, personalized document checklists, pre-filled medical-records request letters, and a Chrome extension that auto-fills the DOJ e-filing portal.",
+  offers: [
+    {
+      "@type": "Offer",
+      name: "DIY RECA Preparation",
+      price: "499.00",
+      priceCurrency: "USD",
+      description:
+        "Self-guided RECA claim preparation with pre-filled forms and document checklists.",
+    },
+    {
+      "@type": "Offer",
+      name: "Full Legal Representation",
+      price: "0.00",
+      priceCurrency: "USD",
+      description:
+        "No upfront cost; attorney fee of 2% only if the claim is awarded.",
     },
   ],
 } as const;
@@ -61,6 +150,10 @@ export default function EligibilityPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
       />
       <TooltipProvider>
         <div className="min-h-screen bg-cream-50">

@@ -7,6 +7,13 @@ import { Footer } from "@/components/layout/Footer";
 
 const siteUrl = getSiteUrl();
 
+// Verification tokens — set these env vars in Vercel after claiming the
+// site in Google Search Console and Bing Webmaster Tools. The meta tags
+// only render when the env var is present, so local dev and preview
+// deployments won't accidentally claim the wrong property.
+const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
+const bingSiteVerification = process.env.BING_SITE_VERIFICATION;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -40,6 +47,12 @@ export const metadata: Metadata = {
     description:
       "Fast, guided RECA claim preparation for Downwinders — eligibility check, document organization, and step-by-step online filing through the DOJ portal.",
     images: ["https://www.radiantclaims.com/og-image.png"],
+  },
+  verification: {
+    ...(googleSiteVerification ? { google: googleSiteVerification } : {}),
+    ...(bingSiteVerification
+      ? { other: { "msvalidate.01": bingSiteVerification } }
+      : {}),
   },
 };
 

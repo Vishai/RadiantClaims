@@ -1,30 +1,47 @@
 /**
- * Meta Pixel Event Helpers
+ * Analytics Event Helpers
  *
- * Fire conversion events for Facebook ad tracking.
- * Events are only sent if the Meta Pixel is loaded (NEXT_PUBLIC_META_PIXEL_ID is set).
+ * One function per conversion event. Each function fires into BOTH
+ * Meta Pixel (`fbq`) AND Google Analytics 4 (`gtag`) so we have a
+ * single source of truth for every tracked action.
  *
- * Standard events used:
+ * Call one of these — never call `fbq` or `gtag` directly from a
+ * component. That way event naming, payload shape, and privacy
+ * bucketing stay consistent across both platforms.
+ *
+ * Meta Pixel standard events used:
  * - Lead: Eligibility check completed
  * - InitiateCheckout: Service tier selected (before payment)
  * - Purchase: Stripe payment completed
  * - CompleteRegistration: User account created
  *
- * Custom events:
- * - EligibilityCheck: Started the eligibility check
- * - FormSectionComplete: Completed a form section
- * - ClaimFiled: User confirmed they filed with DOJ
+ * GA4 recommended events used (where they map cleanly):
+ * - generate_lead, begin_checkout, purchase, sign_up
+ * - All others are custom events; GA4 allows any name.
+ *
+ * File name kept as `meta-pixel.ts` for backwards-compat with
+ * existing imports — the module is now dual-tracker.
  */
 
 declare global {
   interface Window {
     fbq?: (...args: any[]) => void;
+    gtag?: (...args: any[]) => void;
+    dataLayer?: any[];
   }
 }
+
+// ─── Low-level emitters ────────────────────────────────────────
 
 function fbq(...args: any[]) {
   if (typeof window !== "undefined" && window.fbq) {
     window.fbq(...args);
+  }
+}
+
+function gtagEvent(eventName: string, params: Record<string, unknown> = {}) {
+  if (typeof window !== "undefined" && window.gtag) {
+    window.gtag("event", eventName, params);
   }
 }
 
@@ -37,15 +54,26 @@ export function trackEligibilityComplete(result: string) {
     content_category: "RECA",
     status: result, // "likely", "unlikely", "ineligible"
   });
+  gtagEvent("generate_lead", {
+    event_category: "RECA",
+    event_label: "Eligibility Check",
+    status: result,
+  });
 }
 
 /** User selected a service tier (before payment) */
 export function trackTierSelected(tier: "DIY_PREP" | "LEGAL_REP") {
+  const value = tier === "DIY_PREP" ? 249.99 : 0;
   fbq("track", "InitiateCheckout", {
     content_name: tier,
     content_category: "RECA",
     currency: "USD",
-    value: tier === "DIY_PREP" ? 249.99 : 0,
+    value,
+  });
+  gtagEvent("begin_checkout", {
+    currency: "USD",
+    value,
+    items: [{ item_name: tier, item_category: "RECA" }],
   });
 }
 
@@ -57,6 +85,11 @@ export function trackPurchase(amount: number, tier: string) {
     currency: "USD",
     value: amount,
   });
+  gtagEvent("purchase", {
+    currency: "USD",
+    value: amount,
+    items: [{ item_name: tier, item_category: "RECA" }],
+  });
 }
 
 /** User created an account */
@@ -65,14 +98,19 @@ export function trackRegistration() {
     content_name: "Account Created",
     content_category: "RECA",
   });
+  gtagEvent("sign_up", {
+    event_category: "RECA",
+    method: "email",
+  });
 }
 
 // ─── Custom Events ─────────────────────────────────────────────
 
 /** User started the eligibility check */
 export function trackEligibilityStart() {
-  fbq("trackCustom", "EligibilityCheck", {
-    action: "started",
+  fbq("trackCustom", "EligibilityCheck", { action: "started" });
+  gtagEvent("eligibility_check_start", {
+    event_category: "RECA",
   });
 }
 
@@ -82,11 +120,18 @@ export function trackFormSection(section: string, completionPercent: number) {
     section,
     completion_percent: completionPercent,
   });
+  gtagEvent("form_section_complete", {
+    event_category: "RECA",
+    section,
+    completion_percent: completionPercent,
+  });
 }
 
 /** User confirmed they filed with DOJ */
 export function trackClaimFiled(method: "e-file" | "mail") {
-  fbq("trackCustom", "ClaimFiled", {
+  fbq("trackCustom", "ClaimFiled", { method });
+  gtagEvent("claim_filed", {
+    event_category: "RECA",
     method,
   });
 }
@@ -100,6 +145,11 @@ export function trackClaimFiled(method: "e-file" | "mail") {
  */
 export function trackCtaClick(ctaName: string, location: string) {
   fbq("trackCustom", "CtaClick", {
+    cta_name: ctaName,
+    location,
+  });
+  gtagEvent("cta_click", {
+    event_category: "engagement",
     cta_name: ctaName,
     location,
   });
@@ -141,4 +191,8 @@ export function trackClaimOutcome(
     payload.amount_range = bucketAwardAmount(awardAmount);
   }
   fbq("trackCustom", "ClaimOutcome", payload);
+  gtagEvent("claim_outcome", {
+    event_category: "RECA",
+    ...payload,
+  });
 }
