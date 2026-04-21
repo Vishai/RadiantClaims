@@ -38,9 +38,23 @@ export async function scrapeDOJDataForDateAPI(
 }
 
 /**
- * Store scraped data in database
+ * Store scraped data in database.
+ *
+ * `date` is normalized to UTC midnight before writing. DOJ publishes one
+ * awards page per calendar date (MMDDYYYY in the URL), so the canonical
+ * reportDate is "that calendar date at 00:00:00 UTC." Prior writers used
+ * the current-time-minus-24h, which produced reportDate values at the
+ * cron's run-time (e.g. 13:00 UTC), defeating the
+ * @@unique([reportDate, claimCategory]) constraint and creating duplicate
+ * rows per logical date.
  */
 export async function storeDOJData(date: Date, data: DOJPageData) {
+  // Normalize to UTC midnight so (reportDate, claimCategory) stays unique
+  // across all code paths (cron, manual scrape, backfill).
+  const normalizedDate = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  );
+
   const categories: DOJClaimCategory[] = [
     "DOWNWINDER",
     "ONSITE_PARTICIPANT",
@@ -58,7 +72,7 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     // per calendar day elapsed so "dailyApproved" truly means per-day rate.
     const prior = await db.dOJDailyStats.findFirst({
       where: {
-        reportDate: { lt: date },
+        reportDate: { lt: normalizedDate },
         claimCategory: category,
         scrapingSuccess: true,
         totalClaims: { gt: 0 },
@@ -73,7 +87,7 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     if (prior) {
       const daysBetween = Math.max(
         1,
-        differenceInCalendarDays(date, prior.reportDate)
+        differenceInCalendarDays(normalizedDate, prior.reportDate)
       );
       const approvedDelta = stats.approved - prior.approved;
       const deniedDelta = stats.denied - prior.denied;
@@ -91,12 +105,12 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
     await db.dOJDailyStats.upsert({
       where: {
         reportDate_claimCategory: {
-          reportDate: date,
+          reportDate: normalizedDate,
           claimCategory: category,
         },
       },
       create: {
-        reportDate: date,
+        reportDate: normalizedDate,
         claimCategory: category,
         pending: stats.pending,
         approved: stats.approved,
@@ -148,10 +162,14 @@ export async function scrapeDOJDailyDataAPI(date: Date = new Date()) {
       error
     );
 
-    // Log failure in database
+    // Log failure in database (normalized reportDate to UTC midnight so the
+    // failure row cannot be a hidden duplicate of a real row for the same day)
+    const failureDate = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    );
     await db.dOJDailyStats.create({
       data: {
-        reportDate: date,
+        reportDate: failureDate,
         claimCategory: "DOWNWINDER",
         pending: 0,
         approved: 0,

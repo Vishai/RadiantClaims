@@ -21,7 +21,19 @@
  */
 
 import { db } from "../src/lib/db";
-import { startOfDay } from "date-fns";
+
+/**
+ * UTC-midnight start-of-day. Previously this file used date-fns `startOfDay`
+ * which normalizes to LOCAL-timezone midnight — that incorrectly grouped
+ * rows like (Apr 17 00:00Z) and (Apr 16 13:00Z) into the same "Apr 16 local"
+ * bucket, even though they represent two distinct DOJ publish days. Merging
+ * them would overwrite Apr 16's data with Apr 17's.
+ */
+function startOfUTCDay(d: Date): Date {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  );
+}
 
 const apply = process.argv.includes("--apply");
 
@@ -38,7 +50,7 @@ type Row = {
 };
 
 function key(row: Row) {
-  return `${startOfDay(row.reportDate).toISOString()}|${row.claimCategory}`;
+  return `${startOfUTCDay(row.reportDate).toISOString()}|${row.claimCategory}`;
 }
 
 async function main() {
@@ -88,7 +100,7 @@ async function main() {
     const winner = sorted[0]!;
     const losers = sorted.slice(1);
 
-    const normalized = startOfDay(winner.reportDate);
+    const normalized = startOfUTCDay(winner.reportDate);
 
     console.log(`\n${k}`);
     console.log(
@@ -102,7 +114,16 @@ async function main() {
 
     if (!apply) continue;
 
-    // Update winner reportDate to normalized day boundary (may already be normalized)
+    // Delete losers FIRST — if a loser already sits at the normalized
+    // midnight-UTC timestamp and we try to update the winner's reportDate
+    // to that same value before the loser is gone, we hit P2002 on the
+    // (reportDate, claimCategory) unique constraint.
+    await db.dOJDailyStats.deleteMany({
+      where: { id: { in: losers.map((l) => l.id) } },
+    });
+    deleteCount += losers.length;
+
+    // Now normalize the winner's reportDate (may already be normalized)
     if (winner.reportDate.getTime() !== normalized.getTime()) {
       await db.dOJDailyStats.update({
         where: { id: winner.id },
@@ -110,12 +131,6 @@ async function main() {
       });
       updateCount++;
     }
-
-    // Delete losers
-    await db.dOJDailyStats.deleteMany({
-      where: { id: { in: losers.map((l) => l.id) } },
-    });
-    deleteCount += losers.length;
   }
 
   if (apply) {
