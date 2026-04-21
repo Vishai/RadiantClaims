@@ -276,9 +276,11 @@ function estimateWaitMonths(
   dailyRate: number | null
 ): number | null {
   if (pending === null || dailyRate === null || dailyRate <= 0) return null;
-  // Business-day approximation: DOJ processes on weekdays, so
-  // ~21.5 workdays/month. Pending / (rate * workdays) = months.
-  const months = pending / (dailyRate * 21.5);
+  // `dailyRate` is a per-CALENDAR-day average (see storeDOJData — deltas are
+  // divided by calendar days elapsed since the last successful scrape). So
+  // convert to months via 30.4 calendar days/month, NOT 21.5 workdays.
+  // Using 21.5 here previously caused wait estimates to be ~30% too low.
+  const months = pending / (dailyRate * 30.4);
   return Math.round(months);
 }
 

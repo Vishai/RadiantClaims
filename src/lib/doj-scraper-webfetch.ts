@@ -7,7 +7,7 @@
 
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
-import { format, subDays, addDays } from "date-fns";
+import { format, addDays, differenceInCalendarDays, subDays } from "date-fns";
 import {
   fetchAndParseDOJForDate,
   type DOJClaimStats,
@@ -51,28 +51,41 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
   for (const category of categories) {
     const stats = data[category];
 
-    // Get yesterday's data for calculating deltas
-    const yesterday = subDays(date, 1);
-    const yesterdayData = await db.dOJDailyStats.findUnique({
+    // Find the most recent prior scrape with real data (not a failure row
+    // and not an all-zeros category row). DOJ skips weekends/holidays, so
+    // "yesterday" is unreliable as a reference point — always walk back to
+    // the last known-good row for this category. Delta is then normalized
+    // per calendar day elapsed so "dailyApproved" truly means per-day rate.
+    const prior = await db.dOJDailyStats.findFirst({
       where: {
-        reportDate_claimCategory: {
-          reportDate: yesterday,
-          claimCategory: category,
-        },
+        reportDate: { lt: date },
+        claimCategory: category,
+        scrapingSuccess: true,
+        totalClaims: { gt: 0 },
       },
+      orderBy: { reportDate: "desc" },
     });
 
-    // Calculate daily changes
-    const dailyApproved = yesterdayData
-      ? stats.approved - yesterdayData.approved
-      : null;
-    const dailyDenied = yesterdayData
-      ? stats.denied - yesterdayData.denied
-      : null;
-    const dailySubmitted =
-      yesterdayData && dailyApproved !== null && dailyDenied !== null
-        ? stats.pending + dailyApproved + dailyDenied - yesterdayData.pending
-        : null;
+    let dailyApproved: number | null = null;
+    let dailyDenied: number | null = null;
+    let dailySubmitted: number | null = null;
+
+    if (prior) {
+      const daysBetween = Math.max(
+        1,
+        differenceInCalendarDays(date, prior.reportDate)
+      );
+      const approvedDelta = stats.approved - prior.approved;
+      const deniedDelta = stats.denied - prior.denied;
+      const submittedDelta =
+        stats.pending +
+        stats.approved +
+        stats.denied -
+        (prior.pending + prior.approved + prior.denied);
+      dailyApproved = Math.round(approvedDelta / daysBetween);
+      dailyDenied = Math.round(deniedDelta / daysBetween);
+      dailySubmitted = Math.round(submittedDelta / daysBetween);
+    }
 
     // Store in database (upsert to handle re-runs)
     await db.dOJDailyStats.upsert({

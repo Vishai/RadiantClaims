@@ -1,15 +1,25 @@
 /**
  * Recompute DOJDailyStats deltas (dailyApproved/dailyDenied/dailySubmitted)
- * using the previous successful publish-day as the baseline.
+ * using the previous successful publish-day as the baseline, normalized to
+ * a per-CALENDAR-DAY rate (matches the scraper logic in
+ * src/lib/doj-scraper-webfetch.ts → storeDOJData).
  *
- * Usage:
+ * Without normalization, a Monday scrape stores 3 calendar days of delta as
+ * "yesterday's" count, inflating every downstream average. Dividing by
+ * calendar-days-elapsed since the last successful scrape keeps rates
+ * comparable across rows.
+ *
+ * Usage (all time):
  *   set -a && source .env.local && set +a
+ *   npx tsx scripts/recompute-doj-deltas.ts
+ *
+ * Usage (range):
  *   npx tsx scripts/recompute-doj-deltas.ts 2026-01-01 2026-02-13
  */
 
 import { db } from "../src/lib/db";
 import { DOJClaimCategory } from "@prisma/client";
-import { startOfDay } from "date-fns";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 
 const CATEGORIES: DOJClaimCategory[] = [
   "DOWNWINDER",
@@ -22,13 +32,9 @@ async function main() {
   const startArg = process.argv[2];
   const endArg = process.argv[3];
 
-  if (!startArg || !endArg) {
-    console.error("Provide start and end like YYYY-MM-DD YYYY-MM-DD");
-    process.exit(1);
-  }
-
-  const start = startOfDay(new Date(`${startArg}T00:00:00`));
-  const end = startOfDay(new Date(`${endArg}T00:00:00`));
+  const dateFilter: { gte?: Date; lte?: Date } = {};
+  if (startArg) dateFilter.gte = startOfDay(new Date(`${startArg}T00:00:00`));
+  if (endArg) dateFilter.lte = startOfDay(new Date(`${endArg}T00:00:00`));
 
   let updated = 0;
 
@@ -37,10 +43,13 @@ async function main() {
       where: {
         claimCategory,
         scrapingSuccess: true,
-        reportDate: { gte: start, lte: end },
+        totalClaims: { gt: 0 },
+        ...(startArg || endArg ? { reportDate: dateFilter } : {}),
       },
       orderBy: { reportDate: "asc" },
     });
+
+    console.log(`[${claimCategory}] ${rows.length} rows`);
 
     let prev: (typeof rows)[number] | null = null;
 
@@ -60,12 +69,20 @@ async function main() {
         continue;
       }
 
-      const dailyApproved = row.approved - prev.approved;
-      const dailyDenied = row.denied - prev.denied;
+      const daysBetween = Math.max(
+        1,
+        differenceInCalendarDays(row.reportDate, prev.reportDate)
+      );
 
+      const approvedDelta = row.approved - prev.approved;
+      const deniedDelta = row.denied - prev.denied;
       const rowTotal = row.pending + row.approved + row.denied;
       const prevTotal = prev.pending + prev.approved + prev.denied;
-      const dailySubmitted = rowTotal - prevTotal;
+      const submittedDelta = rowTotal - prevTotal;
+
+      const dailyApproved = Math.round(approvedDelta / daysBetween);
+      const dailyDenied = Math.round(deniedDelta / daysBetween);
+      const dailySubmitted = Math.round(submittedDelta / daysBetween);
 
       await db.dOJDailyStats.update({
         where: { id: row.id },
