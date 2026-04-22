@@ -9,7 +9,13 @@
 
 import { db } from "./db";
 import { DOJClaimCategory } from "@prisma/client";
-import { format, subDays, addDays, startOfDay } from "date-fns";
+import {
+  format,
+  subDays,
+  addDays,
+  startOfDay,
+  differenceInCalendarDays,
+} from "date-fns";
 
 function normalizeReportDate(date: Date): Date {
   // Enforce a stable key for the @@unique([reportDate, claimCategory]) constraint.
@@ -228,13 +234,15 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
   for (const category of categories) {
     const stats = data[category];
 
-    // Find the previous successful publish-day for calculating deltas.
-    // DOJ does not publish every calendar day (weekends/holidays), so comparing
-    // to "yesterday" can create nonsensical negative deltas.
+    // Walk back to the last KNOWN-GOOD prior row for this category. DOJ skips
+    // weekends/holidays, and the gap-filler inserts zero rows for those gaps —
+    // both of which would produce misleading deltas if used as the reference
+    // point. Filtering totalClaims > 0 skips the gap-filled zero rows.
     const previousData = await db.dOJDailyStats.findFirst({
       where: {
         claimCategory: category,
         scrapingSuccess: true,
+        totalClaims: { gt: 0 },
         reportDate: {
           lt: reportDate,
         },
@@ -242,23 +250,30 @@ export async function storeDOJData(date: Date, data: DOJPageData) {
       orderBy: { reportDate: "desc" },
     });
 
-    // Calculate changes vs the prior publish day (not necessarily yesterday)
-    const dailyApproved = previousData
-      ? stats.approved - previousData.approved
-      : null;
-    const dailyDenied = previousData
-      ? stats.denied - previousData.denied
-      : null;
+    // Normalize deltas to a per-CALENDAR-day rate. Without dividing by the
+    // number of days elapsed since the last publish, a Monday-after-weekend
+    // scrape stores a 3-day delta as "dailySubmitted" and the Daily Post
+    // prints something like "15,204 new applications yesterday."
+    let dailyApproved: number | null = null;
+    let dailyDenied: number | null = null;
+    let dailySubmitted: number | null = null;
 
-    // New submissions are inferred from total-claims growth between publish days.
-    // totalClaims = pending + approved + denied
-    const currentTotal = stats.pending + stats.approved + stats.denied;
-    const previousTotal = previousData
-      ? previousData.pending + previousData.approved + previousData.denied
-      : null;
+    if (previousData) {
+      const daysBetween = Math.max(
+        1,
+        differenceInCalendarDays(reportDate, previousData.reportDate)
+      );
+      const approvedDelta = stats.approved - previousData.approved;
+      const deniedDelta = stats.denied - previousData.denied;
+      const currentTotal = stats.pending + stats.approved + stats.denied;
+      const previousTotal =
+        previousData.pending + previousData.approved + previousData.denied;
+      const submittedDelta = currentTotal - previousTotal;
 
-    const dailySubmitted =
-      previousTotal !== null ? currentTotal - previousTotal : null;
+      dailyApproved = Math.round(approvedDelta / daysBetween);
+      dailyDenied = Math.round(deniedDelta / daysBetween);
+      dailySubmitted = Math.round(submittedDelta / daysBetween);
+    }
 
     // Store in database (upsert to handle re-runs)
     await db.dOJDailyStats.upsert({
