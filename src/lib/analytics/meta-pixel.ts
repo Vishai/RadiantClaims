@@ -45,10 +45,53 @@ function gtagEvent(eventName: string, params: Record<string, unknown> = {}) {
   }
 }
 
+// Fire-and-forget POST to our own server-side log. Ground truth that
+// survives ad-blockers, Safari ITP, and Meta Pixel category restrictions.
+// Drops silently on failure — missed rows are acceptable; blocking UX is not.
+function logEligibilityEventToServer(payload: {
+  phase: "started" | "completed";
+  result?: string;
+  intent?: string | null;
+}) {
+  if (typeof window === "undefined") return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const body = JSON.stringify({
+      phase: payload.phase,
+      result: payload.result,
+      intent: payload.intent ?? null,
+      referrer: document.referrer || null,
+      utmSource: params.get("utm_source"),
+      utmMedium: params.get("utm_medium"),
+      utmCampaign: params.get("utm_campaign"),
+    });
+
+    // sendBeacon survives page unload (e.g. user clicks away right after
+    // the result renders). Fall back to fetch if sendBeacon isn't available.
+    const url = "/api/analytics/eligibility-event";
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon(url, blob);
+    } else {
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    // ignore — analytics must never throw into user flow
+  }
+}
+
 // ─── Standard Events ───────────────────────────────────────────
 
 /** User completed the eligibility check */
-export function trackEligibilityComplete(result: string) {
+export function trackEligibilityComplete(
+  result: string,
+  intent?: string | null
+) {
   fbq("track", "Lead", {
     content_name: "Eligibility Check",
     content_category: "RECA",
@@ -59,6 +102,7 @@ export function trackEligibilityComplete(result: string) {
     event_label: "Eligibility Check",
     status: result,
   });
+  logEligibilityEventToServer({ phase: "completed", result, intent });
 }
 
 /** User selected a service tier (before payment) */
@@ -112,6 +156,7 @@ export function trackEligibilityStart() {
   gtagEvent("eligibility_check_start", {
     event_category: "RECA",
   });
+  logEligibilityEventToServer({ phase: "started" });
 }
 
 /** User completed a form section */

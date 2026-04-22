@@ -36,8 +36,8 @@ function ResultContent() {
       // Also persist to localStorage so it survives tab close/refresh
       localStorage.setItem("eligibility_verified", "true");
       localStorage.setItem("eligibility_result", eligibility);
-      // Fire Meta Pixel Lead event
-      trackEligibilityComplete(eligibility);
+      // Fire Meta Pixel Lead event + server-side log
+      trackEligibilityComplete(eligibility, intent);
     }
 
     // Trigger confetti animation for likely eligibility

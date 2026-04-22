@@ -2764,3 +2764,25 @@ model ClaimOutcome {
   @@index([outcome])
   @@index([awardReceivedAt])
 }
+
+// Server-side log of the public eligibility-check funnel. Writes happen
+// fire-and-forget from the client, so rows can be lost (ad-blocker,
+// Safari ITP, network hiccup) but what lands here is ground truth —
+// bypasses the Meta Pixel "Personal hardship" category restriction and
+// any GA4 misconfiguration.
+model EligibilityEvent {
+  id          String   @id @default(cuid())
+  phase       String // "started" | "completed"
+  result      String? // "likely" | "unlikely" | "ineligible" — null when phase=started
+  intent      String? // "self" | "deceased-relative" | "someone-else" | "someone-else-relative"
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([phase, createdAt])
+  @@index([createdAt])
+}
