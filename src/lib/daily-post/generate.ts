@@ -1,22 +1,20 @@
 import {
   getAggregateForDate,
   getMostRecentAggregate,
-  getRangeAggregate,
   getAverageDailyApprovalRate,
   type AggregateStats,
 } from "./query";
 
 /**
- * Generate the Daily DOJ Status post for a given reference date,
- * selecting the right template based on day of week.
+ * Generate the Daily DOJ Status post for a given reference date.
  *
- * Templates come from `docs/CONTENT_PILLARS.md` §Pillar 1. The shape
- * of the returned text is designed to be pasted directly into Meta
- * Business Suite. Numbers are pulled live from `dOJDailyStats`.
+ * Single template — an emoji-bulleted summary of yesterday's Downwinder
+ * numbers plus a wait-time estimate. The shape is designed to be pasted
+ * directly into Meta Business Suite.
  *
- * If data is missing (scraper hasn't run yet), placeholders are left
- * in place with a "[DATA PENDING]" marker so the operator knows to
- * refill before posting.
+ * If data is missing (scraper hasn't run yet), placeholders are left in
+ * place with a "[DATA PENDING]" marker so the operator knows to refill
+ * before posting.
  */
 
 export type DayTemplate = "monday" | "wednesday" | "friday" | "standard";
@@ -59,35 +57,7 @@ export async function generateDailyPost(
     approvalRate
   );
 
-  let text: string;
-  switch (template) {
-    case "monday":
-      text = await generateMondayWeeklyReset(
-        referenceDate,
-        estimatedWaitMonths
-      );
-      break;
-    case "wednesday":
-      text = generateWednesdayMidweek(
-        referenceDate,
-        mostRecent,
-        estimatedWaitMonths
-      );
-      break;
-    case "friday":
-      text = await generateFridayWeeklySummary(
-        referenceDate,
-        estimatedWaitMonths
-      );
-      break;
-    case "standard":
-      text = generateStandardDaily(
-        referenceDate,
-        mostRecent,
-        estimatedWaitMonths
-      );
-      break;
-  }
+  const text = generateDaily(yesterday, mostRecent, estimatedWaitMonths);
 
   return {
     text,
@@ -98,169 +68,67 @@ export async function generateDailyPost(
   };
 }
 
-// ─── template selector ─────────────────────────────────────────
+// ─── template selector (kept for API compat; always "standard") ─
 
-function selectTemplate(date: Date): DayTemplate {
-  // getUTCDay: 0 = Sunday, 1 = Monday, ... 6 = Saturday
-  // We post in MT, so use a MT-adjusted day. At 7am MT, UTC date is
-  // 13:00-14:00 UTC of the same calendar day, so getUTCDay works.
-  const day = date.getUTCDay();
-  switch (day) {
-    case 1:
-      return "monday";
-    case 3:
-      return "wednesday";
-    case 5:
-      return "friday";
-    default:
-      return "standard";
-  }
+function selectTemplate(_date: Date): DayTemplate {
+  return "standard";
 }
 
-// ─── templates ─────────────────────────────────────────────────
+// ─── template ──────────────────────────────────────────────────
 
-function headerLine(date: Date): string {
-  const dow = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    timeZone: "America/Denver",
-  });
-  const md = date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "America/Denver",
-  });
+// Short weekday abbreviations matching the preferred post style
+// ("Tues"/"Thurs" are intentional to match the social-copy voice).
+const SHORT_DAYS = [
+  "Sun",
+  "Mon",
+  "Tues",
+  "Wed",
+  "Thurs",
+  "Fri",
+  "Sat",
+] as const;
+
+function headerLine(dataDate: Date): string {
+  const parts = dataDate
+    .toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "America/Denver",
+    })
+    .split(", ");
+  // parts = ["Tue", "Apr 21"] — override the weekday to our preferred abbrev
+  const dow = SHORT_DAYS[dataDate.getUTCDay()];
+  const md = parts[1] ?? parts[0];
   return `📊 RECA Queue Status — ${dow}, ${md}`;
 }
 
-function generateStandardDaily(
-  referenceDate: Date,
+function generateDaily(
+  dataDate: Date,
   stats: AggregateStats | null,
   waitMonths: number | null
 ): string {
-  const header = headerLine(referenceDate);
-  const submitted = stats?.dailySubmitted ?? null;
-  const approved = stats?.dailyApproved ?? null;
-  const wait = waitMonths;
-
-  const body =
-    `Yesterday the DOJ received ${fmt(submitted)} new applications. ` +
-    `${fmt(approved)} were processed.\n\n` +
-    `Current estimated wait: ~${fmt(wait, "months")} from submission to decision.`;
-
-  return join(header, body, footerStandard());
-}
-
-function generateWednesdayMidweek(
-  referenceDate: Date,
-  stats: AggregateStats | null,
-  waitMonths: number | null
-): string {
-  const header = headerLine(referenceDate);
+  const header = headerLine(dataDate);
   const submitted = stats?.dailySubmitted ?? null;
   const approved = stats?.dailyApproved ?? null;
 
-  let insight: string;
-  if (submitted !== null && approved !== null && approved > 0) {
-    const ratio = Math.round(submitted / approved);
-    insight =
-      `The gap between "received" and "processed" is the entire story of this program. ` +
-      `The DOJ staffs for ~${approved} decisions/day. ` +
-      `Applications come in at ~${ratio}x that rate.\n\n` +
-      `What this means: if you're waiting to file because you think you have time, the backlog itself is eating your time.`;
-  } else {
-    insight =
-      `The gap between received and processed applications is the entire story of this program. ` +
-      `If you're waiting to file because you think you have time, the backlog itself is eating your time.`;
-  }
+  const waitLine =
+    waitMonths !== null && waitMonths > 0
+      ? `⏳ ~${fmt(waitMonths)} months current wait from filing to decision`
+      : `⏳ Current wait estimate pending`;
 
-  const tailLine = `Estimated wait today: ~${fmt(waitMonths, "months")}.`;
+  const lines = [
+    header,
+    `🟠 ${fmt(submitted)} new applications joined the queue yesterday`,
+    `🟢 ${fmt(approved)} claims were decided`,
+    waitLine,
+    `Source: U.S. Department of Justice, RECA Program · Updated daily.`,
+  ];
 
-  const body =
-    `${fmt(submitted)} new applications yesterday. ${fmt(approved)} processed.\n\n` +
-    `${insight}\n\n` +
-    tailLine;
-
-  return join(header, body, footerStandard());
-}
-
-async function generateMondayWeeklyReset(
-  referenceDate: Date,
-  waitMonths: number | null
-): Promise<string> {
-  const header = headerLine(referenceDate);
-
-  const { lastWeek, priorWeek } = await getWeeklyWindows(referenceDate);
-
-  const lastWeekAgg = await getRangeAggregate(lastWeek.start, lastWeek.end);
-  const priorWeekAgg = await getRangeAggregate(priorWeek.start, priorWeek.end);
-
-  const newApps = lastWeekAgg?.dailySubmitted ?? null;
-  const processed = lastWeekAgg?.dailyApproved ?? null;
-  const priorNew = priorWeekAgg?.dailySubmitted ?? null;
-
-  const netChange =
-    newApps !== null && processed !== null ? newApps - processed : null;
-
-  let compareLine = "";
-  if (newApps !== null && priorNew !== null) {
-    const delta = newApps - priorNew;
-    const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
-    const pct =
-      priorNew > 0 ? Math.round((Math.abs(delta) / priorNew) * 100) : 0;
-    compareLine =
-      delta === 0
-        ? ` (flat vs the week before)`
-        : ` (${direction} ${pct}% vs the week before)`;
-  }
-
-  const body =
-    `Last week: ${fmt(newApps)} new applications${compareLine}. ` +
-    `Processing ran at ~${fmt(processed)} claims/week.\n\n` +
-    `Net: the queue grew by ${fmt(netChange)} people last week. ` +
-    `At current pace, a family filing today will wait ~${fmt(waitMonths, "months")} for a decision.\n\n` +
-    `The RECA program sunsets December 2027. If you're thinking about filing, the clock is not on your side.`;
-
-  return join(header, body, footerStandard());
-}
-
-async function generateFridayWeeklySummary(
-  referenceDate: Date,
-  waitMonths: number | null
-): Promise<string> {
-  const header = headerLine(referenceDate);
-  const { thisWeek } = await getWeeklyWindows(referenceDate);
-  const thisWeekAgg = await getRangeAggregate(thisWeek.start, thisWeek.end);
-  const mostRecent = await getMostRecentAggregate();
-
-  const newApps = thisWeekAgg?.dailySubmitted ?? null;
-  const processed = thisWeekAgg?.dailyApproved ?? null;
-  const queueSize = mostRecent?.pending ?? null;
-
-  const body =
-    `**This week's numbers:**\n` +
-    `• New applications: ${fmt(newApps)}\n` +
-    `• Processed: ${fmt(processed)}\n` +
-    `• Queue size: ${fmt(queueSize)} people ahead of today's filer\n` +
-    `• Estimated wait: ~${fmt(waitMonths, "months")}\n\n` +
-    `Have a good weekend. We'll be back Monday with fresh numbers.`;
-
-  return join(header, body, footerStandard());
+  return lines.join("\n");
 }
 
 // ─── helpers ───────────────────────────────────────────────────
-
-function footerStandard(): string {
-  return (
-    `Source: U.S. Department of Justice, RECA Program. ` +
-    `Data scraped daily by RadiantClaims at 7am MT.\n\n` +
-    `#RECA #Downwinders #NuclearJustice`
-  );
-}
-
-function join(...parts: string[]): string {
-  return parts.filter(Boolean).join("\n\n");
-}
 
 function fmt(n: number | null | undefined, unit: string = ""): string {
   if (n === null || n === undefined || !Number.isFinite(n)) {
@@ -279,31 +147,6 @@ function estimateWaitMonths(
   // `dailyRate` is a per-CALENDAR-day average (see storeDOJData — deltas are
   // divided by calendar days elapsed since the last successful scrape). So
   // convert to months via 30.4 calendar days/month, NOT 21.5 workdays.
-  // Using 21.5 here previously caused wait estimates to be ~30% too low.
   const months = pending / (dailyRate * 30.4);
   return Math.round(months);
-}
-
-async function getWeeklyWindows(referenceDate: Date): Promise<{
-  thisWeek: { start: Date; end: Date };
-  lastWeek: { start: Date; end: Date };
-  priorWeek: { start: Date; end: Date };
-}> {
-  // thisWeek = last 7 days ending yesterday
-  // lastWeek = prior 7 days
-  // priorWeek = 7 days before that
-  const yesterday = new Date(referenceDate);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-
-  const minus = (base: Date, days: number) => {
-    const out = new Date(base);
-    out.setUTCDate(out.getUTCDate() - days);
-    return out;
-  };
-
-  return {
-    thisWeek: { start: minus(yesterday, 6), end: yesterday },
-    lastWeek: { start: minus(yesterday, 13), end: minus(yesterday, 7) },
-    priorWeek: { start: minus(yesterday, 20), end: minus(yesterday, 14) },
-  };
 }
