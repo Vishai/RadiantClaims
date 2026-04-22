@@ -2,7 +2,7 @@
   "workflow_name": "RadiantClaims RECA Downwinder Claim Assistant",
   "version": "1.0",
   "purpose": "Interactive guided workflow to help users complete RECA Downwinder Claim Form",
-  
+
   "workflow_stages": {
     "stage_1_initial_assessment": {
       "title": "Initial Eligibility Assessment",
@@ -13,12 +13,36 @@
           "question": "Who is filing this claim?",
           "type": "radio",
           "options": [
-            {"value": "self", "label": "I became ill with a compensable disease", "next": "q2_self"},
-            {"value": "spouse", "label": "I am the surviving spouse of someone who became ill", "next": "q2_spouse"},
-            {"value": "child", "label": "I am the surviving child of someone who became ill", "next": "q2_child"},
-            {"value": "parent", "label": "I am the parent of someone who became ill", "next": "q2_parent"},
-            {"value": "grandchild", "label": "I am the grandchild of someone who became ill", "next": "q2_grandparent"},
-            {"value": "grandparent", "label": "I am the grandparent of someone who became ill", "next": "q2_grandparent"}
+            {
+              "value": "self",
+              "label": "I became ill with a compensable disease",
+              "next": "q2_self"
+            },
+            {
+              "value": "spouse",
+              "label": "I am the surviving spouse of someone who became ill",
+              "next": "q2_spouse"
+            },
+            {
+              "value": "child",
+              "label": "I am the surviving child of someone who became ill",
+              "next": "q2_child"
+            },
+            {
+              "value": "parent",
+              "label": "I am the parent of someone who became ill",
+              "next": "q2_parent"
+            },
+            {
+              "value": "grandchild",
+              "label": "I am the grandchild of someone who became ill",
+              "next": "q2_grandparent"
+            },
+            {
+              "value": "grandparent",
+              "label": "I am the grandparent of someone who became ill",
+              "next": "q2_grandparent"
+            }
           ],
           "help_text": "This determines which sections of the form you need to complete."
         },
@@ -28,8 +52,16 @@
           "question": "Have you been diagnosed with one of the compensable cancers listed by RECA?",
           "type": "radio",
           "options": [
-            {"value": "yes", "label": "Yes, I have been diagnosed", "next": "q3_exposure"},
-            {"value": "no", "label": "No or I'm not sure", "next": "show_disease_list"}
+            {
+              "value": "yes",
+              "label": "Yes, I have been diagnosed",
+              "next": "q3_exposure"
+            },
+            {
+              "value": "no",
+              "label": "No or I'm not sure",
+              "next": "show_disease_list"
+            }
           ]
         },
         {
@@ -38,18 +70,27 @@
           "question": "Is the person who became ill deceased?",
           "type": "radio",
           "options": [
-            {"value": "yes", "label": "Yes", "next": "q2_spouse_b"},
-            {"value": "no", "label": "No", "next": "ineligible_spouse_not_deceased"}
+            { "value": "yes", "label": "Yes", "next": "q2_spouse_b" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_spouse_not_deceased"
+            }
           ],
           "validation": "Must be YES to be eligible as surviving spouse"
-        },        {
+        },
+        {
           "id": "q2_spouse_b",
           "conditional": "q2_spouse === 'yes'",
           "question": "Were you married to the person who became ill for at least one year immediately before their death?",
           "type": "radio",
           "options": [
-            {"value": "yes", "label": "Yes", "next": "q3_exposure"},
-            {"value": "no", "label": "No", "next": "ineligible_spouse_one_year"}
+            { "value": "yes", "label": "Yes", "next": "q3_exposure" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_spouse_one_year"
+            }
           ],
           "validation": "Must be YES to be eligible as surviving spouse"
         },
@@ -59,8 +100,12 @@
           "question": "Is the person who became ill deceased?",
           "type": "radio",
           "options": [
-            {"value": "yes", "label": "Yes", "next": "q3_exposure"},
-            {"value": "no", "label": "No", "next": "ineligible_child_not_deceased"}
+            { "value": "yes", "label": "Yes", "next": "q3_exposure" },
+            {
+              "value": "no",
+              "label": "No",
+              "next": "ineligible_child_not_deceased"
+            }
           ],
           "validation": "Must be YES to be eligible as surviving child"
         },
@@ -89,7 +134,8 @@
           "help_text": "At least ONE of these must be true to be eligible.",
           "next": "show_affected_areas"
         }
-      ],      "outcomes": {
+      ],
+      "outcomes": {
         "eligible": {
           "message": "Based on your answers, you appear to be eligible to file a RECA Downwinder claim. Let's proceed with completing the form.",
           "next_stage": "stage_2_form_completion"
@@ -113,7 +159,7 @@
         }
       }
     },
-    
+
     "stage_2_form_completion": {
       "title": "Complete Claim Form",
       "order": 2,
@@ -128,8 +174,14 @@
             {
               "group": "name_info",
               "title": "Name Information",
-              "fields": ["first_name", "middle_name", "last_name", "former_names"]
-            },            {
+              "fields": [
+                "first_name",
+                "middle_name",
+                "last_name",
+                "former_names"
+              ]
+            },
+            {
               "group": "identification",
               "title": "Identification",
               "fields": ["ssn", "dob"],
@@ -138,7 +190,15 @@
             {
               "group": "contact_info",
               "title": "Contact Information",
-              "fields": ["mailing_address", "city", "state", "zip_code", "phone_day", "phone_evening", "email"]
+              "fields": [
+                "mailing_address",
+                "city",
+                "state",
+                "zip_code",
+                "phone_day",
+                "phone_evening",
+                "email"
+              ]
             },
             {
               "group": "residence",
@@ -149,7 +209,11 @@
             {
               "group": "tribal_info",
               "title": "Tribal Affiliation (Optional)",
-              "fields": ["tribal_affiliation", "tribal_census_number", "tribal_assistance"],
+              "fields": [
+                "tribal_affiliation",
+                "tribal_census_number",
+                "tribal_assistance"
+              ],
               "optional": true,
               "note": "Complete if you are a member of an Indian Tribe and want RECA to request enrollment information"
             }
@@ -164,7 +228,15 @@
             {
               "group": "claimant_identity",
               "title": "Claimant Identity",
-              "fields": ["first_name", "middle_name", "last_name", "former_names", "ssn", "dob", "dod"]
+              "fields": [
+                "first_name",
+                "middle_name",
+                "last_name",
+                "former_names",
+                "ssn",
+                "dob",
+                "dod"
+              ]
             }
           ]
         },
@@ -177,7 +249,8 @@
               "conditional": "relationship === 'self'",
               "description": "As a self-filer, you need minimal relationship documentation",
               "required_docs_checklist": true
-            },            "surviving_spouse": {
+            },
+            "surviving_spouse": {
               "form_part": "part_5",
               "conditional": "relationship === 'spouse'",
               "description": "Answer questions about your marriage to the person who became ill",
@@ -224,7 +297,8 @@
           "validation": {
             "rule": "At least one location must be provided with time period meeting eligibility criteria"
           }
-        },        "section_part_9": {
+        },
+        "section_part_9": {
           "form_part": "part_9",
           "title": "Proof of Presence",
           "always_required": true,
@@ -279,7 +353,8 @@
             {
               "component": "cancer_registry_option",
               "description": "Option to have RECA contact state cancer registry"
-            },            {
+            },
+            {
               "component": "resep_clinic_info",
               "description": "Optional field for RESEP clinic assistance information"
             }
@@ -327,11 +402,12 @@
         }
       }
     },
-    
+
     "stage_3_supporting_forms": {
       "title": "Complete Supporting Forms",
       "order": 3,
-      "description": "Additional required and optional forms based on your claim",      "forms": {
+      "description": "Additional required and optional forms based on your claim",
+      "forms": {
         "certification_of_identity": {
           "always_required": true,
           "title": "Certification of Identity and Privacy Act Release",
@@ -354,7 +430,7 @@
         }
       }
     },
-    
+
     "stage_4_document_preparation": {
       "title": "Prepare Documents for Submission",
       "order": 4,
@@ -380,7 +456,8 @@
             "electronic_filing": {
               "action": "Upload photocopies of documents",
               "note": "Electronic filing accepts photocopies; certified/original only needed if requested later"
-            },            "mail_filing": {
+            },
+            "mail_filing": {
               "action": "Print checklist and gather certified/original documents",
               "note": "Mail filing requires certified or original documents (photocopies not accepted)"
             }
@@ -412,7 +489,7 @@
         }
       ]
     },
-    
+
     "stage_5_review_submit": {
       "title": "Final Review and Submission",
       "order": 5,
@@ -434,7 +511,8 @@
         "completeness_check": {
           "validation_rules": [
             "All required fields completed",
-            "At least one exposure location with valid time period",            "At least one compensable disease selected",
+            "At least one exposure location with valid time period",
+            "At least one compensable disease selected",
             "Medical records confirmation checked",
             "Signature provided",
             "All conditional required documents addressed"
@@ -474,7 +552,7 @@
       }
     }
   },
-  
+
   "ui_integration_specifications": {
     "claim_details_page": {
       "new_button": {
@@ -493,7 +571,8 @@
         "view_details": {
           "function": "View read-only claim information"
         }
-      },      "button_relationship_analysis": {
+      },
+      "button_relationship_analysis": {
         "potential_overlap": {
           "issue": "'Continue Claim' and 'Assist Me in Filling Form' may serve similar purposes",
           "recommendation": "Clarify distinction in user experience",
@@ -536,7 +615,7 @@
       }
     }
   },
-  
+
   "data_persistence_strategy": {
     "approach": "Save-as-you-go with claim record integration",
     "details": {
@@ -552,7 +631,8 @@
           "completion_percentage",
           "last_updated_timestamp"
         ]
-      },      "resume_capability": {
+      },
+      "resume_capability": {
         "behavior": "User can close and return to exact position in workflow",
         "implementation": "Load workflow_stage and workflow_section on re-entry",
         "visual_indicator": "Progress bar showing completion percentage"
@@ -563,7 +643,7 @@
       }
     }
   },
-  
+
   "pdf_generation": {
     "purpose": "Generate official RECA form with user's data pre-filled",
     "use_cases": [
@@ -584,7 +664,7 @@
       ]
     }
   },
-  
+
   "open_questions_and_decisions": {
     "question_1": {
       "question": "Does 'Continue Claim' workflow already exist?",
@@ -603,7 +683,8 @@
           "description": "Workflow saves directly to claim record as user progresses",
           "pros": "Single source of truth, no data sync issues",
           "cons": "Tighter coupling to database schema"
-        },        "option_b": {
+        },
+        "option_b": {
           "approach": "Workflow as separate assistant",
           "description": "Workflow maintains its own state, generates forms/data at the end",
           "pros": "Decoupled, can work offline, easier to update",
@@ -638,7 +719,7 @@
       "recommendation": "Hybrid approach - guided mode as default/recommended, direct form editing still available"
     }
   },
-  
+
   "technical_requirements": {
     "frontend": {
       "framework": "Based on existing RadiantClaims stack (likely React/Next.js)",
@@ -653,7 +734,8 @@
         "Validation system",
         "Help text / tooltips system"
       ]
-    },    "backend": {
+    },
+    "backend": {
       "data_storage": "Extend existing claim table schema or create related workflow_progress table",
       "api_endpoints_needed": [
         "POST /api/claims/{id}/workflow/save - Save workflow progress",
@@ -678,7 +760,7 @@
       ]
     }
   },
-  
+
   "success_metrics": {
     "user_experience": {
       "completion_rate": "% of users who start workflow and complete it",

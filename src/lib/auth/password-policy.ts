@@ -24,7 +24,7 @@ export function validatePassword(password: string): PasswordValidationResult {
 
   if (password.length < PASSWORD_RULES.minLength) {
     errors.push(
-      `Password must be at least ${PASSWORD_RULES.minLength} characters`,
+      `Password must be at least ${PASSWORD_RULES.minLength} characters`
     );
   }
 
@@ -109,7 +109,7 @@ export async function isPasswordExpired(user: {
   if (!user.passwordChangedAt) return true; // Never changed
 
   const daysSinceChange = Math.floor(
-    (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24),
+    (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24)
   );
 
   return daysSinceChange > PASSWORD_RULES.maxAge;
@@ -120,7 +120,7 @@ export async function isPasswordExpired(user: {
  */
 export async function updatePassword(
   userId: string,
-  hashedPassword: string,
+  hashedPassword: string
 ): Promise<void> {
   await db.user.update({
     where: { id: userId },
@@ -136,7 +136,7 @@ export async function updatePassword(
  * Generate a secure password reset token
  */
 export async function generatePasswordResetToken(
-  userId: string,
+  userId: string
 ): Promise<string> {
   const crypto = await import("crypto");
   const token = crypto.randomBytes(32).toString("hex");

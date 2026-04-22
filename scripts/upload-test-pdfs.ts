@@ -64,7 +64,10 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.font("Helvetica");
       pdf.moveDown();
       pdf.text("Name: " + doc.claimantName);
-      pdf.text("License #: DL-" + Math.random().toString(36).substring(2, 11).toUpperCase());
+      pdf.text(
+        "License #: DL-" +
+          Math.random().toString(36).substring(2, 11).toUpperCase()
+      );
       pdf.text("DOB: 01/15/1960");
       pdf.text("Address: 123 Main St, Salt Lake City, UT 84101");
       pdf.text("Issued: 01/01/2020");
@@ -75,10 +78,15 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.moveDown();
       pdf.text("Account Holder: " + doc.claimantName);
       pdf.text("Service Address: 123 Main St, Salt Lake City, UT 84101");
-      pdf.text("Account #: UTIL-" + Math.random().toString(36).substring(2, 11).toUpperCase());
+      pdf.text(
+        "Account #: UTIL-" +
+          Math.random().toString(36).substring(2, 11).toUpperCase()
+      );
       pdf.text("Billing Period: January 1956 - December 1962");
       pdf.moveDown();
-      pdf.text("This utility bill confirms residence at the above address during");
+      pdf.text(
+        "This utility bill confirms residence at the above address during"
+      );
       pdf.text("the period of atmospheric nuclear testing.");
     } else if (doc.category === "PATHOLOGY_REPORT") {
       pdf.font("Helvetica-Bold").text("PATHOLOGY REPORT");
@@ -93,7 +101,9 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.text("Tumor Stage: pT2N0M0");
       pdf.moveDown();
       pdf.text("This confirms the diagnosis of thyroid cancer, a condition");
-      pdf.text("potentially linked to radiation exposure from nuclear testing.");
+      pdf.text(
+        "potentially linked to radiation exposure from nuclear testing."
+      );
     } else if (doc.category === "MEDICAL_RECORDS") {
       pdf.font("Helvetica-Bold").text("MEDICAL RECORDS SUMMARY");
       pdf.font("Helvetica");
@@ -107,7 +117,9 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
       pdf.text("- 1985: Diagnosed with cancer");
       pdf.text("- 1985-1986: Cancer treatment and recovery");
       pdf.moveDown();
-      pdf.text("These records document the medical history relevant to the RECA claim.");
+      pdf.text(
+        "These records document the medical history relevant to the RECA claim."
+      );
     } else {
       pdf.font("Helvetica-Bold").text("SUPPORTING DOCUMENT");
       pdf.font("Helvetica");
@@ -121,10 +133,13 @@ async function generatePDF(doc: DocumentToGenerate): Promise<Buffer> {
 
     // Add footer
     pdf.moveDown(3);
-    pdf.fillColor("gray").fontSize(9).text(
-      "This is a test document generated for attorney portal demonstration.",
-      { align: "center" }
-    );
+    pdf
+      .fillColor("gray")
+      .fontSize(9)
+      .text(
+        "This is a test document generated for attorney portal demonstration.",
+        { align: "center" }
+      );
 
     pdf.end();
   });
@@ -152,7 +167,11 @@ async function main() {
     const files = await db.uploadedFile.findMany({
       where: {
         intakeSessionId: {
-          in: ["intake-jane-001", "intake-brandon-002", "cmh7b4fdb000f13lhr679hci3"],
+          in: [
+            "intake-jane-001",
+            "intake-brandon-002",
+            "cmh7b4fdb000f13lhr679hci3",
+          ],
         },
       },
       include: {
@@ -195,7 +214,9 @@ async function main() {
         await uploadToR2(file.fileKey, pdfBuffer);
 
         uploaded++;
-        console.log(`✅ Uploaded: ${file.originalFilename} (${(pdfBuffer.length / 1024).toFixed(2)} KB)\n`);
+        console.log(
+          `✅ Uploaded: ${file.originalFilename} (${(pdfBuffer.length / 1024).toFixed(2)} KB)\n`
+        );
       } catch (error) {
         failed++;
         console.error(`❌ Failed: ${file.originalFilename}`, error);

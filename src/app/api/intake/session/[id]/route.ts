@@ -59,10 +59,7 @@ export async function PATCH(
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     if (session.expiresAt < new Date()) {
@@ -128,10 +125,7 @@ export async function GET(
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     if (session.expiresAt < new Date()) {

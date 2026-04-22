@@ -160,7 +160,7 @@ export async function getUserActivitySummary(userId: string, days = 30) {
       acc[log.action] = (acc[log.action] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>,
+    {} as Record<string, number>
   );
 
   // Get unique IPs
@@ -317,7 +317,8 @@ export async function logFirmAction(
   await createAuditLog({
     userId,
     action,
-    severity: action === "FIRM_SUSPENDED" ? AuditSeverity.WARNING : AuditSeverity.INFO,
+    severity:
+      action === "FIRM_SUSPENDED" ? AuditSeverity.WARNING : AuditSeverity.INFO,
     resourceType: "LawFirm",
     resourceId: firmId,
     ipAddress,

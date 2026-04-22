@@ -189,8 +189,5 @@ export function isDocumentUsable(status: ValidationStatus): boolean {
  * Check if a status indicates processing is complete
  */
 export function isProcessingComplete(status: ValidationStatus): boolean {
-  return (
-    status !== "PENDING" &&
-    status !== "PROCESSING"
-  );
+  return status !== "PENDING" && status !== "PROCESSING";
 }

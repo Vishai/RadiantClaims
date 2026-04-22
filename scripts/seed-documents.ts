@@ -10,7 +10,7 @@ import { FileCategory, FileStatus } from "@prisma/client";
 const INTAKE_SESSIONS = [
   "intake-jane-001",
   "intake-brandon-002",
-  "cmh7b4fdb000f13lhr679hci3"
+  "cmh7b4fdb000f13lhr679hci3",
 ];
 
 const DOCUMENT_CATEGORIES: FileCategory[] = [
@@ -42,13 +42,16 @@ function generateFakeDocuments(): FakeDocument[] {
     for (let i = 0; i < numDocs; i++) {
       const category = DOCUMENT_CATEGORIES[i % DOCUMENT_CATEGORIES.length];
       const status: FileStatus =
-        Math.random() > 0.3 ? "VALIDATED" :
-        Math.random() > 0.5 ? "READY" : "AWAITING_REVIEW";
+        Math.random() > 0.3
+          ? "VALIDATED"
+          : Math.random() > 0.5
+            ? "READY"
+            : "AWAITING_REVIEW";
 
       documents.push({
         intakeSessionId: sessionId,
         fileKey: `fake-documents/${sessionId}/doc-${docCounter}.pdf`,
-        originalFilename: `${category?.toLowerCase().replace(/_/g, "-") || 'document'}-${docCounter}.pdf`,
+        originalFilename: `${category?.toLowerCase().replace(/_/g, "-") || "document"}-${docCounter}.pdf`,
         category: category || "IDENTITY",
         status,
         sizeBytes: Math.floor(Math.random() * 5000000) + 100000, // 100KB - 5MB
@@ -82,14 +85,19 @@ async function seedDocuments() {
           status: doc.status,
           isRequired: true,
           requiresOriginal: doc.category === "PATHOLOGY_REPORT",
-          validatedBy: doc.status === "VALIDATED" ? "admin@radiantclaims.dev" : null,
+          validatedBy:
+            doc.status === "VALIDATED" ? "admin@radiantclaims.dev" : null,
           validatedAt: doc.status === "VALIDATED" ? new Date() : null,
-          uploadedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date in last week
+          uploadedAt: new Date(
+            Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
+          ), // Random date in last week
           processedAt: new Date(),
         },
       });
 
-      console.log(`  ✓ Created: ${created.originalFilename} (${created.category})`);
+      console.log(
+        `  ✓ Created: ${created.originalFilename} (${created.category})`
+      );
     }
 
     // Get summary

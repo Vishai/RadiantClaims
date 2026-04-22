@@ -85,11 +85,22 @@ export function ValidationProgress({
     }, refreshInterval);
 
     return () => clearInterval(interval);
-  }, [sessionId, autoRefresh, refreshInterval, fetchStatus, status?.progress.overallStatus]);
+  }, [
+    sessionId,
+    autoRefresh,
+    refreshInterval,
+    fetchStatus,
+    status?.progress.overallStatus,
+  ]);
 
   if (loading && !status) {
     return (
-      <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
+      <div
+        className={cn(
+          "flex items-center gap-2 text-sm text-muted-foreground",
+          className
+        )}
+      >
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>Loading validation status...</span>
       </div>
@@ -98,7 +109,12 @@ export function ValidationProgress({
 
   if (error) {
     return (
-      <div className={cn("rounded-lg border border-red-200 bg-red-50 p-4", className)}>
+      <div
+        className={cn(
+          "rounded-lg border border-red-200 bg-red-50 p-4",
+          className
+        )}
+      >
         <div className="flex items-center gap-2 text-sm text-red-700">
           <AlertCircle className="h-4 w-4" />
           <span>Error: {error}</span>
@@ -123,17 +139,16 @@ export function ValidationProgress({
           {isInProgress && (
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
           )}
-          {isCompleted && (
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          )}
-          <span className="font-medium text-sm">
+          {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+          <span className="text-sm font-medium">
             {isInProgress && "Validating Documents..."}
             {isCompleted && "Validation Complete"}
             {progress.overallStatus === "not_started" && "No Validations"}
           </span>
         </div>
         <span className="text-sm text-muted-foreground">
-          {documents.completed}/{documents.total} ({Math.round(progress.documentsPercent)}%)
+          {documents.completed}/{documents.total} (
+          {Math.round(progress.documentsPercent)}%)
         </span>
       </div>
 
@@ -195,21 +210,28 @@ export function ValidationProgress({
       )}
 
       {/* Readiness score (if available) */}
-      {isCompleted && status.completenessCheck?.completed && status.completenessCheck.readinessScore !== undefined && (
-        <div className="mt-2 pt-2 border-t">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Readiness Score:</span>
-            <span className={cn(
-              "font-semibold",
-              status.completenessCheck.readinessScore >= 80 && "text-green-600",
-              status.completenessCheck.readinessScore >= 60 && status.completenessCheck.readinessScore < 80 && "text-yellow-600",
-              status.completenessCheck.readinessScore < 60 && "text-red-600"
-            )}>
-              {status.completenessCheck.readinessScore}/100
-            </span>
+      {isCompleted &&
+        status.completenessCheck?.completed &&
+        status.completenessCheck.readinessScore !== undefined && (
+          <div className="mt-2 border-t pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Readiness Score:</span>
+              <span
+                className={cn(
+                  "font-semibold",
+                  status.completenessCheck.readinessScore >= 80 &&
+                    "text-green-600",
+                  status.completenessCheck.readinessScore >= 60 &&
+                    status.completenessCheck.readinessScore < 80 &&
+                    "text-yellow-600",
+                  status.completenessCheck.readinessScore < 60 && "text-red-600"
+                )}
+              >
+                {status.completenessCheck.readinessScore}/100
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

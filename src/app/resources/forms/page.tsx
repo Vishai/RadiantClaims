@@ -253,9 +253,7 @@ export default function FormsLibraryPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div
-                  className="flex items-start gap-3 rounded-lg border border-sage-200 p-4 opacity-60"
-                >
+                <div className="flex items-start gap-3 rounded-lg border border-sage-200 p-4 opacity-60">
                   <FileText className="mt-1 h-5 w-5 text-sage-600" />
                   <div>
                     <h3 className="font-semibold text-sage-900">

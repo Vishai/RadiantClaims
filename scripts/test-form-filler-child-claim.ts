@@ -2,13 +2,13 @@
  * Test script to generate a filled RECA PDF for a Child relationship claim
  */
 
-import { db } from '../src/lib/db';
-import { fillOfficialRECAPDF } from '../src/lib/reca/pdf-form-filler';
-import * as fs from 'fs';
-import * as path from 'path';
+import { db } from "../src/lib/db";
+import { fillOfficialRECAPDF } from "../src/lib/reca/pdf-form-filler";
+import * as fs from "fs";
+import * as path from "path";
 
 async function testPDFGeneration() {
-  const sessionId = 'cmh9z8gff0008bfxbwl1799oi'; // Brandon Armstrong - Child relationship
+  const sessionId = "cmh9z8gff0008bfxbwl1799oi"; // Brandon Armstrong - Child relationship
 
   console.log(`\n🧪 Testing PDF Form Filler with Child relationship claim\n`);
   console.log(`Session ID: ${sessionId}\n`);
@@ -19,32 +19,37 @@ async function testPDFGeneration() {
   });
 
   if (!intakeSession) {
-    console.error('❌ Session not found!');
+    console.error("❌ Session not found!");
     process.exit(1);
   }
 
-  console.log('✅ Session found:');
+  console.log("✅ Session found:");
   console.log(`   - Claim Type: ${intakeSession.claimType}`);
   console.log(`   - Has Form Data: ${!!intakeSession.recaFormData}`);
 
   const formData = intakeSession.recaFormData as any;
   const supportingForms = intakeSession.recaSupportingForms as any;
 
-  console.log(`   - Form Parts: ${Object.keys(formData || {}).join(', ')}`);
+  console.log(`   - Form Parts: ${Object.keys(formData || {}).join(", ")}`);
   console.log(`   - Relationship: ${formData?.part_3?.relationship}\n`);
 
   // Path to the official RECA PDF template
-  const officialPdfPath = path.join(process.cwd(), 'public', 'forms', 'reca-downwinder-claim-form.pdf');
+  const officialPdfPath = path.join(
+    process.cwd(),
+    "public",
+    "forms",
+    "reca-downwinder-claim-form.pdf"
+  );
 
   if (!fs.existsSync(officialPdfPath)) {
     console.error(`❌ Official PDF template not found at: ${officialPdfPath}`);
     process.exit(1);
   }
 
-  console.log('✅ Official PDF template found\n');
+  console.log("✅ Official PDF template found\n");
 
   try {
-    console.log('📝 Generating filled PDF...');
+    console.log("📝 Generating filled PDF...");
     const pdfBytes = await fillOfficialRECAPDF({
       formData: formData || {},
       supportingForms: supportingForms || {},
@@ -53,24 +58,23 @@ async function testPDFGeneration() {
     });
 
     // Save to test output
-    const outputDir = path.join(process.cwd(), 'docs', 'test-output');
+    const outputDir = path.join(process.cwd(), "docs", "test-output");
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const outputPath = path.join(outputDir, 'filled-form-child-claim.pdf');
+    const outputPath = path.join(outputDir, "filled-form-child-claim.pdf");
     fs.writeFileSync(outputPath, pdfBytes);
 
     console.log(`\n✅ Success! PDF generated and saved`);
     console.log(`   - Location: ${outputPath}`);
     console.log(`   - Size: ${(pdfBytes.length / 1024).toFixed(2)} KB`);
     console.log(`\n👉 Open the PDF to review the filled form!\n`);
-
   } catch (error) {
-    console.error('\n❌ Error generating PDF:', error);
+    console.error("\n❌ Error generating PDF:", error);
     if (error instanceof Error) {
-      console.error('   Error message:', error.message);
-      console.error('   Stack trace:', error.stack);
+      console.error("   Error message:", error.message);
+      console.error("   Stack trace:", error.stack);
     }
     process.exit(1);
   }
@@ -78,10 +82,10 @@ async function testPDFGeneration() {
 
 testPDFGeneration()
   .then(() => {
-    console.log('✨ Test completed successfully!\n');
+    console.log("✨ Test completed successfully!\n");
     process.exit(0);
   })
   .catch((error) => {
-    console.error('\n❌ Test failed:', error);
+    console.error("\n❌ Test failed:", error);
     process.exit(1);
   });

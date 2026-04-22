@@ -1,7 +1,10 @@
 "use client";
 
 import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
-import { WorkflowStatusBadge, getWorkflowProgress } from "./workflow-status-badge";
+import {
+  WorkflowStatusBadge,
+  getWorkflowProgress,
+} from "./workflow-status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,7 +80,7 @@ export function ClaimantDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sage-100">
@@ -119,8 +122,8 @@ export function ClaimantDetailModal({
                     needsAttention
                       ? "bg-purple-500"
                       : progress === 100
-                      ? "bg-green-500"
-                      : "bg-blue-500"
+                        ? "bg-green-500"
+                        : "bg-blue-500"
                   }`}
                   style={{ width: `${progress}%` }}
                 />
@@ -129,18 +132,24 @@ export function ClaimantDetailModal({
           </div>
 
           {/* Contact Information */}
-          <div className="rounded-lg border border-sage-200 bg-sage-50 p-4 space-y-3">
+          <div className="space-y-3 rounded-lg border border-sage-200 bg-sage-50 p-4">
             <h3 className="font-semibold text-sage-900">Contact Information</h3>
             <div className="grid grid-cols-1 gap-3 text-sm">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-sage-500" />
-                <a href={`mailto:${claimant.email}`} className="text-sage-700 hover:text-sage-900">
+                <a
+                  href={`mailto:${claimant.email}`}
+                  className="text-sage-700 hover:text-sage-900"
+                >
                   {claimant.email}
                 </a>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-sage-500" />
-                <a href={`tel:${claimant.phone}`} className="text-sage-700 hover:text-sage-900">
+                <a
+                  href={`tel:${claimant.phone}`}
+                  className="text-sage-700 hover:text-sage-900"
+                >
                   {claimant.phone}
                 </a>
               </div>
@@ -154,36 +163,44 @@ export function ClaimantDetailModal({
           </div>
 
           {/* Claim Details */}
-          <div className="rounded-lg border border-sage-200 bg-white p-4 space-y-3">
+          <div className="space-y-3 rounded-lg border border-sage-200 bg-white p-4">
             <h3 className="font-semibold text-sage-900">Claim Details</h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {claimant.claimType && (
                 <div>
-                  <div className="text-xs text-sage-500 uppercase">Claim Type</div>
+                  <div className="text-xs uppercase text-sage-500">
+                    Claim Type
+                  </div>
                   <div className="font-medium text-sage-900">
                     {CLAIM_TYPE_LABELS[claimant.claimType]}
                   </div>
                 </div>
               )}
               <div>
-                <div className="text-xs text-sage-500 uppercase">Documents</div>
-                <div className="font-medium text-sage-900 flex items-center gap-1">
+                <div className="text-xs uppercase text-sage-500">Documents</div>
+                <div className="flex items-center gap-1 font-medium text-sage-900">
                   <FileText className="h-4 w-4" />
                   {claimant.documentCount} uploaded
                 </div>
               </div>
               <div>
-                <div className="text-xs text-sage-500 uppercase">Assigned</div>
+                <div className="text-xs uppercase text-sage-500">Assigned</div>
                 <div className="font-medium text-sage-900">
                   {claimant.assignedAt
-                    ? formatDistanceToNow(new Date(claimant.assignedAt), { addSuffix: true })
+                    ? formatDistanceToNow(new Date(claimant.assignedAt), {
+                        addSuffix: true,
+                      })
                     : "Recently"}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-sage-500 uppercase">Last Updated</div>
+                <div className="text-xs uppercase text-sage-500">
+                  Last Updated
+                </div>
                 <div className="font-medium text-sage-900">
-                  {formatDistanceToNow(new Date(claimant.updatedAt), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(claimant.updatedAt), {
+                    addSuffix: true,
+                  })}
                 </div>
               </div>
             </div>
@@ -217,11 +234,17 @@ export function ClaimantDetailModal({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
+              <Button
+                variant="outline"
+                className="border-green-300 text-green-700 hover:bg-green-50"
+              >
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Approve
               </Button>
-              <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
+              <Button
+                variant="outline"
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
                 <XCircle className="mr-2 h-4 w-4" />
                 Request Revision
               </Button>

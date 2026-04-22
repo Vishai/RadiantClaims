@@ -25,10 +25,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
     if (session.expiresAt < new Date()) {

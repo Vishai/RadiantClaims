@@ -30,7 +30,9 @@ const tribalRecordsSchema = z.object({
   ),
   otherTribalOffice: z.string().optional(),
   claimantName: z.string().min(1, "Claimant name is required"),
-  tribalOrganizationName: z.string().min(1, "Tribal organization name is required"),
+  tribalOrganizationName: z
+    .string()
+    .min(1, "Tribal organization name is required"),
   signature: z.string().min(1, "Signature is required"),
   signatureDate: z.string().min(1, "Signature date is required"),
 });
@@ -97,16 +99,19 @@ export default function TribalRecordsReleaseForm({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Form Purpose */}
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
               <div>
-                <p className="font-semibold text-blue-900 mb-2">Purpose of This Form</p>
+                <p className="mb-2 font-semibold text-blue-900">
+                  Purpose of This Form
+                </p>
                 <p className="text-sm text-blue-800">
-                  This form authorizes your tribal organization to release vital records (such as
-                  birth records, tribal enrollment records, etc.) to the Department of Justice for
-                  the purpose of supporting your RECA claim. Tribal records can help establish proof
-                  of presence and identity.
+                  This form authorizes your tribal organization to release vital
+                  records (such as birth records, tribal enrollment records,
+                  etc.) to the Department of Justice for the purpose of
+                  supporting your RECA claim. Tribal records can help establish
+                  proof of presence and identity.
                 </p>
               </div>
             </div>
@@ -116,10 +121,12 @@ export default function TribalRecordsReleaseForm({
           <div className="space-y-4">
             <div>
               <Label className="text-base font-semibold text-sage-900">
-                Tribal Office/Organization <span className="text-red-600">*</span>
+                Tribal Office/Organization{" "}
+                <span className="text-red-600">*</span>
               </Label>
-              <p className="text-sm text-sage-600 mt-1 mb-3">
-                Select the tribal office or organization that holds your vital records
+              <p className="mb-3 mt-1 text-sm text-sage-600">
+                Select the tribal office or organization that holds your vital
+                records
               </p>
             </div>
 
@@ -138,62 +145,76 @@ export default function TribalRecordsReleaseForm({
             >
               <div className="space-y-3">
                 {/* Navajo Nation */}
-                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 hover:border-terracotta-300 hover:bg-terracotta-50/30 transition-colors">
+                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 transition-colors hover:border-terracotta-300 hover:bg-terracotta-50/30">
                   <RadioGroupItem
                     value="Navajo Nation Office of Vital Records"
                     id="navajo"
                     className="mt-1"
                   />
                   <div className="flex-1">
-                    <Label htmlFor="navajo" className="cursor-pointer font-medium">
+                    <Label
+                      htmlFor="navajo"
+                      className="cursor-pointer font-medium"
+                    >
                       Navajo Nation Office of Vital Records
                     </Label>
-                    <p className="text-xs text-sage-600 mt-1">
+                    <p className="mt-1 text-xs text-sage-600">
                       For members of the Navajo Nation
                     </p>
                   </div>
                 </div>
 
                 {/* Hopi Tribe */}
-                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 hover:border-terracotta-300 hover:bg-terracotta-50/30 transition-colors">
+                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 transition-colors hover:border-terracotta-300 hover:bg-terracotta-50/30">
                   <RadioGroupItem
                     value="Hopi Tribe Enrollment Department"
                     id="hopi"
                     className="mt-1"
                   />
                   <div className="flex-1">
-                    <Label htmlFor="hopi" className="cursor-pointer font-medium">
+                    <Label
+                      htmlFor="hopi"
+                      className="cursor-pointer font-medium"
+                    >
                       Hopi Tribe Enrollment Department
                     </Label>
-                    <p className="text-xs text-sage-600 mt-1">For members of the Hopi Tribe</p>
+                    <p className="mt-1 text-xs text-sage-600">
+                      For members of the Hopi Tribe
+                    </p>
                   </div>
                 </div>
 
                 {/* San Carlos Apache */}
-                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 hover:border-terracotta-300 hover:bg-terracotta-50/30 transition-colors">
+                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 transition-colors hover:border-terracotta-300 hover:bg-terracotta-50/30">
                   <RadioGroupItem
                     value="San Carlos Apache Tribal Enrollment Office"
                     id="apache"
                     className="mt-1"
                   />
                   <div className="flex-1">
-                    <Label htmlFor="apache" className="cursor-pointer font-medium">
+                    <Label
+                      htmlFor="apache"
+                      className="cursor-pointer font-medium"
+                    >
                       San Carlos Apache Tribal Enrollment Office
                     </Label>
-                    <p className="text-xs text-sage-600 mt-1">
+                    <p className="mt-1 text-xs text-sage-600">
                       For members of the San Carlos Apache Tribe
                     </p>
                   </div>
                 </div>
 
                 {/* Other */}
-                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 hover:border-terracotta-300 hover:bg-terracotta-50/30 transition-colors">
+                <div className="flex items-start space-x-3 rounded-lg border border-sage-200 bg-white p-4 transition-colors hover:border-terracotta-300 hover:bg-terracotta-50/30">
                   <RadioGroupItem value="Other" id="other" className="mt-1" />
                   <div className="flex-1">
-                    <Label htmlFor="other" className="cursor-pointer font-medium">
+                    <Label
+                      htmlFor="other"
+                      className="cursor-pointer font-medium"
+                    >
                       Other Tribal Organization
                     </Label>
-                    <p className="text-xs text-sage-600 mt-1">
+                    <p className="mt-1 text-xs text-sage-600">
                       Specify another tribal office or organization
                     </p>
                   </div>
@@ -202,36 +223,45 @@ export default function TribalRecordsReleaseForm({
             </RadioGroup>
 
             {formErrors.tribalOffice && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
                 <div className="flex gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-800">{formErrors.tribalOffice.message}</p>
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+                  <p className="text-sm text-red-800">
+                    {formErrors.tribalOffice.message}
+                  </p>
                 </div>
               </div>
             )}
 
             {/* Other Tribal Office (Conditional) */}
             {tribalOffice === "Other" && (
-              <div className="space-y-2 pl-4 border-l-4 border-terracotta-300">
+              <div className="space-y-2 border-l-4 border-terracotta-300 pl-4">
                 <Label htmlFor="otherTribalOffice">
-                  Specify Tribal Office/Organization <span className="text-red-600">*</span>
+                  Specify Tribal Office/Organization{" "}
+                  <span className="text-red-600">*</span>
                 </Label>
                 <Input
                   id="otherTribalOffice"
                   {...form.register("otherTribalOffice")}
                   placeholder="Enter the name of the tribal office or organization"
-                  className={formErrors.otherTribalOffice ? "border-red-300" : ""}
+                  className={
+                    formErrors.otherTribalOffice ? "border-red-300" : ""
+                  }
                 />
                 {formErrors.otherTribalOffice && (
-                  <p className="text-sm text-red-600">{formErrors.otherTribalOffice.message}</p>
+                  <p className="text-sm text-red-600">
+                    {formErrors.otherTribalOffice.message}
+                  </p>
                 )}
               </div>
             )}
           </div>
 
           {/* Claimant Information */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-base font-semibold text-sage-900">Claimant Information</h3>
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-base font-semibold text-sage-900">
+              Claimant Information
+            </h3>
 
             {/* Claimant Name */}
             <div className="space-y-2">
@@ -245,23 +275,29 @@ export default function TribalRecordsReleaseForm({
                 className={formErrors.claimantName ? "border-red-300" : ""}
               />
               {formErrors.claimantName && (
-                <p className="text-sm text-red-600">{formErrors.claimantName.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.claimantName.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
-                This should match the claimant name from Part 2 (or Part 1 if self-filing)
+                This should match the claimant name from Part 2 (or Part 1 if
+                self-filing)
               </p>
             </div>
 
             {/* Tribal Organization Name */}
             <div className="space-y-2">
               <Label htmlFor="tribalOrganizationName">
-                Name of Tribal Organization <span className="text-red-600">*</span>
+                Name of Tribal Organization{" "}
+                <span className="text-red-600">*</span>
               </Label>
               <Input
                 id="tribalOrganizationName"
                 {...form.register("tribalOrganizationName")}
                 placeholder="Official name of tribe or tribal organization"
-                className={formErrors.tribalOrganizationName ? "border-red-300" : ""}
+                className={
+                  formErrors.tribalOrganizationName ? "border-red-300" : ""
+                }
               />
               {formErrors.tribalOrganizationName && (
                 <p className="text-sm text-red-600">
@@ -275,17 +311,20 @@ export default function TribalRecordsReleaseForm({
           </div>
 
           {/* Signature Section */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="text-base font-semibold text-sage-900">Authorization Signature</h3>
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-base font-semibold text-sage-900">
+              Authorization Signature
+            </h3>
 
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
               <div className="flex gap-3">
-                <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
                 <div>
                   <p className="text-sm text-amber-900">
-                    By signing below, you authorize the tribal organization to release your vital
-                    records to the Department of Justice for the purpose of processing your RECA
-                    claim. Your signature, thumbprint, or mark is acceptable.
+                    By signing below, you authorize the tribal organization to
+                    release your vital records to the Department of Justice for
+                    the purpose of processing your RECA claim. Your signature,
+                    thumbprint, or mark is acceptable.
                   </p>
                 </div>
               </div>
@@ -294,7 +333,8 @@ export default function TribalRecordsReleaseForm({
             {/* Signature Input */}
             <div className="space-y-2">
               <Label htmlFor="signature">
-                Signature, Thumbprint, or Mark <span className="text-red-600">*</span>
+                Signature, Thumbprint, or Mark{" "}
+                <span className="text-red-600">*</span>
               </Label>
               <Input
                 id="signature"
@@ -303,11 +343,13 @@ export default function TribalRecordsReleaseForm({
                 className={`text-lg ${formErrors.signature ? "border-red-300" : ""}`}
               />
               {formErrors.signature && (
-                <p className="text-sm text-red-600">{formErrors.signature.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signature.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
-                For the PDF submission, you may provide a handwritten signature, thumbprint, or
-                mark on the printed form
+                For the PDF submission, you may provide a handwritten signature,
+                thumbprint, or mark on the printed form
               </p>
             </div>
 
@@ -323,32 +365,37 @@ export default function TribalRecordsReleaseForm({
                 className={formErrors.signatureDate ? "border-red-300" : ""}
               />
               {formErrors.signatureDate && (
-                <p className="text-sm text-red-600">{formErrors.signatureDate.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signatureDate.message}
+                </p>
               )}
             </div>
           </div>
 
           {/* Important Information */}
-          <div className="rounded-lg bg-sage-50 border border-sage-200 p-4">
+          <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
               <div>
-                <p className="font-semibold text-sage-900 mb-2">Important Information</p>
-                <ul className="text-sm text-sage-800 space-y-1 list-disc list-inside ml-2">
+                <p className="mb-2 font-semibold text-sage-900">
+                  Important Information
+                </p>
+                <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-sage-800">
                   <li>
-                    This authorization applies only to the release of vital records for RECA claim
-                    processing
+                    This authorization applies only to the release of vital
+                    records for RECA claim processing
                   </li>
                   <li>
-                    Your tribal organization may require additional documentation or verification
+                    Your tribal organization may require additional
+                    documentation or verification
                   </li>
                   <li>
-                    The Department of Justice will work directly with your tribal office to obtain
-                    necessary records
+                    The Department of Justice will work directly with your
+                    tribal office to obtain necessary records
                   </li>
                   <li>
-                    You do not need to request or obtain these records yourself - this authorization
-                    is sufficient
+                    You do not need to request or obtain these records yourself
+                    - this authorization is sufficient
                   </li>
                 </ul>
               </div>

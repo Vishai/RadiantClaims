@@ -6,19 +6,16 @@
  * and completeness check results.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getValidationStatus } from '@/lib/ai-agents/orchestration-service';
-import { getServerAuthSession } from '@/lib/auth';
-import { canAccessSession } from '@/lib/auth/permissions';
+import { NextRequest, NextResponse } from "next/server";
+import { getValidationStatus } from "@/lib/ai-agents/orchestration-service";
+import { getServerAuthSession } from "@/lib/auth";
+import { canAccessSession } from "@/lib/auth/permissions";
 
 type RouteContext = {
   params: Promise<{ sessionId: string }>;
 };
 
-export async function GET(
-  _req: NextRequest,
-  context: RouteContext
-) {
+export async function GET(_req: NextRequest, context: RouteContext) {
   try {
     // Check authentication
     const session = await getServerAuthSession();
@@ -26,7 +23,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized',
+          error: "Unauthorized",
         },
         { status: 401 }
       );
@@ -38,7 +35,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Session ID is required',
+          error: "Session ID is required",
         },
         { status: 400 }
       );
@@ -50,7 +47,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - You do not have access to this session',
+          error: "Forbidden - You do not have access to this session",
         },
         { status: 403 }
       );
@@ -78,21 +75,22 @@ export async function GET(
           readinessScore: status.readinessScore,
         },
         progress: {
-          documentsPercent: status.totalDocuments > 0
-            ? Math.round((status.completed / status.totalDocuments) * 100)
-            : 0,
+          documentsPercent:
+            status.totalDocuments > 0
+              ? Math.round((status.completed / status.totalDocuments) * 100)
+              : 0,
           overallStatus: getOverallStatus(status),
         },
       },
     });
   } catch (error) {
-    console.error('Validation status API error:', error);
+    console.error("Validation status API error:", error);
 
-    if (error instanceof Error && error.message.includes('not found')) {
+    if (error instanceof Error && error.message.includes("not found")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Session not found',
+          error: "Session not found",
         },
         { status: 404 }
       );
@@ -101,7 +99,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
       { status: 500 }
     );
@@ -119,26 +117,30 @@ function getOverallStatus(status: {
   pending: number;
   dataExtracted: boolean;
   completenessChecked: boolean;
-}): 'not_started' | 'in_progress' | 'completed' | 'failed' | 'partial' {
+}): "not_started" | "in_progress" | "completed" | "failed" | "partial" {
   if (status.totalDocuments === 0) {
-    return 'not_started';
+    return "not_started";
   }
 
   if (status.failed > 0 && status.completed === 0) {
-    return 'failed';
+    return "failed";
   }
 
   if (status.processing > 0 || status.pending > 0) {
-    return 'in_progress';
+    return "in_progress";
   }
 
-  if (status.completed === status.totalDocuments && status.dataExtracted && status.completenessChecked) {
-    return 'completed';
+  if (
+    status.completed === status.totalDocuments &&
+    status.dataExtracted &&
+    status.completenessChecked
+  ) {
+    return "completed";
   }
 
   if (status.completed > 0) {
-    return 'partial';
+    return "partial";
   }
 
-  return 'not_started';
+  return "not_started";
 }

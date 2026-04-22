@@ -115,10 +115,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type") || "ALL";
 
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     const validated = unsubscribeSchema.parse({ email, type });
@@ -184,8 +181,6 @@ export async function GET(req: NextRequest) {
     );
   } catch (error) {
     console.error("Failed to unsubscribe:", error);
-    return NextResponse.redirect(
-      new URL("/unsubscribe/error", req.url)
-    );
+    return NextResponse.redirect(new URL("/unsubscribe/error", req.url));
   }
 }

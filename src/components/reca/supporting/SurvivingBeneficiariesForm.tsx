@@ -39,7 +39,9 @@ const survivingBeneficiariesSchema = z.object({
     .max(4, "Maximum of 4 beneficiaries allowed per page"),
 });
 
-type SurvivingBeneficiariesFormData = z.infer<typeof survivingBeneficiariesSchema>;
+type SurvivingBeneficiariesFormData = z.infer<
+  typeof survivingBeneficiariesSchema
+>;
 
 interface SurvivingBeneficiariesFormProps {
   initialData?: Partial<SurvivingBeneficiariesSignatures>;
@@ -145,54 +147,70 @@ export default function SurvivingBeneficiariesForm({
             Attached Signatures of Eligible Surviving Beneficiaries
           </CardTitle>
           <CardDescription>
-            Optional for Part 6 (Surviving Children) - Expedites claim processing
+            Optional for Part 6 (Surviving Children) - Expedites claim
+            processing
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Form Purpose */}
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
               <div>
-                <p className="font-semibold text-blue-900 mb-2">Purpose of This Form</p>
-                <p className="text-sm text-blue-800 mb-2">
-                  Complete this form ONLY if you are filing as a surviving child (Part 6). This
-                  form is <strong>optional</strong> but can significantly expedite the processing of your claim.
+                <p className="mb-2 font-semibold text-blue-900">
+                  Purpose of This Form
+                </p>
+                <p className="mb-2 text-sm text-blue-800">
+                  Complete this form ONLY if you are filing as a surviving child
+                  (Part 6). This form is <strong>optional</strong> but can
+                  significantly expedite the processing of your claim.
                 </p>
                 <p className="text-sm text-blue-800">
-                  By having all eligible surviving beneficiaries sign this form, you help the
-                  Department of Justice verify that all beneficiaries agree to the claim, which can
-                  reduce processing time by several weeks or months.
+                  By having all eligible surviving beneficiaries sign this form,
+                  you help the Department of Justice verify that all
+                  beneficiaries agree to the claim, which can reduce processing
+                  time by several weeks or months.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Expedited Processing Notice */}
-          <div className="rounded-lg bg-terracotta-50 border border-terracotta-200 p-4">
+          <div className="rounded-lg border border-terracotta-200 bg-terracotta-50 p-4">
             <div className="flex gap-3">
-              <Clock className="h-5 w-5 text-terracotta-600 flex-shrink-0 mt-0.5" />
+              <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-terracotta-600" />
               <div>
-                <p className="font-semibold text-terracotta-900 mb-2">Expedite Your Claim</p>
-                <p className="text-sm text-terracotta-800 mb-2">
-                  <strong>With signatures:</strong> Including signatures from all eligible surviving beneficiaries can reduce claim
+                <p className="mb-2 font-semibold text-terracotta-900">
+                  Expedite Your Claim
+                </p>
+                <p className="mb-2 text-sm text-terracotta-800">
+                  <strong>With signatures:</strong> Including signatures from
+                  all eligible surviving beneficiaries can reduce claim
                   processing time by several weeks or months.
                 </p>
                 <p className="text-sm text-terracotta-800">
-                  <strong>Without signatures:</strong> If siblings don't sign, the Department of Justice will independently contact each unsigned sibling for individual confirmation before processing your claim. This is required and will delay approval.
+                  <strong>Without signatures:</strong> If siblings don't sign,
+                  the Department of Justice will independently contact each
+                  unsigned sibling for individual confirmation before processing
+                  your claim. This is required and will delay approval.
                 </p>
               </div>
             </div>
           </div>
 
           {/* One Claim Notice */}
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
               <div>
-                <p className="font-semibold text-amber-900 mb-2">One Claim for All Surviving Children</p>
+                <p className="mb-2 font-semibold text-amber-900">
+                  One Claim for All Surviving Children
+                </p>
                 <p className="text-sm text-amber-800">
-                  Only one RECA claim should be submitted on behalf of all surviving children. Every eligible sibling must be listed as a beneficiary in Part 6, and this form helps confirm that all beneficiaries are aware and in agreement.
+                  Only one RECA claim should be submitted on behalf of all
+                  surviving children. Every eligible sibling must be listed as a
+                  beneficiary in Part 6, and this form helps confirm that all
+                  beneficiaries are aware and in agreement.
                 </p>
               </div>
             </div>
@@ -213,9 +231,9 @@ export default function SurvivingBeneficiariesForm({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeBeneficiary(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <Trash2 className="mr-1 h-4 w-4" />
                         Remove
                       </Button>
                     )}
@@ -225,19 +243,27 @@ export default function SurvivingBeneficiariesForm({
                   {/* Beneficiary Name */}
                   <div className="space-y-2">
                     <Label htmlFor={`beneficiaries.${index}.beneficiaryName`}>
-                      Name of Eligible Surviving Beneficiary <span className="text-red-600">*</span>
+                      Name of Eligible Surviving Beneficiary{" "}
+                      <span className="text-red-600">*</span>
                     </Label>
                     <Input
                       id={`beneficiaries.${index}.beneficiaryName`}
-                      {...form.register(`beneficiaries.${index}.beneficiaryName`)}
+                      {...form.register(
+                        `beneficiaries.${index}.beneficiaryName`
+                      )}
                       placeholder="Full legal name"
                       className={
-                        formErrors.beneficiaries?.[index]?.beneficiaryName ? "border-red-300" : ""
+                        formErrors.beneficiaries?.[index]?.beneficiaryName
+                          ? "border-red-300"
+                          : ""
                       }
                     />
                     {formErrors.beneficiaries?.[index]?.beneficiaryName && (
                       <p className="text-sm text-red-600">
-                        {formErrors.beneficiaries[index]?.beneficiaryName?.message}
+                        {
+                          formErrors.beneficiaries[index]?.beneficiaryName
+                            ?.message
+                        }
                       </p>
                     )}
                   </div>
@@ -245,20 +271,28 @@ export default function SurvivingBeneficiariesForm({
                   {/* Beneficiary SSN */}
                   <div className="space-y-2">
                     <Label htmlFor={`beneficiaries.${index}.beneficiarySsn`}>
-                      Social Security Number <span className="text-red-600">*</span>
+                      Social Security Number{" "}
+                      <span className="text-red-600">*</span>
                     </Label>
                     <Input
                       id={`beneficiaries.${index}.beneficiarySsn`}
-                      value={form.watch(`beneficiaries.${index}.beneficiarySsn`)}
+                      value={form.watch(
+                        `beneficiaries.${index}.beneficiarySsn`
+                      )}
                       onChange={(e) => handleSsnChange(index, e.target.value)}
                       placeholder="XXX-XX-XXXX"
                       className={
-                        formErrors.beneficiaries?.[index]?.beneficiarySsn ? "border-red-300" : ""
+                        formErrors.beneficiaries?.[index]?.beneficiarySsn
+                          ? "border-red-300"
+                          : ""
                       }
                     />
                     {formErrors.beneficiaries?.[index]?.beneficiarySsn && (
                       <p className="text-sm text-red-600">
-                        {formErrors.beneficiaries[index]?.beneficiarySsn?.message}
+                        {
+                          formErrors.beneficiaries[index]?.beneficiarySsn
+                            ?.message
+                        }
                       </p>
                     )}
                   </div>
@@ -273,7 +307,9 @@ export default function SurvivingBeneficiariesForm({
                       {...form.register(`beneficiaries.${index}.signature`)}
                       placeholder="Type full name (electronic signature)"
                       className={`text-lg ${
-                        formErrors.beneficiaries?.[index]?.signature ? "border-red-300" : ""
+                        formErrors.beneficiaries?.[index]?.signature
+                          ? "border-red-300"
+                          : ""
                       }`}
                     />
                     {formErrors.beneficiaries?.[index]?.signature && (
@@ -282,7 +318,8 @@ export default function SurvivingBeneficiariesForm({
                       </p>
                     )}
                     <p className="text-xs text-sage-600">
-                      For the PDF submission, each beneficiary will provide a handwritten signature
+                      For the PDF submission, each beneficiary will provide a
+                      handwritten signature
                     </p>
                   </div>
 
@@ -296,28 +333,37 @@ export default function SurvivingBeneficiariesForm({
                       {...form.register(`beneficiaries.${index}.signatureDate`)}
                       type="date"
                       className={
-                        formErrors.beneficiaries?.[index]?.signatureDate ? "border-red-300" : ""
+                        formErrors.beneficiaries?.[index]?.signatureDate
+                          ? "border-red-300"
+                          : ""
                       }
                     />
                     {formErrors.beneficiaries?.[index]?.signatureDate && (
                       <p className="text-sm text-red-600">
-                        {formErrors.beneficiaries[index]?.signatureDate?.message}
+                        {
+                          formErrors.beneficiaries[index]?.signatureDate
+                            ?.message
+                        }
                       </p>
                     )}
                   </div>
 
                   {/* Attorney Information (Optional) */}
-                  <div className="pt-4 border-t border-sage-200">
-                    <h4 className="text-sm font-semibold text-sage-900 mb-3">
+                  <div className="border-t border-sage-200 pt-4">
+                    <h4 className="mb-3 text-sm font-semibold text-sage-900">
                       Attorney Information (If Represented)
                     </h4>
 
                     {/* Attorney Name */}
-                    <div className="space-y-2 mb-3">
-                      <Label htmlFor={`beneficiaries.${index}.attorneyName`}>Attorney Name</Label>
+                    <div className="mb-3 space-y-2">
+                      <Label htmlFor={`beneficiaries.${index}.attorneyName`}>
+                        Attorney Name
+                      </Label>
                       <Input
                         id={`beneficiaries.${index}.attorneyName`}
-                        {...form.register(`beneficiaries.${index}.attorneyName`)}
+                        {...form.register(
+                          `beneficiaries.${index}.attorneyName`
+                        )}
                         placeholder="Full name of attorney (if applicable)"
                       />
                       <p className="text-xs text-sage-600">
@@ -332,8 +378,13 @@ export default function SurvivingBeneficiariesForm({
                       </Label>
                       <Input
                         id={`beneficiaries.${index}.attorneyPhone`}
-                        value={form.watch(`beneficiaries.${index}.attorneyPhone`) || ""}
-                        onChange={(e) => handlePhoneChange(index, e.target.value)}
+                        value={
+                          form.watch(`beneficiaries.${index}.attorneyPhone`) ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handlePhoneChange(index, e.target.value)
+                        }
                         placeholder="(XXX) XXX-XXXX"
                       />
                     </div>
@@ -350,20 +401,21 @@ export default function SurvivingBeneficiariesForm({
                 onClick={addBeneficiary}
                 className="w-full border-terracotta-300 text-terracotta-700 hover:bg-terracotta-50 hover:text-terracotta-800"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Another Beneficiary ({fields.length} of 4 maximum)
               </Button>
             )}
 
             {/* Maximum Reached Notice */}
             {fields.length >= 4 && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <div className="flex gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
                   <div>
                     <p className="text-sm text-amber-900">
-                      Maximum of 4 beneficiaries reached. If there are more than 4 eligible
-                      surviving beneficiaries, attach additional signature pages to the printed PDF.
+                      Maximum of 4 beneficiaries reached. If there are more than
+                      4 eligible surviving beneficiaries, attach additional
+                      signature pages to the printed PDF.
                     </p>
                   </div>
                 </div>
@@ -372,54 +424,65 @@ export default function SurvivingBeneficiariesForm({
           </div>
 
           {/* Form Errors */}
-          {formErrors.beneficiaries && typeof formErrors.beneficiaries === "object" && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-red-900 mb-2">Please fix the following errors:</p>
-                  <ul className="text-sm text-red-800 space-y-1 list-disc list-inside ml-2">
-                    {Object.entries(formErrors.beneficiaries).map(([index, errors]) => {
-                      if (typeof errors === "object" && errors !== null) {
-                        return Object.entries(errors).map(([field, error]) => (
-                          <li key={`${index}-${field}`}>
-                            Beneficiary {Number(index) + 1}: {String((error as any)?.message || "")}
-                          </li>
-                        ));
-                      }
-                      return null;
-                    })}
-                  </ul>
+          {formErrors.beneficiaries &&
+            typeof formErrors.beneficiaries === "object" && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+                  <div>
+                    <p className="mb-2 font-semibold text-red-900">
+                      Please fix the following errors:
+                    </p>
+                    <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-red-800">
+                      {Object.entries(formErrors.beneficiaries).map(
+                        ([index, errors]) => {
+                          if (typeof errors === "object" && errors !== null) {
+                            return Object.entries(errors).map(
+                              ([field, error]) => (
+                                <li key={`${index}-${field}`}>
+                                  Beneficiary {Number(index) + 1}:{" "}
+                                  {String((error as any)?.message || "")}
+                                </li>
+                              )
+                            );
+                          }
+                          return null;
+                        }
+                      )}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Important Information */}
-          <div className="rounded-lg bg-sage-50 border border-sage-200 p-4">
+          <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
               <div>
-                <p className="font-semibold text-sage-900 mb-2">Important Information</p>
-                <ul className="text-sm text-sage-800 space-y-1 list-disc list-inside ml-2">
+                <p className="mb-2 font-semibold text-sage-900">
+                  Important Information
+                </p>
+                <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-sage-800">
                   <li>
-                    This form is completely optional - your claim will be processed even without it
+                    This form is completely optional - your claim will be
+                    processed even without it
                   </li>
                   <li>
-                    Include all eligible surviving children who are entitled to share in the RECA
-                    compensation
+                    Include all eligible surviving children who are entitled to
+                    share in the RECA compensation
                   </li>
                   <li>
-                    Each beneficiary must sign individually - signatures cannot be on behalf of
-                    others
+                    Each beneficiary must sign individually - signatures cannot
+                    be on behalf of others
                   </li>
                   <li>
-                    If any beneficiary is represented by an attorney, include that attorney's
-                    information
+                    If any beneficiary is represented by an attorney, include
+                    that attorney's information
                   </li>
                   <li>
-                    When printing the PDF, ensure each beneficiary signs in the designated signature
-                    field
+                    When printing the PDF, ensure each beneficiary signs in the
+                    designated signature field
                   </li>
                 </ul>
               </div>

@@ -43,7 +43,10 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   });
 
   // Check if document exists and belongs to user
-  if (!document || document.intakeSession.claimant?.userId !== session.user.id) {
+  if (
+    !document ||
+    document.intakeSession.claimant?.userId !== session.user.id
+  ) {
     notFound();
   }
 

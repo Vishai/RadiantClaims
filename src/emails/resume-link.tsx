@@ -113,9 +113,7 @@ export const ResumeLinkEmail = ({
               Having trouble? Our support team is here to help you every step of
               the way.
             </Text>
-            <Text style={signature}>
-              - The RadiantClaims Team
-            </Text>
+            <Text style={signature}>- The RadiantClaims Team</Text>
           </Section>
 
           {/* Footer */}

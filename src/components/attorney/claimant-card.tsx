@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { ClaimantWorkflowStatus, ClaimType } from "@prisma/client";
-import { WorkflowStatusBadge, getWorkflowProgress } from "./workflow-status-badge";
+import {
+  WorkflowStatusBadge,
+  getWorkflowProgress,
+} from "./workflow-status-badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,8 +103,8 @@ export function ClaimantCard({ claimant }: ClaimantCardProps) {
                 needsAttention
                   ? "bg-purple-500"
                   : progress === 100
-                  ? "bg-green-500"
-                  : "bg-blue-500"
+                    ? "bg-green-500"
+                    : "bg-blue-500"
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -136,7 +139,10 @@ export function ClaimantCard({ claimant }: ClaimantCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-2">
-          <Link href={`/attorney/claimants/${claimant.id}` as any} className="flex-1">
+          <Link
+            href={`/attorney/claimants/${claimant.id}` as any}
+            className="flex-1"
+          >
             <Button
               variant={needsAttention ? "default" : "outline"}
               className={`w-full ${
@@ -150,7 +156,12 @@ export function ClaimantCard({ claimant }: ClaimantCardProps) {
             </Button>
           </Link>
           {!claimant.hasCompletedIntake && (
-            <Button variant="ghost" size="sm" disabled title="Intake incomplete">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled
+              title="Intake incomplete"
+            >
               <AlertCircle className="h-4 w-4 text-amber-500" />
             </Button>
           )}

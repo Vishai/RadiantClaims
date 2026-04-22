@@ -5,19 +5,23 @@
  * by overlaying a grid on the PDF pages
  */
 
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import * as fs from "fs";
+import * as path from "path";
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
 
 async function addGridToPDF() {
-  console.log('📐 Creating calibration grid PDF...\n');
+  console.log("📐 Creating calibration grid PDF...\n");
 
   try {
     // Load the official PDF
-    const officialPdfPath = path.join(process.cwd(), 'docs', 'RECA Downwinder Claim Form.pdf');
+    const officialPdfPath = path.join(
+      process.cwd(),
+      "docs",
+      "RECA Downwinder Claim Form.pdf"
+    );
     const pdfBytes = fs.readFileSync(officialPdfPath);
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
@@ -107,15 +111,15 @@ async function addGridToPDF() {
 
       // Add instructions
       const instructions = [
-        'X-axis (horizontal): Red numbers (0 = left, 612 = right)',
-        'Y-axis (vertical): Blue numbers (0 = bottom, 792 = top)',
-        'Grid spacing: Major lines every 100 pts, minor every 50 pts',
+        "X-axis (horizontal): Red numbers (0 = left, 612 = right)",
+        "Y-axis (vertical): Blue numbers (0 = bottom, 792 = top)",
+        "Grid spacing: Major lines every 100 pts, minor every 50 pts",
       ];
 
       instructions.forEach((instruction, i) => {
         page.drawText(instruction, {
           x: 10,
-          y: PAGE_HEIGHT - 60 - (i * 12),
+          y: PAGE_HEIGHT - 60 - i * 12,
           size: 8,
           font,
           color: rgb(0, 0, 0),
@@ -124,7 +128,12 @@ async function addGridToPDF() {
     }
 
     // Save the calibration PDF
-    const outputPath = path.join(process.cwd(), 'docs', 'test-output', 'calibration-grid.pdf');
+    const outputPath = path.join(
+      process.cwd(),
+      "docs",
+      "test-output",
+      "calibration-grid.pdf"
+    );
     const outputDir = path.dirname(outputPath);
 
     if (!fs.existsSync(outputDir)) {
@@ -134,22 +143,25 @@ async function addGridToPDF() {
     const modifiedPdfBytes = await pdfDoc.save();
     fs.writeFileSync(outputPath, modifiedPdfBytes);
 
-    console.log('✅ Calibration grid PDF created!');
-    console.log('📁 Saved to:', outputPath);
-    console.log('\n📋 How to use this calibration grid:');
-    console.log('  1. Open the calibration PDF');
-    console.log('  2. Find the field you want to fill');
-    console.log('  3. Read the X coordinate (red, horizontal)');
-    console.log('  4. Read the Y coordinate (blue, vertical)');
-    console.log('  5. Update FIELD_COORDINATES in pdf-form-filler.ts\n');
-    console.log('💡 Tips:');
-    console.log('  - Y-axis: 0 is at the BOTTOM (opposite of most graphics programs)');
-    console.log('  - Start X coordinate slightly to the left of the field');
-    console.log('  - Set Y coordinate at the baseline of where text should sit');
-    console.log('  - Use the filled test PDF to verify your coordinates\n');
-
+    console.log("✅ Calibration grid PDF created!");
+    console.log("📁 Saved to:", outputPath);
+    console.log("\n📋 How to use this calibration grid:");
+    console.log("  1. Open the calibration PDF");
+    console.log("  2. Find the field you want to fill");
+    console.log("  3. Read the X coordinate (red, horizontal)");
+    console.log("  4. Read the Y coordinate (blue, vertical)");
+    console.log("  5. Update FIELD_COORDINATES in pdf-form-filler.ts\n");
+    console.log("💡 Tips:");
+    console.log(
+      "  - Y-axis: 0 is at the BOTTOM (opposite of most graphics programs)"
+    );
+    console.log("  - Start X coordinate slightly to the left of the field");
+    console.log(
+      "  - Set Y coordinate at the baseline of where text should sit"
+    );
+    console.log("  - Use the filled test PDF to verify your coordinates\n");
   } catch (error) {
-    console.error('❌ Error creating calibration grid:', error);
+    console.error("❌ Error creating calibration grid:", error);
     process.exit(1);
   }
 }

@@ -27,98 +27,98 @@ interface FieldMeasurement {
 const MEASUREMENTS: FieldMeasurement[] = [
   // Measurements from calibration grid screenshot
   {
-    fieldName: 'firstName',
+    fieldName: "firstName",
     firstBoxX: 100,
-    firstBoxY: 443,  // Text baseline in box
+    firstBoxY: 443, // Text baseline in box
     secondBoxX: 114, // Second box position (14pt spacing)
-    maxChars: 18,    // Count of boxes in First Name field
+    maxChars: 18, // Count of boxes in First Name field
   },
   {
-    fieldName: 'middleName',
+    fieldName: "middleName",
     firstBoxX: 400,
     firstBoxY: 443,
     secondBoxX: 414,
-    maxChars: 14,    // Count of boxes in Middle Name field
+    maxChars: 14, // Count of boxes in Middle Name field
   },
   {
-    fieldName: 'lastName',
+    fieldName: "lastName",
     firstBoxX: 100,
     firstBoxY: 403,
     secondBoxX: 114,
-    maxChars: 34,    // Count of boxes in Last Name field
+    maxChars: 34, // Count of boxes in Last Name field
   },
   {
-    fieldName: 'formerName',
+    fieldName: "formerName",
     firstBoxX: 100,
     firstBoxY: 363,
     secondBoxX: 114,
-    maxChars: 34,    // Count of boxes in Former Names field
+    maxChars: 34, // Count of boxes in Former Names field
   },
   {
-    fieldName: 'ssn',
+    fieldName: "ssn",
     firstBoxX: 100,
     firstBoxY: 303,
     secondBoxX: 114,
-    maxChars: 11,    // XXX-XX-XXXX format (9 digits + 2 dashes)
+    maxChars: 11, // XXX-XX-XXXX format (9 digits + 2 dashes)
   },
   {
-    fieldName: 'dateOfBirth',
+    fieldName: "dateOfBirth",
     firstBoxX: 400,
     firstBoxY: 303,
     secondBoxX: 414,
-    maxChars: 10,    // mm/dd/yyyy format
+    maxChars: 10, // mm/dd/yyyy format
   },
   {
-    fieldName: 'mailingAddress1',
+    fieldName: "mailingAddress1",
     firstBoxX: 100,
     firstBoxY: 263,
     secondBoxX: 114,
-    maxChars: 35,    // First line of address
+    maxChars: 35, // First line of address
   },
   {
-    fieldName: 'mailingAddress2',
+    fieldName: "mailingAddress2",
     firstBoxX: 100,
     firstBoxY: 223,
     secondBoxX: 114,
-    maxChars: 35,    // Second line of address
+    maxChars: 35, // Second line of address
   },
   {
-    fieldName: 'city',
+    fieldName: "city",
     firstBoxX: 100,
     firstBoxY: 183,
     secondBoxX: 114,
     maxChars: 22,
   },
   {
-    fieldName: 'state',
+    fieldName: "state",
     firstBoxX: 470,
     firstBoxY: 183,
     secondBoxX: 484,
-    maxChars: 2,     // State abbreviation
+    maxChars: 2, // State abbreviation
   },
   {
-    fieldName: 'zipCode',
+    fieldName: "zipCode",
     firstBoxX: 540,
     firstBoxY: 183,
     secondBoxX: 554,
-    maxChars: 10,    // XXXXX-XXXX format
+    maxChars: 10, // XXXXX-XXXX format
   },
   {
-    fieldName: 'phoneDay',
+    fieldName: "phoneDay",
     firstBoxX: 100,
     firstBoxY: 143,
     secondBoxX: 114,
-    maxChars: 12,    // XXX-XXX-XXXX format
+    maxChars: 12, // XXX-XXX-XXXX format
   },
   {
-    fieldName: 'phoneEvening',
+    fieldName: "phoneEvening",
     firstBoxX: 400,
     firstBoxY: 143,
     secondBoxX: 414,
-    maxChars: 12,    // XXX-XXX-XXXX format
+    maxChars: 12, // XXX-XXX-XXXX format
   },
   {
-    fieldName: 'email',
+    fieldName: "email",
     firstBoxX: 100,
     firstBoxY: 103,
     secondBoxX: 114,
@@ -131,8 +131,8 @@ const MEASUREMENTS: FieldMeasurement[] = [
 // ============================================================================
 
 function analyzeCoordinates() {
-  console.log('📊 PDF Coordinate Analysis\n');
-  console.log('═'.repeat(80) + '\n');
+  console.log("📊 PDF Coordinate Analysis\n");
+  console.log("═".repeat(80) + "\n");
 
   const results: Array<{
     fieldName: string;
@@ -160,17 +160,21 @@ function analyzeCoordinates() {
     });
 
     console.log(`Field: ${measurement.fieldName}`);
-    console.log(`  Start position: (${measurement.firstBoxX}, ${measurement.firstBoxY})`);
+    console.log(
+      `  Start position: (${measurement.firstBoxX}, ${measurement.firstBoxY})`
+    );
     console.log(`  Character spacing: ${charSpacing.toFixed(1)} points`);
     console.log(`  Max characters: ${measurement.maxChars}`);
     console.log(`  Total field width: ${totalWidth.toFixed(1)} points`);
-    console.log(`  Ends at X: ${(measurement.firstBoxX + totalWidth).toFixed(1)}`);
-    console.log('');
+    console.log(
+      `  Ends at X: ${(measurement.firstBoxX + totalWidth).toFixed(1)}`
+    );
+    console.log("");
   }
 
-  console.log('═'.repeat(80) + '\n');
-  console.log('📝 Generated TypeScript Code for pdf-form-filler.ts:\n');
-  console.log('// Copy and paste this into your FIELD_COORDINATES object:\n');
+  console.log("═".repeat(80) + "\n");
+  console.log("📝 Generated TypeScript Code for pdf-form-filler.ts:\n");
+  console.log("// Copy and paste this into your FIELD_COORDINATES object:\n");
 
   for (const result of results) {
     console.log(`  ${result.fieldName}: {`);
@@ -181,30 +185,47 @@ function analyzeCoordinates() {
     console.log(`  },`);
   }
 
-  console.log('\n' + '═'.repeat(80));
-  console.log('\n💡 Tips for refining coordinates:');
-  console.log('  1. Test with the test-pdf-form-filling.ts script');
-  console.log('  2. If characters are too far left, increase startX by 1-2 points');
-  console.log('  3. If characters are too far right, decrease startX by 1-2 points');
-  console.log('  4. If characters are too high, decrease startY by 1-2 points');
-  console.log('  5. If characters are too low, increase startY by 1-2 points');
-  console.log('  6. Adjust charSpacing if characters are too cramped or spread out');
-  console.log('\n📌 Remember: PDF Y-axis is inverted (0 = bottom, 792 = top)\n');
+  console.log("\n" + "═".repeat(80));
+  console.log("\n💡 Tips for refining coordinates:");
+  console.log("  1. Test with the test-pdf-form-filling.ts script");
+  console.log(
+    "  2. If characters are too far left, increase startX by 1-2 points"
+  );
+  console.log(
+    "  3. If characters are too far right, decrease startX by 1-2 points"
+  );
+  console.log("  4. If characters are too high, decrease startY by 1-2 points");
+  console.log("  5. If characters are too low, increase startY by 1-2 points");
+  console.log(
+    "  6. Adjust charSpacing if characters are too cramped or spread out"
+  );
+  console.log(
+    "\n📌 Remember: PDF Y-axis is inverted (0 = bottom, 792 = top)\n"
+  );
 
   // Generate a quick reference table
-  console.log('\n📋 Quick Reference Table:\n');
-  console.log('Field Name'.padEnd(20) + ' | X'.padEnd(8) + ' | Y'.padEnd(8) + ' | Spacing | Max Chars');
-  console.log('-'.repeat(70));
+  console.log("\n📋 Quick Reference Table:\n");
+  console.log(
+    "Field Name".padEnd(20) +
+      " | X".padEnd(8) +
+      " | Y".padEnd(8) +
+      " | Spacing | Max Chars"
+  );
+  console.log("-".repeat(70));
   for (const result of results) {
     console.log(
       result.fieldName.padEnd(20) +
-      ' | ' + result.startX.toString().padEnd(6) +
-      ' | ' + result.startY.toString().padEnd(6) +
-      ' | ' + result.charSpacing.toFixed(1).padEnd(7) +
-      ' | ' + result.maxChars
+        " | " +
+        result.startX.toString().padEnd(6) +
+        " | " +
+        result.startY.toString().padEnd(6) +
+        " | " +
+        result.charSpacing.toFixed(1).padEnd(7) +
+        " | " +
+        result.maxChars
     );
   }
-  console.log('');
+  console.log("");
 }
 
 // Run the analysis

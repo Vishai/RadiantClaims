@@ -112,9 +112,7 @@ export const WelcomeEmail = ({
               If you have any questions or need assistance, please don't
               hesitate to reach out to our support team.
             </Text>
-            <Text style={signature}>
-              - The RadiantClaims Team
-            </Text>
+            <Text style={signature}>- The RadiantClaims Team</Text>
           </Section>
 
           {/* Footer */}

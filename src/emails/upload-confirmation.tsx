@@ -33,9 +33,7 @@ export const UploadConfirmationEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>
-        Document Received - {documentType} - RadiantClaims
-      </Preview>
+      <Preview>Document Received - {documentType} - RadiantClaims</Preview>
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
@@ -73,10 +71,10 @@ export const UploadConfirmationEmail = ({
             <Section style={successBox}>
               <Text style={successTitle}>🎉 You're Making Progress!</Text>
               <Text style={successText}>
-                Your digital copies have been received and are being validated by our
-                team. Once validated and approved by our lawyer, we'll send you clear
-                instructions on which documents need certified copies/originals for
-                final mailing to the DOJ.
+                Your digital copies have been received and are being validated
+                by our team. Once validated and approved by our lawyer, we'll
+                send you clear instructions on which documents need certified
+                copies/originals for final mailing to the DOJ.
               </Text>
             </Section>
 
@@ -84,16 +82,18 @@ export const UploadConfirmationEmail = ({
             <Section style={processBox}>
               <Text style={processTitle}>📬 How This Works</Text>
               <Text style={processText}>
-                <strong>1. Upload digital copies</strong> (You're doing this now!)
+                <strong>1. Upload digital copies</strong> (You're doing this
+                now!)
                 <br />
-                <strong>2. We validate & review</strong> to ensure everything is correct
+                <strong>2. We validate & review</strong> to ensure everything is
+                correct
                 <br />
-                <strong>3. You mail originals</strong> using our prepaid envelope with
-                instructions
+                <strong>3. You mail originals</strong> using our prepaid
+                envelope with instructions
                 <br />
                 <br />
-                This process ensures your documents are complete before you obtain
-                certified copies. It's more convenient for you!
+                This process ensures your documents are complete before you
+                obtain certified copies. It's more convenient for you!
               </Text>
             </Section>
 
@@ -103,8 +103,8 @@ export const UploadConfirmationEmail = ({
                 What's Next?
               </Heading>
               <Text style={text}>
-                Continue uploading any remaining documents to complete your claim
-                packet. Here's what we typically need:
+                Continue uploading any remaining documents to complete your
+                claim packet. Here's what we typically need:
               </Text>
               <Text style={checklistText}>
                 ✓ Government-issued ID
@@ -133,12 +133,10 @@ export const UploadConfirmationEmail = ({
             </Section>
 
             <Text style={text}>
-              If you have questions about which documents to upload, please don't
-              hesitate to reach out.
+              If you have questions about which documents to upload, please
+              don't hesitate to reach out.
             </Text>
-            <Text style={signature}>
-              - The RadiantClaims Team
-            </Text>
+            <Text style={signature}>- The RadiantClaims Team</Text>
           </Section>
 
           {/* Footer */}

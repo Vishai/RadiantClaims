@@ -97,7 +97,8 @@ export default function MedicalInformationReleaseForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sage-900">
             <FileText className="h-5 w-5 text-terracotta-500" />
-            Authorization to Release Medical Information from State Cancer Registry
+            Authorization to Release Medical Information from State Cancer
+            Registry
           </CardTitle>
           <CardDescription>
             Required when requesting cancer registry authorization in Part 11
@@ -105,18 +106,19 @@ export default function MedicalInformationReleaseForm({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Form Purpose */}
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex gap-3">
-              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
               <div>
-                <p className="font-semibold text-blue-900 mb-2">
+                <p className="mb-2 font-semibold text-blue-900">
                   Purpose of This Form
                 </p>
                 <p className="text-sm text-blue-800">
-                  This form authorizes the Department of Justice to obtain medical information
-                  from your state cancer registry to support your RECA claim. This helps verify
-                  your compensable disease diagnosis without requiring you to obtain medical
-                  records directly.
+                  This form authorizes the Department of Justice to obtain
+                  medical information from your state cancer registry to support
+                  your RECA claim. This helps verify your compensable disease
+                  diagnosis without requiring you to obtain medical records
+                  directly.
                 </p>
               </div>
             </div>
@@ -124,14 +126,15 @@ export default function MedicalInformationReleaseForm({
 
           {/* Patient Information Section */}
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-sage-900 border-b pb-2">
+            <h3 className="border-b pb-2 text-base font-semibold text-sage-900">
               Patient Information
             </h3>
 
             {/* State of Residence */}
             <div className="space-y-2">
               <Label htmlFor="stateOfResidence">
-                State of Residence at Time of Diagnosis <span className="text-red-600">*</span>
+                State of Residence at Time of Diagnosis{" "}
+                <span className="text-red-600">*</span>
               </Label>
               <Input
                 id="stateOfResidence"
@@ -140,10 +143,13 @@ export default function MedicalInformationReleaseForm({
                 className={formErrors.stateOfResidence ? "border-red-300" : ""}
               />
               {formErrors.stateOfResidence && (
-                <p className="text-sm text-red-600">{formErrors.stateOfResidence.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.stateOfResidence.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
-                The state where you resided when the compensable disease was diagnosed
+                The state where you resided when the compensable disease was
+                diagnosed
               </p>
             </div>
 
@@ -160,7 +166,9 @@ export default function MedicalInformationReleaseForm({
                 className={formErrors.patientName ? "border-red-300" : ""}
               />
               {formErrors.patientName && (
-                <p className="text-sm text-red-600">{formErrors.patientName.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.patientName.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
                 This should match the claimant name from Part 2
@@ -180,7 +188,9 @@ export default function MedicalInformationReleaseForm({
                 className={formErrors.patientSsn ? "border-red-300" : ""}
               />
               {formErrors.patientSsn && (
-                <p className="text-sm text-red-600">{formErrors.patientSsn.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.patientSsn.message}
+                </p>
               )}
             </div>
 
@@ -196,14 +206,20 @@ export default function MedicalInformationReleaseForm({
                 className={formErrors.patientDob ? "border-red-300" : ""}
               />
               {formErrors.patientDob && (
-                <p className="text-sm text-red-600">{formErrors.patientDob.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.patientDob.message}
+                </p>
               )}
             </div>
 
             {/* Patient DOD (Optional) */}
             <div className="space-y-2">
               <Label htmlFor="patientDod">Date of Death (if applicable)</Label>
-              <Input id="patientDod" {...form.register("patientDod")} type="date" />
+              <Input
+                id="patientDod"
+                {...form.register("patientDod")}
+                type="date"
+              />
               <p className="text-xs text-sage-600">
                 Leave blank if the patient is living
               </p>
@@ -212,17 +228,20 @@ export default function MedicalInformationReleaseForm({
 
           {/* Requestor Information (Optional - for survivors) */}
           {patientDod && (
-            <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-4 border-t pt-4">
               <h3 className="text-base font-semibold text-sage-900">
                 Requestor Information (If Different from Patient)
               </h3>
               <p className="text-sm text-sage-600">
-                If you are filing on behalf of a deceased claimant, provide your information below
+                If you are filing on behalf of a deceased claimant, provide your
+                information below
               </p>
 
               {/* Requestor Name */}
               <div className="space-y-2">
-                <Label htmlFor="requestorName">Name of Individual Requesting Release</Label>
+                <Label htmlFor="requestorName">
+                  Name of Individual Requesting Release
+                </Label>
                 <Input
                   id="requestorName"
                   {...form.register("requestorName")}
@@ -232,7 +251,9 @@ export default function MedicalInformationReleaseForm({
 
               {/* Requestor Relationship */}
               <div className="space-y-2">
-                <Label htmlFor="requestorRelationship">Relationship to Patient</Label>
+                <Label htmlFor="requestorRelationship">
+                  Relationship to Patient
+                </Label>
                 <Input
                   id="requestorRelationship"
                   {...form.register("requestorRelationship")}
@@ -243,19 +264,19 @@ export default function MedicalInformationReleaseForm({
           )}
 
           {/* Signature Section */}
-          <div className="space-y-4 pt-4 border-t">
+          <div className="space-y-4 border-t pt-4">
             <h3 className="text-base font-semibold text-sage-900">
               Authorization Signature
             </h3>
 
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
               <div className="flex gap-3">
-                <Shield className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <Shield className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" />
                 <div>
                   <p className="text-sm text-amber-900">
-                    By signing below, you authorize the state cancer registry to release medical
-                    information to the Department of Justice for the purpose of processing this
-                    RECA claim.
+                    By signing below, you authorize the state cancer registry to
+                    release medical information to the Department of Justice for
+                    the purpose of processing this RECA claim.
                   </p>
                 </div>
               </div>
@@ -273,11 +294,13 @@ export default function MedicalInformationReleaseForm({
                 className={`text-lg ${formErrors.signature ? "border-red-300" : ""}`}
               />
               {formErrors.signature && (
-                <p className="text-sm text-red-600">{formErrors.signature.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signature.message}
+                </p>
               )}
               <p className="text-xs text-sage-600">
-                For the PDF submission, you will provide a handwritten signature on the printed
-                form
+                For the PDF submission, you will provide a handwritten signature
+                on the printed form
               </p>
             </div>
 
@@ -293,21 +316,26 @@ export default function MedicalInformationReleaseForm({
                 className={formErrors.signatureDate ? "border-red-300" : ""}
               />
               {formErrors.signatureDate && (
-                <p className="text-sm text-red-600">{formErrors.signatureDate.message}</p>
+                <p className="text-sm text-red-600">
+                  {formErrors.signatureDate.message}
+                </p>
               )}
             </div>
           </div>
 
           {/* Privacy Notice */}
-          <div className="rounded-lg bg-sage-50 border border-sage-200 p-4">
+          <div className="rounded-lg border border-sage-200 bg-sage-50 p-4">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-sage-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sage-600" />
               <div>
-                <p className="font-semibold text-sage-900 mb-2">Privacy Act Notice</p>
+                <p className="mb-2 font-semibold text-sage-900">
+                  Privacy Act Notice
+                </p>
                 <p className="text-sm text-sage-800">
-                  Information requested on this form is used solely for the purpose of processing
-                  your RECA claim. This authorization is limited to the release of information from
-                  state cancer registries to verify compensable disease diagnoses.
+                  Information requested on this form is used solely for the
+                  purpose of processing your RECA claim. This authorization is
+                  limited to the release of information from state cancer
+                  registries to verify compensable disease diagnoses.
                 </p>
               </div>
             </div>

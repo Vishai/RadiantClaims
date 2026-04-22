@@ -5,14 +5,14 @@
  * Runs the classifier agent and appropriate validation agent based on document category.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { validateDocument } from '@/lib/ai-agents/orchestration-service';
-import { getServerAuthSession } from '@/lib/auth';
-import { canAccessDocument } from '@/lib/auth/permissions';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { validateDocument } from "@/lib/ai-agents/orchestration-service";
+import { getServerAuthSession } from "@/lib/auth";
+import { canAccessDocument } from "@/lib/auth/permissions";
 
 const validateDocumentSchema = z.object({
-  uploadedFileId: z.string().min(1, 'uploadedFileId is required'),
+  uploadedFileId: z.string().min(1, "uploadedFileId is required"),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized',
+          error: "Unauthorized",
         },
         { status: 401 }
       );
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - You do not have access to this document',
+          error: "Forbidden - You do not have access to this document",
         },
         { status: 403 }
       );
@@ -47,11 +47,11 @@ export async function POST(req: NextRequest) {
     // Run validation
     const result = await validateDocument(uploadedFileId);
 
-    if (result.status === 'FAILED') {
+    if (result.status === "FAILED") {
       return NextResponse.json(
         {
           success: false,
-          error: result.error || 'Validation failed',
+          error: result.error || "Validation failed",
           uploadedFileId,
         },
         { status: 400 }
@@ -62,16 +62,16 @@ export async function POST(req: NextRequest) {
       success: true,
       uploadedFileId: result.uploadedFileId,
       category: result.category,
-      message: 'Document validation completed successfully',
+      message: "Document validation completed successfully",
     });
   } catch (error) {
-    console.error('Document validation API error:', error);
+    console.error("Document validation API error:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid request',
+          error: "Invalid request",
           details: error.errors,
         },
         { status: 400 }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
       { status: 500 }
     );

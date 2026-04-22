@@ -33,7 +33,13 @@ export interface MilestoneConfig {
   description: string;
   estimatedDays: number; // Typical days to complete this milestone
   icon: string; // Icon identifier
-  category: "pre-submission" | "initial" | "verification" | "assessment" | "decision" | "terminal";
+  category:
+    | "pre-submission"
+    | "initial"
+    | "verification"
+    | "assessment"
+    | "decision"
+    | "terminal";
   isTerminal: boolean;
 }
 
@@ -104,7 +110,8 @@ export const MILESTONE_CONFIGS: Record<DOJMilestone, MilestoneConfig> = {
   RECEIVED_BY_DOJ: {
     milestone: "RECEIVED_BY_DOJ",
     label: "Received by DOJ",
-    description: "Your claim has been received and logged by the Department of Justice",
+    description:
+      "Your claim has been received and logged by the Department of Justice",
     estimatedDays: 7,
     icon: "Inbox",
     category: "initial",
@@ -194,7 +201,8 @@ export const MILESTONE_CONFIGS: Record<DOJMilestone, MilestoneConfig> = {
   RELATIONSHIP_VERIFICATION: {
     milestone: "RELATIONSHIP_VERIFICATION",
     label: "Verifying Relationship",
-    description: "DOJ is confirming your relationship to the affected individual",
+    description:
+      "DOJ is confirming your relationship to the affected individual",
     estimatedDays: 7,
     icon: "Users",
     category: "assessment",
@@ -212,7 +220,8 @@ export const MILESTONE_CONFIGS: Record<DOJMilestone, MilestoneConfig> = {
   APPROVED_PENDING_PAYMENT: {
     milestone: "APPROVED_PENDING_PAYMENT",
     label: "Approved!",
-    description: "Congratulations! Your claim has been approved and is awaiting payment processing",
+    description:
+      "Congratulations! Your claim has been approved and is awaiting payment processing",
     estimatedDays: 7,
     icon: "CheckCircle2",
     category: "decision",
@@ -248,7 +257,8 @@ export const MILESTONE_CONFIGS: Record<DOJMilestone, MilestoneConfig> = {
   CLAIM_DENIED: {
     milestone: "CLAIM_DENIED",
     label: "Claim Denied",
-    description: "Your claim was denied. You have the right to appeal this decision.",
+    description:
+      "Your claim was denied. You have the right to appeal this decision.",
     estimatedDays: 0,
     icon: "XCircle",
     category: "terminal",

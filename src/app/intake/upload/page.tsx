@@ -194,16 +194,11 @@ function UploadContent() {
             )}
 
             <div className="flex justify-between border-t pt-6">
-              <Button
-                variant="outline"
-                onClick={() => router.push("/intake")}
-              >
+              <Button variant="outline" onClick={() => router.push("/intake")}>
                 Back
               </Button>
               <Button onClick={handleFinish}>
-                {documents.length > 0
-                  ? "Finish Submission"
-                  : "Skip for Now"}
+                {documents.length > 0 ? "Finish Submission" : "Skip for Now"}
               </Button>
             </div>
           </CardContent>

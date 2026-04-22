@@ -1,7 +1,13 @@
 "use client";
 
 import { PayoutPulseData } from "@/lib/claim-timeline/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   TrendingUp,
   Clock,
@@ -31,9 +37,10 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-sage-900 mb-2">Payout Pulse</h2>
+        <h2 className="mb-2 text-3xl font-bold text-sage-900">Payout Pulse</h2>
         <p className="text-sage-600">
-          Real-time insights based on {data.cohortSubmitted.toLocaleString()} similar claims
+          Real-time insights based on {data.cohortSubmitted.toLocaleString()}{" "}
+          similar claims
         </p>
       </div>
 
@@ -47,7 +54,9 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <CardTitle className="text-sage-900">Estimated Approval</CardTitle>
+                <CardTitle className="text-sage-900">
+                  Estimated Approval
+                </CardTitle>
                 <CardDescription className="text-sage-600">
                   Based on {data.approvalRate}% approval rate
                 </CardDescription>
@@ -55,10 +64,10 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-terracotta-900 mb-2">
+            <div className="mb-2 text-4xl font-bold text-terracotta-900">
               {format(new Date(data.estimatedApprovalDate), "MMM d, yyyy")}
             </div>
-            <div className="text-lg text-sage-700 mb-4">
+            <div className="mb-4 text-lg text-sage-700">
               In approximately {daysUntilApproval} days
             </div>
             <div
@@ -66,8 +75,8 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
                 data.confidenceLevel === "high"
                   ? "bg-emerald-100 text-emerald-800"
                   : data.confidenceLevel === "medium"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-slate-100 text-slate-800"
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-slate-100 text-slate-800"
               }`}
             >
               <Zap className="h-4 w-4" />
@@ -84,7 +93,9 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
                 <DollarSign className="h-6 w-6 text-white" />
               </div>
               <div>
-                <CardTitle className="text-sage-900">Estimated Payout</CardTitle>
+                <CardTitle className="text-sage-900">
+                  Estimated Payout
+                </CardTitle>
                 <CardDescription className="text-sage-600">
                   $100,000 compensation
                 </CardDescription>
@@ -92,14 +103,15 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-emerald-900 mb-2">
+            <div className="mb-2 text-4xl font-bold text-emerald-900">
               {format(new Date(data.estimatedPaymentDate), "MMM d, yyyy")}
             </div>
-            <div className="text-lg text-sage-700 mb-4">
+            <div className="mb-4 text-lg text-sage-700">
               In approximately {daysUntilPayment} days
             </div>
             <div className="text-sm text-sage-600">
-              Average processing time: {data.avgTimeToPayment} days after approval
+              Average processing time: {data.avgTimeToPayment} days after
+              approval
             </div>
           </CardContent>
         </Card>
@@ -133,7 +145,9 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
           {/* Typical Progress */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-semibold text-sage-700">Typical at This Stage</span>
+              <span className="font-semibold text-sage-700">
+                Typical at This Stage
+              </span>
               <span className="text-2xl font-bold text-sage-600">
                 {data.typicalProgress}%
               </span>
@@ -148,17 +162,18 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
 
           {/* Performance Indicator */}
           {data.fasterThanPercent !== undefined && (
-            <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 p-6 border-2 border-emerald-200">
+            <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500">
                   <TrendingUp className="h-8 w-8 text-white" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-3xl font-bold text-emerald-900 mb-1">
+                  <div className="mb-1 text-3xl font-bold text-emerald-900">
                     {data.fasterThanPercent}%
                   </div>
                   <div className="text-sm text-emerald-700">
-                    Your claim is progressing faster than {data.fasterThanPercent}% of similar claims
+                    Your claim is progressing faster than{" "}
+                    {data.fasterThanPercent}% of similar claims
                   </div>
                 </div>
               </div>
@@ -190,7 +205,7 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
               <div className="text-3xl font-bold text-sage-900">
                 {data.cohortSubmitted.toLocaleString()}
               </div>
-              <div className="text-xs text-sage-600 mt-1">claims in cohort</div>
+              <div className="mt-1 text-xs text-sage-600">claims in cohort</div>
             </div>
 
             <div className="rounded-2xl bg-emerald-50 p-4">
@@ -201,8 +216,11 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
               <div className="text-3xl font-bold text-emerald-900">
                 {data.cohortCompleted.toLocaleString()}
               </div>
-              <div className="text-xs text-emerald-700 mt-1">
-                {((data.cohortCompleted / data.cohortSubmitted) * 100).toFixed(1)}% complete
+              <div className="mt-1 text-xs text-emerald-700">
+                {((data.cohortCompleted / data.cohortSubmitted) * 100).toFixed(
+                  1
+                )}
+                % complete
               </div>
             </div>
 
@@ -214,8 +232,11 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
               <div className="text-3xl font-bold text-amber-900">
                 {data.cohortInProgress.toLocaleString()}
               </div>
-              <div className="text-xs text-amber-700 mt-1">
-                {((data.cohortInProgress / data.cohortSubmitted) * 100).toFixed(1)}% pending
+              <div className="mt-1 text-xs text-amber-700">
+                {((data.cohortInProgress / data.cohortSubmitted) * 100).toFixed(
+                  1
+                )}
+                % pending
               </div>
             </div>
           </div>
@@ -240,7 +261,9 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
                 <div className="text-2xl font-bold text-sage-900">
                   {data.avgTimeToApproval} days
                 </div>
-                <div className="text-sm text-sage-600">Avg. time to approval</div>
+                <div className="text-sm text-sage-600">
+                  Avg. time to approval
+                </div>
               </div>
             </div>
 
@@ -260,12 +283,13 @@ export function PayoutPulse({ data }: PayoutPulseProps) {
       </Card>
 
       {/* Disclaimer */}
-      <div className="rounded-2xl bg-blue-50 p-4 border border-blue-200">
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
         <p className="text-xs text-sage-700">
-          <strong className="text-sage-900">Note:</strong> These estimates are based on
-          historical data and current processing trends. Actual timelines may vary based on
-          individual case factors, DOJ workload, and document completeness. We'll keep you
-          updated as your claim progresses.
+          <strong className="text-sage-900">Note:</strong> These estimates are
+          based on historical data and current processing trends. Actual
+          timelines may vary based on individual case factors, DOJ workload, and
+          document completeness. We'll keep you updated as your claim
+          progresses.
         </p>
       </div>
     </div>

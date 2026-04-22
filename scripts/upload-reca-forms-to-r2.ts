@@ -105,9 +105,7 @@ async function main() {
   }
 
   console.log("\n🎉 All RECA forms uploaded successfully to R2!");
-  console.log(
-    "\n💡 Next steps:"
-  );
+  console.log("\n💡 Next steps:");
   console.log("   1. Update the seed script to use R2 keys");
   console.log("   2. Update the download API to fetch from R2");
   console.log("   3. Re-run the seed script to update database records");

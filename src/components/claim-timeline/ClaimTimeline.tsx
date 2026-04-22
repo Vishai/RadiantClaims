@@ -1,7 +1,17 @@
 "use client";
 
-import { ClaimTimelineData, MILESTONE_CONFIGS, DOJMilestone } from "@/lib/claim-timeline/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ClaimTimelineData,
+  MILESTONE_CONFIGS,
+  DOJMilestone,
+} from "@/lib/claim-timeline/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   CheckCircle2,
   Circle,
@@ -54,7 +64,9 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
           <div>
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-sage-700">Overall Progress</span>
-              <span className="font-semibold text-sage-900">{progressPercentage}%</span>
+              <span className="font-semibold text-sage-900">
+                {progressPercentage}%
+              </span>
             </div>
             <div className="h-3 w-full overflow-hidden rounded-full bg-cream-200">
               <div
@@ -67,9 +79,11 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
           {/* Key Metrics */}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl bg-cream-50 p-4">
-              <div className="flex items-center gap-2 text-sage-600 mb-1">
+              <div className="mb-1 flex items-center gap-2 text-sage-600">
                 <Clock className="h-4 w-4" />
-                <span className="text-xs font-medium">Time in Current Stage</span>
+                <span className="text-xs font-medium">
+                  Time in Current Stage
+                </span>
               </div>
               <div className="text-2xl font-bold text-sage-900">
                 {timeline.daysInCurrentMilestone} days
@@ -77,9 +91,11 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
             </div>
 
             <div className="rounded-2xl bg-cream-50 p-4">
-              <div className="flex items-center gap-2 text-sage-600 mb-1">
+              <div className="mb-1 flex items-center gap-2 text-sage-600">
                 <Calendar className="h-4 w-4" />
-                <span className="text-xs font-medium">Total Processing Time</span>
+                <span className="text-xs font-medium">
+                  Total Processing Time
+                </span>
               </div>
               <div className="text-2xl font-bold text-sage-900">
                 {timeline.totalProcessingDays} days
@@ -88,15 +104,22 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
 
             {timeline.estimatedCompletionDate && (
               <div className="rounded-2xl bg-gradient-to-br from-terracotta-50 to-peach-50 p-4">
-                <div className="flex items-center gap-2 text-terracotta-600 mb-1">
+                <div className="mb-1 flex items-center gap-2 text-terracotta-600">
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-xs font-medium">Est. Completion</span>
                 </div>
                 <div className="text-lg font-bold text-terracotta-900">
-                  {format(new Date(timeline.estimatedCompletionDate), "MMM d, yyyy")}
+                  {format(
+                    new Date(timeline.estimatedCompletionDate),
+                    "MMM d, yyyy"
+                  )}
                 </div>
                 <div className="text-xs text-terracotta-700">
-                  ({formatDistanceToNow(new Date(timeline.estimatedCompletionDate))})
+                  (
+                  {formatDistanceToNow(
+                    new Date(timeline.estimatedCompletionDate)
+                  )}
+                  )
                 </div>
               </div>
             )}
@@ -115,31 +138,39 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
-              {timeline.queuePosition.estimatedPosition && timeline.queuePosition.totalInQueue && (
-                <div className="rounded-2xl bg-sage-50 p-4">
-                  <div className="text-sm text-sage-600 mb-2">Estimated Queue Position</div>
-                  <div className="text-3xl font-bold text-sage-900">
-                    #{timeline.queuePosition.estimatedPosition}
-                    <span className="text-lg font-normal text-sage-600">
-                      {" "}of {timeline.queuePosition.totalInQueue}
-                    </span>
+              {timeline.queuePosition.estimatedPosition &&
+                timeline.queuePosition.totalInQueue && (
+                  <div className="rounded-2xl bg-sage-50 p-4">
+                    <div className="mb-2 text-sm text-sage-600">
+                      Estimated Queue Position
+                    </div>
+                    <div className="text-3xl font-bold text-sage-900">
+                      #{timeline.queuePosition.estimatedPosition}
+                      <span className="text-lg font-normal text-sage-600">
+                        {" "}
+                        of {timeline.queuePosition.totalInQueue}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {timeline.queuePosition.percentFasterThan && (
-                <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4 border-2 border-emerald-200">
-                  <div className="text-sm text-emerald-700 mb-2 font-medium">Progress Speed</div>
+                <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+                  <div className="mb-2 text-sm font-medium text-emerald-700">
+                    Progress Speed
+                  </div>
                   <div className="text-3xl font-bold text-emerald-900">
                     Faster than {timeline.queuePosition.percentFasterThan}%
                   </div>
-                  <div className="text-xs text-emerald-700 mt-1">of similar claims</div>
+                  <div className="mt-1 text-xs text-emerald-700">
+                    of similar claims
+                  </div>
                 </div>
               )}
 
               {timeline.queuePosition.cohortId && (
-                <div className="md:col-span-2 rounded-2xl bg-cream-50 p-4">
-                  <div className="text-sm text-sage-600 mb-3">
+                <div className="rounded-2xl bg-cream-50 p-4 md:col-span-2">
+                  <div className="mb-3 text-sm text-sage-600">
                     Your Cohort: {timeline.queuePosition.cohortId}
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -174,7 +205,9 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
       {/* Timeline Events */}
       <Card className="rounded-3xl border-2 border-cream-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sage-900">Claim Journey Timeline</CardTitle>
+          <CardTitle className="text-sage-900">
+            Claim Journey Timeline
+          </CardTitle>
           <CardDescription className="text-sage-600">
             Track every milestone from submission to payout
           </CardDescription>
@@ -182,7 +215,7 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
         <CardContent>
           <div className="relative space-y-8 pl-8">
             {/* Vertical timeline line */}
-            <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-cream-300" />
+            <div className="absolute bottom-0 left-[15px] top-0 w-0.5 bg-cream-300" />
 
             {/* Completed Milestones */}
             {completedMilestones.map((event, index) => {
@@ -223,14 +256,16 @@ export function ClaimTimeline({ timeline }: ClaimTimelineProps) {
       <Card className="rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white shadow-sm">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
             <div className="text-sm text-sage-700">
-              <p className="font-semibold mb-2 text-sage-900">About These Timelines</p>
+              <p className="mb-2 font-semibold text-sage-900">
+                About These Timelines
+              </p>
               <p>
-                Timeline estimates are based on historical data from similar claims. Actual
-                processing times may vary based on DOJ workload, document completeness, and
-                individual case complexity. We'll notify you immediately when your claim reaches
-                a new milestone.
+                Timeline estimates are based on historical data from similar
+                claims. Actual processing times may vary based on DOJ workload,
+                document completeness, and individual case complexity. We'll
+                notify you immediately when your claim reaches a new milestone.
               </p>
             </div>
           </div>
@@ -267,14 +302,16 @@ function TimelineEvent({
           isCompleted
             ? "border-emerald-500 bg-emerald-500"
             : isCurrent
-            ? "border-terracotta-500 bg-white animate-pulse"
-            : "border-cream-300 bg-white"
+              ? "animate-pulse border-terracotta-500 bg-white"
+              : "border-cream-300 bg-white"
         }`}
       >
         {isCompleted ? (
           <CheckCircle2 className="h-5 w-5 text-white" />
         ) : (
-          <Circle className={`h-3 w-3 ${isCurrent ? "text-terracotta-500" : "text-cream-400"}`} />
+          <Circle
+            className={`h-3 w-3 ${isCurrent ? "text-terracotta-500" : "text-cream-400"}`}
+          />
         )}
       </div>
 
@@ -282,10 +319,10 @@ function TimelineEvent({
       <div
         className={`rounded-2xl p-4 ${
           isCurrent
-            ? "bg-gradient-to-br from-terracotta-50 to-peach-50 border-2 border-terracotta-200"
+            ? "border-2 border-terracotta-200 bg-gradient-to-br from-terracotta-50 to-peach-50"
             : isCompleted
-            ? "bg-cream-50"
-            : "bg-white border border-cream-200"
+              ? "bg-cream-50"
+              : "border border-cream-200 bg-white"
         }`}
       >
         <div className="flex items-start justify-between">
@@ -306,7 +343,7 @@ function TimelineEvent({
             </div>
             <p className="mt-1 text-sm text-sage-700">{config.description}</p>
             {notes && (
-              <p className="mt-2 text-sm text-sage-600 italic">Note: {notes}</p>
+              <p className="mt-2 text-sm italic text-sage-600">Note: {notes}</p>
             )}
           </div>
           <div className="text-right">
@@ -317,7 +354,9 @@ function TimelineEvent({
               {format(new Date(achievedAt), "MMM d, yyyy")}
             </div>
             {daysToAchieve !== undefined && (
-              <div className="text-xs text-sage-600 mt-1">{daysToAchieve} days</div>
+              <div className="mt-1 text-xs text-sage-600">
+                {daysToAchieve} days
+              </div>
             )}
           </div>
         </div>

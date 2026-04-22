@@ -31,7 +31,9 @@ export const PacketReadyEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>Your RECA Claim Packet is Ready for Review - RadiantClaims</Preview>
+      <Preview>
+        Your RECA Claim Packet is Ready for Review - RadiantClaims
+      </Preview>
       <Body style={main}>
         <Container style={container}>
           {/* Header */}
@@ -93,8 +95,8 @@ export const PacketReadyEmail = ({
               <Text style={importantText}>
                 <strong>3. Track Your Progress</strong>
                 <br />
-                You'll receive updates as your claim moves through the submission
-                process.
+                You'll receive updates as your claim moves through the
+                submission process.
               </Text>
             </Section>
 
@@ -140,7 +142,8 @@ export const PacketReadyEmail = ({
                 ⏱️ What Happens Next
               </Heading>
               <Text style={timelineText}>
-                <strong>Within 2-3 business days:</strong> Attorney review begins
+                <strong>Within 2-3 business days:</strong> Attorney review
+                begins
               </Text>
               <Text style={timelineText}>
                 <strong>Within 1-2 weeks:</strong> Submission to DOJ (if

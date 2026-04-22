@@ -25,8 +25,12 @@ export function ComplianceTab({ data }: ComplianceTabProps) {
     );
   }
 
-  const completenessPercent = Math.round((compliance.checklistCoverage ?? 0) * 100);
-  const confidencePercent = Math.round((compliance.claimTypeConfidence ?? 0) * 100);
+  const completenessPercent = Math.round(
+    (compliance.checklistCoverage ?? 0) * 100
+  );
+  const confidencePercent = Math.round(
+    (compliance.claimTypeConfidence ?? 0) * 100
+  );
 
   return (
     <div className="space-y-6 py-4">

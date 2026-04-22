@@ -22,10 +22,7 @@ const s3Client = new S3Client({
   },
 });
 
-export async function GET(
-  req: NextRequest,
-  { params }: RouteContext
-) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     // Require permission
     const { user } = await requirePermission("document:download");
@@ -74,9 +71,10 @@ export async function GET(
     });
 
     // Get IP and user agent for audit log
-    const ipAddress = req.headers.get("x-forwarded-for") ||
-                      req.headers.get("x-real-ip") ||
-                      "unknown";
+    const ipAddress =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
     const userAgent = req.headers.get("user-agent") || undefined;
 
     // Log document download

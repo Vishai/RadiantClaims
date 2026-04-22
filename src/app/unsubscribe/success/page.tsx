@@ -92,11 +92,13 @@ function UnsubscribeContent() {
 
 export default function UnsubscribeSuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-cream-50">
-        <div className="text-sage-600">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-cream-50">
+          <div className="text-sage-600">Loading...</div>
+        </div>
+      }
+    >
       <UnsubscribeContent />
     </Suspense>
   );

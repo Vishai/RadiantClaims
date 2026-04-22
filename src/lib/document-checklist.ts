@@ -100,7 +100,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original bills may be requested by DOJ after electronic filing to validate authenticity.",
+        originalNote:
+          "Original bills may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "These are particularly strong evidence",
           "Even partial bills or statements are helpful",
@@ -144,7 +145,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
+        originalNote:
+          "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "These are strong evidence of residence",
           "Property deeds with your name are particularly valuable",
@@ -190,7 +192,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
+        originalNote:
+          "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Upload at least 2 different types of documents for stronger verification",
           "Documents should clearly show your full name and complete address",
@@ -246,7 +249,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 10,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Certified copies may be requested by DOJ after electronic filing to validate authenticity.",
+        originalNote:
+          "Certified copies may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Treatment summaries and progress notes are helpful",
           "Imaging reports (CT, PET, MRI) showing cancer",
@@ -358,7 +362,8 @@ export const DOCUMENT_CHECKLIST: ChecklistSection[] = [
         maxAllowed: 5,
         isRequired: false,
         requiresOriginal: true,
-        originalNote: "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
+        originalNote:
+          "Original documents may be requested by DOJ after electronic filing to validate authenticity.",
         tips: [
           "Should show employer name, address, and your employment dates",
           "Original documents strengthen your claim",
