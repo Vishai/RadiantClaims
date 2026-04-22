@@ -1,18 +1,23 @@
 import { db } from "@/lib/db";
-import type { DOJDailyStats } from "@prisma/client";
+import type { DOJDailyStats, DOJClaimCategory } from "@prisma/client";
 
 /**
  * Data-access layer for the Daily DOJ Post generator.
  *
  * The scraper writes one row per (reportDate, claimCategory) pair into
- * `dOJDailyStats`. For the Daily DOJ content pillar we typically want
- * aggregates across all four categories (DOWNWINDER, ONSITE_PARTICIPANT,
- * MANHATTAN_PROJECT_WASTE, URANIUM_WORKER), since the social audience
- * thinks of "the RECA program" as one thing.
+ * `dOJDailyStats`. RadiantClaims' audience is Downwinder families, so the
+ * Daily Post reports Downwinder-only numbers — mixing categories both
+ * confuses the narrative and exposes the post to parser failures on the
+ * three categories we don't track closely.
+ *
+ * To widen to other categories later, change PRIMARY_CATEGORY or make the
+ * query functions accept a category argument.
  *
  * All functions gracefully handle missing data and return nulls so the
  * generator can decide whether to fall back to placeholder text.
  */
+
+const PRIMARY_CATEGORY: DOJClaimCategory = "DOWNWINDER";
 
 export interface AggregateStats {
   reportDate: Date;
@@ -46,6 +51,7 @@ export async function getAggregateForDate(
       reportDate: { gte: start, lte: end },
       scrapingSuccess: true,
       totalClaims: { gt: 0 },
+      claimCategory: PRIMARY_CATEGORY,
     },
   });
 
@@ -63,7 +69,11 @@ export async function getMostRecentAggregate(): Promise<AggregateStats | null> {
   // Anchor to the latest date that has at least one row with real totals —
   // see note in getAggregateForDate about why zero-total rows are skipped.
   const latest = await db.dOJDailyStats.findFirst({
-    where: { scrapingSuccess: true, totalClaims: { gt: 0 } },
+    where: {
+      scrapingSuccess: true,
+      totalClaims: { gt: 0 },
+      claimCategory: PRIMARY_CATEGORY,
+    },
     orderBy: { reportDate: "desc" },
     select: { reportDate: true },
   });
@@ -88,6 +98,7 @@ export async function getRangeAggregate(
       },
       scrapingSuccess: true,
       totalClaims: { gt: 0 },
+      claimCategory: PRIMARY_CATEGORY,
     },
   });
 
@@ -140,6 +151,8 @@ export async function getAverageDailyApprovalRate(
       reportDate: { gte: startOfDay(start), lte: endOfDay(end) },
       scrapingSuccess: true,
       dailyApproved: { not: null },
+      totalClaims: { gt: 0 },
+      claimCategory: PRIMARY_CATEGORY,
     },
     select: { dailyApproved: true, reportDate: true },
   });
