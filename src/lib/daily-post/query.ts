@@ -36,10 +36,16 @@ export async function getAggregateForDate(
   const start = startOfDay(date);
   const end = endOfDay(date);
 
+  // Only count rows whose parser run produced real totals. If the DOJ page
+  // fails to parse for a category the scraper still writes a scrapingSuccess
+  // row with zeros — including that in the aggregate turns the next day's
+  // delta into a catastrophic negative (e.g. −14,482) that shows up in the
+  // Daily Post as nonsense like "-15,204 new applications yesterday."
   const rows = await db.dOJDailyStats.findMany({
     where: {
       reportDate: { gte: start, lte: end },
       scrapingSuccess: true,
+      totalClaims: { gt: 0 },
     },
   });
 
@@ -54,9 +60,10 @@ export async function getAggregateForDate(
  * various reasons (weekends, DOJ publishing delays, etc.).
  */
 export async function getMostRecentAggregate(): Promise<AggregateStats | null> {
-  // Find the most recent reportDate with at least one successful row
+  // Anchor to the latest date that has at least one row with real totals —
+  // see note in getAggregateForDate about why zero-total rows are skipped.
   const latest = await db.dOJDailyStats.findFirst({
-    where: { scrapingSuccess: true },
+    where: { scrapingSuccess: true, totalClaims: { gt: 0 } },
     orderBy: { reportDate: "desc" },
     select: { reportDate: true },
   });
@@ -80,6 +87,7 @@ export async function getRangeAggregate(
         lte: endOfDay(endDate),
       },
       scrapingSuccess: true,
+      totalClaims: { gt: 0 },
     },
   });
 
