@@ -298,12 +298,22 @@ export abstract class BaseAgent<TResult extends BaseAgentResult> {
       ocrQuality = 1.0,
       dataCompleteness = 1.0,
       aiConfidence = 1.0,
-      validationPasses = 0,
-      validationTotal = 1,
+      validationPasses,
+      validationTotal,
     } = factors;
 
+    // When a caller provides no validation factors (classifier and
+    // data-extraction are the two), the validation term must be neutral
+    // (1.0), matching the defaults of every other factor. It previously
+    // defaulted to 0/1, which capped the blended confidence at 0.8 while
+    // determineStatus requires >= 0.8 for PASS, so those agents could never
+    // PASS and auto-categorization never fired.
     const validationScore =
-      validationTotal > 0 ? validationPasses / validationTotal : 1.0;
+      validationPasses === undefined && validationTotal === undefined
+        ? 1.0
+        : (validationTotal ?? 1) > 0
+          ? (validationPasses ?? 0) / (validationTotal ?? 1)
+          : 1.0;
 
     // Weighted average of all factors
     const confidence =
