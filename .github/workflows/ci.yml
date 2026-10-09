@@ -104,3 +104,8 @@ jobs:
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000
           SKIP_ENV_VALIDATION: true
+          # Some routes construct API clients at import time; the build only
+          # needs them to exist, never to call out.
+          RESEND_API_KEY: re_ci_placeholder
+          STRIPE_SECRET_KEY: sk_test_ci_placeholder
+          OPENAI_API_KEY: sk-ci-placeholder
