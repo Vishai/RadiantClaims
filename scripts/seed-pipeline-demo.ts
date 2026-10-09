@@ -72,14 +72,12 @@ async function degrade(
       .jpeg({ quality: style === "scan" ? 55 : 22 })
       .toBuffer();
     const embedded = await out.embedJpg(jpg);
-    out
-      .addPage([embedded.width, embedded.height])
-      .drawImage(embedded, {
-        x: 0,
-        y: 0,
-        width: embedded.width,
-        height: embedded.height,
-      });
+    out.addPage([embedded.width, embedded.height]).drawImage(embedded, {
+      x: 0,
+      y: 0,
+      width: embedded.width,
+      height: embedded.height,
+    });
   }
   return Buffer.from(await out.save());
 }
