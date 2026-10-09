@@ -33,6 +33,15 @@ function formatCategoryName(category: string): string {
     .join(" ");
 }
 
+/** Below this OCR confidence a document goes to staff review instead of proceeding. */
+const OCR_REVIEW_THRESHOLD = parseFloat(
+  process.env.OCR_REVIEW_THRESHOLD || "0.6"
+);
+/** Below this extraction confidence (lowest of classifier and validation agent) it goes to review. */
+const EXTRACTION_REVIEW_THRESHOLD = parseFloat(
+  process.env.EXTRACTION_REVIEW_THRESHOLD || "0.7"
+);
+
 /**
  * Result type for document validation
  */
@@ -126,7 +135,9 @@ export async function validateDocument(
     // Step 1: Classify the document
     const classifierAgent = new ClassifierAgent();
     const classificationResult = await classifierAgent.execute(context);
-    const aiCategory = classificationResult.data.category;
+    // The image fallback can come back without a category; that's a document a
+    // person needs to look at, not an error.
+    const aiCategory = classificationResult.data.category || "OTHER";
 
     // Step 1.5: Check for category mismatch
     let finalStatus: "VERIFIED" | "NEEDS_REVIEW" = "VERIFIED";
@@ -135,6 +146,15 @@ export async function validateDocument(
       message: string;
       severity: "WARNING" | "INFO";
     }> = [];
+    if (!classificationResult.data.category) {
+      finalStatus = "NEEDS_REVIEW";
+      warnings.push({
+        code: "UNCLASSIFIED",
+        message:
+          "We couldn't tell what kind of document this is, so a reviewer will categorize it.",
+        severity: "WARNING",
+      });
+    }
 
     if (
       context.userSelectedCategory &&
@@ -200,26 +220,54 @@ export async function validateDocument(
       "SCHOOL_RECORDS",
     ];
 
+    let validationConfidence: number | undefined;
     if (category === "IDENTITY") {
       const identityAgent = new IdentityVerificationAgent();
-      await identityAgent.execute(context);
+      validationConfidence = (await identityAgent.execute(context)).confidence;
     } else if (medicalCategories.includes(category)) {
       const medicalAgent = new MedicalComplianceAgent();
-      await medicalAgent.execute(context);
+      validationConfidence = (await medicalAgent.execute(context)).confidence;
     } else if (residenceCategories.includes(category)) {
       const residenceAgent = new ResidenceProofAgent();
-      await residenceAgent.execute(context);
+      validationConfidence = (await residenceAgent.execute(context)).confidence;
     } else if (category === "EMPLOYMENT_RECORDS") {
       const employmentAgent = new EmploymentVerificationAgent();
-      await employmentAgent.execute(context);
+      validationConfidence = (await employmentAgent.execute(context))
+        .confidence;
     }
     // For 'OTHER' category, we only classify but don't run validation
+
+    // Step 3: Confidence routing. A misread page doesn't throw: it produces
+    // confident-looking text and a clean extraction. So nothing proceeds on
+    // low confidence at either hop; it goes to the staff review queue instead.
+    const extractionConfidence = Math.min(
+      classificationResult.confidence,
+      validationConfidence ?? 1
+    );
+    const ocrConfidence = file.ocrConfidence ?? undefined;
+    if (ocrConfidence !== undefined && ocrConfidence < OCR_REVIEW_THRESHOLD) {
+      finalStatus = "NEEDS_REVIEW";
+      warnings.push({
+        code: "LOW_OCR_CONFIDENCE",
+        message: `Text on this document was read with ${Math.round(ocrConfidence * 100)}% confidence, so a reviewer will check it before it's used.`,
+        severity: "WARNING",
+      });
+    }
+    if (extractionConfidence < EXTRACTION_REVIEW_THRESHOLD) {
+      finalStatus = "NEEDS_REVIEW";
+      warnings.push({
+        code: "LOW_EXTRACTION_CONFIDENCE",
+        message: `The details on this document were extracted with ${Math.round(extractionConfidence * 100)}% confidence, so a reviewer will confirm them.`,
+        severity: "WARNING",
+      });
+    }
 
     // Mark document validation as complete with appropriate status
     await db.documentValidation.update({
       where: { uploadedFileId },
       data: {
         status: finalStatus,
+        overallConfidence: extractionConfidence,
         warnings: warnings.length > 0 ? warnings : [],
         processingCompletedAt: new Date(),
       },

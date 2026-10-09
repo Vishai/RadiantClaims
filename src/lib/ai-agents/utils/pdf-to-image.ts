@@ -1,17 +1,12 @@
 /**
  * PDF to Image Conversion Utility
  *
- * Uses 'pdf-to-png' (which requires Ghostscript) to convert PDF pages to images.
- * Used as a fallback for OCR when pdf-parse/pdf.js fails (e.g. scanned documents).
+ * Renders a PDF page to PNG with pdfjs and @napi-rs/canvas (no Ghostscript),
+ * the same renderer the OCR cascade uses. Used when the classifier has to look
+ * at a page because its text was unreadable.
  */
 
-// Import using require to handle the CommonJS export structure of pdf-to-png
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdfToPngLib = require("pdf-to-png");
-
-// Helper to handle the module export which might be the function itself or have a default
-const pdfToPng = pdfToPngLib.default || pdfToPngLib;
+import { renderPdfPage } from "@/lib/document-intelligence/ocr-cascade";
 
 /**
  * Convert PDF first page to PNG image
@@ -21,33 +16,10 @@ const pdfToPng = pdfToPngLib.default || pdfToPngLib;
  */
 export async function convertPdfToImage(pdfBuffer: Buffer): Promise<string> {
   try {
-    // The pdf-to-png library is promise-based, not callback-based.
-    // It returns a Promise<PngPage[]>.
-    const pngPages = await pdfToPng(pdfBuffer, {
-      viewportScale: 2.0,
-      pagesToProcess: [1],
-    });
-
-    if (Array.isArray(pngPages) && pngPages.length > 0 && pngPages[0].content) {
-      const imageBuffer = pngPages[0].content;
-      const base64 = imageBuffer.toString("base64");
-      return `data:image/png;base64,${base64}`;
-    } else {
-      throw new Error("No image data returned from PDF conversion");
-    }
+    const png = await renderPdfPage(pdfBuffer, 1);
+    return `data:image/png;base64,${png.toString("base64")}`;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-
-    if (
-      errorMessage.toLowerCase().includes("command not found") ||
-      errorMessage.toLowerCase().includes("gs") ||
-      errorMessage.toLowerCase().includes("ghostscript")
-    ) {
-      throw new Error(
-        "Ghostscript is required for PDF conversion. Please install it (e.g., 'brew install ghostscript')."
-      );
-    }
-
     throw new Error(`PDF conversion failed: ${errorMessage}`);
   }
 }

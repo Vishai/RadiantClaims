@@ -13,6 +13,7 @@ import {
   UserPlus,
   Settings,
   CheckCircle2,
+  BarChart3,
   Menu,
   X,
   ExternalLink,
@@ -81,6 +82,11 @@ export default function AdminClientLayout({
       name: "AI Review Queue",
       href: "/admin/ai-review",
       icon: CheckCircle2,
+    },
+    {
+      name: "Document Pipeline",
+      href: "/admin/pipeline",
+      icon: BarChart3,
     },
     {
       name: "PDF Field Mapping",

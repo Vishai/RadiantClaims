@@ -35,6 +35,8 @@ const nextConfig = {
       config.externals.push({
         'pdf-parse': 'commonjs pdf-parse',
         'canvas': 'commonjs canvas',
+        // Native page renderer used by the OCR cascade
+        '@napi-rs/canvas': 'commonjs @napi-rs/canvas',
       });
     }
 

@@ -26,6 +26,11 @@ export const ocrConfig = {
   // Minimum characters threshold
   minCharsThreshold: parseInt(process.env.OCR_MIN_CHARS_THRESHOLD || "50", 10),
 
+  // Cascade: a tier's text is kept only when its confidence reaches this bar
+  // and the page has at least minPageChars characters; otherwise it escalates.
+  minConfidence: parseFloat(process.env.OCR_MIN_CONFIDENCE || "0.8"),
+  minPageChars: parseInt(process.env.OCR_MIN_PAGE_CHARS || "20", 10),
+
   // Credential checks
   hasTextractCredentials: (): boolean => {
     return !!(
@@ -50,20 +55,15 @@ export const ocrConfig = {
     const summary = {
       tier1: {
         enabled: ocrConfig.enableTier1,
-        name: "PDF.js/pdf-parse",
+        name: "pdfjs text layer",
         cost: "$0.00",
         status: ocrConfig.enableTier1 ? "✅ Enabled" : "❌ Disabled",
       },
       tier2: {
-        enabled: ocrConfig.enableTier2 && ocrConfig.hasTextractCredentials(),
-        name: "AWS Textract",
-        cost: "$0.0015/page",
-        status: (() => {
-          if (!ocrConfig.enableTier2) return "❌ Disabled";
-          if (!ocrConfig.hasTextractCredentials())
-            return "⚠️  Disabled (no credentials)";
-          return "✅ Enabled";
-        })(),
+        enabled: ocrConfig.enableTier2,
+        name: "Tesseract",
+        cost: "$0.00",
+        status: ocrConfig.enableTier2 ? "✅ Enabled" : "❌ Disabled",
       },
       tier3: {
         enabled:
@@ -78,13 +78,13 @@ export const ocrConfig = {
         })(),
       },
       tier4: {
-        enabled: ocrConfig.enableTier4 && ocrConfig.hasOpenAICredentials(),
-        name: "GPT-4o Vision",
-        cost: "~$0.025/doc",
+        enabled: ocrConfig.enableTier4 && ocrConfig.hasTextractCredentials(),
+        name: "AWS Textract",
+        cost: "$0.0015/page",
         status: (() => {
           if (!ocrConfig.enableTier4) return "❌ Disabled";
-          if (!ocrConfig.hasOpenAICredentials())
-            return "⚠️  Disabled (no API key)";
+          if (!ocrConfig.hasTextractCredentials())
+            return "⚠️  Disabled (no credentials)";
           return "✅ Enabled";
         })(),
       },

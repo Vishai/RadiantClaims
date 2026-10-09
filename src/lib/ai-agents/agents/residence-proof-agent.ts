@@ -249,7 +249,8 @@ export class ResidenceProofAgent extends BaseAgent<ResidenceResult> {
 
     // Validate document type
     const isValidDocumentType = VALID_RESIDENCE_DOCUMENT_TYPES.some((type) =>
-      parsed.documentType.toLowerCase().includes(type)
+      // The model returns null when it can't name the document type.
+      (parsed.documentType ?? "").toLowerCase().includes(type)
     );
 
     if (!isValidDocumentType) {

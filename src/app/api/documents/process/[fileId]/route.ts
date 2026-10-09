@@ -240,6 +240,9 @@ export async function POST(
     const metadata = {
       ...existingMetadata,
       ocrConfidence: ocrResult.confidence,
+      // Which cascade tier each page landed on (the OCR cost) and its confidence
+      ocrTier: ocrResult.method,
+      ocrPages: ocrResult.pages,
       processingTimeMs: ocrResult.processingTimeMs,
       pageCount: ocrResult.pageCount,
       textLength: ocrResult.text.length,
