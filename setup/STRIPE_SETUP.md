@@ -34,8 +34,8 @@ We've implemented:
 ### Add to your `.env` file:
 ```bash
 # Test keys
-STRIPE_SECRET_KEY="***REMOVED***"
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="***REMOVED***"
+STRIPE_SECRET_KEY="sk_test_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 ```
 
 ---
